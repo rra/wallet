@@ -1,0 +1,185 @@
+                       Wallet Implementation Notes
+
+Introduction
+
+    Collected here are implementation notes about design decisions,
+    external interfaces, integration, internal structure, and related
+    issues.  This document will mostly be of interest to people who want
+    to modify the wallet code or who are curious about its design.  This
+    is not user documentation or protocol specifications; see elsewhere
+    for that.
+
+Server Issues
+
+  Interface
+
+    We need two interfaces for retrieving items, one which retrieves the
+    current stored item and one which generates a new item.  This
+    particularly applies to keytabs.  We also don't want new keytabs to be
+    generated for certain keys even by accident without an explicit action
+    taken, but for most keytabs we want to generate new keys each time.
+    So we need an interface like:
+
+    get keytab
+
+      Generates a new keytab normally, but retrieves the existing keytab
+      if we've marked the key as unchanging.
+
+    mark unchanging
+    mark changing
+
+      Change the state to generate new keytabs each time or always try to
+      pull the existing key.  This operation should probably be
+      privileged.
+
+    So if you want to generate a new key for a keytab that would otherwise
+    be persistant, mark it changing, download the new key, and then mark
+    it unchanging again.
+
+    Possibly need to do something about occasionally changing keys of
+    keytabs that are otherwise marked unchanging, or we're going to open
+    ourselves to brute force attacks.
+
+  ACL Management
+
+    Supported operations are:  get, store, create (triggered by a get or
+    store of something that didn't already exist), delete, show, and
+    setting or clearing flags.  Each of these need a separate ACL
+    potentially.  Not sure if we're going to need separate ACLs for each
+    flag operation.
+
+    Administrators get implicit access to do anything.  There does need to
+    be an ACL on create, but that should probably be implemented per
+    backend class (keytabs and certs will use NetDB roles, files will use
+    some namespace limitation based on a separate table, etc.).  There may
+    also need to be a class-specific fallback when no ACL is set to deal
+    with, for instance, ACL management via NetDB roles for systems that
+    have no more specific ACL.
+
+    Owner rights provides get, store, and show, but not delete or setting
+    or clearing flags (not delete because it's too destructive and we
+    don't want it done accidentally).  This can be overridden by more
+    precise ACL settings.  So the ACL logic would go like this:
+
+     * If the user is an administrator, operation is permitted.
+
+     * Otherwise, check the object.  If it exists and has a setting for
+       that specific ACL, apply that ACL.
+
+     * If the object exists but with no specific ACL setting and the
+       operation is one of get, store, or show, apply the owner ACL.
+
+     * If there is no listed owner ACL, punt to the backend and see if it
+       can apply a default ACL.
+
+     * If the object doesn't exist, punt to the backend, which will do its
+       own ACL check against backend-specific rules.
+
+    I think the owner abstraction is worth it over just setting the ACL
+    for get, store, and show.
+
+    We also need to provide an interface to manage certain types of ACLs,
+    in particular the krb5-group ACL scheme, at least in the short term
+    until we standardize on using LDAP for all of those ACLs.  We're
+    probably going to continue to use krb5-group ACLs for the forseeable
+    future in at least some cases, since we'll want to be able to do
+    things when LDAP or AFS is down or we'll want a higher level of
+    security than either can ensure.
+
+  Flags
+
+    locked      --  No operations permitted except show
+    unchanging  --  Pull existing value from file store
+
+    For backends like secure files, all values are unchanging implicitly,
+    but I don't think we should represent this by setting flags on every
+    instance of those backends; it's just confusing and doesn't provide
+    more information.
+
+  Expiration
+
+    The database has a field to store an expiration date for every object.
+    We can implement expiration methods in the backend to automatically
+    delete some objects (or perhaps lock them) when they pass their
+    expiration date, but a more useful method might be to provide warnings
+    when objects are about to expire via warning methods for a backend
+    that take the object name and the expiration date.  This would be
+    great for certificates, for instance.
+
+  Certificate Creation
+
+    We probably want to handle all requested certificates from Comodo
+    using this interface since we can use its expiration handling to do
+    warnings and since that way users can re-download the certificate any
+    time they want.  Certificates are actually pairs of certificate and
+    key, though, and we need to figure out what we're storing.  There is
+    the key, which we want to be able to store but we don't really do
+    anything with (except ideally it's associated with a certificate),
+    there's the CSR (which we could reuse for renewals although that
+    doesn't get people to change their key), and there's the certificate
+    itself (which is actually public data).  Should there be some method
+    for someone to request that their previous CSR be reused to request a
+    new Comodo certificate?  Maybe more work than needed.
+
+Client Issues
+
+  Command-Line Options
+
+    Some of the specific data types are going to need their own flags to
+    operations like get.  As an example, the keytab get operation will
+    need an optional flag to specify the srvtab file to which to also
+    write the key, and will need an optional flag specifying the time
+    delta at which old kvnos should be pruned from the keytab.  These
+    flags need to be globally unique in the wallet client so that we can
+    use a naive option parser, although at least for starters we'll
+    probably require that all the options be given after the operation.
+
+  Keytab Handling
+
+    The server is going to hand the client a keytab that contains the
+    current keys for the given service.  Unless the keytab was marked as
+    unchanging, these entries will have a higher kvno than any keys
+    already in the keytab on the local system.
+
+    The only interfaces to read keytabs require a file, so the client will
+    need to save the keytab to a temporary file in order to extract
+    individual keys.  If there is no keytab on the local system in the
+    path given to the wallet, this is simple; just write the keytab as
+    returned by the server into the file.
+
+    If the keytab already exists, we want the following behavior:
+
+     * Add the keys from the new keytab.
+
+     * Retain in the keytab keys for the previous kvno, but not for any
+       older kvno older than the maximum lifetime of Kerberos tickets.  So
+       scan the keytab for keys with an older kvno and a timestamp older
+       than one day (maybe make it a week just in case) and delete them.
+       (Possibly make this configurable.)
+
+     * Delete any keys in the keytab matching the current kvno, just to be
+       sure we don't get any strange issues.
+
+    We want to try to add the new keys first to minimize the outage window
+    where service tickets handed out by the KDC aren't recognized by the
+    host.  Adding the keys does just append them to the end, but we
+    probably have to clean out any keys with the same kvno first.  That's
+    a rare case, so I don't think we have to worry about the outage window
+    there.
+
+  Srvtab Handling
+
+    If a srvtab was requested, we search for the key in the new keytab
+    that has an enctype of ENCTYPE_DES_CBC_CRC and then write it out to a
+    srvtab file.  The MIT Kerberos library doesn't support writable
+    srvtabs in the keytab backend, so we roll that ourselves.
+
+    Look at src/lib/krb5/keytab/kt_srvtab.c in the MIT Kerberos source for
+    the format of a srvtab file (see the end of that file).
+
+    The kvno that we get from K5 may have no bearing on the kvno in K4.
+    In order to get the K4 kvno, use the new key to obtain a K4 service
+    ticket for ourselves and then read the kvno off that service ticket.
+    There are other approaches, but the other approaches all require
+    changes to the server side as well, whereas this is self-contained in
+    the client and can be more easily dropped when we drop K4.

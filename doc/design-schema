@@ -1,0 +1,95 @@
+                      Database Schema for the Wallet
+
+Introduction
+
+    Here should be a comprehensive list of the tables used by the wallet,
+    the SQL to create those tables, and a specification of what they're
+    for.  It's possible that this file will later be written in some other
+    format to make extraction of the SQL easier.  Please do not copy this
+    data into some other file that could get out of sync with this
+    documentation; instead, if it's necessary to change the format, please
+    move this file elsewhere and keep the documentation with the schema.
+
+Object Metadata
+
+    Each object stored in the wallet is represented by an entry in the
+    objects table:
+
+      create table objects
+         (ob_name               varchar(255) not null,
+          ob_type               varchar(16)
+              not null references types(ty_name),
+          ob_owner              integer default null references acls(ac_id),
+          ob_acl_get            integer default null references acls(ac_id),
+          ob_acl_store          integer default null references acls(ac_id),
+          ob_acl_show           integer default null references acls(ac_id),
+          ob_acl_delete         integer default null references acls(ac_id),
+          ob_acl_flags          integer default null references acls(ac_id),
+          ob_expires            datetime,
+          ob_created_by         varchar(255) not null,
+          ob_created_from       varchar(255) not null,
+          ob_created_on         datetime not null,
+          ob_stored_by          varchar(255),
+          ob_stored_from        varchar(255),
+          ob_stored_on          datetime,
+          ob_downloaded_by      varchar(255),
+          ob_downloaded_from    varchar(255),
+          ob_downloaded_on      datetime,
+          primary key (ob_name, ob_type));
+
+    Object names are not globally unique but only unique within their
+    type, so the table has a joint primary key.  I haven't yet decided
+    what indices the table will need.
+
+    Each object has an owner and then up to five more specific ACLs.  The
+    ob_acl_flags ACL controls who can set flags on this object.  Each ACL
+    references entries in the following table:
+
+      create table acls
+         (ac_id                 integer auto_increment primary key);
+
+    This just keeps track of unique ACL identifiers.  The data is then
+    stored in:
+
+      create table acl_entry
+         (ae_id                 integer not null references acls(ac_id),
+          ae_scheme             varchar(32)
+              not null references acl_schemes(as_name),
+          ae_identifier         varchar(255));
+
+    Finally, each object may have zero or more flags associated with it.
+
+      create table flags
+         (fl_object             varchar(255)
+              not null references objects(ob_name),
+          fl_type               varchar(16)
+              not null references objects(ob_type),
+          fl_flag               varchar(32)
+              not null references flag_names(fn_name));
+
+    The following are normalization tables used to constrain the values 
+
+      create table types
+         (ty_name               varchar(16) primary key);
+
+      create table acl_schemes
+         (as_name               varchar(32) primary key);
+
+      create table flag_names
+         (fn_name               varchar(32) primary key);
+
+ACL Backend Data
+
+    To support the krb5-group ACL type, groups are stored in the following
+    table:
+
+      create table krb5_groups
+         (kg_name               varchar(255) primary key,
+          kg_owner              integer default null references acls(ac_id));
+
+    Each group contains zero or more principals:
+
+      create table krb5_members
+         (km_group              varchar(255)
+              not null references krb5_groups(kg_name),
+          km_principal          varchar(255) not null);
