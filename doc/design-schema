@@ -93,3 +93,20 @@ ACL Backend Data
          (km_group              varchar(255)
               not null references krb5_groups(kg_name),
           km_principal          varchar(255) not null);
+
+Storage Backend Data
+
+    To support restricting the allowable enctypes for a given keytab, the
+    keytab backend will use the following table:
+
+      create table keytab_enctypes
+         (ke_principal          varchar(255)
+              not null references objects(ob_name),
+          ke_enctype            varchar(255)
+              not null references enctypes(en_name));
+
+    There is a normalization table to ensure that only supported enctypes
+    are configured:
+
+       create table enctypes
+          (en_name               varchar(255) primary key);

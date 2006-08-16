@@ -25,8 +25,8 @@ Server Issues
       Generates a new keytab normally, but retrieves the existing keytab
       if we've marked the key as unchanging.
 
-    mark unchanging
-    mark changing
+    flag unchanging
+    flag -unchanging
 
       Change the state to generate new keytabs each time or always try to
       pull the existing key.  This operation should probably be
@@ -105,6 +105,31 @@ Server Issues
     when objects are about to expire via warning methods for a backend
     that take the object name and the expiration date.  This would be
     great for certificates, for instance.
+
+  Keytab Backend
+
+    As of the deployment of the wallet, we want to stop limiting nearly
+    all keytabs from being forced to single DES keys.  We're probably
+    still going to have some keys for which only particular enctypes are
+    permitted, however.  This means keeping a side table of allowable
+    enctypes per keytab name, where if there are no entries in the table
+    we allow any enctype.  We can pass a list of enctypes into kadmin when
+    doing the principal creation or randomization, separated by spaces and
+    enclosed in double quotes.
+
+    Whenever we generate a new keytab, we may need to push the key into
+    K4.  We could make the client send a flag saying whether they want
+    synchronization with K4, but it's easier to just always do it (except
+    maybe for some exception cases).  The user doesn't have to ask the
+    client program for the srvtab if they don't want it, and it doesn't
+    hurt to create the KDC entry.
+
+    This means that we need the gen_srvtab program from the old srvtab
+    backend on the server end to push the key into K4.  That program
+    already has the capability to take a srvtab containing the DES key and
+    push it into the K4 database.  It could probably stand some cleanup
+    and simplification for inclusion in the wallet source.  I'm probably
+    going to rename it to k4changekey or something similar in the process.
 
   Certificate Creation
 
