@@ -1,0 +1,81 @@
+                            Wallet Server API
+
+Introduction
+
+    Here is the specification for the API that components of the wallet
+    server will implement.  There are two pluggable components in the
+    wallet server: the implementation of a particular object type (which
+    amounts mostly to storage and retrieval), and the ACL implementation.
+
+Object API
+
+  new(NAME, DBH)
+
+    Creates a new object with the given object name.  Takes a database
+    handle, which should be stored with the object and used for any
+    further operations.  This method should inherit from the generic
+    Wallet::Object object, which implements the following methods:
+
+        new(NAME, DBH)
+        create(NAME, DBH)
+        owner([ACL-ID])
+        acl(TYPE [, ACL-ID])
+        expires([DATETIME])
+        get(PRINCIPAL, HOSTNAME [, DATETIME])
+        store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
+        show()
+        error()
+
+    that manipulate the basic object data.  Generally all this function
+    needs to do is call the parent new() constructor, but if there are
+    additional database tables used by this object type, it may load
+    additional data.
+
+  create(NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Like new(), but instead creates a new entry in the database with the
+    given name.  As with new(), the generic function will normally do all
+    of the work.  Takes some additional information to put into the
+    created fields in the database.
+
+  get(PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Applied to a returned object, retrieves the data contained in the
+    object in question.  Takes the information about who is doing the
+    retrieval so that the database metadata can be updated.  The result is
+    either the relevant data or undef in the event of an error.  On error,
+    the caller should call error() to get the error text.
+
+  store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Store user-supplied data into the given object.  This may not be
+    supported by all backends (for instance, backends that automatically
+    generate the data will not support this).  Takes the information about
+    who is doing the store so that the database metadata can be updated.
+    The result is true on success and false on failure.  On error, the
+    caller should call error() to get the error text.
+
+  show()
+
+    Returns a formatted text description of the object suitable for human
+    display, or undef on error.  On error, the caller should call error()
+    to get the error text.
+
+ACL API
+
+  new()
+
+    Creates a persistant ACL verifier for the given ACL type.  This may do
+    nothing, but some ACL verifiers require some persistant data, like a
+    persistant LDAP connection.
+
+  check(PRINCIPAL, ACL)
+
+    Checks whether the given PRINCIPAL should be allowed access given ACL.
+    Returns 1 if access is granted, 0 if access is declined, and undef on
+    error.  On error, the caller should call error() to get the error text
+    but generally should continue with checking other ACLs.
+
+  error()
+
+    Returns the error text of the last error.
