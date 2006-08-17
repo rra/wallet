@@ -14,15 +14,20 @@ AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 
 AFS_CPPFLAGS=
-AFS_LDFLAGS=
-AC_ARG_WITH([afs],
-    AC_HELP_STRING([--with-afs=DIR],
-        [Prefix for AFS headers and libraries (for kasetkey)]),
+AC_ARG_WITH([afs-headers],
+    AC_HELP_STRING([--with-afs-headers=DIR],
+        [Prefix for AFS headers (for kasetkey)]),
     [if test x"$withval" != xno ; then
-        AFS_CPPFLAGS="-I${withval}/include"
-        AFS_LDFLAGS="-L${withval}/lib"
+        AFS_CPPFLAGS="-I${withval}"
      fi])
 AC_SUBST([AFS_CPPFLAGS])
+AFS_LDFLAGS=
+AC_ARG_WITH([afs-libs],
+    AC_HELP_STRING([--with-afs-libs=DIR],
+        [Prefix for AFS libraries (for kasetkey)]),
+    [if test x"$withval" != xno ; then
+        AFS_LDFLAGS="-L${withval}"
+     fi])
 AC_SUBST([AFS_LDFLAGS])
 
 AC_PROG_CC
@@ -32,6 +37,8 @@ AC_SEARCH_LIBS([gethostbyname], [nsl])
 AC_SEARCH_LIBS([socket], [socket], ,
     [AC_CHECK_LIB([nsl], [socket],
         [LIBS="-lnsl -lsocket $LIBS"], , [-lsocket])])
+AC_SEARCH_LIBS([res_search], [resolv], ,
+    [AC_SEARCH_LIBS([__res_search], [resolv])])
 
 AC_CONFIG_HEADER([config.h])
 AC_OUTPUT([Makefile])
