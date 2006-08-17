@@ -30,6 +30,18 @@ AC_ARG_WITH([afs-libs],
      fi])
 AC_SUBST([AFS_LDFLAGS])
 
+REMCTL_CPPFLAGS=
+REMCTL_LDFLAGS=
+AC_ARG_WITH([remctl],
+    AC_HELP_STRING([--with-remctl=DIR],
+        [Prefix for remctl headers and libraries]),
+    [if test x"$withval" != xno ; then
+        REMCTL_CPPFLAGS="-I${withval}/include"
+        REMCTL_LDFLAGS="-L${withval}/lib"
+     fi])
+AC_SUBST([REMCTL_CPPFLAGS])
+AC_SUBST([REMCTL_LDFLAGS])
+
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
