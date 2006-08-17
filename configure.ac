@@ -26,6 +26,7 @@ AC_SUBST([AFS_CPPFLAGS])
 AC_SUBST([AFS_LDFLAGS])
 
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_SEARCH_LIBS([gethostbyname], [nsl])
 AC_SEARCH_LIBS([socket], [socket], ,
