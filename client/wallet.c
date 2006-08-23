@@ -9,13 +9,10 @@
 */
 
 #include <config.h>
+#include <system.h>
 
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include <remctl.h>
 
@@ -29,11 +26,15 @@
 
 /* Usage message. */
 static const char usage_message[] = "\
-Usage: wallet (get|show) keytab <name>\n\
+Usage: wallet [options] (get|show) <object> <name>\n\
 \n\
 Options:\n\
-    -h            Display this help\n\
-    -v            Display the version of remctl\n";
+    -c <command>    Command prefix to use (default: wallet)\n\
+    -k <principal>  Kerberos principal of the server\n\
+    -h              Display this help\n\
+    -p <port>       Port of server (default: 4444)\n\
+    -s <server>     Server hostname (default: " SERVER "\n\
+    -v              Display the version of remctl\n";
 
 
 /*
@@ -56,13 +57,36 @@ main(int argc, char *argv[])
 {
     int option, fd;
     ssize_t status;
-    const char *command[3];
+    const char *command[5];
     struct remctl_result *result;
+    const char *server = SERVER;
+    const char *principal = NULL;
+    unsigned short port = PORT;
+    long tmp;
+    char *end;
 
-    while ((option = getopt(argc, argv, "hv")) != EOF) {
+    command[0] = "wallet";
+    while ((option = getopt(argc, argv, "c:k:hp:s:v")) != EOF) {
         switch (option) {
+        case 'c':
+            command[0] = optarg;
+            break;
+        case 'k':
+            principal = optarg;
+            break;
         case 'h':
             usage(0);
+            break;
+        case 'p':
+            errno = 0;
+            tmp = strtol(optarg, &end, 10);
+            if (tmp <= 0 || tmp > 65535 || *end != '\0') {
+                fprintf(stderr, "Invalid port number %s\n", optarg);
+                exit(1);
+            }
+            port = tmp;
+        case 's':
+            server = optarg;
             break;
         case 'v':
             printf("%s\n", PACKAGE_STRING);
@@ -77,25 +101,24 @@ main(int argc, char *argv[])
     argv += optind;
     if (argc != 3)
         usage(1);
-    if (strcmp(argv[1], "keytab") != 0)
-        usage(1);
 
     /* Perform the desired operation based on the first argument. */
     if (strcmp(argv[0], "get") == 0) {
-        command[0] = "get";
+        command[1] = "get";
     } else if (strcmp(argv[0], "show") == 0) {
-        command[0] = "show";
+        command[1] = "show";
     }
-    command[1] = "keytab";
-    command[2] = argv[2];
-    result = remctl(SERVER, PORT, NULL, command);
+    command[2] = argv[1];
+    command[3] = argv[2];
+    command[4] = NULL;
+    result = remctl(server, port, principal, command);
 
     /* Display the results. */
     if (result->error != NULL) {
         fprintf(stderr, "%s\n", result->error);
     } else if (result->stderr_len > 0) {
         fwrite(result->stderr_buf, 1, result->stderr_len, stderr);
-    } else {
+    } else if (strcmp(command[1], "get") == 0) {
         fd = open("keytab", O_WRONLY | O_CREAT | O_TRUNC, 0600);
         if (fd < 0) {
             fprintf(stderr, "open of keytab failed: %s", strerror(errno));
@@ -113,6 +136,8 @@ main(int argc, char *argv[])
             fprintf(stderr, "close of keytab failed: %s", strerror(errno));
             exit(1);
         }
+    } else {
+        fwrite(result->stdout_buf, 1, result->stdout_len, stdout);
     }
     exit(result->status);
 }
