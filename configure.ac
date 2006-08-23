@@ -42,6 +42,13 @@ AC_ARG_WITH([remctl],
 AC_SUBST([REMCTL_CPPFLAGS])
 AC_SUBST([REMCTL_LDFLAGS])
 
+AC_ARG_VAR([REMCTLD], [Path to the remctld binary])
+AC_PATH_PROG([REMCTLD], [remctld], , [$PATH:/usr/sbin:/usr/local/sbin])
+if test x"$REMCTLD" != x ; then
+    AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
+        [Define to the full path to remctld to run remctl tests.])
+fi
+
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
@@ -53,4 +60,6 @@ AC_SEARCH_LIBS([res_search], [resolv], ,
     [AC_SEARCH_LIBS([__res_search], [resolv])])
 
 AC_CONFIG_HEADER([config.h])
-AC_OUTPUT([Makefile])
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
+AC_OUTPUT

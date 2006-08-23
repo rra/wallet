@@ -1,0 +1,124 @@
+#! /bin/sh
+# $Id$
+#
+# Test suite for the remctl command-line client.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2006 Board of Trustees, Leland Stanford Jr. University
+# See README for licensing terms.
+
+# The count starts at 1 and is updated each time ok is printed.  printcount
+# takes "ok" or "not ok".
+count=1
+printcount () {
+    echo "$1 $count $2"
+    count=`expr $count + 1`
+}
+
+# Run a program expected to succeed, and print ok if it does and produces
+# the correct output.
+runsuccess () {
+    w_output="$1"
+    shift
+    principal=`cat data/test.principal`
+    output=`$wallet -k "$principal" -p 14444 -s localhost "$@" 2>&1`
+    status=$?
+    if [ $status = 0 ] && [ x"$output" = x"$w_output" ] ; then
+        printcount "ok"
+    else
+        printcount "not ok"
+        echo "  saw: $output"
+        echo "  not: $w_output"
+    fi
+}
+
+# Run a program expected to fail and make sure it fails with the correct
+# exit status and the correct failure message.  Strip the second colon and
+# everything after it off the error message since it's system-specific.
+runfailure () {
+    w_status="$1"
+    shift
+    w_output="$1"
+    shift
+    principal=`cat data/test.principal`
+    output=`$wallet -k "$principal" -p 14444 -s localhost "$@" 2>&1`
+    status=$?
+    output=`echo "$output" | sed 's/\(:[^:]*\):.*/\1/'`
+    if [ $status = $w_status ] && [ x"$output" = x"$w_output" ] ; then
+        printcount "ok"
+    else
+        printcount "not ok"
+        echo "  saw: ($status) $output"
+        echo "  not: ($w_status) $w_output"
+    fi
+}
+
+# Print the number of tests.
+echo 6
+
+# Find the client program.
+if [ -f ../data/test.keytab ] ; then
+    cd ..
+else
+    if [ -f tests/data/test.keytab ] ; then
+        cd tests
+    fi
+fi
+if [ ! -f data/test.keytab ] || [ -z "@REMCTLD@" ] ; then
+    for n in 1 2 3 4 5 6 ; do
+        echo ok $n \# skip -- no Kerberos configuration
+    done
+    exit 0
+fi
+wallet=../client/wallet
+if [ ! -x "$wallet" ] ; then
+    echo 'Cannot locate wallet client binary' >&2
+    exit 1
+fi
+
+# Start the remctld daemon and wait for it to start.
+rm -f data/pid
+KRB5_KTNAME=data/test.keytab; export KRB5_KTNAME
+( @REMCTLD@ -m -p 14444 -s `cat data/test.principal` -P data/pid \
+    -f data/wallet.conf &)
+KRB5CCNAME=data/test.cache; export KRB5CCNAME
+kinit -t -k data/test.keytab `cat data/test.principal` > /dev/null 2>&1
+if [ $? != 0 ] ; then
+    kinit -t data/test.keytab `cat data/test.principal` > /dev/null 2>&1
+fi
+if [ $? != 0 ] ; then
+    kinit -k -K data/test.keytab `cat data/test.principal` > /dev/null 2>&1
+fi
+if [ $? != 0 ] ; then
+    echo 'Unable to obtain Kerberos tickets' >&2
+    exit 1
+fi
+[ -f data/pid ] || sleep 1
+if [ ! -f data/pid ] ; then
+    echo 'remctld did not start' >&2
+    exit 1
+fi
+
+# Now, we can finally run our tests.
+runsuccess "" -c fake-wallet get keytab service/fake-test
+if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
+    printcount "ok"
+    rm keytab
+else
+    printcount "not ok"
+fi
+runsuccess "Some stuff about service/fake-test" \
+    -c fake-wallet show keytab service/fake-test
+runfailure 1 "Unknown object type srvtab" \
+    -c fake-wallet get srvtab service/fake-test
+runfailure 1 "Unknown keytab service/unknown" \
+    -c fake-wallet show keytab service/unknown
+runfailure 1 "Unknown keytab service/unknown" \
+    -c fake-wallet get keytab service/unknown
+
+# Clean up.
+rm -f data/test.cache
+if [ -f data/pid ] ; then
+    kill -HUP `cat data/pid`
+    rm -f data/pid
+fi

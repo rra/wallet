@@ -1,0 +1,39 @@
+#!/bin/sh
+# $Id$
+#
+# This is a fake wallet backend that returns bogus data for verification by
+# the client test suite.  It doesn't test any of the wallet server code.
+
+command="$1"
+shift
+type="$1"
+if [ "$1" != "keytab" ] ; then
+    echo "Unknown object type $1" >&2
+    exit 1
+fi
+shift
+
+case "$command" in
+get)
+    if [ "$1" = "service/fake-test" ] ; then
+        cat data/fake-keytab
+        exit 0
+    else
+        echo "Unknown keytab $1" >&2
+        exit 1
+    fi
+    ;;
+show)
+    if [ "$1" = "service/fake-test" ] ; then
+        echo "Some stuff about $1"
+        exit 0
+    else
+        echo "Unknown keytab $1" >&2
+        exit 1
+    fi
+    ;;
+*)
+    echo "Unknown command $command" >&2
+    exit 1
+    ;;
+esac
