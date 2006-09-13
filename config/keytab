@@ -1,0 +1,6 @@
+# /etc/remctl/conf.d/keytab -- Run keytab-backend for keytab retrieval.
+#
+# This is a remctld configuration fragment to run kdc-backend to permit
+# remote retrieval of certain keytabs.
+
+keytab retrieve /usr/sbin/kdc-backend /etc/remctl/acl/keytab

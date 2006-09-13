@@ -1,0 +1,5 @@
+# /etc/krb5kdc/allow-extract -- List of principals for keytab retrieval.
+#
+# Any principal matching a regular expression in this file will be
+# eligible for keytab retrieval through keytab-backend.  Be careful to
+# anchor the regular expressions and include realm information if needed.

@@ -1,0 +1,6 @@
+# /etc/remctl/acl/keytab -- ACL for keytab retrieval.
+#
+# This is the ACL controlling who can retrieve keytabs for the existing
+# keys of principals matching lines in /etc/krb5kdc/allow-extract.  It
+# usually should only contain one principal, the principal of the wallet
+# server.
