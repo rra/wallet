@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 our $ID = q$Id$;
 #
-# kdc-backend -- Extract keytabs from the KDC without changing the key.
+# keytab-backend -- Extract keytabs from the KDC without changing the key.
 #
 # This is a remctl backend that extracts existing keys from a KDC database
 # using kadmin.local.  It requires a patched version of kadmin.local that
@@ -9,7 +9,7 @@ our $ID = q$Id$;
 # /etc/krb5kdc/allow-extract that contains a list of regexes, one per line,
 # matching principals that may be extracted in this fashion.  (Generally you
 # do not want to list user principals here.)  It also expects to be able to
-# write to a directory named /var/lib/kdc-backend; that's where it puts the
+# write to a directory named /var/lib/keytabs; that's where it puts the
 # keytabs temporarily before sending them back to via remctl.
 #
 # remctl should handle authorization restrictions on this script.  It doesn't
@@ -48,7 +48,7 @@ our $CONFIG = '/etc/krb5kdc/allow-extract';
 our $KADMIN = '/usr/sbin/kadmin.local';
 
 # A temporary area into which keytabs should be written.
-our $TMP = '/var/lib/kdc-backend';
+our $TMP = '/var/lib/keytabs';
 
 ##############################################################################
 # Logging
@@ -59,7 +59,7 @@ our $TMP = '/var/lib/kdc-backend';
 sub fail {
     my $message = join ('', @_);
     syslog ('err', '%s', $message);
-    die "kdc-backend: $message\n";
+    die "keytab-backend: $message\n";
 }
 
 ##############################################################################
@@ -68,7 +68,7 @@ sub fail {
 
 # Separately log our actions.  remctl keeps some logs, but it won't tell us
 # whether the download is successful or not.
-openlog ('kdc-backend', 'pid', 'auth');
+openlog ('keytab-backend', 'pid', 'auth');
 
 # Set up a default identity if run from the command line.
 $ENV{REMUSER} = getpwnam ($<) || 'UNKNOWN' unless $ENV{REMUSER};
@@ -133,15 +133,15 @@ exit 0;
 
 =head1 NAME
 
-kdc-backend - Extract keytabs from the KDC without changing the key
+keytab-backend - Extract keytabs from the KDC without changing the key
 
 =head1 SYNOPSIS
 
-B<kdc-backend> retrieve I<principal>
+B<keytab-backend> retrieve I<principal>
 
 =head1 DESCRIPTION
 
-B<kdc-backend> retrieves a keytab for an existing principal from the KDC
+B<keytab-backend> retrieves a keytab for an existing principal from the KDC
 database without changing the current key.  It allows generation of a keytab
 for a service without rekeying that service.  It requires a B<kadmin.local>
 patched to support the B<-norandkey> option to B<ktadd>.
@@ -160,7 +160,7 @@ software, limit as tightly as possible which principals can be downloaded in
 this fashion.  Generally only shared service principals used on multiple
 systems should be made available in this way.
 
-B<kdc-backend> does not do any authorization checks.  Those should be done
+B<keytab-backend> does not do any authorization checks.  Those should be done
 by B<remctld> before it is called.
 
 =head1 FILES
@@ -173,12 +173,12 @@ The configuration file that controls which principals can have their keytabs
 retrieved.  Blank lines and lines starting with C<#>, as well as anything
 after C<#> on a line, are ignored.  All other lines should be Perl regular
 expressions, one per line, that match principals whose keytabs can be
-retrieved by B<kdc-backend>.  Any principal that does not match one of those
-regular expressions cannot be retrieved.
+retrieved by B<keytab-backend>.  Any principal that does not match one of
+those regular expressions cannot be retrieved.
 
-=item F</var/lib/kdc-backend>
+=item F</var/lib/keytabs>
 
-The temporary directory used for creating keytabs.  B<kdc-backend> will
+The temporary directory used for creating keytabs.  B<keytab-backend> will
 create the keytab in this directory, make sure that was successful, and then
 delete the temporary file after the results have been sent to standard
 output.
