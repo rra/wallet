@@ -1,0 +1,214 @@
+#!/usr/bin/perl
+our $ID = q$Id$;
+#
+# kdc-backend -- Extract keytabs from the KDC without changing the key.
+#
+# This is a remctl backend that extracts existing keys from a KDC database
+# using kadmin.local.  It requires a patched version of kadmin.local that
+# supports the -norandkey option.  It expects a configuration file in
+# /etc/krb5kdc/allow-extract that contains a list of regexes, one per line,
+# matching principals that may be extracted in this fashion.  (Generally you
+# do not want to list user principals here.)  It also expects to be able to
+# write to a directory named /var/lib/kdc-backend; that's where it puts the
+# keytabs temporarily before sending them back to via remctl.
+#
+# remctl should handle authorization restrictions on this script.  It doesn't
+# do any additional authorization checks itself.
+#
+# The keytab for the extracted principal will be printed to standard output.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2006 Board of Trustees, Leland Stanford Jr. University
+#
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose and without fee is hereby granted, provided
+# that the above copyright notice appear in all copies and that both that
+# copyright notice and this permission notice appear in supporting
+# documentation, and that the name of Stanford University not be used in
+# advertising or publicity pertaining to distribution of the software without
+# specific, written prior permission.  Stanford University makes no
+# representations about the suitability of this software for any purpose.  It
+# is provided "as is" without express or implied warranty.
+#
+# THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+##############################################################################
+# Declarations and site configuration
+##############################################################################
+
+use strict;
+use Sys::Syslog qw(openlog syslog);
+
+# Path to configuration file listing principals that may be extracted.
+our $CONFIG = '/etc/krb5kdc/allow-extract';
+
+# The full path to a kadmin.local that supports -norandkey.
+our $KADMIN = '/usr/sbin/kadmin.local';
+
+# A temporary area into which keytabs should be written.
+our $TMP = '/var/lib/kdc-backend';
+
+##############################################################################
+# Logging
+##############################################################################
+
+# Log a failure message to both syslog and to stderr and exit with a non-zero
+# status.
+sub fail {
+    my $message = join ('', @_);
+    syslog ('err', '%s', $message);
+    die "kdc-backend: $message\n";
+}
+
+##############################################################################
+# Implementation
+##############################################################################
+
+# Separately log our actions.  remctl keeps some logs, but it won't tell us
+# whether the download is successful or not.
+openlog ('kdc-backend', 'pid', 'auth');
+
+# Set up a default identity if run from the command line.
+$ENV{REMUSER} = getpwnam ($<) || 'UNKNOWN' unless $ENV{REMUSER};
+
+# Read the regexes of valid principals into memory.
+open (CONFIG, '<', $CONFIG) or fail "cannot open $CONFIG: $!";
+my @valid;
+while (<CONFIG>) {
+    next if /^\s*\#/;
+    next if /^\s*$/;
+    s/^\s+//;
+    s/\s+$//;
+    s/\s*\#.*//;
+    push (@valid, qr/$_/);
+}
+close CONFIG;
+
+# The first argument will be the remctl service, so skip it.
+if (@ARGV == 2) {
+    shift @ARGV;
+}
+if (@ARGV != 1) {
+    fail "invalid arguments: @ARGV";
+}
+my $principal = $ARGV[0];
+
+# Ensure that we're allowed to retrieve this principal.
+unless ($principal =~ m%^[\w-]+(?:/[\w-]+)?\@[\w.-]+\z%) {
+    fail "bad principal name $principal";
+}
+my $okay;
+for my $regex (@valid) {
+    if ($principal =~ /$regex/) {
+        $okay = 1;
+        last;
+    }
+}
+unless ($okay) {
+    fail "permission denied: $ENV{REMUSER} may not retrieve $principal";
+}
+
+# Do the actual work.
+my $filename = "$TMP/keytab$$";
+my $output = `$KADMIN -q 'ktadd -q -norandkey -k $filename $principal' 2>&1`;
+if ($? != 0) {
+    my $status = ($? >> 8);
+    warn $output;
+    fail "retrieve of $principal failed for $ENV{REMUSER}: kadmin.local"
+        . " exited with status $status";
+}
+open (KEYTAB, '<', $filename)
+    or fail "cannot open temporary keytab $filename: $!";
+print while <KEYTAB>;
+close KEYTAB;
+unlink $filename;
+syslog ('info', '%s', "keytab $principal retrieved by $ENV{REMUSER}");
+exit 0;
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+kdc-backend - Extract keytabs from the KDC without changing the key
+
+=head1 SYNOPSIS
+
+B<kdc-backend> retrieve I<principal>
+
+=head1 DESCRIPTION
+
+B<kdc-backend> retrieves a keytab for an existing principal from the KDC
+database without changing the current key.  It allows generation of a keytab
+for a service without rekeying that service.  It requires a B<kadmin.local>
+patched to support the B<-norandkey> option to B<ktadd>.
+
+This script is intended to run under B<remctld>.  On success, it prints the
+keytab to standard output, logs a success message to syslog (facility auth,
+priority info), and exits with status 0.  On failure, it prints out an error
+message, logs an error to syslog (facility auth, priority err), and exits
+with a non-zero status.
+
+The principal is checked for basic sanity (only accepting alphanumerics,
+C<_>, and C<-> with an optional instance and then only alphanumerics, C<_>,
+C<->, and C<.> in the realm) and then checked against a configuration file
+that lists regexes of principals that can be retrieved.  When deploying this
+software, limit as tightly as possible which principals can be downloaded in
+this fashion.  Generally only shared service principals used on multiple
+systems should be made available in this way.
+
+B<kdc-backend> does not do any authorization checks.  Those should be done
+by B<remctld> before it is called.
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/krb5kdc/allow-extract>
+
+The configuration file that controls which principals can have their keytabs
+retrieved.  Blank lines and lines starting with C<#>, as well as anything
+after C<#> on a line, are ignored.  All other lines should be Perl regular
+expressions, one per line, that match principals whose keytabs can be
+retrieved by B<kdc-backend>.  Any principal that does not match one of those
+regular expressions cannot be retrieved.
+
+=item F</var/lib/kdc-backend>
+
+The temporary directory used for creating keytabs.  B<kdc-backend> will
+create the keytab in this directory, make sure that was successful, and then
+delete the temporary file after the results have been sent to standard
+output.
+
+=back
+
+=head1 SEE ALSO
+
+kadmin.local(8), remctld(8)
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2006 Board of Trustees, Leland Stanford Jr. University
+
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted, provided
+that the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation, and that the name of Stanford University not be used in
+advertising or publicity pertaining to distribution of the software without
+specific, written prior permission.  Stanford University makes no
+representations about the suitability of this software for any purpose.  It
+is provided "as is" without express or implied warranty.
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+=cut
