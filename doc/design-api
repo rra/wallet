@@ -61,6 +61,19 @@ Object API
     display, or undef on error.  On error, the caller should call error()
     to get the error text.
 
+  default_check(PRINCIPAL)
+
+    Applies the default authorization rules for this object type, if any,
+    and returns 1 if those default authorization rules allow access.  If
+    there are no authorization rules or if they don't allow access,
+    returns 0.  On error, returns undef; the caller should call error() to
+    get the error text.
+
+  error()
+
+    Returns the error text from the last failed get(), store(), show(), or
+    default_check() call.
+
 ACL API
 
   new()
