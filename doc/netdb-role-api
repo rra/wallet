@@ -1,0 +1,32 @@
+                              NetDB Role API
+
+Basic API
+
+    remctl netdb-node-roles-rc netdb node-roles <sunetid> <node>
+
+    Note that the remctl principal used here is actually the underlying
+    host principal, not the principal for that alias.  <node> must be
+    fully qualified.  This will return a list of all roles that <sunetid>
+    has with <node>, chosen from admin, team, or user.  For our purposes,
+    we probably want to look at admin and team, but we may want user as
+    well.
+
+    You must be a current NetDB user to use it.  It just sucks rows out of
+    a view matching on the SUNet ID and node name, so getting no result
+    can mean "no such SUNet ID," "no such node," or "SUNet ID isn't
+    associated with node."
+
+Examples
+
+    % remctl netdb-node-roles-rc netdb node-roles riepel zathras.stanford.edu
+    admin
+    team
+    user
+    % remctl netdb-node-roles-rc netdb node-roles riepel calgon.stanford.edu
+    admin
+    %
+
+Wallet Issues
+
+    We'll need to get a principal registered to use it that can query
+    anything for any node but isn't otherwise authorized to use NetDB.
