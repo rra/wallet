@@ -151,6 +151,14 @@ Server Issues
     for someone to request that their previous CSR be reused to request a
     new Comodo certificate?  Maybe more work than needed.
 
+  Cleanup of Old Entries
+
+    We should periodically scan the wallet for host-based entries for hosts
+    that aren't in NetDB.  Rather than removing them immediately, wait
+    until we haven't seen the host for several consecutive passes and then
+    purge them.  Send notification of the hosts that are being purged (and
+    maybe of the hosts that will be purged soon if nothing happens).
+
 Client Issues
 
   Command-Line Options
