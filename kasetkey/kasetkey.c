@@ -50,7 +50,8 @@ char *o_admin = NULL;       /* name of ADMIN user to use */
 char *o_pass = NULL;        /* password to use (else random or prompted) */
 char *o_srvtab = NULL;      /* srvtab file to generate */
 char *o_service = NULL;     /* service to create */
-char *o_k5srvtab = NULL;   /* converted keytab from K5*/
+char *o_delete = NULL;      /* service to delete */
+char *o_k5srvtab = NULL;    /* converted keytab from K5 */
 
 int
 main(int argc, char *argv[])
@@ -67,7 +68,7 @@ main(int argc, char *argv[])
   if (!local_cell || code) crash_and_burn("can't initialize");
 
   /* for production, remove the -d debugging option*/
-  while ((c = getopt(argc, argv, "a:hk:is:p:f:rdvc:")) != EOF) {
+  while ((c = getopt(argc, argv, "a:hk:is:p:f:rdD:vc:")) != EOF) {
            switch(c) {
            case 'k': o_keyfile = optarg; break;
            case 'i': o_init = 1;         break;
@@ -78,6 +79,7 @@ main(int argc, char *argv[])
            case 's': o_service = optarg; break;
            case 'd': o_debug = 1;        break;
            case 'c': o_k5srvtab = optarg;   break;
+           case 'D': o_delete = optarg;  break;
            case 'v': fprintf(stderr,"%s: version %s\n",prog,VERSION); exit(0);
            case 'h': 
            default:  usage(); /* usage doesn't return */
@@ -89,6 +91,7 @@ main(int argc, char *argv[])
 
   if (o_init) do_init_key_file();
   else if (o_service) do_service();
+  else if (o_delete) do_delete();
   else usage();
 
   return 0;
@@ -132,6 +135,65 @@ do_init_key_file(void)
   }
   if (close(kfd)!=0) errno_crash_and_burn("close keyfile");
 
+  exit(0);
+}
+
+void
+do_delete(void)
+{
+  struct ktc_encryptionKey key;
+  struct ktc_token token;
+  struct ubik_client *conn;
+  long code;
+  char name[MAXKTCNAMELEN];
+  char inst[MAXKTCNAMELEN];
+  char cell[MAXKTCNAMELEN];
+
+  if (!o_admin) o_admin = (char*)getlogin();
+
+  code = ka_ParseLoginName(o_admin, name, inst, cell);
+  if (o_debug) printf("ka_ParseLoginName %ld\n",code);
+  if (code) crash_and_burn("can't parse admin name");
+  if (cell[0]=='\0') strcpy(cell, local_cell);
+
+  if (o_keyfile) {
+    int kfd;
+    kfd = open(o_keyfile, O_RDONLY, 0);
+    if (kfd == -1) errno_crash_and_burn("can't open keyfile");
+    if (read(kfd, &key, sizeof(key)) != sizeof(key)) {
+        errno_crash_and_burn("can't read keyfile");
+    }
+    close(kfd);
+  } else {
+    char buffer[MAXKTCNAMELEN*3+40];
+    sprintf(buffer,"password for %s: ",o_admin);
+    code = ka_ReadPassword(buffer, 0, cell, &key);
+    if (code) crash_and_burn("can't read password");
+  }
+  
+  code = ka_GetAdminToken(name, inst, cell, &key, 300, &token, 1);
+  memset((char*)&key, 0, sizeof(key));
+  if (o_debug) printf("ka_GetAdminToken %ld\n",code);
+  if (code) crash_and_burn("can't get admin token");
+ 
+  /* make connection to AuthServer */
+  code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
+  if (o_debug) printf("ka_AuthServerConn %ld\n",code);
+  if (code) crash_and_burn("can't make connection to auth server");
+
+  /* do a similar dance on the service principal and key */
+  code = ka_ParseLoginName(o_service, name, inst, cell);
+  if (o_debug) printf("ka_ParseLoginName %ld\n",code);
+  if (code) crash_and_burn("can't parse service name");
+  if (cell[0]=='\0') strcpy(cell, local_cell);
+
+  /* delete the user */
+  code = ubik_Call (KAM_DeleteUser, conn, 0, name, inst);
+  if (o_debug) printf("ubik_Call KAM_DeleteUser %ld\n",code);
+  if (code && code != KANOENT)
+      crash_and_burn("can't delete existing instance");
+
+  code = ubik_ClientDestroy (conn);
   exit(0);
 }
 
