@@ -17,8 +17,7 @@ client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
 client_wallet_LDADD = -lremctl
 kasetkey_kasetkey_CPPFLAGS = @AFS_CPPFLAGS@
 kasetkey_kasetkey_LDFLAGS = @AFS_LDFLAGS@
-kasetkey_kasetkey_LDADD = -lkauth.krb -lprot -lubik -lauth -lrxkad -ldes \
-	-lrx -llwp -lcom_err -lafsutil -lsys
+kasetkey_kasetkey_LDADD = -lafsauthent -lafsrpc -lpthread -lkrb4
 
 warnings:
 	$(MAKE) CFLAGS='$(WARNINGS)'
