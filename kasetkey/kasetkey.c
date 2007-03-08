@@ -58,6 +58,7 @@ static const char usage_message[] = "\
 Usage: %s [options]\n\
   -a adminuser     Admin user\n\
   -c k5srvtab      Use the key from the given srvtab (for sync w/ K5)\n\
+  -D service       Name of service to delete\n\
   -d               turn on debugging\n\
   -f srvtab        Name of srvtab file to create\n\
   -h               This help\n\
