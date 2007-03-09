@@ -1,0 +1,6 @@
+wallet (0.1-1) unstable; urgency=low
+
+  * Initial release building only kasetkey.
+
+ -- Russ Allbery <rra@debian.org>  Thu,  8 Mar 2007 16:07:05 -0800
+

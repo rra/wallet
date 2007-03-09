@@ -1,0 +1,36 @@
+Packaged for Debian by Russ Allbery <rra@debian.org>            2007-03-08
+
+The source for this package currently isn't available except via the
+Debian package.  It will be released publicly later.
+
+Upstream author:
+
+    Russ Allbery <rra@stanford.edu>
+
+Debian packaging copyright:
+
+    Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr.
+    University.
+
+    All files and modifications related to Debian packaging are covered
+    under the same license terms as the rest of the package.
+
+Copyright:
+
+    Copyright 1994, 1998, 1999, 2000, 2006, 2007 Board of Trustees, Leland
+    Stanford Jr. University.  All rights reserved.
+  
+    Permission to use, copy, modify, and distribute this software and its
+    documentation for any purpose and without fee is hereby granted,
+    provided that the above copyright notice appear in all copies and that
+    both that copyright notice and this permission notice appear in
+    supporting documentation, and that the name of Stanford University not
+    be used in advertising or publicity pertaining to distribution of the
+    software without specific, written prior permission.  Stanford
+    University makes no representations about the suitability of this
+    software for any purpose.  It is provided "as is" without express or
+    implied warranty.
+
+    THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+    WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
