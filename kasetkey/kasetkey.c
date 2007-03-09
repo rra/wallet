@@ -13,6 +13,8 @@
 **  It will no longer be used once K4 is retired.
 */
 
+#include <config.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -32,8 +34,6 @@
 # define INST_SZ        40
 # define REALM_SZ       40
 #endif
-
-#define VERSION "3.0"
 
 /* The name of the program, for error reporting. */
 static const char *program = NULL;
@@ -447,7 +447,7 @@ main(int argc, char *argv[])
         case 'h':
             usage(0);
         case 'v':
-            printf("%s: version %s\n", program, VERSION);
+            printf("%s: version %s\n", program, PACKAGE_VERSION);
             exit(0);
         default:
             usage(1);
