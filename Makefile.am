@@ -19,6 +19,12 @@ kasetkey_kasetkey_CPPFLAGS = @AFS_CPPFLAGS@
 kasetkey_kasetkey_LDFLAGS = @AFS_LDFLAGS@
 kasetkey_kasetkey_LDADD = -lafsauthent -lafsrpc -lpthread -lkrb4
 
+man_MANS = kasetkey/kasetkey.8
+
+$(srcdir)/kasetkey/kasetkey.8: $(srcdir)/kasetkey/kasetkey.pod
+	pod2man --release=$(VERSION) --center="Administrative Commands" \
+	    --section=8 $(srcdir)/kasetkey/kasetkey.pod > $@
+
 warnings:
 	$(MAKE) CFLAGS='$(WARNINGS)'
 	$(MAKE) CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
