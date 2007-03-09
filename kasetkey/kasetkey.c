@@ -235,11 +235,14 @@ authenticate(struct config *config, struct ktc_token *token)
     char name[MAXKTCNAMELEN];
     char inst[MAXKTCNAMELEN];
     char cell[MAXKTCNAMELEN];
+    char realm[MAXKTCREALMLEN];
     long code;
     struct ktc_encryptionKey key;
 
     /* Get the admin password one way or the other. */
     parse_principal(config, config->admin, name, inst, cell);
+    if (ka_CellToRealm(cell, realm, &local) == KANOCELL)
+        die("unable to determine realm");
     if (config->keyfile) {
         code = read_service_key(name, inst, cell, 0, config->keyfile,
                                 (char *) &key);
