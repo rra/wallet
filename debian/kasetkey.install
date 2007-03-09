@@ -1,2 +1,2 @@
-debian/tmp/usr/bin/kasetkey
+debian/tmp/usr/sbin/kasetkey
 debian/tmp/usr/share/man/man8/kasetkey.8
