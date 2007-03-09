@@ -145,11 +145,11 @@ parse_principal(struct config *config, const char *principal, char *name,
 {
     long code;
 
-    code = ka_ParseLoginName(config->admin, name, inst, cell);
+    code = ka_ParseLoginName(principal, name, inst, cell);
     if (config->debug)
         printf("ka_ParseLoginName %ld\n", code);
     if (code != 0)
-        die("can't parse admin name");
+        die("can't parse principal %s", principal);
     if (cell[0] == '\0') {
         strncpy(cell, config->local_cell, MAXKTCREALMLEN - 1);
         cell[MAXKTCREALMLEN - 1] = '\0';
