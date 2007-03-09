@@ -291,7 +291,7 @@ delete_principal(struct config *config)
         die("can't make connection to auth server");
 
     /* Delete the user. */
-    parse_principal(config, config->service, name, inst, cell);
+    parse_principal(config, config->delete, name, inst, cell);
     code = ubik_Call(KAM_DeleteUser, conn, 0, name, inst);
     if (config->debug)
         printf("ubik_Call KAM_DeleteUser %ld\n", code);
