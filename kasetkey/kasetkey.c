@@ -237,6 +237,7 @@ authenticate(struct config *config, struct ktc_token *token)
     char cell[MAXKTCNAMELEN];
     char realm[MAXKTCREALMLEN];
     long code;
+    int local;
     struct ktc_encryptionKey key;
 
     /* Get the admin password one way or the other. */
