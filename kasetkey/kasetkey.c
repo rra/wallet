@@ -76,6 +76,7 @@ passowrd:\n\
 \n\
 To create a srvtab from within a script you must stash the DES key\n\
 in a srvtab with:\n\
+\n\
     %s -a admin -i -k /.adminkey\n\
 \n\
 and then create a srvtab for rcmd.slapshot with:\n\
