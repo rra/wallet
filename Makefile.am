@@ -7,9 +7,9 @@
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 EXTRA_DIST = docs/design-acl docs/design-api docs/design-schema \
-	docs/netdb-role-api docs/notes tests/TESTS tests/client/basic-t.in \
-	tests/data/README tests/data/cmd-fake tests/data/fake-keytab \
-	tests/data/wallet.conf
+	docs/netdb-role-api docs/notes kasetkey/kasetkey.pod \
+	tests/TESTS tests/client/basic-t.in tests/data/README \
+	tests/data/cmd-fake tests/data/fake-keytab tests/data/wallet.conf
 
 bin_PROGRAMS = client/wallet kasetkey/kasetkey
 client_wallet_CPPFLAGS = @REMCTL_CPPFLAGS@
@@ -19,7 +19,7 @@ kasetkey_kasetkey_CPPFLAGS = @AFS_CPPFLAGS@
 kasetkey_kasetkey_LDFLAGS = @AFS_LDFLAGS@
 kasetkey_kasetkey_LDADD = -lafsauthent -lafsrpc -lpthread -lkrb4
 
-man_MANS = kasetkey/kasetkey.8
+dist_man_MANS = kasetkey/kasetkey.8
 
 $(srcdir)/kasetkey/kasetkey.8: $(srcdir)/kasetkey/kasetkey.pod
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
