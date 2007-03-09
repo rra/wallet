@@ -12,6 +12,7 @@ EXTRA_DIST = docs/design-acl docs/design-api docs/design-schema \
 	tests/data/cmd-fake tests/data/fake-keytab tests/data/wallet.conf
 
 bin_PROGRAMS = client/wallet kasetkey/kasetkey
+client_wallet_SOURCES = client/wallet.c system.h
 client_wallet_CPPFLAGS = @REMCTL_CPPFLAGS@
 client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
 client_wallet_LDADD = -lremctl
