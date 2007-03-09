@@ -245,13 +245,13 @@ authenticate(struct config *config, struct ktc_token *token)
     if (ka_CellToRealm(cell, realm, &local) == KANOCELL)
         die("unable to determine realm");
     if (config->keyfile) {
-        code = read_service_key(name, inst, cell, 0, config->keyfile,
+        code = read_service_key(name, inst, realm, 0, config->keyfile,
                                 (char *) &key);
         if (config->debug)
             printf("read_service_key %ld\n", code);
         if (code != 0)
             die("can't get key for %s.%s@%s from srvtab %s", name, inst,
-                cell, config->keyfile);
+                realm, config->keyfile);
     } else {
         char buffer[MAXKTCNAMELEN * 3 + 40];
 
