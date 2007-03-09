@@ -53,7 +53,7 @@ install: build-stamp
 	dh_testroot
 	dh_clean
 	$(MAKE) install prefix=$(CURDIR)/debian/tmp/usr
-	dh_install --fail-missing
+	dh_install
 
 binary: binary-arch binary-indep
 binary-indep:
