@@ -140,7 +140,7 @@ usage(int status)
  * local_cell if none was given.
  */
 static void
-parse_principal(struct config *config, const char *principal, char *name,
+parse_principal(struct config *config, char *principal, char *name,
                 char *inst, char *cell)
 {
     long code;
