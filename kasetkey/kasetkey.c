@@ -244,10 +244,10 @@ authenticate(struct config *config, struct ktc_token *token)
         code = read_service_key(name, inst, cell, 0, config->keyfile,
                                 (char *) &key);
         if (config->debug)
-            printf("read_service_key %ld", code);
+            printf("read_service_key %ld\n", code);
         if (code != 0)
-            die("can't get key for %s from srvtab %s", config->admin,
-                config->keyfile);
+            die("can't get key for %s.%s@%s from srvtab %s", name, inst,
+                cell, config->keyfile);
     } else {
         char buffer[MAXKTCNAMELEN * 3 + 40];
 
