@@ -6,8 +6,8 @@
 # See README for licensing terms.
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
-EXTRA_DIST = doc/design-acl doc/design-api doc/design-schema \
-	doc/netdb-role-api doc/notes tests/TESTS tests/client/basic-t.in \
+EXTRA_DIST = docs/design-acl docs/design-api docs/design-schema \
+	docs/netdb-role-api docs/notes tests/TESTS tests/client/basic-t.in \
 	tests/data/README tests/data/cmd-fake tests/data/fake-keytab \
 	tests/data/wallet.conf
 
