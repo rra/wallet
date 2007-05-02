@@ -127,14 +127,7 @@ Server Issues
     synchronization with K4, but it's easier to just always do it (except
     maybe for some exception cases).  The user doesn't have to ask the
     client program for the srvtab if they don't want it, and it doesn't
-    hurt to create the KDC entry.
-
-    This means that we need the gen_srvtab program from the old srvtab
-    backend on the server end to push the key into K4.  That program
-    already has the capability to take a srvtab containing the DES key and
-    push it into the K4 database.  It could probably stand some cleanup
-    and simplification for inclusion in the wallet source.  I'm probably
-    going to rename it to k4changekey or something similar in the process.
+    hurt to create the KDC entry.  We use kasetkey for this.
 
   Certificate Creation
 
