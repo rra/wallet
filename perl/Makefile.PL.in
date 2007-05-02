@@ -1,0 +1,14 @@
+# Makefile.PL for the Wallet Perl library.  -*- perl -*-
+# $Id$
+
+use ExtUtils::MakeMaker;
+
+my $version = '@PACKAGE_VERSION@';
+$version =~ s/\.(\d)$/.0$1/;
+
+WriteMakefile(
+    NAME        => 'Wallet',
+    VERSION     => $version,
+    ABSTRACT    => 'Wallet: a secure credential management system',
+    AUTHOR      => 'Russ Allbery (rra@stanford.edu)'
+);

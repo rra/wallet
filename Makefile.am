@@ -8,6 +8,7 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 EXTRA_DIST = docs/design-acl docs/design-api docs/design-schema \
 	docs/netdb-role-api docs/notes kasetkey/kasetkey.pod \
+	perl/Wallet/ACL.pm perl/Wallet/ACL/Krb5.pm \
 	tests/TESTS tests/client/basic-t.in tests/data/README \
 	tests/data/cmd-fake tests/data/fake-keytab tests/data/wallet.conf
 
@@ -31,8 +32,23 @@ warnings:
 	$(MAKE) CFLAGS='$(WARNINGS)'
 	$(MAKE) CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
+# Take appropriate actions in the Perl directory as well.
+all-local:
+	cd perl && perl Makefile.PL
+	cd perl && $(MAKE)
+
+install-data-local:
+	cd perl && $(MAKE) install
+
+clean-local:
+	cd perl && $(MAKE) clean
+
+distclean-local:
+	cd perl && $(MAKE) distclean
+
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests
 
 check-local: $(check_PROGRAMS)
 	cd tests && ./runtests TESTS
+	cd perl && $(MAKE) test

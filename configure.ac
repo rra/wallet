@@ -60,6 +60,6 @@ AC_SEARCH_LIBS([res_search], [resolv], ,
     [AC_SEARCH_LIBS([__res_search], [resolv])])
 
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
 AC_OUTPUT
