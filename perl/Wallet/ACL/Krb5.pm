@@ -14,7 +14,7 @@ package Wallet::ACL::Krb5;
 require 5.006;
 
 use strict;
-use vars qw(@ISA);
+use vars qw(@ISA $VERSION);
 
 @ISA = qw(Wallet::ACL);
 
