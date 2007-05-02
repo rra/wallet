@@ -61,13 +61,14 @@ Object API
     display, or undef on error.  On error, the caller should call error()
     to get the error text.
 
-  default_check(PRINCIPAL)
+  default_check(OPERATION, PRINCIPAL)
 
     Applies the default authorization rules for this object type, if any,
     and returns 1 if those default authorization rules allow access.  If
     there are no authorization rules or if they don't allow access,
     returns 0.  On error, returns undef; the caller should call error() to
-    get the error text.
+    get the error text.  Operation should be one of get, store, delete,
+    show, and flags.
 
   error()
 
@@ -76,11 +77,12 @@ Object API
 
 ACL API
 
-  new()
+  new(DBH)
 
     Creates a persistant ACL verifier for the given ACL type.  This may do
     nothing, but some ACL verifiers require some persistant data, like a
-    persistant LDAP connection.
+    persistant LDAP connection.  The database handle should be provided to
+    the constructor, but a given ACL implementation may not use it.
 
   check(PRINCIPAL, ACL)
 
