@@ -1,0 +1,365 @@
+                           Wallet System Design
+
+Introduction
+
+    The wallet system provides a mechanism for storing and retrieving
+    security-sensitive data such as system credentials and private keys
+    from a secure host, applying ACLs to that data, and supporting
+    automatic creation of certain types of security data on demand (such
+    as Kerberos keytabs).
+
+    The initial implementation of the wallet is targetted at Kerberos
+    keytab distribution and the replacement of Stanford University's
+    legacy Kerberos-v4-based sysctl system for distributing srvtabs and
+    keytabs.  After that initial implementation, additional data types
+    will be added.  SSL certificates, ssh private keys, and database
+    passwords are likely early candidates.  The implementation of keytabs
+    is described in detail below, and similar detailed designs for other
+    data types will be added as part of the later phases of the design.
+
+    This design document is not entirely complete in the area of exact
+    protocol commands, supported arguments, and the details of the ACL
+    manipulation protocol.  These areas of the design are still being
+    developed.
+
+Assumptions
+
+    For the rest of this document, the term "object" will be used for a
+    piece of security-sensitive data stored in the wallet.  The object
+    "metadata" is the authorization and history information around that
+    object.  Be aware that an object "stored" in the wallet may not be
+    physically present on the wallet server; instead, the object may be a
+    type of object that can be dynamically generated on demand by the
+    wallet server or retrieved from elsewhere.  For example, most Kerberos
+    keytabs stored in the wallet will exist in the wallet only in the form
+    of metadata and will be generated dynamically on demand when
+    requested.
+
+    Wallet uses remctl for its network protocol, which provides Kerberos
+    v5 GSS-API authentication and encryption of all data.  The rest of
+    this design document will assume the connection from a wallet client
+    to the wallet server is handled via the remctl protocol, that the
+    wallet server therefore knows the authenticated Kerberos principal of
+    the client, and that data passed between the server and the client is
+    encrypted.  For more information about the remctl protocol, see:
+
+        <http://www.eyrie.org/~eagle/software/remctl/protocol.html>
+
+    remctl requires Kerberos v5 authentication, and therefore all clients
+    using the wallet to retrieve data will use Kerberos v5 authentication.
+
+    We assume the wallet server is itself a secure host.  Compromise of
+    this host will compromise all stored data it has and will allow an
+    attacker to perform any operation possible via the wallet.  In order
+    to limit the effectiveness of such an attack, certain keys may be
+    excluded from the wallet's management purview (via kadm5.acl rules on
+    the KDCs, for example) and require management by Kerberos
+    administrators with kadmin.  However, compromise of the wallet system
+    would have a significant security impact and the system should be
+    managed with the sort of security precautions as one would apply to a
+    Kerberos KDC.
+
+Server Design
+
+  Protocol Operations
+
+    The wallet server supports the following protocol operations on an
+    object:
+
+        create          Create a new wallet entry for an object
+        delete          Delete the wallet entry for a given object
+        owner           Set the owner of an object
+        acl             Set the ACL on an object
+        flag            Set or clear flags on an object
+        show            Show the metainformation about the object
+
+        get             Retrieve the named object from the wallet
+        store           Store the named object in the wallet
+
+        group-add       Add a principal to an ACL group
+        group-remove    Remove a principal from an ACL group
+        group-list      List the members of an ACL group
+
+    The first six operations manipulate or display the metadata of the
+    object.  The next two operations store or retrieve the object itself.
+    The last three operations allow manipulation of krb5-group ACLs (see
+    below).
+
+    The owner and acl operations are only available to wallet
+    administrators.  Even if one is the listed owner of an object, one may
+    not change the owner or ACL on that object.  (This may be reconsidered
+    later to permit the owner to set the ACLs on an object.  This design
+    mirrors the existing Stanford University srvtab distribution system
+    and is maximally conservative.)
+
+    Objects are created with a store command, a get command on a object
+    type that supports data generation, or a create command (which creates
+    the metadata without storing any data).  New objects will be created
+    owned by the user running get, store, or create, no special ACLs, and
+    no flags.  Each backend can decide at its discretion whether a user
+    can get, store, or create an object that doesn't already exist.  The
+    default behavior in the absence of backend-specific configuration is
+    to only allow wallet administrators to do so.
+
+  ACLs
+
+    Each ACL consists of zero or more lines, each of which has a scheme
+    and an identifier.  Initially, three schemes will be supported: krb5,
+    krb5-group, and netdb.
+
+    An ACL line of scheme krb5 will have a single fully-qualified
+    principal name as an identifier; only that principal will be
+    authorized by that ACL line.
+
+    An ACL line of scheme krb5-group will have a group name as an
+    identifier.  That group will have an owner and a list of Kerberos
+    principals.  Any Kerberos principals on the list (not including the
+    separate owner) will be authorized by that ACL line.  The owner is
+    itself a reference to another ACL, which may include the group for a
+    self-owning ACL.  Anyone on the ACL referenced by the owner attribute
+    may list the principals in that group and add or remove a principal
+    from that group.
+
+    An ACL line of scheme netdb will have an identifier naming a specific
+    machine.  The user will be authorized if that user has a role of
+    "admin" or "team" for that machine.  See netdb-role-api for the
+    specific remctl API for performing that query.
+
+    For all ACLs, each ACL line is tried against the user principal.  If
+    any ACL line authorizes the user, that user is authorized.  If no ACL
+    line authorizes the user, permission to perform the operation is
+    refused.
+
+    For more details and other ACL types that will be supported in the
+    future, see design-acl.
+
+    There will be one general system ACL that identifies wallet
+    administrators, who are permitted to perform any operation.
+
+  Metadata
+
+    Each object stored in the wallet has the following metadata associated
+    with it (with examples for a keytab for
+    host/windlord.stanford.edu@stanford.edu that should be retrievable by
+    the Kerberos principal rra/root@stanford.edu):
+
+    * The type and name of the object.  The name must be unique within
+      that type.  For example, the type would be "keytab" and the name
+      would be "host/windlord.stanford.edu@stanford.edu".
+
+    * The owner of the object.  The owner by default has get, store, and
+      show permissions on the object in the lack of more specific ACLs.
+      An owner is a reference to an ACL.  In this case, this would be a
+      reference to an ACL of one line, that line having scheme "krb5" and
+      identifier "rra/root@stanford.edu".
+
+    * Optional ACLs for get, store, show, delete, and flag operations.
+      If there is an ACL for get, store, or show, that overrides the
+      normal permissions of the owner.  In the absence of an ACL for
+      delete or flag, only wallet administrators can delete an object or
+      set flags on that object.  This entry would need no special ACLs.
+
+    * Trace fields storing the user, remote host, and timestamp for when
+      this object was last created, stored, and downloaded.
+
+  Keytab-Specific Metadata
+
+    Objects of type keytab have one additional piece of metadata: an
+    optional list of enctypes for which keys should be generated for that
+    principal.  This list can be used to restrict the Kerberos enctypes
+    for a particular keytab to only those supported by that application.
+    In the absence of a list associated with a keytab, the default enctype
+    list in the KDC will be used.
+
+  Flags
+
+    Each object can have flags set on it.  Currently, the only defined
+    flags are:
+
+        locked          Nothing permitted regardless of ACL except show
+        unchanging      Use existing data, don't regenerate
+
+    The unchanging flag will only have meaning for those types where the
+    backend can support either generating new data or using the existing
+    stored data.
+
+  History
+
+    The wallet server will keep a history log of every operation performed
+    against an object, keyed by object type and name (for object changes).
+    A remctl interface will be provided so that wallet administrators can
+    query this log and see the history of a given object.
+
+    In addition, the wallet server will log to syslog every operation
+    performed, not only on objects but on ACLs, Kerberos principal groups,
+    keytab enctype metadata, and so forth.
+
+Keytab Server Backend
+
+  Basic Operation
+
+    The keytab backend will not support the store operation, only the get
+    operation.  Normally, a get will result in the generation of a new
+    keytab (possibly constrained by the list of enctypes for that keytab)
+    and hence the invalidation of any existing keytabs for that principal.
+
+    The wallet server will only have kadmin ACLs to manage a specific set
+    of principals to prevent the wallet from being used to change core
+    Kerberos keys or to change user accounts.
+
+  NetDB Default ACLs
+
+    If a user attempts to get a keytab for which no entry had previously
+    been created with create and that keytab is one of a specific set of
+    host-bound principals as configured by the local wallet server
+    deployment (generally things like host/*), we will check the principal
+    against an ACL of scheme netdb and identifier equal to the host name
+    for the principal (after chasing CNAMEs).  If that ACL authorizes the
+    user, we will automatically create a wallet entry for this host, owned
+    by an ACL of scheme netdb and identifier equal to the fully qualified
+    name of the system.  This will allow anyone with NetDB ownership of
+    the system to manage the keytabs.
+
+    Note that this does leave the system open to a potential attack via
+    DNS by spoofing a CNAME return and hence fooling the wallet into
+    thinking that a particular host is an alias for a host that the user
+    has NetDB roles to manage when it actually isn't.  This attack can
+    only allow the user to create a keytab that doesn't already exist,
+    however, so the impact seems slight given the difficulty of the
+    attack.
+
+  Retrieving Existing Keytabs
+
+    The flag unchanging can be set on keytabs to indicate that, rather
+    than generating a new key on a get operation on that keytab object,
+    the existing key should be extracted from the KDC and returned.  This
+    removes some protection around abuse of the wallet system since it
+    allows one to get access to an existing key without invalidating the
+    system key and then forge authentication to that service.
+    Accordingly, this flag may only be set by wallet administrators unless
+    a flag ACL is created on that object, and as a matter of policy it
+    should only be granted when there's a compelling reason for it.
+
+    When a keytab with the unchanging flag set is retrieved with get,
+    rather than generating a new keytab, the wallet server requests the
+    current keys in keytab form from the KDC via a separate interface.
+    The KDC will return only keys for principals matching a set
+    specifically configured on the KDC.  All strongly privileged keytabs
+    should be excluded from this (and ideally, only those keytabs known to
+    require caching should be listed here).  The keys will be extracted
+    from the KDC using kadmin.local with the -norandkey option, added with
+    a Stanford-local patch (but expected to be in MIT Kerberos 1.7).
+
+Client Design
+
+  Basic Operation
+
+    The client will use the remctl libraries for all communication with
+    the wallet server.  The wallet server name will be determined by a
+    compile-time default, overridden by configuration in krb5.conf or by a
+    command-line option.  It should support the get, store, and show
+    operations (although we will skip store for the initial implementation
+    since it's not required for keytabs).  Other wallet protocol
+    operations can be done via direct remctl calls or through later
+    additions to the client.
+
+    When retrieving a keytab, the client should support either creating a
+    new keytab file or adding the keys from the downloaded keytab to an
+    existing keytab so that multiple keys can be merged into the same
+    keytab.  This is useful for services that expect all their keys to be
+    in krb5.keytab, or for adding keys for all a host's aliases to its
+    krb5.keytab.
+
+  Srvtab Generation
+
+    For backward compatibility with a Kerberos v4 realm, the wallet
+    client, when downloading a keytab, should also be able to optionally
+    create a srvtab with the DES key extracted from that keytab (if any).
+    In order to get the Kerberos v4 kvno for the key (which may differ
+    from the Kerberos v5 kvno), it will obtain a Kerberos v4 service
+    ticket for that principal and extract the kvno from that service
+    ticket.
+
+Security Considerations
+
+  System Compromise
+
+    By its nature, the wallet is an obvious attack target target.  It has
+    access to generate arbitrary keytabs for many different service
+    principals, it will eventually store a variety of high-value
+    privileged data, and it has to be accessible over the wallet protocol
+    to clients.
+
+    This risk can be reduced by running minimal accessible services on
+    this system, co-located this service only with other high-security
+    applications if anything, and closely monitored for security issues.
+    In addition, the wallet should only have access on the KDC to those
+    principal classes that are managed by the wallet, specifically not
+    including any core Kerberos administrative principals, any user
+    accounts, and any administrator accounts.
+
+    The system should use iptables and similar firewall mechanisms to
+    limit all access only to those ports providing known public services,
+    and there to as few IP addresses as possible.
+
+    The wallet database should be stored locally on the system running the
+    wallet server and not be accessible from any other system.
+
+    Administration of the wallet should be done over protocol.  Logging on
+    to the wallet system should be done only in the case of emergency,
+    upgrade, or system maintenance and should not be done for any routine
+    task.
+
+  Protocol Compromise
+
+    The security of the wallet is dependent on the security of the
+    underlying remctl protocol.  The remctl code has been carefully
+    audited for security issues and is already in widespread use and
+    should be treated as a core security component.
+
+    Most communications between the wallet and the KDC are done over the
+    kadmin protocol, which is Kerberos-authenticated and encrypts the
+    network communications.  The other communication with the KDC is done
+    via remctl.  Extracting existing keys from the KDC can only be done on
+    the KDC using kadmin.local and access can therefore be tightly
+    controlled by the KDC remctl interface.
+
+  Retrieving Existing Keytabs
+
+    One key security concern is the wallet's ability to retrieve existing
+    keytabs.  The normal Kerberos key management system has some built-in
+    defense against an attacker obtaining a keytab for a service
+    principal: since that invalidates the existing keytab, the attacker
+    will still not be able to authenticate to a service that uses that
+    service principal, and any authentication done by the service
+    principal will start failing.  Compromise attacks are therefore often
+    converted to denial of service attacks, and it's very difficult to
+    launch a silent attack.
+
+    This changes when access is granted to existing keys.  An attacker who
+    obtains the existing keys can silently forge authentication to a
+    service protected by that service principal, or can silently
+    impersonate that service principal to other services without
+    interfering with normal operations.
+
+    The unchanging flag should therefore only be set when there is a clear
+    need, and the backend on the KDC that allows the wallet system to
+    retrieve existing keys should be as restrictive as possible about
+    which keys can be retrieved.  Using this system is, however, better
+    from a security standpoint than saving a copy of a keytab and
+    installing it as part of a build process or copying it between
+    multiple systems since the wallet at least maintains an audit trail of
+    downloads and doesn't keep a local copy of the keytab, only the means
+    for retrieving it.  So, for example, a compromise that makes available
+    only the backup image of the wallet server and not its credentials
+    cannot obtain existing keytabs since they're not stored on its disk.
+
+  Auditing
+
+    The wallet server audits operations in three ways.  First, an
+    authenticated principal, hostname, and timestamp is kept up to date
+    for each object for the last creation, modification, and retrieval
+    date for that object.  Second, an audit trail is kept for all
+    operations on an object to allow retrieval of the complete history of
+    an object.  Third, all wallet operations are logged to syslog and
+    therefore suitable for archiving, analysis, and forensics.
