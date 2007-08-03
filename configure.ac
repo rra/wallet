@@ -26,7 +26,7 @@ AC_ARG_WITH([afs-libs],
     AC_HELP_STRING([--with-afs-libs=DIR],
         [Prefix for AFS libraries (for kasetkey)]),
     [if test x"$withval" != xno ; then
-        AFS_LDFLAGS="-L${withval}"
+        AFS_LDFLAGS="-L${withval} -L${withval}/afs"
      fi])
 AC_SUBST([AFS_LDFLAGS])
 
@@ -58,6 +58,16 @@ AC_SEARCH_LIBS([socket], [socket], ,
         [LIBS="-lnsl -lsocket $LIBS"], , [-lsocket])])
 AC_SEARCH_LIBS([res_search], [resolv], ,
     [AC_SEARCH_LIBS([__res_search], [resolv])])
+
+save_LDFLAGS=$LDFLAGS
+LDFLAGS="$AFS_LDFLAGS $LDFLAGS"
+AC_CHECK_LIB([afsauthent], [KAM_DeleteUser],
+    [AFS_LIBS="-lafsauthent -lafsrpc -lpthread"],
+    [AFS_LIBS="-lkauth.krb -lauth.krb -lubik -lrxkad -lrx -llwp -lsys"
+     AFS_LIBS="${AFS_LIBS} -lcom_err -lafsutil"],
+    [-lpthread])
+LDFLAGS="$save_LDFLAGS"
+AC_SUBST([AFS_LIBS])
 
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile perl/Makefile.PL])

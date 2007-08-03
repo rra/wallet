@@ -20,7 +20,7 @@ client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
 client_wallet_LDADD = -lremctl
 kasetkey_kasetkey_CPPFLAGS = @AFS_CPPFLAGS@
 kasetkey_kasetkey_LDFLAGS = @AFS_LDFLAGS@
-kasetkey_kasetkey_LDADD = -lafsauthent -lafsrpc -lpthread -lkrb4
+kasetkey_kasetkey_LDADD = @AFS_LIBS@ -lkrb4
 
 dist_man_MANS = kasetkey/kasetkey.8
 
