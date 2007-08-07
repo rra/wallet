@@ -4,9 +4,9 @@ Introduction
 
     The wallet system provides a mechanism for storing and retrieving
     security-sensitive data such as system credentials and private keys
-    from a secure host, applying ACLs to that data, and supporting
-    automatic creation of certain types of security data on demand (such
-    as Kerberos keytabs).
+    from a secure host, applying ACLs to that data, and automatically
+    creating of certain types of security data on demand (such as Kerberos
+    keytabs).
 
     The initial implementation of the wallet is targetted at Kerberos
     keytab distribution and the replacement of Stanford University's
