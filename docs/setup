@@ -1,0 +1,15 @@
+                      Wallet Installation and Setup
+
+MySQL Database Setup
+
+    After installing the MySQL server, connect as a user with permissions
+    to create new databases and users.  Then, issue the following
+    commands:
+
+        create database wallet;
+        create user wallet identified by 'PASSWORD';
+        grant all on wallet.* to wallet;
+
+    This creates a wallet user that can be used by the rest of the wallet
+    system and gives it access to the wallet database, where it can create
+    its own tables.
