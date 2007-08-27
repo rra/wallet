@@ -5,12 +5,12 @@
 
 use Test::More tests => 13;
 
-use Wallet::ACL;
+use Wallet::ACL::Base;
 use Wallet::ACL::Krb5;
 
-my $verifier = Wallet::ACL->new;
-ok (defined $verifier, 'Wallet::ACL creation');
-ok ($verifier->isa ('Wallet::ACL'), ' and class verification');
+my $verifier = Wallet::ACL::Base->new;
+ok (defined $verifier, 'Wallet::ACL::Base creation');
+ok ($verifier->isa ('Wallet::ACL::Base'), ' and class verification');
 is ($verifier->check ('rra@stanford.edu', 'rra@stanford.edu'), 0,
     'Default check declines');
 is ($verifier->error, undef, 'No error set');

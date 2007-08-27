@@ -1,4 +1,4 @@
-# Wallet::ACL -- Parent class for wallet ACL verifiers.
+# Wallet::ACL::Base -- Parent class for wallet ACL verifiers.
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
@@ -10,7 +10,7 @@
 # Modules and declarations
 ##############################################################################
 
-package Wallet::ACL;
+package Wallet::ACL::Base;
 require 5.006;
 
 use strict;
@@ -56,12 +56,12 @@ __END__
 
 =head1 NAME
 
-Wallet::ACL - Generic parent class for wallet ACL verifiers
+Wallet::ACL::Base - Generic parent class for wallet ACL verifiers
 
 =head1 SYNOPSIS
 
     package Wallet::ACL::Simple
-    @ISA = qw(Wallet::ACL);
+    @ISA = qw(Wallet::ACL::Base);
     sub check {
         my ($self, $principal, $acl) = @_;
         return ($principal eq $acl) ? 1 : 0;
@@ -69,7 +69,7 @@ Wallet::ACL - Generic parent class for wallet ACL verifiers
 
 =head1 DESCRIPTION
 
-Wallet::ACL is the generic parent class for wallet ACL verifiers.  It
+Wallet::ACL::Base is the generic parent class for wallet ACL verifiers.  It
 provides default functions and behavior and all ACL verifiers should inherit
 from it.  It is not used directly.
 
