@@ -25,16 +25,16 @@ Object Metadata
           ob_acl_show           integer default null references acls(ac_id),
           ob_acl_delete         integer default null references acls(ac_id),
           ob_acl_flags          integer default null references acls(ac_id),
-          ob_expires            datetime,
+          ob_expires            datetime default null,
           ob_created_by         varchar(255) not null,
           ob_created_from       varchar(255) not null,
           ob_created_on         datetime not null,
-          ob_stored_by          varchar(255),
-          ob_stored_from        varchar(255),
-          ob_stored_on          datetime,
-          ob_downloaded_by      varchar(255),
-          ob_downloaded_from    varchar(255),
-          ob_downloaded_on      datetime,
+          ob_stored_by          varchar(255) default null,
+          ob_stored_from        varchar(255) default null,
+          ob_stored_on          datetime default null,
+          ob_downloaded_by      varchar(255) default null,
+          ob_downloaded_from    varchar(255) default null,
+          ob_downloaded_on      datetime default null,
           primary key (ob_name, ob_type));
 
     Object names are not globally unique but only unique within their
@@ -46,18 +46,21 @@ Object Metadata
     references entries in the following table:
 
       create table acls
-         (ac_id                 integer auto_increment primary key);
+         (ac_id                 integer auto_increment primary key,
+          ac_name               varchar(255) not null);
 
     This just keeps track of unique ACL identifiers.  The data is then
     stored in:
 
       create table acl_entry
-         (ae_id                 integer not null references acls(ac_id),
+         (ae_id                 integer
+              not null references acls(ac_id),
           ae_scheme             varchar(32)
               not null references acl_schemes(as_name),
-          ae_identifier         varchar(255));
+          ae_identifier         varchar(255)
+              not null);
 
-    Finally, each object may have zero or more flags associated with it.
+    Each object may have zero or more flags associated with it.
 
       create table flags
          (fl_object             varchar(255)
@@ -66,6 +69,59 @@ Object Metadata
               not null references objects(ob_type),
           fl_flag               varchar(32)
               not null references flag_names(fn_name));
+
+    Every change made to any object in the wallet database will be
+    recorded in this table.
+
+      create table object_history
+         (oh_id                 integer auto_increment primary key,
+          oh_object             varchar(255)
+              not null references objects(ob_object),
+          oh_type               varchar(16)
+              not null references objects(ob_type),
+          oh_action
+               enum('create', 'delete', 'get', 'store', set') not null,
+          oh_field
+              enum('owner', 'acl_get', 'acl_store', 'acl_show',
+                   'acl_delete', 'acl_flags', 'expires', 'flags',
+                   'type_data'),
+          oh_type_field         varchar(255),
+          oh_from               varchar(255),
+          oh_to                 varchar(255),
+          oh_by                 varchar(255) not null,
+          oh_from               varchar(255) not hull,
+          oh_on                 datetime not null,
+          primary key (oh_object, oh_type));
+
+    For a change of type create, get, store, or delete, only the action
+    and the trace records (by, from, and on) are stored.  For changes to
+    columns or to the flags table, oh_field takes what attribute is
+    changed, oh_from takes the previous value converted to a string and
+    oh_to takes the next value similarly converted to a string.  The
+    special field value "type_data" is used when type-specific data is
+    changed, and in that case (and only that case) some type-specific name
+    for the data being changed is stored in oh_type_field.
+
+    Every change made to any ACL in the database will be recorded in this
+    table.
+
+      create table acl_history
+         (ah_id                 integer auto_increment primary key,
+          ah_acl                integer not null,
+          ah_action             enum('create', 'delete', 'add', 'remove')
+              not null,
+          ah_scheme             varchar(32),
+          ah_identifier         varchar(255),
+          ah_by                 varchar(255) not null,
+          ah_from               varchar(255) not null,
+          ah_on                 datetime not null);
+
+    For a change of type create or delete, only the action and the trace
+    records (by, from, and on) are stored.  For a change to the lines of
+    an ACL, the scheme and identifier of the line that was added or
+    deleted is included.  Note that changes to the ACL name are not
+    recorded; ACLs are always tracked by system-generated ID, so name
+    changes are purely cosmetic.
 
     The following are normalization tables used to constrain the values 
 
@@ -77,22 +133,6 @@ Object Metadata
 
       create table flag_names
          (fn_name               varchar(32) primary key);
-
-ACL Backend Data
-
-    To support the krb5-group ACL type, groups are stored in the following
-    table:
-
-      create table krb5_groups
-         (kg_name               varchar(255) primary key,
-          kg_owner              integer default null references acls(ac_id));
-
-    Each group contains zero or more principals:
-
-      create table krb5_members
-         (km_group              varchar(255)
-              not null references krb5_groups(kg_name),
-          km_principal          varchar(255) not null);
 
 Storage Backend Data
 
