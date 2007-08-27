@@ -67,7 +67,7 @@ Server Design
     object:
 
         create          Create a new wallet entry for an object
-        delete          Delete the wallet entry for a given object
+        destroy         Delete the wallet entry for a given object
         owner           Set the owner of an object
         acl             Set the ACL on an object
         flag            Set or clear flags on an object
@@ -76,14 +76,8 @@ Server Design
         get             Retrieve the named object from the wallet
         store           Store the named object in the wallet
 
-        group-add       Add a principal to an ACL group
-        group-remove    Remove a principal from an ACL group
-        group-list      List the members of an ACL group
-
     The first six operations manipulate or display the metadata of the
     object.  The next two operations store or retrieve the object itself.
-    The last three operations allow manipulation of krb5-group ACLs (see
-    below).
 
     The owner and acl operations are only available to wallet
     administrators.  Even if one is the listed owner of an object, one may
@@ -110,15 +104,6 @@ Server Design
     An ACL line of scheme krb5 will have a single fully-qualified
     principal name as an identifier; only that principal will be
     authorized by that ACL line.
-
-    An ACL line of scheme krb5-group will have a group name as an
-    identifier.  That group will have an owner and a list of Kerberos
-    principals.  Any Kerberos principals on the list (not including the
-    separate owner) will be authorized by that ACL line.  The owner is
-    itself a reference to another ACL, which may include the group for a
-    self-owning ACL.  Anyone on the ACL referenced by the owner attribute
-    may list the principals in that group and add or remove a principal
-    from that group.
 
     An ACL line of scheme netdb will have an identifier naming a specific
     machine.  The user will be authorized if that user has a role of
@@ -153,10 +138,10 @@ Server Design
       reference to an ACL of one line, that line having scheme "krb5" and
       identifier "rra/root@stanford.edu".
 
-    * Optional ACLs for get, store, show, delete, and flag operations.
+    * Optional ACLs for get, store, show, destroy, and flag operations.
       If there is an ACL for get, store, or show, that overrides the
       normal permissions of the owner.  In the absence of an ACL for
-      delete or flag, only wallet administrators can delete an object or
+      destroy or flag, only wallet administrators can destroy an object or
       set flags on that object.  This entry would need no special ACLs.
 
     * Trace fields storing the user, remote host, and timestamp for when

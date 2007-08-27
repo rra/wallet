@@ -67,7 +67,7 @@ Object API
     and returns 1 if those default authorization rules allow access.  If
     there are no authorization rules or if they don't allow access,
     returns 0.  On error, returns undef; the caller should call error() to
-    get the error text.  Operation should be one of get, store, delete,
+    get the error text.  Operation should be one of get, store, destroy,
     show, and flags.
 
   error()

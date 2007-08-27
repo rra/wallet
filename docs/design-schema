@@ -23,7 +23,7 @@ Object Metadata
           ob_acl_get            integer default null references acls(ac_id),
           ob_acl_store          integer default null references acls(ac_id),
           ob_acl_show           integer default null references acls(ac_id),
-          ob_acl_delete         integer default null references acls(ac_id),
+          ob_acl_destroy        integer default null references acls(ac_id),
           ob_acl_flags          integer default null references acls(ac_id),
           ob_expires            datetime default null,
           ob_created_by         varchar(255) not null,
@@ -80,10 +80,10 @@ Object Metadata
           oh_type               varchar(16)
               not null references objects(ob_type),
           oh_action
-               enum('create', 'delete', 'get', 'store', set') not null,
+               enum('create', 'destroy', 'get', 'store', set') not null,
           oh_field
               enum('owner', 'acl_get', 'acl_store', 'acl_show',
-                   'acl_delete', 'acl_flags', 'expires', 'flags',
+                   'acl_destroy', 'acl_flags', 'expires', 'flags',
                    'type_data'),
           oh_type_field         varchar(255),
           oh_from               varchar(255),
@@ -93,7 +93,7 @@ Object Metadata
           oh_on                 datetime not null,
           primary key (oh_object, oh_type));
 
-    For a change of type create, get, store, or delete, only the action
+    For a change of type create, get, store, or destroy, only the action
     and the trace records (by, from, and on) are stored.  For changes to
     columns or to the flags table, oh_field takes what attribute is
     changed, oh_from takes the previous value converted to a string and
@@ -108,7 +108,7 @@ Object Metadata
       create table acl_history
          (ah_id                 integer auto_increment primary key,
           ah_acl                integer not null,
-          ah_action             enum('create', 'delete', 'add', 'remove')
+          ah_action             enum('create', 'destroy', 'add', 'remove')
               not null,
           ah_scheme             varchar(32),
           ah_identifier         varchar(255),
@@ -116,10 +116,10 @@ Object Metadata
           ah_from               varchar(255) not null,
           ah_on                 datetime not null);
 
-    For a change of type create or delete, only the action and the trace
+    For a change of type create or destroy, only the action and the trace
     records (by, from, and on) are stored.  For a change to the lines of
     an ACL, the scheme and identifier of the line that was added or
-    deleted is included.  Note that changes to the ACL name are not
+    removed is included.  Note that changes to the ACL name are not
     recorded; ACLs are always tracked by system-generated ID, so name
     changes are purely cosmetic.
 

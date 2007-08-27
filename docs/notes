@@ -43,7 +43,7 @@ Server Issues
   ACL Management
 
     Supported operations are:  get, store, create (triggered by a get or
-    store of something that didn't already exist), delete, show, and
+    store of something that didn't already exist), destroy, show, and
     setting or clearing flags.  Each of these need a separate ACL
     potentially.  Not sure if we're going to need separate ACLs for each
     flag operation.
@@ -56,8 +56,8 @@ Server Issues
     with, for instance, ACL management via NetDB roles for systems that
     have no more specific ACL.
 
-    Owner rights provides get, store, and show, but not delete or setting
-    or clearing flags (not delete because it's too destructive and we
+    Owner rights provides get, store, and show, but not destroy or setting
+    or clearing flags (not destroy because it's too destructive and we
     don't want it done accidentally).  This can be overridden by more
     precise ACL settings.  So the ACL logic would go like this:
 
@@ -100,7 +100,7 @@ Server Issues
 
     The database has a field to store an expiration date for every object.
     We can implement expiration methods in the backend to automatically
-    delete some objects (or perhaps lock them) when they pass their
+    destroy some objects (or perhaps lock them) when they pass their
     expiration date, but a more useful method might be to provide warnings
     when objects are about to expire via warning methods for a backend
     that take the object name and the expiration date.  This would be
