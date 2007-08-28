@@ -55,14 +55,6 @@ ACL Schemes
     The <identifier> is a fully-qualified Kerberos principal.  Access is
     granted if the principal of the client matches <identifier>.
 
-  krb5-group
-
-    <identifier> is the name of a group that contains a list of Kerberos
-    principals.  (Storage of this group is left to the discretion of the
-    backend, but will probably either be a MySQL table or a file on disk.)
-    Access is granted if the principal of the client matches one of the
-    principals contained in the group.
-
   ldap-entitlement
 
     <identifier> is an entitlement.  If the entitlement attribute of the
@@ -71,18 +63,9 @@ ACL Schemes
 
   netdb
 
-    This ACL type is a special case that right now can't be used through
-    the normal ACL mechanism because access depends on the name of the
-    object being accessed through logic peculiar to the backend.  It is
-    included here as a placeholder, but will normally only be used via the
-    backend-specific fallback used when the ACL is not present.
-
-    Access is granted if the action performed is one of the normal owner
-    actions, the object being accessed corresponds to a system key, and
-    the user is an administrator of that system in NetDB (Stanford's
-    system management database).
-
-    For this ACL, <identifier> is empty.
+    <identifier> is the name of a system.  Access is granted if the user
+    is listed as an administrator, user, or admin team member of the host
+    in NetDB (Stanford's system management database).
 
   pts
 
