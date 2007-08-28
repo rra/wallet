@@ -16,6 +16,8 @@ require 5.006;
 use strict;
 use vars qw(@ISA $VERSION);
 
+use Wallet::ACL::Base;
+
 @ISA = qw(Wallet::ACL::Base);
 
 # This version should be increased on any code change to this module.  Always
