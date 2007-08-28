@@ -3,9 +3,15 @@
 Introduction
 
     Here is the specification for the API that components of the wallet
-    server will implement.  There are two pluggable components in the
-    wallet server: the implementation of a particular object type (which
-    amounts mostly to storage and retrieval), and the ACL implementation.
+    server will implement.  This is the document you should read if you're
+    planning on extending the wallet system.  There are two pluggable
+    components in the wallet server: the implementation of a particular
+    object type (which amounts mostly to storage and retrieval), and the
+    ACL implementation.
+
+    Also see the documentation for Wallet::Object and Wallet::ACL::Base,
+    which contain some additional information about creating new object
+    and ACL verifier implementations.
 
 Object API
 
@@ -69,21 +75,71 @@ Object API
     display, or undef on error.  On error, the caller should call error()
     to get the error text.
 
-  default_check(OPERATION, PRINCIPAL)
+  error()
 
-    Applies the default authorization rules for this object type, if any,
-    and returns 1 if those default authorization rules allow access.  If
-    there are no authorization rules or if they don't allow access,
-    returns 0.  On error, returns undef; the caller should call error() to
-    get the error text.  Operation should be one of get, store, destroy,
-    show, and flags.
+    Returns the error text from the last failed call.
+
+ACL API
+
+  new(ACL, DBH)
+
+    Instantiate a new ACL object with the given ACL ID or name.  Takes the
+    database handle to use for retrieving metadata.  Returns a new ACL
+    object if the ACL was found or undef if it wasn't.
+
+  create(NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Similar to new() but instead creates a new ACL record in the database
+    with the given NAME (and with no lines).  Returns the new object on
+    success and undef on failure.
+
+  add(SCHEME, INSTANCE, PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Add the given ACL line (given by SCHEME and INSTANCE) to this ACL.
+    Returns true on success and false on failure.  On failure, the caller
+    should call error() to get the error message.
+
+  remove(SCHEME, INSTANCE, PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Remove the given ACL line (given by SCHEME and INSTANCE) from this
+    ACL.  Returns true on success and false on failure.  On failure, the
+    caller should call error() to get the error message.
+
+  rename(NAME)
+
+    Rename this ACL.  This changes the name used for human convenience but
+    not the system-generated ACL ID that is used to reference this ACL.
+    Returns true on success and false on failure.  On failure, the caller
+    should call error() to get the error message.
+
+  destroy(PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Destroys this ACL from the database.  Note that this will fail due to
+    integrity constraint errors if the ACL is still referenced by any
+    object.  Returns ture on success and false on failure.  On failure,
+    the caller should call error() to get the error message.
+
+  check(PRINCIPAL)
+
+    Checks whether the given PRINCIPAL should be allowed access given ACL.
+    Returns 1 if access was granted, 0 if access is declined, and undef on
+    error.  On error, the caller should call error() to get the error text
+    but generally should continue with checking other ACLs.  Any errors
+    found by the individual ACL verifiers can be retrieved by calling
+    check_errors().  Errors from individual ACL verifiers will not result
+    in an error return from check().
+
+  check_errors()
+
+    Return (as a list in array context and a string with newlines between
+    errors and at the end of the last error in scalar context) the errors,
+    if any, returned by ACL verifiers for the last check operation.
 
   error()
 
-    Returns the error text from the last failed get(), store(), show(), or
-    default_check() call.
+    Returns the error text of the last error.
 
-ACL API
+ACL Verifier API
 
   new()
 
