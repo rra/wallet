@@ -92,6 +92,18 @@ sub error {
     return $self->{error};
 }
 
+# Returns the type of the object.
+sub type {
+    my ($self) = @_;
+    return $self->{type};
+}
+
+# Returns the name of the object.
+sub name {
+    my ($self) = @_;
+    return $self->{name};
+}
+
 # Record a global object action for this object.  Takes the action (which must
 # be one of get or store), and the trace information: user, host, and time.
 # Returns true on success and false on failure, setting error appropriately.
@@ -457,6 +469,10 @@ either the data of the object or undef on some error, using the provided
 arguments to update history information.  The Wallet::Object::Base
 implementation just throws an exception.
 
+=item name()
+
+Returns the object's name.
+
 =item owner([OWNER, PRINCIPAL, HOSTNAME [, DATETIME]])
 
 Sets or retrieves the owner of an object as a numeric ACL ID.  If no
@@ -481,6 +497,10 @@ Store user-supplied data into the given object.  This may not be supported
 by all backends (for instance, backends that automatically generate the data
 will not support this).  The default implementation rejects all store()
 calls with an error message saying that the object is immutable.
+
+=item type()
+
+Returns the object's type.
 
 =back
 
