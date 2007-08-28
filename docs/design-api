@@ -85,12 +85,11 @@ Object API
 
 ACL API
 
-  new(DBH)
+  new()
 
     Creates a persistant ACL verifier for the given ACL type.  This may do
     nothing, but some ACL verifiers require some persistant data, like a
-    persistant LDAP connection.  The database handle should be provided to
-    the constructor, but a given ACL implementation may not use it.
+    persistant LDAP connection.
 
   check(PRINCIPAL, ACL)
 

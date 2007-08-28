@@ -77,10 +77,10 @@ from it.  It is not used directly.
 
 =over 4
 
-=item new(DBH)
+=item new()
 
 Creates a new ACL verifier.  The generic function provided here just creates
-and blesses an object and ignores the provided database handle.
+and blesses an object.
 
 =item check(PRINCIPAL, ACL)
 

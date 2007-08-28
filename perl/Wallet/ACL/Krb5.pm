@@ -76,7 +76,7 @@ principal if and only if the principal exactly matches the ACL.
 
 =over 4
 
-=item new(DBH)
+=item new()
 
 Creates a new ACL verifier.  The database handle is not used.
 
