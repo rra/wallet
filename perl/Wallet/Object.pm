@@ -54,7 +54,7 @@ sub new {
 # specified class.  Stores the database handle to use, the name, and the type
 # in the object.  Subclasses may need to override this to do additional setup.
 sub create {
-    my ($class, $name, $type, $dbh, $creator, $host, $time) = @_;
+    my ($class, $name, $type, $dbh, $user, $host, $time) = @_;
     $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
@@ -62,7 +62,10 @@ sub create {
     eval {
         my $sql = 'insert into objects (ob_name, ob_type, ob_created_by,
             ob_created_from, ob_created_on) values (?, ?, ?, ?, ?)';
-        $dbh->do ($sql, undef, $name, $type, $creator, $host, $time);
+        $dbh->do ($sql, undef, $name, $type, $user, $host, $time);
+        my $sql = "insert into object_history (oh_object, oh_type, oh_action,
+            oh_by, oh_from, oh_on) values (?, ?, 'create', ?, ?, ?)";
+        $self->{dbh}->do ($sql, undef, $name, $type, $user, $host, $time);
         $dbh->commit;
     };
     if ($@) {
@@ -139,7 +142,7 @@ sub log_action {
 #
 # This function does not commit and does not catch exceptions.  It should
 # normally be called as part of a larger transaction that implements the
-# setting change and committed with that change.
+# setting change and should be committed with that change.
 sub log_set {
     my ($self, $field, $old, $new, $user, $host, $time) = @_;
     my $type_field;
@@ -322,8 +325,8 @@ sub destroy {
         $self->{dbh}->do ($sql, undef, $name, $type);
         $sql = 'delete from objects where ob_name = ? and ob_type = ?';
         $self->{dbh}->do ($sql, undef, $name, $type);
-        my $sql = "insert into object_history (oh_object, oh_type, 'destroy',
-            oh_by, oh_from, oh_on) values (?, ?, ?, ?, ?)";
+        my $sql = "insert into object_history (oh_object, oh_type, oh_action,
+            oh_by, oh_from, oh_on) values (?, ?, 'destroy', ?, ?, ?)";
         $self->{dbh}->do ($sql, undef, $name, $type, $user, $host, $time);
         $self->{dbh}->commit;
     };
