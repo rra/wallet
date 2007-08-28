@@ -1,10 +1,30 @@
                             wallet To-Do List
 
+* Testing.  Most of the classes have no tests at all right now.  Doing
+  meaningful testing will require finding a way to set up a database
+  for testing purposes, probably using sqlite.
+
+* Documentation missing for Wallet::Server, Wallet::ACL, Wallet::Config,
+  and Wallet::Object::Keytab.
+
+* Implement default ACL policy to allow dynamic object creation on first
+  request for keytabs.
+
 * Remove the hard-coded ADMIN ACL in the server with something more
   configurable, perhaps a global ACL table or something.
+
+* Implement flags, including support for the unchanging attribute on
+  keytabs and the corresponding back-end remctl calls to retrieve the
+  existing keytab.
+
+* Implement the locked flag.
 
 * The ACL implementation is currently rather inefficient for ACL
   verifiers that need to maintain state (such as LDAP binds).  Now
   they're created and destroyed when verifying each ACL.  We need to
   somehow return global verifiers, probably through a factory
   implementation.
+
+* There's a lot of code duplication in the dispatch functions in the
+  Wallet::Server class.  Find a way to rewrite that so that the dispatch
+  doesn't duplicate the same code patterns.
