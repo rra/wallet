@@ -35,7 +35,9 @@ Object Metadata
           ob_downloaded_by      varchar(255) default null,
           ob_downloaded_from    varchar(255) default null,
           ob_downloaded_on      datetime default null,
-          primary key (ob_name, ob_type));
+          primary key (ob_name, ob_type),
+          index (ob_owner),
+          index (ob_expires));
 
     Object names are not globally unique but only unique within their
     type, so the table has a joint primary key.  I haven't yet decided
@@ -47,12 +49,13 @@ Object Metadata
 
       create table acls
          (ac_id                 integer auto_increment primary key,
-          ac_name               varchar(255) not null);
+          ac_name               varchar(255) not null,
+          unique index (ac_name));
 
     This just keeps track of unique ACL identifiers.  The data is then
     stored in:
 
-      create table acl_entry
+      create table acl_entries
          (ae_id                 integer
               not null references acls(ac_id),
           ae_scheme             varchar(32)
@@ -91,7 +94,7 @@ Object Metadata
           oh_by                 varchar(255) not null,
           oh_from               varchar(255) not hull,
           oh_on                 datetime not null,
-          primary key (oh_object, oh_type));
+          index (oh_object, oh_type));
 
     For a change of type create, get, store, or destroy, only the action
     and the trace records (by, from, and on) are stored.  For changes to
@@ -114,7 +117,8 @@ Object Metadata
           ah_identifier         varchar(255),
           ah_by                 varchar(255) not null,
           ah_from               varchar(255) not null,
-          ah_on                 datetime not null);
+          ah_on                 datetime not null,
+          index (ah_acl));
 
     For a change of type create or destroy, only the action and the trace
     records (by, from, and on) are stored.  For a change to the lines of
