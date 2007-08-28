@@ -17,8 +17,9 @@ use strict;
 use vars qw(@ISA $VERSION);
 
 use Wallet::Config ();
+use Wallet::Object::Base;
 
-@ISA = qw(Wallet::Object);
+@ISA = qw(Wallet::Object::Base);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so

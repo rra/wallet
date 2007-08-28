@@ -1,4 +1,4 @@
-# Wallet::Object -- Parent class for any object stored in the wallet.
+# Wallet::Object::Base -- Parent class for any object stored in the wallet.
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
@@ -10,7 +10,7 @@
 # Modules and declarations
 ##############################################################################
 
-package Wallet::Object;
+package Wallet::Object::Base;
 require 5.006;
 
 use strict;
@@ -64,9 +64,9 @@ sub create {
         my $sql = 'insert into objects (ob_name, ob_type, ob_created_by,
             ob_created_from, ob_created_on) values (?, ?, ?, ?, ?)';
         $dbh->do ($sql, undef, $name, $type, $user, $host, $time);
-        my $sql = "insert into object_history (oh_object, oh_type, oh_action,
+        $sql = "insert into object_history (oh_object, oh_type, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, 'create', ?, ?, ?)";
-        $self->{dbh}->do ($sql, undef, $name, $type, $user, $host, $time);
+        $dbh->do ($sql, undef, $name, $type, $user, $host, $time);
         $dbh->commit;
     };
     if ($@) {
@@ -261,7 +261,7 @@ sub expires {
 ##############################################################################
 
 # The get methods must always be overridden by the subclass.
-sub get { die "Do not instantiate Wallet::Object directly\n"; }
+sub get { die "Do not instantiate Wallet::Object::Base directly\n"; }
 
 # Provide a default store implementation that returns an immutable object
 # error so that auto-generated types don't have to provide their own.
@@ -277,6 +277,8 @@ sub store {
 # their data on to the end.
 sub show {
     my ($self) = @_;
+    my $name = $self->{name};
+    my $type = $self->{type};
     my @attrs = ([ ob_type            => 'Type'            ],
                  [ ob_name            => 'Name'            ],
                  [ ob_owner           => 'Owner'           ],
@@ -303,8 +305,7 @@ sub show {
         @data = $self->{dbh}->selectrow_array ($sql, undef, $name, $type);
     };
     if ($@) {
-        my $id = $self->{type} . ':' . $self->{name};
-        $self->{error} = "cannot retrieve data for $id: $@";
+        $self->{error} = "cannot retrieve data for ${type}:${name}: $@";
         return undef;
     }
     my $output = '';
@@ -328,14 +329,13 @@ sub destroy {
         $self->{dbh}->do ($sql, undef, $name, $type);
         $sql = 'delete from objects where ob_name = ? and ob_type = ?';
         $self->{dbh}->do ($sql, undef, $name, $type);
-        my $sql = "insert into object_history (oh_object, oh_type, oh_action,
+        $sql = "insert into object_history (oh_object, oh_type, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, 'destroy', ?, ?, ?)";
         $self->{dbh}->do ($sql, undef, $name, $type, $user, $host, $time);
         $self->{dbh}->commit;
     };
     if ($@) {
-        my $id = $self->{type} . ':' . $self->{name};
-        $self->{error} = "cannot destroy $id: $@";
+        $self->{error} = "cannot destroy ${type}:${name}: $@";
         $self->{dbh}->rollback;
         return undef;
     }
@@ -351,12 +351,12 @@ __END__
 
 =head1 NAME
 
-Wallet::Object - Generic parent class for wallet objects
+Wallet::Object::Base - Generic parent class for wallet objects
 
 =head1 SYNOPSIS
 
     package Wallet::Object::Simple;
-    @ISA = qw(Wallet::Object);
+    @ISA = qw(Wallet::Object::Base);
     sub get {
         my ($self, $user, $host, $time) = @_;
         $self->log_action ('get', $user, $host, $time) or return undef;
@@ -365,11 +365,11 @@ Wallet::Object - Generic parent class for wallet objects
 
 =head1 DESCRIPTION
 
-Wallet::Object is the generic parent class for wallet objects (data types
-that can be stored in the wallet system).  It provides defualt functions and
-behavior, including handling generic object settings.  All handlers for
-objects stored in the wallet should inherit from it.  It is not used
-directly.
+Wallet::Object::Base is the generic parent class for wallet objects (data
+types that can be stored in the wallet system).  It provides defualt
+functions and behavior, including handling generic object settings.  All
+handlers for objects stored in the wallet should inherit from it.  It is
+not used directly.
 
 =head1 PUBLIC CLASS METHODS
 
@@ -428,13 +428,13 @@ change is made and the time of the change.
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
 Destroys the object by removing all record of it from the database.  The
-Wallet::Object implementation handles the generic database work, but any
-subclass should override this method to do any deletion of files or entries
-in external databases and any other database entries and then call the
-parent method to handle the generic database cleanup.  Returns true on
-success and false on failure.  The arguments are used for logging and
-history and should indicate the user and host from which the change is made
-and the time of the change.
+Wallet::Object::Base implementation handles the generic database work,
+but any subclass should override this method to do any deletion of files
+or entries in external databases and any other database entries and then
+call the parent method to handle the generic database cleanup.  Returns
+true on success and false on failure.  The arguments are used for logging
+and history and should indicate the user and host from which the change is
+made and the time of the change.
 
 =item error()
 
@@ -455,8 +455,8 @@ time of the change.
 
 An object implementation must override this method with one that returns
 either the data of the object or undef on some error, using the provided
-arguments to update history information.  The Wallet::Object implementation
-just throws an exception.
+arguments to update history information.  The Wallet::Object::Base
+implementation just throws an exception.
 
 =item owner([OWNER, PRINCIPAL, HOSTNAME [, DATETIME]])
 
