@@ -1,0 +1,10 @@
+                            wallet To-Do List
+
+* Remove the hard-coded ADMIN ACL in the server with something more
+  configurable, perhaps a global ACL table or something.
+
+* The ACL implementation is currently rather inefficient for ACL
+  verifiers that need to maintain state (such as LDAP binds).  Now
+  they're created and destroyed when verifying each ACL.  We need to
+  somehow return global verifiers, probably through a factory
+  implementation.
