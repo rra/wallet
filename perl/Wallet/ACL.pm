@@ -107,6 +107,12 @@ sub error {
     return $self->{error};
 }
 
+# Returns the ID of an ACL.
+sub id {
+    my ($self) = @_;
+    return $self->{id};
+}
+
 # Record a change to an ACL.  Takes the type of change, the scheme and
 # identifier of the entry, and the trace information (user, host, and time).
 # This function does not commit and does not catch exceptions.  It should
