@@ -178,6 +178,7 @@ sub get {
         return undef;
     }
     close KEYTAB;
+    unlink $file;
     $self->log_action ('get', $user, $host, $time);
     return $data;
 }
