@@ -17,11 +17,11 @@ Object API
 
   new(NAME, TYPE, DBH)
 
-    Creates a new object with the given object name and type based on
-    data already in the database.  Takes a database handle, which should
-    be stored with the object and used for any further operations.  This
-    method should inherit from the generic Wallet::Object object, which
-    implements the following methods:
+    Creates a new object with the given object name and type based on data
+    already in the database.  Takes a database handle, which should be
+    stored with the object and used for any further operations.  This
+    method should inherit from the generic Wallet::Object::Base object,
+    which implements the following methods:
 
         new(NAME, DBH)
         create(NAME, DBH)
@@ -34,14 +34,18 @@ Object API
         error()
 
     that manipulate the basic object data.  Generally all this function
-    needs to do is call the parent new() constructor.
+    needs to do is call the parent new() constructor.  If the object
+    couldn't be found, throws an exception.  (Just returning undef would
+    provide no way of communicating the error message.)
 
   create(NAME, TYPE, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
     Like new(), but instead creates a new entry in the database with the
     given name.  As with new(), the generic function will normally do all
     of the work.  Takes some additional information to put into the
-    created fields in the database.
+    created fields in the database.  If the object already exists or
+    creating it fails, throws an exception.  (Just returning undef would
+    provide no way of communicating the error message.)
 
   destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 

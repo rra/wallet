@@ -80,17 +80,18 @@ sub _kadmin_exists {
     }
 }
 
-# Create a principal in Kerberos.  Return true if successful, false otherwise.
+# Create a principal in Kerberos.  Since this is only called by create, it
+# throws an exception on failure rather than setting the error and returning
+# undef.
 sub _kadmin_addprinc {
     my ($self, $principal) = @_;
     unless ($self->_valid_principal ($principal)) {
-        $self->{error} = "invalid principal name: $principal";
-        return undef;
+        die "invalid principal name $principal\n";
     }
     my $flags = $Wallet::Config::KEYTAB_FLAGS;
     my $output = $self->_kadmin ("addprinc -randkey $flags $principal");
     if ($output =~ /^add_principal: (.*)/m) {
-        return undef;
+        die "error adding principal $principal: $!\n";
     }
     return 1;
 }
@@ -144,7 +145,7 @@ sub create {
     if ($name !~ /\@/ && $Wallet::Config::KEYTAB_REALM) {
         $name .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    return undef if not $class->_kadmin_addprinc ($name);
+    $class->_kadmin_addprinc ($name);
     return $class->SUPER::create ($name, $type, $dbh, $creator, $host, $time);
 }
 

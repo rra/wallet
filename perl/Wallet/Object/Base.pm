@@ -40,7 +40,7 @@ sub new {
     $dbh->{PrintError} = 0;
     my $sql = 'select ob_name from objects where ob_name = ? and ob_type = ?';
     my $data = $dbh->selectrow_array ($sql, undef, $name, $type);
-    return undef unless ($data and $data eq $name);
+    die "cannot find ${type}:${name}\n" unless ($data and $data eq $name);
     my $self = {
         dbh  => $dbh,
         name => $name,
@@ -71,7 +71,7 @@ sub create {
     };
     if ($@) {
         $dbh->rollback;
-        return undef;
+        die "cannot create object ${type}:${name}: $@\n";
     }
     my $self = {
         dbh  => $dbh,
@@ -385,9 +385,9 @@ the Wallet::Object::Type->new syntax).
 Creates a new object with the given object name and type, based on data
 already in the database.  This method will only succeed if an object of the
 given NAME and TYPE is already present in the wallet database.  If no such
-object exits, returns undef.  Otherwise, returns an object blessed into the
-class used for the new() call (so subclasses can leave this method alone and
-not override it).
+object exits, throws an exception.  Otherwise, returns an object blessed
+into the class used for the new() call (so subclasses can leave this method
+alone and not override it).
 
 Takes a database handle, which is stored in the object and used for any
 further operations.  This database handle is taken over by the wallet system
@@ -397,13 +397,12 @@ object for its own needs.
 =item create(NAME, TYPE, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
 Similar to new() but instead creates a new entry in the database.  This
-method will fail (returning undef) if an entry for that name and type
-already exists in the database or if creating the database record fails.
-Otherwise, a new database entry will be created with that name and type, no
-owner, no ACLs, no expiration, no flags, and with created by, from, and on
-set to the PRINCIPAL, HOSTNAME, and DATETIME parameters.  If DATETIME isn't
-given, the current time is used.  The database handle is treated as with
-new().
+method will throw an exception if an entry for that name and type already
+exists in the database or if creating the database record fails.  Otherwise,
+a new database entry will be created with that name and type, no owner, no
+ACLs, no expiration, no flags, and with created by, from, and on set to the
+PRINCIPAL, HOSTNAME, and DATETIME parameters.  If DATETIME isn't given, the
+current time is used.  The database handle is treated as with new().
 
 =back
 
