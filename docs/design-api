@@ -9,34 +9,42 @@ Introduction
 
 Object API
 
-  new(NAME, DBH)
+  new(NAME, TYPE, DBH)
 
-    Creates a new object with the given object name.  Takes a database
-    handle, which should be stored with the object and used for any
-    further operations.  This method should inherit from the generic
-    Wallet::Object object, which implements the following methods:
+    Creates a new object with the given object name and type based on
+    data already in the database.  Takes a database handle, which should
+    be stored with the object and used for any further operations.  This
+    method should inherit from the generic Wallet::Object object, which
+    implements the following methods:
 
         new(NAME, DBH)
         create(NAME, DBH)
-        owner([ACL-ID])
-        acl(TYPE [, ACL-ID])
-        expires([DATETIME])
-        get(PRINCIPAL, HOSTNAME [, DATETIME])
+        owner([ACL-ID, PRINCIPAL, HOSTNAME [, DATETIME]])
+        acl(TYPE [, ACL-ID, PRINCIPAL, HOSTNAME [, DATETIME]])
+        expires([DATETIME, PRINCIPAL, HOSTNAME [, DATETIME]])
         store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
         show()
+        destroy(PRINCIPAL, HOSTNAME [, DATETIME])
         error()
 
     that manipulate the basic object data.  Generally all this function
-    needs to do is call the parent new() constructor, but if there are
-    additional database tables used by this object type, it may load
-    additional data.
+    needs to do is call the parent new() constructor.
 
-  create(NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+  create(NAME, TYPE, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
     Like new(), but instead creates a new entry in the database with the
     given name.  As with new(), the generic function will normally do all
     of the work.  Takes some additional information to put into the
     created fields in the database.
+
+  destroy(PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Destroys the given object.  This should include destroying any
+    representation of the object in other systems as well (such as
+    deleting Kerberos principals out of a KDC).  Takes the information
+    about who is doing the deletion to store log entries.  The result is
+    true on success and false on failure.  On error, the caller should
+    call error() to get the error text.
 
   get(PRINCIPAL, HOSTNAME [, DATETIME])
 
