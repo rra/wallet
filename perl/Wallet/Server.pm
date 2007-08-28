@@ -32,7 +32,7 @@ $VERSION = '0.01';
 %MAPPING = (keytab => 'Wallet::Object::Keytab');
 
 ##############################################################################
-# Utility functions
+# Utility methods
 ##############################################################################
 
 # Create a new wallet server object.  A new server should be created for each
@@ -61,7 +61,7 @@ sub error {
 }
 
 ##############################################################################
-# Object functions
+# Object methods
 ##############################################################################
 
 # Create a new object and returns that object.  On error, returns undef and
@@ -110,6 +110,18 @@ sub retrieve {
     }
 }
 
+# Sets the internal error variable to the correct message for permission
+# denied on an object.
+sub object_error {
+    my ($self, $object, $action) = @_;
+    my $user = $self->{user};
+    my $id = $object->type . ':' . $object->name;
+    if ($action !~ /^(create|get|set|show|destroy)\z/) {
+        $action = "set $action for";
+    }
+    $self->{error} = "$self->{user} not authorized to $action $id";
+}
+
 # Given an object and an action, checks if the current user has access to
 # perform that object.  If so, returns true.  If not, returns undef and sets
 # the internal error message.
@@ -125,10 +137,7 @@ sub acl_check {
         $id = $object->owner;
     }
     unless (defined $id) {
-        my $user = $self->{user};
-        my $id = $object->type . ':' . $object->name;
-        $action = 'set flags on' if $action eq 'flags';
-        $self->{error} = "$self->{user} not authorized to $action $id";
+        $self->object_error ($object, $action);
         return undef;
     }
     my $acl = eval { Wallet::ACL->new ($id) };
@@ -143,11 +152,56 @@ sub acl_check {
         $self->{error} = $acl->error;
         return undef;
     } else {
-        my $user = $self->{user};
-        my $id = $object->type . ':' . $object->name;
-        $action = 'set flags on' if $action eq 'flags';
-        $self->{error} = "$self->{user} not authorized to $action $id";
+        $self->object_error ($object, $action);
         return undef;
+    }
+}
+
+# Retrieves or sets an ACL on an object.
+sub acl {
+    my ($self, $name, $type, $acl, $id) = @_;
+    my $object = $self->retrieve ($name, $type);
+    return undef unless defined $object;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->object_error ($object, 'ACL');
+        return undef;
+    }
+    if ($id) {
+        return $object->acl ($acl, $id, $self->{user}, $self->{host});
+    } else {
+        return $object->acl ($acl);
+    }
+}
+
+# Retrieves or sets the expiration of an object.
+sub expires {
+    my ($self, $name, $type, $expires) = @_;
+    my $object = $self->retrieve ($name, $type);
+    return undef unless defined $object;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->object_error ($object, 'expires');
+        return undef;
+    }
+    if ($expires) {
+        return $object->expires ($expires, $self->{user}, $self->{host});
+    } else {
+        return $object->expires;
+    }
+}
+
+# Retrieves or sets the owner of an object.
+sub owner {
+    my ($self, $name, $type, $owner) = @_;
+    my $object = $self->retrieve ($name, $type);
+    return undef unless defined $object;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->object_error ($object, 'owner');
+        return undef;
+    }
+    if ($owner) {
+        return $object->owner ($owner, $self->{user}, $self->{host});
+    } else {
+        return $object->owner;
     }
 }
 
@@ -189,6 +243,131 @@ sub destroy {
     my ($self, $name, $type) = @_;
     my $object = $self->retrieve ($name, $type);
     return undef unless defined $object;
-    return undef unless $self->{admin}->check ($self->{user});
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->object_error ($object, 'owner');
+        return undef;
+    }
     return $object->destroy ($self->{user}, $self->{host});
 }
+
+##############################################################################
+# ACL methods
+##############################################################################
+
+# Create a new empty ACL in the database.  Returns the new ACL object on
+# success and undef on failure, setting the internal error.
+sub acl_create {
+    my ($self, $name) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->{error} = "$self->{user} not authorized to create ACL";
+        return undef;
+    }
+    my $dbh = $self->{dbh};
+    my $user = $self->{user};
+    my $host = $self->{host};
+    my $acl = eval { Wallet::ACL->create ($name, $dbh, $user, $host) };
+    if ($@) {
+        $self->{error} = $@;
+        return undef;
+    } else {
+        return $acl;
+    }
+}
+
+# Sets the internal error variable to the correct message for permission
+# denied on an ACL.
+sub acl_error {
+    my ($self, $acl, $action) = @_;
+    my $user = $self->{user};
+    if ($action eq 'add') {
+        $action = 'add to';
+    } elsif ($action eq 'remove') {
+        $action = 'remove from';
+    }
+    $self->{error} = "$self->{user} not authorized to $action ACL $acl";
+}
+
+# Change the human-readable name of an ACL or return undef and set the
+# internal error.
+sub acl_rename {
+    my ($self, $id, $name) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($id, 'rename');
+        return undef;
+    }
+    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        $self->{error} = $@;
+        return undef;
+    }
+    unless ($acl->rename ($name)) {
+        $self->{error} = $acl->error;
+        return undef;
+    }
+    return 1;
+}
+
+# Destroy an ACL, deleting it out of the database.  Returns true on success.
+# On failure, returns undef, setting the internal error.
+sub acl_destroy {
+    my ($self, $id) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($id, 'destroy');
+        return undef;
+    }
+    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        $self->{error} = $@;
+        return undef;
+    }
+    unless ($acl->destroy ($self->{user}, $self->{host})) {
+        $self->{error} = $acl->error;
+        return undef;
+    }
+    return 1;
+}
+
+# Add an ACL entry to an ACL.  Returns true on success.  On failure, returns
+# undef, setting the internal error.
+sub acl_add {
+    my ($self, $id, $scheme, $identifier) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($id, 'add');
+        return undef;
+    }
+    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        $self->{error} = $@;
+        return undef;
+    }
+    unless ($acl->add ($scheme, $identifier, $self->{user}, $self->{host})) {
+        $self->{error} = $acl->error;
+        return undef;
+    }
+    return 1;
+}
+
+# Remove an ACL entry to an ACL.  Returns true on success.  On failure,
+# returns undef, setting the internal error.
+sub acl_remove {
+    my ($self, $id, $scheme, $identifier) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($id, 'remove');
+        return undef;
+    }
+    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        $self->{error} = $@;
+        return undef;
+    }
+    my $user = $self->{user};
+    my $host = $self->{host};
+    unless ($acl->remove ($scheme, $identifier, $user, $host)) {
+        $self->{error} = $acl->error;
+        return undef;
+    }
+    return 1;
+}
+
+1;
+__END__
