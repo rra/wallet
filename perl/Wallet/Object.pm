@@ -17,6 +17,7 @@ use strict;
 use vars qw($VERSION);
 
 use DBI;
+use Wallet::ACL;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
@@ -220,18 +221,20 @@ sub owner {
 # Get or set an ACL on an object.  Takes the type of ACL and, if setting, the
 # new ACL identifier.  If setting it, trace information must also be provided.
 sub acl {
-    my ($self, $type, $acl, $user, $host, $time) = @_;
+    my ($self, $type, $id, $user, $host, $time) = @_;
     if ($type !~ /^(get|store|show|destroy|flags)\z/) {
         $self->{error} = "invalid ACL type $type";
         return;
     }
     my $attr = "acl_$type";
-    if ($acl) {
-        if ($acl !~ /^\d+\z/) {
-            $self->{error} = "malformed ACL id $acl";
-            return;
+    if ($id) {
+        my $acl;
+        eval { $acl = Wallet::ACL->new ($id) };
+        if ($@) {
+            $self->{error} = $@;
+            return undef;
         }
-        return $self->_set_internal ($attr, $acl, $user, $host, $time);
+        return $self->_set_internal ($attr, $acl->id, $user, $host, $time);
     } else {
         return $self->_get_internal ($attr);
     }
