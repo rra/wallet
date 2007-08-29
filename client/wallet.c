@@ -3,7 +3,7 @@
 **  The client program for the wallet system.
 **
 **  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2006 Board of Trustees, Leland Stanford Jr. University
+**  Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
 **
 **  See README for licensing terms.
 */
@@ -26,13 +26,16 @@
 
 /* Usage message. */
 static const char usage_message[] = "\
-Usage: wallet [options] (get|show) <object> <name>\n\
+Usage: wallet [options] <command> <type> <name> [<arg> ...]\n\
+       wallet [options] acl <command> <id> [<arg> ...]\n\
 \n\
 Options:\n\
     -c <command>    Command prefix to use (default: wallet)\n\
+    -f <output>     For the get command, output file (default: stdout)\n\
     -k <principal>  Kerberos principal of the server\n\
     -h              Display this help\n\
     -p <port>       Port of server (default: 4444)\n\
+    -S <srvtab>     For the get keytab command, srvtab output file\n\
     -s <server>     Server hostname (default: " SERVER "\n\
     -v              Display the version of remctl\n";
 
@@ -57,19 +60,26 @@ main(int argc, char *argv[])
 {
     int option, fd;
     ssize_t status;
-    const char *command[5];
+    const char **command;
     struct remctl_result *result;
+    const char *type = "wallet";
     const char *server = SERVER;
     const char *principal = NULL;
     unsigned short port = PORT;
+    const char *file = NULL;
+    const char *srvtab = NULL;
+    int i;
     long tmp;
     char *end;
 
     command[0] = "wallet";
-    while ((option = getopt(argc, argv, "c:k:hp:s:v")) != EOF) {
+    while ((option = getopt(argc, argv, "c:f:k:hp:S:s:v")) != EOF) {
         switch (option) {
         case 'c':
-            command[0] = optarg;
+            type = optarg;
+            break;
+        case 'f':
+            file = optarg;
             break;
         case 'k':
             principal = optarg;
@@ -85,6 +95,10 @@ main(int argc, char *argv[])
                 exit(1);
             }
             port = tmp;
+            break;
+        case 'S':
+            srvtab = optarg;
+            break;
         case 's':
             server = optarg;
             break;
@@ -99,41 +113,61 @@ main(int argc, char *argv[])
     }
     argc -= optind;
     argv += optind;
-    if (argc != 3)
+    if (argc < 3)
         usage(1);
 
-    /* Perform the desired operation based on the first argument. */
-    if (strcmp(argv[0], "get") == 0) {
-        command[1] = "get";
-    } else if (strcmp(argv[0], "show") == 0) {
-        command[1] = "show";
+    /* -f is only supported for get and -S with get keytab. */
+    if (file != NULL && strcmp(argv[0], "get") != 0) {
+        fprintf(stderr, "wallet: -f only supported for get\n");
+        exit(1);
     }
-    command[2] = argv[1];
-    command[3] = argv[2];
-    command[4] = NULL;
+    if (srvtab != NULL)
+        if (strcmp(argv[0], "get") != 0 || strcmp(argv[1], "keytab") != 0) {
+            fprintf(stderr, "wallet: -S only supported for get keytab\n");
+            exit(1);
+        }
+
+    /* Allocate space for the command to send to the server. */
+    command = malloc(sizeof(char *) * (argc + 2));
+    if (command == NULL) {
+        fprintf(stderr, "wallet: cannot allocate memory: %s", strerror(errno));
+        exit(1);
+    }
+    command[0] = type;
+    for (i = 0; i < argc; i++)
+        command[i + 1] = argv[i];
+    command[argc + 1] = NULL;
+
+    /* Run the command. */
     result = remctl(server, port, principal, command);
+    free(command);
+    if (result == NULL) {
+        fprintf(stderr, "wallet: cannot allocate memory: %s", strerror(errno));
+        exit(1);
+    }
 
     /* Display the results. */
     if (result->error != NULL) {
-        fprintf(stderr, "%s\n", result->error);
+        fprintf(stderr, "wallet: %s\n", result->error);
     } else if (result->stderr_len > 0) {
+        fprintf(stderr, "wallet: ");
         fwrite(result->stderr_buf, 1, result->stderr_len, stderr);
-    } else if (strcmp(command[1], "get") == 0) {
-        fd = open("keytab", O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    } else if (file != NULL && strcmp(command[1], "get") == 0) {
+        fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0600);
         if (fd < 0) {
-            fprintf(stderr, "open of keytab failed: %s", strerror(errno));
+            fprintf(stderr, "open of %s failed: %s", file, strerror(errno));
             exit(1);
         }
         status = write(fd, result->stdout_buf, result->stdout_len);
         if (status < 0) {
-            fprintf(stderr, "write to keytab failed: %s", strerror(errno));
+            fprintf(stderr, "write to %s failed: %s", file, strerror(errno));
             exit(1);
         } else if (status != result->stdout_len) {
-            fprintf(stderr, "write to keytab truncated");
+            fprintf(stderr, "write to %s truncated", file);
             exit(1);
         }
         if (close(fd) < 0) {
-            fprintf(stderr, "close of keytab failed: %s", strerror(errno));
+            fprintf(stderr, "close of %s failed: %s", file, strerror(errno));
             exit(1);
         }
     } else {
