@@ -72,7 +72,6 @@ main(int argc, char *argv[])
     long tmp;
     char *end;
 
-    command[0] = "wallet";
     while ((option = getopt(argc, argv, "c:f:k:hp:S:s:v")) != EOF) {
         switch (option) {
         case 'c':
@@ -162,7 +161,7 @@ main(int argc, char *argv[])
         if (status < 0) {
             fprintf(stderr, "write to %s failed: %s", file, strerror(errno));
             exit(1);
-        } else if (status != result->stdout_len) {
+        } else if (status != (ssize_t) result->stdout_len) {
             fprintf(stderr, "write to %s truncated", file);
             exit(1);
         }

@@ -69,6 +69,9 @@ AC_CHECK_LIB([afsauthent], [KAM_DeleteUser],
 LDFLAGS="$save_LDFLAGS"
 AC_SUBST([AFS_LIBS])
 
+AC_CHECK_HEADERS([kerberosIV/krb.h])
+AC_CHECK_DECLS([ubik_Call], , , [#include <ubik.h>])
+
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])

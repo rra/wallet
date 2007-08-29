@@ -23,16 +23,30 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef HAVE_KERBEROSIV_KRB_H
+# include <kerberosIV/krb.h>
+#else
+# include <krb.h>
+#endif
+
 #include <afs/stds.h>
 #include <afs/kauth.h>
 #include <afs/kautils.h>
 #include <afs/cellconfig.h>
+#include <ubik.h>
 
 /* Normally set by the AFS libraries. */
 #ifndef SNAME_SZ
 # define SNAME_SZ       40
 # define INST_SZ        40
 # define REALM_SZ       40
+#endif
+
+/* AFS currently doesn't prototype this function.  Cheat on the first argument
+   since it actually takes a function with a completely variable argument
+   list. */
+#if !HAVE_DECL_UBIK_CALL
+afs_int32 ubik_Call(void *, struct ubik_client *, afs_int32, ...);
 #endif
 
 /* The name of the program, for error reporting. */
@@ -173,11 +187,11 @@ write_srvtab(const char *filename, const char *name, const char *inst,
     fd = open(filename, O_WRONLY | O_CREAT, 0600);
     if (fd == -1)
         sysdie("can't create srvtab %s", filename);
-    if (write(fd, name, strlen(name) + 1) != strlen(name) + 1)
+    if (write(fd, name, strlen(name) + 1) != (ssize_t) strlen(name) + 1)
         sysdie("can't write to srvtab %s", filename);
-    if (write(fd, inst, strlen(inst) + 1) != strlen(inst) + 1)
+    if (write(fd, inst, strlen(inst) + 1) != (ssize_t) strlen(inst) + 1)
         sysdie("can't write to srvtab %s", filename);
-    if (write(fd, realm, strlen(realm) + 1) != strlen(realm) + 1)
+    if (write(fd, realm, strlen(realm) + 1) != (ssize_t) strlen(realm) + 1)
         sysdie("can't write to srvtab %s", filename);
     if (write(fd, &kvno, 1) != 1)
         sysdie("can't write to srvtab %s", filename);
@@ -272,7 +286,7 @@ authenticate(struct config *config, struct ktc_token *token)
 
 
 /* Delete a principal out of the AFS kaserver. */
-void
+static void
 delete_principal(struct config *config)
 {
     struct ktc_token token;
@@ -309,7 +323,7 @@ delete_principal(struct config *config)
  * the key from an existing srvtab (likely created via Kerberos v5 kadmin from
  * a keytab).
  */
-void
+static void
 generate_srvtab(struct config *config)
 {
     struct ktc_token token;
@@ -348,6 +362,7 @@ generate_srvtab(struct config *config)
         fclose(srvtab);
 
         /* Now parse it.  Fields are delimited by NUL. */
+        p = buffer;
         strncpy(sname, p, SNAME_SZ - 1);
         sname[sizeof(sname) - 1] = '\0';
         p += strlen(sname) + 1;
@@ -368,7 +383,7 @@ generate_srvtab(struct config *config)
         if (code != 0)
             die("can't get random key");
     } else {
-        code = ka_ReadPassword("service password: ", 1, cell, &key);
+        code = ka_ReadPassword((char *) "service password: ", 1, cell, &key);
         if (code != 0)
             die("can't read password");
     }
@@ -399,7 +414,6 @@ generate_srvtab(struct config *config)
         char realm[MAXKTCREALMLEN];
         int local;
         unsigned char kvno = 0;
-        int sfd;
 
         if (ka_CellToRealm(cell, realm, &local) == KANOCELL)
             die("unable to determine realm");
