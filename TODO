@@ -5,9 +5,19 @@
   for testing purposes, probably using sqlite.
 
 * Documentation missing for Wallet::Server, Wallet::ACL, Wallet::Config,
-  and Wallet::Object::Keytab.
+  Wallet::Object::Keytab, and wallet-backend.
+
+* Add an ACL list function to display an ACL in human-readable form and
+  call it from wallet-backend.
 
 * Display ACL details when displaying objects.
+
+* There is a lot of duplicate code in wallet-backend.  Convert that to
+  use some sort of data-driven model with argument count and flags so
+  that the method calls can be written only once.
+
+* Log failures in the wallet-backend properly, which also requires
+  catching all exceptions.
 
 * Implement default ACL policy to allow dynamic object creation on first
   request for keytabs.
