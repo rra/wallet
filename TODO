@@ -1,20 +1,38 @@
                             wallet To-Do List
 
+Required to replace leland_srvtab:
+
 * Testing.  Most of the classes have no tests at all right now.  Doing
   meaningful testing will require finding a way to set up a database
   for testing purposes, probably using sqlite.
 
 * Documentation missing for Wallet::Server, Wallet::ACL, Wallet::Config,
-  Wallet::Object::Keytab, and wallet-backend.
+  Wallet::Object::Keytab, wallet-backend, and wallet.
 
 * Add an ACL list function to display an ACL in human-readable form and
   call it from wallet-backend.
 
 * Display ACL details when displaying objects.
 
-* There is a lot of duplicate code in wallet-backend.  Convert that to
-  use some sort of data-driven model with argument count and flags so
-  that the method calls can be written only once.
+* Write new files atomically in the wallet client and save backups unless
+  told not to (write to file.new, link the old file to file.old, and do
+  an atomic rename).
+
+* Implement creation of srvtabs from keytabs in the wallet client.
+
+* Add kasetkey support to the keytab object backend.
+
+* Implement flag setting and retrieval.
+
+* Implement support for the unchanging flag on keytabs and the backend
+  remctl calls to retrieve the existing keytab.
+
+* Implement the locked flag.
+
+* Write the remctl configuration and finish Debian packaging of the
+  wallet client and server.
+
+Future work:
 
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
@@ -22,14 +40,10 @@
 * Implement default ACL policy to allow dynamic object creation on first
   request for keytabs.
 
-* Remove the hard-coded ADMIN ACL in the server with something more
-  configurable, perhaps a global ACL table or something.
+* Implement special handling for keytabs in the wallet client.
 
-* Implement flags, including support for the unchanging attribute on
-  keytabs and the corresponding back-end remctl calls to retrieve the
-  existing keytab.
-
-* Implement the locked flag.
+* Use the class names in the database tables when loading object and
+  ACL verifier implementations.
 
 * The ACL implementation is currently rather inefficient for ACL
   verifiers that need to maintain state (such as LDAP binds).  Now
@@ -37,6 +51,19 @@
   somehow return global verifiers, probably through a factory
   implementation.
 
+* There is a lot of duplicate code in wallet-backend.  Convert that to
+  use some sort of data-driven model with argument count and flags so
+  that the method calls can be written only once.
+
 * There's a lot of code duplication in the dispatch functions in the
   Wallet::Server class.  Find a way to rewrite that so that the dispatch
   doesn't duplicate the same code patterns.
+
+* Remove the hard-coded ADMIN ACL in the server with something more
+  configurable, perhaps a global ACL table or something.
+
+* Write a wallet-admin program to provide an interface to things like
+  database initialization and, eventually, upgrades.
+
+* Compiling kasetkey should be optional and probably not enabled by
+  default.
