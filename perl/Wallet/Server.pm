@@ -72,6 +72,22 @@ sub new {
     return $self;
 }
 
+# Initializes the database by populating it with our schema.  This will fail
+# if the database is already created and an administrator will have to drop
+# the tables by hand.  Returns true on success and false on failure.  On
+# failure, sets the internal error message.
+sub initialize {
+    my ($self) = @_;
+    my $schema = Wallet::Schema->new;
+    eval { $schema->create ($self->{dbh}) };
+    if ($@) {
+        $self->{error} = $@;
+        return undef;
+    } else {
+        return 1;
+    }
+}
+
 # Returns the error from the previous failed operation.
 sub error {
     my ($self) = @_;
