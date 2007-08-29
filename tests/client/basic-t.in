@@ -54,7 +54,7 @@ runfailure () {
 }
 
 # Print the number of tests.
-echo 6
+echo 7
 
 # Find the client program.
 if [ -f ../data/test.keytab ] ; then
@@ -79,7 +79,7 @@ fi
 # Start the remctld daemon and wait for it to start.
 rm -f data/pid
 ( @REMCTLD@ -m -p 14444 -s `cat data/test.principal` -P data/pid \
-    -f data/wallet.conf -d -S -F -k data/test.keytab &)
+    -f data/wallet.conf -S -F -k data/test.keytab &)
 KRB5CCNAME=data/test.cache; export KRB5CCNAME
 kinit -k -t data/test.keytab `cat data/test.principal` > /dev/null 2>&1
 if [ $? != 0 ] ; then
@@ -99,7 +99,7 @@ if [ ! -f data/pid ] ; then
 fi
 
 # Now, we can finally run our tests.
-runsuccess "" -c fake-wallet get keytab -f data/fake-keytab service/fake-test
+runsuccess "" -c fake-wallet get keytab -f keytab service/fake-test
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
     rm keytab
@@ -108,11 +108,11 @@ else
 fi
 runsuccess "Some stuff about service/fake-test" \
     -c fake-wallet show keytab service/fake-test
-runfailure 1 "Unknown object type srvtab" \
+runfailure 1 "wallet: Unknown object type srvtab" \
     -c fake-wallet get srvtab service/fake-test
-runfailure 1 "Unknown keytab service/unknown" \
+runfailure 1 "wallet: Unknown keytab service/unknown" \
     -c fake-wallet show keytab service/unknown
-runfailure 1 "Unknown keytab service/unknown" \
+runfailure 1 "wallet: Unknown keytab service/unknown" \
     -c fake-wallet get keytab service/unknown
 runsuccess "Expiration date of service/fake-test" \
     -c fake-wallet expires keytab service/fake-test
@@ -120,6 +120,6 @@ runsuccess "Expiration date of service/fake-test" \
 # Clean up.
 rm -f data/test.cache
 if [ -f data/pid ] ; then
-    kill -HUP `cat data/pid`
+    kill `cat data/pid`
     rm -f data/pid
 fi
