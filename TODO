@@ -7,6 +7,8 @@
 * Documentation missing for Wallet::Server, Wallet::ACL, Wallet::Config,
   and Wallet::Object::Keytab.
 
+* Display ACL details when displaying objects.
+
 * Implement default ACL policy to allow dynamic object creation on first
   request for keytabs.
 
