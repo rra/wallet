@@ -6,9 +6,12 @@
 # See README for licensing terms.
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
-EXTRA_DIST = docs/design-acl docs/design-api docs/design-schema \
-	docs/netdb-role-api docs/notes kasetkey/kasetkey.pod \
-	perl/Wallet/ACL.pm perl/Wallet/ACL/Krb5.pm \
+EXTRA_DIST = TODO docs/design docs/design-acl docs/design-api \
+	docs/netdb-role-api docs/notes docs/setup kasetkey/kasetkey.pod \
+	perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm perl/Wallet/ACL/Krb5.pm \
+	perl/Wallet/Config.pm perl/Wallet/Object/Base.pm \
+	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm \
+	perl/Wallet/Server.pm perl/t/acl.t perl/t/pod.t \
 	tests/TESTS tests/client/basic-t.in tests/data/README \
 	tests/data/cmd-fake tests/data/fake-keytab tests/data/wallet.conf
 
@@ -27,6 +30,13 @@ dist_man_MANS = kasetkey/kasetkey.8
 $(srcdir)/kasetkey/kasetkey.8: $(srcdir)/kasetkey/kasetkey.pod
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
 	    --section=8 $(srcdir)/kasetkey/kasetkey.pod > $@
+
+# A set of flags for warnings.  Add -O because gcc won't find some warnings
+# without optimization turned on, and add -DDEBUG=1 so we'll also compile all
+# debugging code and test it.
+WARNINGS = -g -O -DDEBUG=1 -Wall -W -Wendif-labels -Wpointer-arith \
+	-Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
+	-Wmissing-prototypes -Wnested-externs -Werror
 
 warnings:
 	$(MAKE) CFLAGS='$(WARNINGS)'
