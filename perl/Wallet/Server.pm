@@ -36,14 +36,32 @@ $VERSION = '0.01';
 ##############################################################################
 
 # Create a new wallet server object.  A new server should be created for each
-# user who is making changes to the wallet.  Takes the database handle that
-# will be used for all of the wallet metadata and the principal and host who
-# are sending wallet requests.  We also instantiate the administrative ACL,
-# which we'll use for various things.  Throw an exception if anything goes
-# wrong.
+# user who is making changes to the wallet.  Takes the principal and host who
+# are sending wallet requests.  Opens a connection to the database that will
+# be used for all of the wallet metadata based on the wallet configuration
+# information.  We also instantiate the administrative ACL, which we'll use
+# for various things.  Throw an exception if anything goes wrong.
 sub new {
-    my ($class, $dbh, $user, $host) = @_;
+    my ($class, $user, $host) = @_;
     my $acl = Wallet::ACL->new ('ADMIN');
+    unless ($DB_DRIVER and ($DB_INFO or $DB_NAME)) {
+        die "database connection information not configured\n";
+    }
+    my $dsn = "DBI:$DB_DRIVER:";
+    if ($DB_INFO) {
+        $dsn .= $DB_INFO;
+    } else {
+        $dsn .= "database=$DB_NAME";
+        $dsn .= ";host=$DB_HOST" if $DB_HOST;
+        $dsn .= ";port=$DB_PORT" if $DB_PORT;
+    }
+    my $dbh = DBI->connect ($dsn, $DB_USER, $DB_PASSWORD);
+    if (not defined $dbh) {
+        die "cannot connect to database: $DBI::errstr\n";
+    }
+    $dbh->{AutoCommit} = 0;
+    $dbh->{RaiseError} = 1;
+    $dbh->{PrintError} = 0;
     my $self = {
         dbh   => $dbh,
         user  => $user,

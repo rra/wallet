@@ -20,21 +20,6 @@ use Wallet::Config;
 use Wallet::Server;
 
 ##############################################################################
-# Database handling
-##############################################################################
-
-# Open a new database connection.  This is a separate function to make it
-# easier to override later.
-sub db_connect {
-    my $dsn = "DBI:$DB_DRIVER:database=$DB_NAME;host=$DB_HOST;port=$DB_PORT";
-    my $dbh = DBI->connect ($dsn, $DB_USER, $DB_PASSWORD);
-    if (not defined $dbh) {
-        die "Cannot connect to database: $DBI::errstr\n";
-    }
-    return $dbh;
-}
-
-##############################################################################
 # Implementation
 ##############################################################################
 
@@ -47,12 +32,8 @@ my $user = $ENV{REMOTE_USER} or die "REMOTE_USER not set\n";
 my $host = $ENV{REMOTE_HOST} || $ENV{REMOTE_ADDR}
     or die "Neither REMOTE_HOST nor REMOTE_USER set\n";
 
-# Open the database connection and close it cleanly on exit.
-my $dbh = db_connect;
-END { $dbh->disconnect; }
-
 # Instantiate the server object.
-my $server = Wallet::Server->new ($dbh, $user, $host);
+my $server = Wallet::Server->new ($user, $host);
 
 # Parse command-line options and dispatch to the appropriate calls.
 my ($command, @args) = @ARGV;
