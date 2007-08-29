@@ -97,7 +97,7 @@ check().
 
 =head1 SEE ALSO
 
-walletd(8)
+wallet-backend(8)
 
 This module is part of the wallet system.  The current version is available
 from L<http://www.eyrie.org/~eagle/software/wallet/>.
