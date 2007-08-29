@@ -42,6 +42,11 @@ warnings:
 	$(MAKE) CFLAGS='$(WARNINGS)'
 	$(MAKE) CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
+# Remove some additional files.
+DISTCLEANFILES = perl/Makefile
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
+	configure kasetkey/kasetkey.8
+
 # Take appropriate actions in the Perl directory as well.
 all-local:
 	cd perl && perl Makefile.PL
@@ -50,11 +55,10 @@ all-local:
 install-data-local:
 	cd perl && $(MAKE) install
 
+# ExtUtils::MakeMaker really likes moving the Makefile aside.
 clean-local:
-	cd perl && $(MAKE) clean
-
-distclean-local:
-	cd perl && $(MAKE) distclean
+	[ ! -f perl/Makefile ] || ( set -e; cd perl && $(MAKE) clean )
+	cd perl && ( [ ! -f Makefile.old ] || mv Makefile.old Makefile )
 
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests
