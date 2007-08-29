@@ -219,11 +219,11 @@ sub get {
 # Store new data in an object, or returns undef and sets the internal error if
 # the object can't be found or if the user isn't authorized.
 sub store {
-    my ($self, $name, $type) = @_;
+    my ($self, $name, $type, $data) = @_;
     my $object = $self->retrieve ($name, $type);
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'store');
-    return $object->get ($self->{user}, $self->{host});
+    return $object->store ($data, $self->{user}, $self->{host});
 }
 
 # Return a human-readable description of the object's metadata, or returns
