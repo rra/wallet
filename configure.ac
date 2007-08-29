@@ -65,7 +65,7 @@ AC_CHECK_LIB([afsauthent], [KAM_DeleteUser],
     [AFS_LIBS="-lafsauthent -lafsrpc -lpthread"],
     [AFS_LIBS="-lkauth.krb -lauth.krb -lubik -lrxkad -lrx -llwp -lsys"
      AFS_LIBS="${AFS_LIBS} -lcom_err -lafsutil"],
-    [-lpthread])
+    [-lafsrpc -lpthread])
 LDFLAGS="$save_LDFLAGS"
 AC_SUBST([AFS_LIBS])
 
