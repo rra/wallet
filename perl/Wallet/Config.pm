@@ -30,6 +30,7 @@ $PATH = '/etc/wallet.conf';
 
 # Database configuration.
 our $DB_DRIVER;
+our $DB_INFO;
 our $DB_NAME;
 our $DB_HOST;
 our $DB_PORT;
@@ -44,6 +45,11 @@ our $KEYTAB_KADMIN    = 'kadmin';
 our $KEYTAB_PRINCIPAL;
 our $KEYTAB_REALM;
 our $KEYTAB_TMP;
+
+# Now, load the configuration file so that it can override the defaults.
+if (-r $PATH) {
+    do $PATH or die (($@ || $!) . "\n");
+}
 
 1;
 __END__
