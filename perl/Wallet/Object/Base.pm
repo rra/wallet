@@ -323,6 +323,12 @@ sub show {
     my $output = '';
     for (my $i = 0; $i < @data; $i++) {
         next unless defined $data[$i];
+        if ($attrs[$i][0] =~ /^ob_acl_/) {
+            my $acl = eval { Wallet::ACL->new ($data[$i], $self->{dbh}) };
+            if ($acl and not $@) {
+                $data[$i] = $acl->name || $data[$i];
+            }
+        }
         $output .= sprintf ("%15s: %s\n", $attrs[$i][1], $data[$i]);
     }
     return $output;
