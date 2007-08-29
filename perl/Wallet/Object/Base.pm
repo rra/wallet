@@ -169,7 +169,7 @@ sub log_set {
         die "invalid history field $field";
     }
     my $sql = "insert into object_history (oh_object, oh_type, oh_action,
-        oh_field, oh_type_field, oh_from, oh_to, oh_by, oh_from, oh_on)
+        oh_field, oh_type_field, oh_old, oh_new, oh_by, oh_from, oh_on)
         values (?, ?, 'set', ?, ?, ?, ?, ?, ?, ?)";
     $self->{dbh}->do ($sql, undef, $self->{name}, $self->{type}, $field,
                       $type_field, $old, $new, $user, $host, $time);

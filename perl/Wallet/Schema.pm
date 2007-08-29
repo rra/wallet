@@ -10,7 +10,7 @@
 # Modules and declarations
 ##############################################################################
 
-package Wallet::Config;
+package Wallet::Schema;
 require 5.006;
 
 use strict;
@@ -33,7 +33,7 @@ sub new {
     my ($class) = @_;
     local $_;
     my ($found, @sql);
-    $command = '';
+    my $command = '';
     while (<DATA>) {
         if (not $found and /^=head1 SCHEMA/) {
             $found = 1;
@@ -68,7 +68,7 @@ sub create {
     eval {
         $dbh->begin_work;
         for my $sql (@{ $self->{sql} }) {
-            $dbh->do ($sql, { RaiseError => 1 });
+            $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
         }
         $dbh->commit;
     };
@@ -181,7 +181,7 @@ references entries in the following table:
   create table acls
      (ac_id               integer auto_increment primary key,
       ac_name             varchar(255) not null,
-      unique index (ac_name));
+      unique (ac_name));
 
 This just keeps track of unique ACL identifiers.  The data is then stored
 in:
@@ -190,8 +190,8 @@ in:
      (ae_id               integer not null references acls(ac_id),
       ae_scheme           varchar(32)
           not null references acl_schemes(as_name),
-      ae_identifier       varchar(255) not null,
-      index (ae_id));
+      ae_identifier       varchar(255) not null);
+  create index ae_id on acl_entries (ae_id);
 
 ACLs may be referred to in the API via either the numeric ID or the
 human-readable name, but internally ACLs are always referenced by numeric ID
@@ -206,20 +206,21 @@ table.
   create table acl_history
      (ah_id               integer auto_increment primary key,
       ah_acl              integer not null,
-      ah_action           enum('create', 'destroy', 'add', 'remove')
-          not null,
-      ah_scheme           varchar(32),
-      ah_identifier       varchar(255),
+      ah_action           varchar(16) not null,
+      ah_scheme           varchar(32) default null,
+      ah_identifier       varchar(255) default null,
       ah_by               varchar(255) not null,
       ah_from             varchar(255) not null,
-      ah_on               datetime not null,
-      index (ah_acl));
+      ah_on               datetime not null);
+  create index ah_acl on acl_history (ah_acl);
 
-For a change of type create or destroy, only the action and the trace
-records (by, from, and on) are stored.  For a change to the lines of an ACL,
-the scheme and identifier of the line that was added or removed is included.
-Note that changes to the ACL name are not recorded; ACLs are always tracked
-by system-generated ID, so name changes are purely cosmetic.
+ah_action must be one of C<create>, C<destroy>, C<add>, or C<remove> (enums
+aren't used for compatibility with databases other than MySQL).  For a
+change of type create or destroy, only the action and the trace records (by,
+from, and on) are stored.  For a change to the lines of an ACL, the scheme
+and identifier of the line that was added or removed is included.  Note that
+changes to the ACL name are not recorded; ACLs are always tracked by
+system-generated ID, so name changes are purely cosmetic.
 
 ah_by stores the authenticated identity that made the change, ah_from stores
 the host from which they made the change, and ah_on stores the time the
@@ -250,9 +251,9 @@ table:
       ob_downloaded_by    varchar(255) default null,
       ob_downloaded_from  varchar(255) default null,
       ob_downloaded_on    datetime default null,
-      primary key (ob_name, ob_type),
-      index (ob_owner),
-      index (ob_expires));
+      primary key (ob_name, ob_type));
+  create index ob_owner on objects (ob_owner);
+  create index ob_expires on objects (ob_expires);
 
 Object names are not globally unique but only unique within their type, so
 the table has a joint primary key.  Each object has an owner and then up to
@@ -269,8 +270,8 @@ may have zero or more flags associated with it:
       fl_type             varchar(16)
           not null references objects(ob_type),
       fl_flag             varchar(32)
-          not null references flag_names(fn_name),
-      index (fl_object, fl_type));
+          not null references flag_names(fn_name));
+  create index fl_object on flags (fl_object, fl_type);
 
 Every change made to any object in the wallet database will be recorded in
 this table:
@@ -281,19 +282,20 @@ this table:
           not null references objects(ob_object),
       oh_type             varchar(16)
           not null references objects(ob_type),
-      oh_action
-           enum('create', 'destroy', 'get', 'store', set') not null,
-      oh_field
-          enum('owner', 'acl_get', 'acl_store', 'acl_show',
-               'acl_destroy', 'acl_flags', 'expires', 'flags',
-               'type_data'),
-      oh_type_field       varchar(255),
-      oh_from             varchar(255),
-      oh_to               varchar(255),
+      oh_action           varchar(16) not null,
+      oh_field            varchar(16) default null,
+      oh_type_field       varchar(255) default null,
+      oh_old              varchar(255) default null,
+      oh_new              varchar(255) default null,
       oh_by               varchar(255) not null,
-      oh_from             varchar(255) not hull,
-      oh_on               datetime not null,
-      index (oh_object, oh_type));
+      oh_from             varchar(255) not null,
+      oh_on               datetime not null);
+  create index oh_object on object_history (oh_object, oh_type);
+
+oh_action must be one of C<create>, C<destroy>, C<get>, C<store>, or C<set>.
+oh_field must be one of C<owner>, C<acl_get>, C<acl_store>, C<acl_show>,
+C<acl_destroy>, C<acl_flags>, C<expires>, C<flags>, or C<type_data>.  Enums
+aren't used for compatibility with databases other than MySQL.
 
 For a change of type create, get, store, or destroy, only the action and the
 trace records (by, from, and on) are stored.  For changes to columns or to
@@ -322,8 +324,8 @@ and then the restrictions for a given keytab are stored in this table:
      (ke_principal        varchar(255)
           not null references objects(ob_name),
       ke_enctype          varchar(255)
-          not null references enctypes(en_name),
-      index (ke_principal));
+          not null references enctypes(en_name));
+  create index ke_principal on keytab_enctypes (ke_principal);
 
 To use this functionality, you will need to populate the enctypes table with
 the enctypes that a keytab may be restricted to.  Currently, there is no
