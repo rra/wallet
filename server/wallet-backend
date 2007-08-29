@@ -1,0 +1,136 @@
+#!/usr/bin/perl
+our $ID = q$Id$;
+#
+# wallet-backend -- Wallet server for storing and retrieving secure data.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+#
+# See README for licensing terms.
+
+##############################################################################
+# Declarations and site configuration
+##############################################################################
+
+use strict;
+use DBI;
+use DBD::MySQL;
+use Sys::Syslog qw(openlog syslog);
+use Wallet::Config;
+use Wallet::Server;
+
+##############################################################################
+# Database handling
+##############################################################################
+
+# Open a new database connection.  This is a separate function to make it
+# easier to override later.
+sub db_connect {
+    my $dsn = "DBI:$DB_DRIVER:database=$DB_NAME;host=$DB_HOST;port=$DB_PORT";
+    my $dbh = DBI->connect ($dsn, $DB_USER, $DB_PASSWORD);
+    if (not defined $dbh) {
+        die "Cannot connect to database: $DBI::errstr\n";
+    }
+    return $dbh;
+}
+
+##############################################################################
+# Implementation
+##############################################################################
+
+# Separately log our actions.  remctl keeps some logs and we store extensive
+# logs of successful actions in the database, but neither logs failed actions.
+openlog ('wallet-backend', 'pid', 'auth');
+
+# Get our trace information.
+my $user = $ENV{REMOTE_USER} or die "REMOTE_USER not set\n";
+my $host = $ENV{REMOTE_HOST} || $ENV{REMOTE_ADDR}
+    or die "Neither REMOTE_HOST nor REMOTE_USER set\n";
+
+# Open the database connection and close it cleanly on exit.
+my $dbh = db_connect;
+END { $dbh->disconnect; }
+
+# Instantiate the server object.
+my $server = Wallet::Server->new ($dbh, $user, $host);
+
+# Parse command-line options and dispatch to the appropriate calls.
+my ($command, @args) = @ARGV;
+if ($command eq 'acl') {
+    my $action = shift @args;
+    if ($action eq 'add') {
+        check_args (3, [], @args);
+        $server->acl_add (@args) or die $server->error;
+    } elsif ($action eq 'create') {
+        check_args (1, [], @args);
+        $server->acl_create (@args) or die $server->error;
+    } elsif ($action eq 'remove') {
+        check_args (3, [], @args);
+        $server->acl_remove (@args) or die $server->error;
+    } elsif ($action eq 'rename') {
+        check_args (2, [], @args);
+        $server->acl_rename (@args) or die $server->error;
+    }
+} elsif ($command eq 'create') {
+    check_args (2, [], @args);
+    $server->create (@args) or die $server->error;
+} elsif ($command eq 'destroy') {
+    check_args (2, [], @args);
+    $server->destroy (@args) or die $server->error;
+} elsif ($command eq 'expires') {
+    if (@args > 2) {
+        check_args (3, [], @args);
+        $server->expires (@args) or die $server->error;
+    } else {
+        check_args (2, [], @args);
+        my $output = $server->expires (@args);
+        if (defined $output) {
+            print $output;
+        } else {
+            die $server->error;
+        }
+    }
+} elsif ($command eq 'get') {
+    check_args (2, [], @args);
+    my $output = $server->get (@args);
+    if (defined $output) {
+        print $output;
+    } else {
+        die $server->error;
+    }
+} elsif ($command eq 'getacl') {
+    check_args (3, [], @args);
+    my $output = $server->acl (@args);
+    if (defined $output) {
+        print $output;
+    } else {
+        die $server->error;
+    }
+} elsif ($command eq 'owner') {
+    if (@args > 2) {
+        check_args (3, [], @args);
+        $server->owner (@args) or die $server->error;
+    } else {
+        check_args (2, [], @args);
+        my $output = $server->owner (@args);
+        if (defined $output) {
+            print $output;
+        } else {
+            die $server->error;
+        }
+    }
+} elsif ($command eq 'setacl') {
+    check_args (4, [], @args);
+    $server->acl (@args) or die $server->error;
+} elsif ($command eq 'show') {
+    check_args (2, [], @args);
+    my $output = $server->show (@args);
+    if (defined $output) {
+        print $output;
+    } else {
+        die $server->error;
+    }
+} elsif ($command eq 'store') {
+    check_args (3, [2], @args);
+    $server->store (@args) or die $server->error;
+}
