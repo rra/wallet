@@ -65,7 +65,7 @@ else
     fi
 fi
 if [ ! -f data/test.keytab ] || [ -z "@REMCTLD@" ] ; then
-    for n in 1 2 3 4 5 6 ; do
+    for n in 1 2 3 4 5 6 7 ; do
         echo ok $n \# skip -- no Kerberos configuration
     done
     exit 0
@@ -78,11 +78,10 @@ fi
 
 # Start the remctld daemon and wait for it to start.
 rm -f data/pid
-KRB5_KTNAME=data/test.keytab; export KRB5_KTNAME
 ( @REMCTLD@ -m -p 14444 -s `cat data/test.principal` -P data/pid \
-    -f data/wallet.conf &)
+    -f data/wallet.conf -d -S -F -k data/test.keytab &)
 KRB5CCNAME=data/test.cache; export KRB5CCNAME
-kinit -t -k data/test.keytab `cat data/test.principal` > /dev/null 2>&1
+kinit -k -t data/test.keytab `cat data/test.principal` > /dev/null 2>&1
 if [ $? != 0 ] ; then
     kinit -t data/test.keytab `cat data/test.principal` > /dev/null 2>&1
 fi
@@ -100,7 +99,7 @@ if [ ! -f data/pid ] ; then
 fi
 
 # Now, we can finally run our tests.
-runsuccess "" -c fake-wallet get keytab service/fake-test
+runsuccess "" -c fake-wallet get keytab -f data/fake-keytab service/fake-test
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
     rm keytab
@@ -115,6 +114,8 @@ runfailure 1 "Unknown keytab service/unknown" \
     -c fake-wallet show keytab service/unknown
 runfailure 1 "Unknown keytab service/unknown" \
     -c fake-wallet get keytab service/unknown
+runsuccess "Expiration date of service/fake-test" \
+    -c fake-wallet expires keytab service/fake-test
 
 # Clean up.
 rm -f data/test.cache
