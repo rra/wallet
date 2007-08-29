@@ -43,23 +43,22 @@ sub new {
     $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
-    my ($sql, $data);
+    my ($sql, $data, $name);
     if ($id =~ /^\d+\z/) {
-        $sql = 'select ac_id from acls where ac_id = ?';
+        $sql = 'select ac_id, ac_name from acls where ac_id = ?';
     } else {
-        $sql = 'select ac_id from acls where ac_name = ?';
+        $sql = 'select ac_id, ac_name from acls where ac_name = ?';
     }
-    eval {
-        $data = $dbh->selectrow_array ($sql, undef, $id);
-    };
+    ($data, $name) = eval { $dbh->selectrow_array ($sql, undef, $id) };
     if ($@) {
         die "cannot search for ACL $id: $@\n";
     } elsif (not defined $data) {
         die "ACL $id not found\n";
     }
     my $self = {
-        dbh => $dbh,
-        id  => $data,
+        dbh  => $dbh,
+        id   => $data,
+        name => $name,
     };
     bless ($self, $class);
     return $self;
@@ -90,8 +89,9 @@ sub create {
         die "cannot create ACL $name: $@\n";
     }
     my $self = {
-        dbh => $dbh,
-        id  => $id,
+        dbh  => $dbh,
+        id   => $id,
+        name => $name,
     };
     bless ($self, $class);
     return $self;
@@ -111,6 +111,12 @@ sub error {
 sub id {
     my ($self) = @_;
     return $self->{id};
+}
+
+# Returns the name of the ACL.
+sub name {
+    my ($self)= @_;
+    return $self->{name};
 }
 
 # Record a change to an ACL.  Takes the type of change, the scheme and
@@ -234,6 +240,30 @@ sub remove {
 # ACL checking
 ##############################################################################
 
+# List all of the entries in an ACL.  Returns an array of tuples, each of
+# which contains a scheme and identifier, or an array containing undef on
+# error.  Sets the internal error string on error.
+sub list {
+    my ($self) = @_;
+    my @entries;
+    eval {
+        my $sql = 'select ae_scheme, ae_identifier from acl_entries where
+            ae_id = ?';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($self->{id});
+        my $entry;
+        while (defined ($entry = $sth->fetchrow_arrayref)) {
+            push (@entries, $entry);
+        }
+    };
+    if ($@) {
+        $self->{error} = "cannot retrieve ACL $self->{id}: $@";
+        return (undef);
+    } else {
+        return @entries;
+    }
+}
+
 # Given a principal, check whether it should be granted access according to
 # this ACL.  Returns 1 if access was granted, 0 if access was denied, and
 # undef on some error.  Errors from ACL verifiers do not cause an error
@@ -245,21 +275,9 @@ sub remove {
 # globally cache verifiers in some way.
 sub check {
     my ($self, $principal) = @_;
-    my (%verifier, @entries);
-    eval {
-        my $sql = 'select ae_scheme, ae_identifier from acl_entries where
-            ae_id = ?';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute;
-        my $entry;
-        while (defined ($entry = $sth->fetchrow_arrayref)) {
-            push (@entries, $entry);
-        }
-    };
-    if ($@) {
-        $self->{error} = "cannot retrieve ACL $self->{id}: $@";
-        return undef;
-    }
+    my @entries = $self->list;
+    return undef if (@entries == 1 and not defined $entries[0]);
+    my %verifier;
     $self->{check_errors} = [];
     for my $entry (@entries) {
         my ($scheme, $identifier) = @$entry;
