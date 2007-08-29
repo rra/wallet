@@ -28,6 +28,14 @@ $PATH = '/etc/wallet.conf';
 # Variables
 ##############################################################################
 
+# Database configuration.
+our $DB_DRIVER;
+our $DB_NAME;
+our $DB_HOST;
+our $DB_PORT;
+our $DB_USER;
+our $DB_PASSWORD;
+
 # Configuration for the keytab object type.
 our $KEYTAB_FILE;
 our $KEYTAB_FLAGS     = '-clearpolicy';
