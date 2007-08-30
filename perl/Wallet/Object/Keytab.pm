@@ -141,12 +141,12 @@ sub _kadmin_delprinc {
 # great here since we don't have a way to communicate the error back to the
 # caller.
 sub create {
-    my ($class, $name, $type, $dbh, $creator, $host, $time) = @_;
+    my ($class, $type, $name, $dbh, $creator, $host, $time) = @_;
     if ($name !~ /\@/ && $Wallet::Config::KEYTAB_REALM) {
         $name .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     $class->_kadmin_addprinc ($name);
-    return $class->SUPER::create ($name, $type, $dbh, $creator, $host, $time);
+    return $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
 }
 
 # Override destroy to delete the principal out of Kerberos as well.

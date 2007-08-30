@@ -131,7 +131,7 @@ sub DESTROY {
 # For the time being, we hard-code an ACL named ADMIN to use to authorize
 # object creation.  This needs more work later.
 sub create {
-    my ($self, $name, $type) = @_;
+    my ($self, $type, $name) = @_;
     unless ($MAPPING{$type}) {
         $self->{error} = "unknown object type $type";
         return undef;
@@ -144,7 +144,7 @@ sub create {
         $self->{error} = "$user not authorized to create ${type}:${name}";
         return undef;
     }
-    my $object = eval { $class->create ($name, $type, $dbh, $user, $host) };
+    my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
     if ($@) {
         $self->{error} = $@;
         return undef;
@@ -156,13 +156,13 @@ sub create {
 # Given the name and type of an object, returns a Perl object representing it
 # or returns undef and sets the internal error.
 sub retrieve {
-    my ($self, $name, $type) = @_;
+    my ($self, $type, $name) = @_;
     unless ($MAPPING{$type}) {
         $self->{error} = "unknown object type $type";
         return undef;
     }
     my $class = $MAPPING{$type};
-    my $object = eval { $class->new ($name, $type, $self->{dbh}) };
+    my $object = eval { $class->new ($type, $name, $self->{dbh}) };
     if ($@) {
         $self->{error} = $@;
         return undef;
@@ -220,8 +220,8 @@ sub acl_check {
 
 # Retrieves or sets an ACL on an object.
 sub acl {
-    my ($self, $name, $type, $acl, $id) = @_;
-    my $object = $self->retrieve ($name, $type);
+    my ($self, $type, $name, $acl, $id) = @_;
+    my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'ACL');
@@ -236,8 +236,8 @@ sub acl {
 
 # Retrieves or sets the expiration of an object.
 sub expires {
-    my ($self, $name, $type, $expires) = @_;
-    my $object = $self->retrieve ($name, $type);
+    my ($self, $type, $name, $expires) = @_;
+    my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'expires');
@@ -252,8 +252,8 @@ sub expires {
 
 # Retrieves or sets the owner of an object.
 sub owner {
-    my ($self, $name, $type, $owner) = @_;
-    my $object = $self->retrieve ($name, $type);
+    my ($self, $type, $name, $owner) = @_;
+    my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'owner');
@@ -270,8 +270,8 @@ sub owner {
 # sets the internal error if the retrieval fails or if the user isn't
 # authorized.
 sub get {
-    my ($self, $name, $type) = @_;
-    my $object = $self->retrieve ($name, $type);
+    my ($self, $type, $name) = @_;
+    my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'get');
     return $object->get ($self->{user}, $self->{host});
@@ -280,8 +280,8 @@ sub get {
 # Store new data in an object, or returns undef and sets the internal error if
 # the object can't be found or if the user isn't authorized.
 sub store {
-    my ($self, $name, $type, $data) = @_;
-    my $object = $self->retrieve ($name, $type);
+    my ($self, $type, $name, $data) = @_;
+    my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'store');
     return $object->store ($data, $self->{user}, $self->{host});
@@ -291,8 +291,8 @@ sub store {
 # undef and sets the internal error if the object can't be found or if the
 # user isn't authorized.
 sub show {
-    my ($self, $name, $type) = @_;
-    my $object = $self->retrieve ($name, $type);
+    my ($self, $type, $name) = @_;
+    my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'show');
     return $object->show;
@@ -301,8 +301,8 @@ sub show {
 # Destroys the object, or returns undef and sets the internal error if the
 # object can't be found or if the user isn't authorized.
 sub destroy {
-    my ($self, $name, $type) = @_;
-    my $object = $self->retrieve ($name, $type);
+    my ($self, $type, $name) = @_;
+    my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'owner');

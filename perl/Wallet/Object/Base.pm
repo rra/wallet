@@ -34,12 +34,12 @@ $VERSION = '0.01';
 # type in the object.  If the object doesn't exist, returns undef.  This will
 # probably be usable as-is by most object types.
 sub new {
-    my ($class, $name, $type, $dbh) = shift;
+    my ($class, $type, $name, $dbh) = shift;
     $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
-    my $sql = 'select ob_name from objects where ob_name = ? and ob_type = ?';
-    my $data = $dbh->selectrow_array ($sql, undef, $name, $type);
+    my $sql = 'select ob_name from objects where ob_type = ? and ob_name = ?';
+    my $data = $dbh->selectrow_array ($sql, undef, $type, $name);
     die "cannot find ${type}:${name}\n" unless ($data and $data eq $name);
     my $self = {
         dbh  => $dbh,
@@ -55,18 +55,18 @@ sub new {
 # specified class.  Stores the database handle to use, the name, and the type
 # in the object.  Subclasses may need to override this to do additional setup.
 sub create {
-    my ($class, $name, $type, $dbh, $user, $host, $time) = @_;
+    my ($class, $type, $name, $dbh, $user, $host, $time) = @_;
     $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
     $time ||= time;
     eval {
-        my $sql = 'insert into objects (ob_name, ob_type, ob_created_by,
+        my $sql = 'insert into objects (ob_type, ob_name, ob_created_by,
             ob_created_from, ob_created_on) values (?, ?, ?, ?, ?)';
-        $dbh->do ($sql, undef, $name, $type, $user, $host, $time);
-        $sql = "insert into object_history (oh_object, oh_type, oh_action,
+        $dbh->do ($sql, undef, $type, $name, $user, $host, $time);
+        $sql = "insert into object_history (oh_type, oh_name, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, 'create', ?, ?, ?)";
-        $dbh->do ($sql, undef, $name, $type, $user, $host, $time);
+        $dbh->do ($sql, undef, $type, $name, $user, $host, $time);
         $dbh->commit;
     };
     if ($@) {
@@ -183,16 +183,20 @@ sub log_set {
 # Returns undef on failure and the new value on success.
 sub _set_internal {
     my ($self, $attr, $value, $user, $host, $time) = @_;
+    if ($attr !~ /^[a-z_]+\z/) {
+        $self->{error} = "invalid attribute $attr";
+        return;
+    }
     $time ||= time;
     my $name = $self->{name};
     my $type = $self->{type};
     eval {
-        my $sql = "select ob_$attr from objects where ob_name = ? and
-            ob_type = ?";
-        my $old = $self->{dbh}->selectrow_array ($sql, undef, $name, $type);
-        $sql = "update objects set ob_$attr = ? where ob_name = ? and
-            ob_type = ?";
-        $self->{dbh}->do ($sql, undef, $value, $name, $type);
+        my $sql = "select ob_$attr from objects where ob_type = ? and
+            ob_name = ?";
+        my $old = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
+        $sql = "update objects set ob_$attr = ? where ob_type = ? and
+            ob_name = ?";
+        $self->{dbh}->do ($sql, undef, $value, $type, $name);
         $self->log_set ($attr, $old, $value, $user, $host, $time);
         $self->{dbh}->commit;
     };
@@ -208,10 +212,14 @@ sub _set_internal {
 # Get a particular attribute.  Returns the attribute value.
 sub _get_internal {
     my ($self, $attr) = @_;
+    if ($attr !~ /^[a-z_]+\z/) {
+        $self->{error} = "invalid attribute $attr";
+        return;
+    }
     my $name = $self->{name};
     my $type = $self->{type};
-    my $sql = "select $attr from objects where ob_name = ? and ob_type = ?";
-    my $value = $self->{dbh}->selectrow_array ($sql, undef, $name, $type);
+    my $sql = "select $attr from objects where ob_type = ? and ob_name = ?";
+    my $value = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
     return $value;
 }
 
@@ -312,9 +320,9 @@ sub show {
     my $fields = join (', ', map { $_->[0] } @attrs);
     my @data;
     eval {
-        my $sql = "select $fields from objects where ob_name = ? and
-            ob_type = ?";
-        @data = $self->{dbh}->selectrow_array ($sql, undef, $name, $type);
+        my $sql = "select $fields from objects where ob_type = ? and
+            ob_name = ?";
+        @data = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
     };
     if ($@) {
         $self->{error} = "cannot retrieve data for ${type}:${name}: $@";
@@ -343,13 +351,13 @@ sub destroy {
     my $name = $self->{name};
     my $type = $self->{type};
     eval {
-        my $sql = 'delete from flags where fl_object = ? and fl_type = ?';
-        $self->{dbh}->do ($sql, undef, $name, $type);
-        $sql = 'delete from objects where ob_name = ? and ob_type = ?';
-        $self->{dbh}->do ($sql, undef, $name, $type);
-        $sql = "insert into object_history (oh_object, oh_type, oh_action,
+        my $sql = 'delete from flags where fl_type = ? and fl_name = ?';
+        $self->{dbh}->do ($sql, undef, $type, $name);
+        $sql = 'delete from objects where ob_type = ? and ob_name = ?';
+        $self->{dbh}->do ($sql, undef, $type, $name);
+        $sql = "insert into object_history (oh_type, oh_name, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, 'destroy', ?, ?, ?)";
-        $self->{dbh}->do ($sql, undef, $name, $type, $user, $host, $time);
+        $self->{dbh}->do ($sql, undef, $type, $name, $user, $host, $time);
         $self->{dbh}->commit;
     };
     if ($@) {
@@ -398,11 +406,11 @@ the Wallet::Object::Type->new syntax).
 
 =over 4
 
-=item new(NAME, TYPE, DBH)
+=item new(TYPE, NAME, DBH)
 
-Creates a new object with the given object name and type, based on data
+Creates a new object with the given object type and name, based on data
 already in the database.  This method will only succeed if an object of the
-given NAME and TYPE is already present in the wallet database.  If no such
+given TYPE and NAME is already present in the wallet database.  If no such
 object exits, throws an exception.  Otherwise, returns an object blessed
 into the class used for the new() call (so subclasses can leave this method
 alone and not override it).
@@ -412,12 +420,12 @@ further operations.  This database handle is taken over by the wallet system
 and its settings (such as RaiseError and AutoCommit) will be modified by the
 object for its own needs.
 
-=item create(NAME, TYPE, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+=item create(TYPE, NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
 Similar to new() but instead creates a new entry in the database.  This
-method will throw an exception if an entry for that name and type already
+method will throw an exception if an entry for that type and name already
 exists in the database or if creating the database record fails.  Otherwise,
-a new database entry will be created with that name and type, no owner, no
+a new database entry will be created with that type and name, no owner, no
 ACLs, no expiration, no flags, and with created by, from, and on set to the
 PRINCIPAL, HOSTNAME, and DATETIME parameters.  If DATETIME isn't given, the
 current time is used.  The database handle is treated as with new().

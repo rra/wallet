@@ -238,9 +238,9 @@ Each object stored in the wallet is represented by an entry in the objects
 table:
 
   create table objects
-     (ob_name             varchar(255) not null,
-      ob_type             varchar(16)
+     (ob_type             varchar(16)
           not null references types(ty_name),
+      ob_name             varchar(255) not null,
       ob_owner            integer default null references acls(ac_id),
       ob_acl_get          integer default null references acls(ac_id),
       ob_acl_store        integer default null references acls(ac_id),
@@ -271,23 +271,23 @@ The ob_acl_flags ACL controls who can set flags on this object.  Each object
 may have zero or more flags associated with it:
 
   create table flags
-     (fl_object           varchar(255)
-          not null references objects(ob_name),
-      fl_type             varchar(16)
+     (fl_type             varchar(16)
           not null references objects(ob_type),
+      fl_name             varchar(255)
+          not null references objects(ob_name),
       fl_flag             varchar(32)
           not null references flag_names(fn_name));
-  create index fl_object on flags (fl_object, fl_type);
+  create index fl_object on flags (fl_type, fl_name);
 
 Every change made to any object in the wallet database will be recorded in
 this table:
 
   create table object_history
      (oh_id               integer auto_increment primary key,
-      oh_object           varchar(255)
-          not null references objects(ob_object),
       oh_type             varchar(16)
           not null references objects(ob_type),
+      oh_name             varchar(255)
+          not null references objects(ob_object),
       oh_action           varchar(16) not null,
       oh_field            varchar(16) default null,
       oh_type_field       varchar(255) default null,
@@ -296,7 +296,7 @@ this table:
       oh_by               varchar(255) not null,
       oh_from             varchar(255) not null,
       oh_on               datetime not null);
-  create index oh_object on object_history (oh_object, oh_type);
+  create index oh_object on object_history (oh_type, oh_name);
 
 oh_action must be one of C<create>, C<destroy>, C<get>, C<store>, or C<set>.
 oh_field must be one of C<owner>, C<acl_get>, C<acl_store>, C<acl_show>,
