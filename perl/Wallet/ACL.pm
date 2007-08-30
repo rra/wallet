@@ -233,7 +233,7 @@ sub remove {
         my ($data) = $self->{dbh}->selectrow_array ($sql, undef, $self->{id},
                                                     $scheme, $identifier);
         unless (defined $data) {
-            die "entry not found in ACL";
+            die "entry not found in ACL\n";
         }
         $sql = 'delete from acl_entries where ae_id = ? and ae_scheme = ?
             and ae_identifier = ?';
@@ -269,7 +269,7 @@ sub list {
         $sth->execute ($self->{id});
         my $entry;
         while (defined ($entry = $sth->fetchrow_arrayref)) {
-            push (@entries, $entry);
+            push (@entries, [ @$entry ]);
         }
     };
     if ($@) {
@@ -293,6 +293,10 @@ sub list {
 # globally cache verifiers in some way.
 sub check {
     my ($self, $principal) = @_;
+    unless ($principal) {
+        $self->{error} = 'no principal specified';
+        return undef;
+    }
     my @entries = $self->list;
     return undef if (@entries == 1 and not defined $entries[0]);
     my %verifier;
