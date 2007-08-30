@@ -36,7 +36,7 @@ $VERSION = '0.01';
 # realm information here.
 sub _valid_principal {
     my ($self, $principal) = @_;
-    if ($principal !~ m,^[\w-]+(/[\w_-]+)?,) {
+    if ($principal !~ m,^[\w-]+(/[\w_-]+)?\z,) {
         return undef;
     }
     return 1;
@@ -51,6 +51,8 @@ sub _kadmin {
                 $Wallet::Config::KEYTAB_FILE, '-q', $command);
     push (@args, '-s', $Wallet::Config::KEYTAB_HOST)
         if $Wallet::Config::KEYTAB_HOST;
+    push (@args, '-r', $Wallet::Config::KEYTAB_REALM)
+        if $Wallet::Config::KEYTAB_REALM;
     my $pid = open (KADMIN, '-|');
     if (not defined $pid) {
         die "error: cannot fork: $!\n";
@@ -73,6 +75,9 @@ sub _kadmin {
 sub _kadmin_exists {
     my ($self, $principal) = @_;
     return undef unless $self->_valid_principal ($principal);
+    if ($Wallet::Config::KEYTAB_REALM) {
+        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
+    }
     my $output = $self->_kadmin ("getprinc $principal");
     if ($output =~ /does not exist/) {
         return undef;
@@ -88,6 +93,9 @@ sub _kadmin_addprinc {
     my ($self, $principal) = @_;
     unless ($self->_valid_principal ($principal)) {
         die "invalid principal name $principal\n";
+    }
+    if ($Wallet::Config::KEYTAB_REALM) {
+        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     my $flags = $Wallet::Config::KEYTAB_FLAGS;
     my $output = $self->_kadmin ("addprinc -randkey $flags $principal");
@@ -105,8 +113,11 @@ sub _kadmin_ktadd {
         $self->{error} = "invalid principal name: $principal";
         return undef;
     }
+    if ($Wallet::Config::KEYTAB_REALM) {
+        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
+    }
     my $output = $self->_kadmin ("ktadd -q -k $file $principal");
-    if ($output =~ /^ktadd: (.*)/m) {
+    if ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
         $self->{error} = "error creating keytab for $principal: $1";
         return undef;
     }
@@ -125,7 +136,10 @@ sub _kadmin_delprinc {
     if (not $self->_kadmin_exists ($principal)) {
         return 1;
     }
-    my $output = $self->_kadmin ("delprinc $principal");
+    if ($Wallet::Config::KEYTAB_REALM) {
+        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
+    }
+    my $output = $self->_kadmin ("delprinc -force $principal");
     if ($output =~ /^delete_principal: (.*)/m) {
         $self->{error} = "error deleting $principal: $1";
         return undef;
@@ -143,9 +157,6 @@ sub _kadmin_delprinc {
 # caller.
 sub create {
     my ($class, $type, $name, $dbh, $creator, $host, $time) = @_;
-    if ($name !~ /\@/ && $Wallet::Config::KEYTAB_REALM) {
-        $name .= '@' . $Wallet::Config::KEYTAB_REALM;
-    }
     $class->_kadmin_addprinc ($name);
     return $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
 }
@@ -163,7 +174,7 @@ sub get {
     my ($self, $user, $host, $time) = @_;
     $time ||= time;
     my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
-    return undef if not $self->_kadmin_ktadd ($self->{name});
+    return undef if not $self->_kadmin_ktadd ($self->{name}, $file);
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
