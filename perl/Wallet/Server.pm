@@ -148,7 +148,7 @@ sub create {
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     } else {
         return $object;
@@ -168,7 +168,7 @@ sub retrieve {
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     } else {
         return $object;
@@ -209,7 +209,7 @@ sub acl_check {
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     }
     my $status = $acl->check ($self->{user});
@@ -321,8 +321,8 @@ sub destroy {
 # ACL methods
 ##############################################################################
 
-# Create a new empty ACL in the database.  Returns the new ACL object on
-# success and undef on failure, setting the internal error.
+# Create a new empty ACL in the database.  Returns true on success and undef
+# on failure, setting the internal error.
 sub acl_create {
     my ($self, $name) = @_;
     unless ($self->{admin}->check ($self->{user})) {
@@ -336,10 +336,10 @@ sub acl_create {
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     } else {
-        return $acl;
+        return 1;
     }
 }
 
@@ -364,11 +364,11 @@ sub acl_rename {
         $self->acl_error ($id, 'rename');
         return undef;
     }
-    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     }
     unless ($acl->rename ($name)) {
@@ -386,11 +386,11 @@ sub acl_destroy {
         $self->acl_error ($id, 'destroy');
         return undef;
     }
-    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     }
     unless ($acl->destroy ($self->{user}, $self->{host})) {
@@ -408,11 +408,11 @@ sub acl_add {
         $self->acl_error ($id, 'add');
         return undef;
     }
-    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     }
     unless ($acl->add ($scheme, $identifier, $self->{user}, $self->{host})) {
@@ -430,11 +430,11 @@ sub acl_remove {
         $self->acl_error ($id, 'remove');
         return undef;
     }
-    my $acl = { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     }
     my $user = $self->{user};

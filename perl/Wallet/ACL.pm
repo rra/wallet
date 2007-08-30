@@ -159,7 +159,7 @@ sub rename {
     if ($@) {
         $self->{error} = "cannot rename ACL $self->{id} to $name: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         $self->{dbh}->rollback;
         return undef;
     }
@@ -185,7 +185,7 @@ sub destroy {
     if ($@) {
         $self->{error} = "cannot destroy ACL $self->{id}: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         $self->{dbh}->rollback;
         return undef;
     }
@@ -214,7 +214,7 @@ sub add {
     if ($@) {
         $self->{error} = "cannot add $scheme:$identifier to $self->{id}: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         $self->{dbh}->rollback;
         return undef;
     }
@@ -245,7 +245,7 @@ sub remove {
         my $entry = "$scheme:$identifier";
         $self->{error} = "cannot remove $entry from $self->{id}: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         $self->{dbh}->rollback;
         return undef;
     }
@@ -275,7 +275,7 @@ sub list {
     if ($@) {
         $self->{error} = "cannot retrieve ACL $self->{id}: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return (undef);
     } else {
         return @entries;

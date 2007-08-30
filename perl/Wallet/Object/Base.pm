@@ -143,7 +143,7 @@ sub log_action {
         my $id = $self->{type} . ':' . $self->{name};
         $self->{error} = "cannot update history for $id: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         $self->{dbh}->rollback;
         return undef;
     }
@@ -238,7 +238,7 @@ sub owner {
         if ($@) {
             $self->{error} = $@;
             chomp $self->{error};
-            $self->{error} =~ / at .*$/;
+            $self->{error} =~ s/ at .*$//;
             return undef;
         }
         return $self->_set_internal ('owner', $acl->id, $user, $host, $time);
@@ -254,7 +254,7 @@ sub acl {
     if ($type !~ /^(get|store|show|destroy|flags)\z/) {
         $self->{error} = "invalid ACL type $type";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return;
     }
     my $attr = "acl_$type";
@@ -264,7 +264,7 @@ sub acl {
         if ($@) {
             $self->{error} = $@;
             chomp $self->{error};
-            $self->{error} =~ / at .*$/;
+            $self->{error} =~ s/ at .*$//;
             return undef;
         }
         return $self->_set_internal ($attr, $acl->id, $user, $host, $time);
@@ -340,7 +340,7 @@ sub show {
     if ($@) {
         $self->{error} = "cannot retrieve data for ${type}:${name}: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         return undef;
     }
     my $output = '';
@@ -378,7 +378,7 @@ sub destroy {
     if ($@) {
         $self->{error} = "cannot destroy ${type}:${name}: $@";
         chomp $self->{error};
-        $self->{error} =~ / at .*$/;
+        $self->{error} =~ s/ at .*$//;
         $self->{dbh}->rollback;
         return undef;
     }
