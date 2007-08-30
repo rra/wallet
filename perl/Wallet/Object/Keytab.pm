@@ -32,10 +32,11 @@ $VERSION = '0.01';
 
 # Make sure that principals are well-formed and don't contain characters that
 # will cause us problems when talking to kadmin.  Takes a principal and
-# returns true if it's okay, false otherwise.
+# returns true if it's okay, false otherwise.  Note that we do not permit
+# realm information here.
 sub _valid_principal {
     my ($self, $principal) = @_;
-    if ($principal !~ m,^[\w-]+(/[\w_-]+)?\@[\w._-]+,) {
+    if ($principal !~ m,^[\w-]+(/[\w_-]+)?,) {
         return undef;
     }
     return 1;
