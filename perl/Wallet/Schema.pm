@@ -196,7 +196,8 @@ in:
      (ae_id               integer not null references acls(ac_id),
       ae_scheme           varchar(32)
           not null references acl_schemes(as_name),
-      ae_identifier       varchar(255) not null);
+      ae_identifier       varchar(255) not null,
+      primary key (ae_id, ae_scheme, ae_identifier));
   create index ae_id on acl_entries (ae_id);
 
 ACLs may be referred to in the API via either the numeric ID or the
@@ -276,7 +277,8 @@ may have zero or more flags associated with it:
       fl_name             varchar(255)
           not null references objects(ob_name),
       fl_flag             varchar(32)
-          not null references flag_names(fn_name));
+          not null references flag_names(fn_name),
+      primary key (fl_type, fl_name, fl_flag));
   create index fl_object on flags (fl_type, fl_name);
 
 Every change made to any object in the wallet database will be recorded in
@@ -330,7 +332,8 @@ and then the restrictions for a given keytab are stored in this table:
      (ke_principal        varchar(255)
           not null references objects(ob_name),
       ke_enctype          varchar(255)
-          not null references enctypes(en_name));
+          not null references enctypes(en_name),
+      primary key (ke_principal, ke_enctype));
   create index ke_principal on keytab_enctypes (ke_principal);
 
 To use this functionality, you will need to populate the enctypes table with
