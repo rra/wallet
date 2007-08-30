@@ -37,6 +37,12 @@ Future work:
 * Provide some way of getting at the history tables.  Need to get object
   and ACL history either by object or for all objects, at least.
 
+* Write the NetDB ACL verifier.
+
+* Write the LDAP entitlement ACL verifier.
+
+* Write the PTS ACL verifier.
+
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
 
