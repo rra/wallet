@@ -54,6 +54,9 @@ Future work:
 * Use the class names in the database tables when loading object and
   ACL verifier implementations.
 
+* Error messages from ACL operations should refer to the ACLs by name
+  instead of by ID.
+
 * The ACL implementation is currently rather inefficient for ACL
   verifiers that need to maintain state (such as LDAP binds).  Now
   they're created and destroyed when verifying each ACL.  We need to
