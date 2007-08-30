@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # $Id$
 #
-# t/acl.t -- Tests for the basic wallet ACL verifiers.
+# t/verifier.t -- Tests for the basic wallet ACL verifiers.
 
 use Test::More tests => 13;
 
