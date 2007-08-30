@@ -3,7 +3,7 @@
 #
 # t/api.t -- Tests for the wallet ACL API.
 
-use Test::More tests => 95;
+use Test::More tests => 97;
 
 use DBD::SQLite;
 use Wallet::ACL;
@@ -13,6 +13,7 @@ use Wallet::Server;
 # Use a local SQLite database for testing.
 $Wallet::Config::DB_DRIVER = 'SQLite';
 $Wallet::Config::DB_INFO = 'wallet-db';
+unlink 'wallet-db';
 
 # Some global defaults to use.
 my $admin = 'admin@EXAMPLE.COM';
@@ -75,6 +76,9 @@ ok (defined ($acl), ' and it can still found by ID');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');
 is ($acl->id, 2, ' and the right ID');
+ok (! $acl->rename ('ADMIN'), ' but renaming to an existing name fails');
+like ($acl->error, qr/^cannot rename ACL 2 to ADMIN: /,
+      ' with the right error');
 
 # Test add, check, remove, and list.
 my @entries = $acl->list;
