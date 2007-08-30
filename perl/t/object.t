@@ -3,7 +3,7 @@
 #
 # t/object.t -- Tests for the basic object implementation.
 
-use Test::More tests => 51;
+use Test::More tests => 74;
 
 use DBD::SQLite;
 use Wallet::ACL;
@@ -35,9 +35,13 @@ my $object = eval { Wallet::Object::Base->create ('keytab', $princ, $dbh,
                                                   @trace, $created) };
 is ($@, '', 'Object creation did not die');
 ok ($object->isa ('Wallet::Object::Base'), ' and returned the right class');
-my $repeat =
+my $other =
     eval { Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace) };
 like ($@, qr/^cannot create object \Qkeytab:$princ: /, 'Repeating fails');
+$other = eval { Wallet::Object::Base->create ('', $princ, $dbh, @trace) };
+is ($@, "invalid object type\n", 'Using an empty type fails');
+$other = eval { Wallet::Object::Base->create ('keytab', '', $dbh, @trace) };
+is ($@, "invalid object name\n", ' as does an empty name');
 $object = eval { Wallet::Object::Base->new ('keytab', "a$princ", $dbh) };
 is ($@, "cannot find keytab:a$princ\n", 'Searching for unknown object fails');
 $object = eval { Wallet::Object::Base->new ('keytab', $princ, $dbh) };
@@ -62,6 +66,13 @@ is ($object->owner, $acl->id, ' at which point it is ADMIN');
 ok (! $object->owner ('unknown', @trace),
     ' but setting it to something bogus fails');
 is ($object->error, 'ACL unknown not found', ' with the right error');
+if ($object->owner ('', @trace)) {
+    ok (1, ' and clearing it works');
+} else {
+    is ($object->error, '', ' and clearing it works');
+}
+is ($object->owner, undef, ' at which point it is cleared');
+is ($object->owner ('ADMIN', @trace), 1, ' and setting it again works');
 
 # Expires.
 is ($object->expires, undef, 'Expires is not set to start');
@@ -76,6 +87,13 @@ ok (! $object->expires ('13/13/13 13:13:13', @trace),
     ' but setting it to something bogus fails');
 is ($object->error, 'malformed expiration time 13/13/13 13:13:13',
     ' with the right error');
+if ($object->expires ('', @trace)) {
+    ok (1, ' and clearing it works');
+} else {
+    is ($object->error, '', ' and clearing it works');
+}
+is ($object->expires, undef, ' at which point it is cleared');
+is ($object->expires ($now, @trace), 1, ' and setting it again works');
 
 # ACLs.
 for my $type (qw/get store show destroy flags/) {
@@ -89,6 +107,14 @@ for my $type (qw/get store show destroy flags/) {
     ok (! $object->acl ($type, 22, @trace),
         ' but setting it to something bogus fails');
     is ($object->error, 'ACL 22 not found', ' with the right error');
+    if ($object->acl ($type, '', @trace)) {
+        ok (1, ' and clearing it works');
+    } else {
+        is ($object->error, '', ' and clearing it works');
+    }
+    is ($object->acl ($type), undef, ' at which point it is cleared');
+    is ($object->acl ($type, $acl->id, @trace), 1,
+        ' and setting it again works');
 }
 
 # Test stub methods.
