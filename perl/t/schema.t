@@ -25,4 +25,6 @@ $dbh->{RaiseError} = 1;
 $dbh->{PrintError} = 0;
 eval { $schema->create ($dbh) };
 is ($@, '', "create() doesn't die");
+
+# Clean up.
 unlink 'wallet-db';
