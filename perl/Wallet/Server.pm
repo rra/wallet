@@ -202,7 +202,7 @@ sub acl_check {
         return 1 if $self->{admin}->check ($self->{user});
     }
     my $id = $object->acl ($action);
-    if (not defined $id && $action =~ /^(get|store|show)\z/) {
+    if (not defined ($id) and $action =~ /^(get|store|show)\z/) {
         $id = $object->owner;
     }
     unless (defined $id) {
@@ -231,6 +231,7 @@ sub acl_check {
 # Retrieves or sets an ACL on an object.
 sub acl {
     my ($self, $type, $name, $acl, $id) = @_;
+    undef $self->{error};
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
@@ -250,6 +251,7 @@ sub acl {
 # Retrieves or sets the expiration of an object.
 sub expires {
     my ($self, $type, $name, $expires) = @_;
+    undef $self->{error};
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
@@ -269,6 +271,7 @@ sub expires {
 # Retrieves or sets the owner of an object.
 sub owner {
     my ($self, $type, $name, $owner) = @_;
+    undef $self->{error};
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
@@ -334,10 +337,7 @@ sub destroy {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
-    unless ($self->{admin}->check ($self->{user})) {
-        $self->object_error ($object, 'owner');
-        return undef;
-    }
+    return undef unless $self->acl_check ($object, 'destroy');
     my $result = $object->destroy ($self->{user}, $self->{host});
     $self->{error} = $object->error unless defined $result;
     return $result;
