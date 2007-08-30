@@ -34,6 +34,9 @@ Required to replace leland_srvtab:
 
 Future work:
 
+* Provide some way of getting at the history tables.  Need to get object
+  and ACL history either by object or for all objects, at least.
+
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
 
