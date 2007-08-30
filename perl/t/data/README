@@ -1,0 +1,28 @@
+This directory contains additional data files needed to run some tests.
+
+In order to run the keytab tests, you will need to grant the test
+processes access to create, download, and remove principals in a test KDC.
+This should not be pointed at a production KDC!  Then, create the
+following files:
+
+    test.keytab         Keytab for an authorized user
+    test.principal      Principal of the authorized user
+    test.realm          Kerberos realm in which to do testing
+
+This realm will also need to be configured in your local krb5.conf,
+including the admin_server for the realm.
+
+The test process will create the principals wallet/one and wallet/two and
+on success will clean up after itself.  If the test fails, they may be
+left behind in the KDC.
+
+For MIT Kerberos, to grant appropriate permissions, add the line:
+
+    <principal>         admci   wallet/*@<realm>
+
+to the kadm5.acl file for your master KDC for the test realm and restart
+kadmind.  <principal> is the principal that you are using to test with,
+and <realm> is the Kerberos realm.
+
+Again, I do not recommend using a production realm; the test doesn't need
+a production realm and it's more secure to stick to a test realm.
