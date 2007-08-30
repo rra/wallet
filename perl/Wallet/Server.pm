@@ -17,7 +17,9 @@ use strict;
 use vars qw(%MAPPING $VERSION);
 
 use Wallet::ACL;
+use Wallet::Config;
 use Wallet::Object::Keytab;
+use Wallet::Schema;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
@@ -35,6 +37,52 @@ $VERSION = '0.01';
 # Utility methods
 ##############################################################################
 
+# Opens a database connection.  This is an internal class method used by both
+# initialize and new.  Throws an exception if anything goes wrong; otherwise,
+# returns the open database handle.
+sub _open_db {
+    my ($class) = @_;
+    unless ($Wallet::Config::DB_DRIVER
+            and ($Wallet::Config::DB_INFO or $Wallet::Config::DB_NAME)) {
+        die "database connection information not configured\n";
+    }
+    my $dsn = "DBI:$Wallet::Config::DB_DRIVER:";
+    if ($Wallet::Config::DB_INFO) {
+        $dsn .= $Wallet::Config::DB_INFO;
+    } else {
+        $dsn .= "database=$Wallet::Config::DB_NAME";
+        $dsn .= ";host=$Wallet::Config::DB_HOST" if $Wallet::Config::DB_HOST;
+        $dsn .= ";port=$Wallet::Config::DB_PORT" if $Wallet::Config::DB_PORT;
+    }
+    my $dbh = DBI->connect ($dsn, $Wallet::Config::DB_USER,
+                            $Wallet::Config::DB_PASSWORD);
+    if (not defined $dbh) {
+        die "cannot connect to database: $DBI::errstr\n";
+    }
+    $dbh->{AutoCommit} = 0;
+    $dbh->{RaiseError} = 1;
+    $dbh->{PrintError} = 0;
+    return $dbh;
+}
+
+# Initializes the database by populating it with our schema and then creates
+# and returns a new wallet server object.  This is used only for initial
+# database creation.  Takes the Kerberos principal who will be the default
+# administrator so that we can create an initial administrator ACL.  Throws an
+# exception on failure.
+sub initialize {
+    my ($class, $user) = @_;
+    my $dbh = $class->_open_db;
+    my $schema = Wallet::Schema->new;
+    $schema->create ($dbh);
+    my $acl = Wallet::ACL->create ('ADMIN', $dbh, $user, 'localhost');
+    unless ($acl->add ('krb5', $user, $user, 'localhost')) {
+        die "$@\n";
+    }
+    $dbh->disconnect;
+    return $class->new ($user, 'localhost');
+}
+
 # Create a new wallet server object.  A new server should be created for each
 # user who is making changes to the wallet.  Takes the principal and host who
 # are sending wallet requests.  Opens a connection to the database that will
@@ -43,25 +91,8 @@ $VERSION = '0.01';
 # for various things.  Throw an exception if anything goes wrong.
 sub new {
     my ($class, $user, $host) = @_;
-    my $acl = Wallet::ACL->new ('ADMIN');
-    unless ($DB_DRIVER and ($DB_INFO or $DB_NAME)) {
-        die "database connection information not configured\n";
-    }
-    my $dsn = "DBI:$DB_DRIVER:";
-    if ($DB_INFO) {
-        $dsn .= $DB_INFO;
-    } else {
-        $dsn .= "database=$DB_NAME";
-        $dsn .= ";host=$DB_HOST" if $DB_HOST;
-        $dsn .= ";port=$DB_PORT" if $DB_PORT;
-    }
-    my $dbh = DBI->connect ($dsn, $DB_USER, $DB_PASSWORD);
-    if (not defined $dbh) {
-        die "cannot connect to database: $DBI::errstr\n";
-    }
-    $dbh->{AutoCommit} = 0;
-    $dbh->{RaiseError} = 1;
-    $dbh->{PrintError} = 0;
+    my $dbh = $class->_open_db;
+    my $acl = Wallet::ACL->new ('ADMIN', $dbh);
     my $self = {
         dbh   => $dbh,
         user  => $user,
@@ -72,26 +103,22 @@ sub new {
     return $self;
 }
 
-# Initializes the database by populating it with our schema.  This will fail
-# if the database is already created and an administrator will have to drop
-# the tables by hand.  Returns true on success and false on failure.  On
-# failure, sets the internal error message.
-sub initialize {
+# Returns the database handle (used mostly for testing).
+sub dbh {
     my ($self) = @_;
-    my $schema = Wallet::Schema->new;
-    eval { $schema->create ($self->{dbh}) };
-    if ($@) {
-        $self->{error} = $@;
-        return undef;
-    } else {
-        return 1;
-    }
+    return $self->{dbh};
 }
 
 # Returns the error from the previous failed operation.
 sub error {
     my ($self) = @_;
     return $self->{error};
+}
+
+# Disconnect the database handle on object destruction to avoid warnings.
+sub DESTROY {
+    my ($self) = @_;
+    $self->{dbh}->disconnect;
 }
 
 ##############################################################################
