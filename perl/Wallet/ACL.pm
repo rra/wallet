@@ -77,7 +77,7 @@ sub create {
     eval {
         my $sql = 'insert into acls (ac_name) values (?)';
         $dbh->do ($sql, undef, $name);
-        $id = $dbh->last_insert_id;
+        $id = $dbh->last_insert_id (undef, undef, 'acls', 'ac_id');
         die "unable to retrieve new ACL ID" unless defined $id;
         $sql = "insert into acl_history (ah_acl, ah_action, ah_by, ah_from,
             ah_on) values (?, 'create', ?, ?, ?)";
