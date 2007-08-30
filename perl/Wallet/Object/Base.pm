@@ -34,7 +34,7 @@ $VERSION = '0.01';
 # type in the object.  If the object doesn't exist, returns undef.  This will
 # probably be usable as-is by most object types.
 sub new {
-    my ($class, $type, $name, $dbh) = shift;
+    my ($class, $type, $name, $dbh) = @_;
     $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
@@ -121,27 +121,29 @@ sub log_action {
     # the object record itself.  Commit both changes as a transaction.  We
     # assume that AutoCommit is turned off.
     eval {
-        my $sql = 'insert into object_history (oh_object, oh_type, oh_action,
+        my $sql = 'insert into object_history (oh_type, oh_name, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, ?, ?, ?, ?)';
-        $self->{dbh}->do ($sql, undef, $self->{name}, $self->{type}, $action,
+        $self->{dbh}->do ($sql, undef, $self->{type}, $self->{name}, $action,
                           $user, $host, $time);
         if ($action eq 'get') {
             $sql = 'update objects set ob_downloaded_by = ?,
                 ob_downloaded_from = ?, ob_downloaded_on = ? where
-                ob_name = ? and ob_type = ?';
-            $self->{dbh}->do ($sql, undef, $user, $host, $time, $self->{name},
-                              $self->{type});
+                ob_type = ? and ob_name = ?';
+            $self->{dbh}->do ($sql, undef, $user, $host, $time, $self->{type},
+                              $self->{name});
         } elsif ($action eq 'store') {
             $sql = 'update objects set ob_stored_by = ?, ob_stored_from = ?,
-                ob_stored_on = ? where ob_name = ? and ob_type = ?';
-            $self->{dbh}->do ($sql, undef, $user, $host, $time, $self->{name},
-                              $self->{type});
+                ob_stored_on = ? where ob_type = ? and ob_name = ?';
+            $self->{dbh}->do ($sql, undef, $user, $host, $time, $self->{type},
+                              $self->{name});
         }
         $self->{dbh}->commit;
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->{error} = "cannot update history for $id: $@";
+        chomp $self->{error};
+        $self->{error} =~ / at .*$/;
         $self->{dbh}->rollback;
         return undef;
     }
@@ -168,10 +170,10 @@ sub log_set {
     unless ($fields{$field}) {
         die "invalid history field $field";
     }
-    my $sql = "insert into object_history (oh_object, oh_type, oh_action,
+    my $sql = "insert into object_history (oh_type, oh_name, oh_action,
         oh_field, oh_type_field, oh_old, oh_new, oh_by, oh_from, oh_on)
         values (?, ?, 'set', ?, ?, ?, ?, ?, ?, ?)";
-    $self->{dbh}->do ($sql, undef, $self->{name}, $self->{type}, $field,
+    $self->{dbh}->do ($sql, undef, $self->{type}, $self->{name}, $field,
                       $type_field, $old, $new, $user, $host, $time);
 }
 
@@ -203,6 +205,8 @@ sub _set_internal {
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->{error} = "cannot set $attr on $id: $@";
+        chomp $self->{error};
+        $self->{error} =~ s/ at .*//;
         $self->{dbh}->rollback;
         return;
     }
@@ -216,6 +220,7 @@ sub _get_internal {
         $self->{error} = "invalid attribute $attr";
         return;
     }
+    $attr = 'ob_' . $attr;
     my $name = $self->{name};
     my $type = $self->{type};
     my $sql = "select $attr from objects where ob_type = ? and ob_name = ?";
@@ -228,11 +233,15 @@ sub _get_internal {
 sub owner {
     my ($self, $owner, $user, $host, $time) = @_;
     if ($owner) {
-        if ($owner !~ /^\d+\z/) {
-            $self->{error} = "malformed owner ACL id $owner";
-            return;
+        my $acl;
+        eval { $acl = Wallet::ACL->new ($owner, $self->{dbh}) };
+        if ($@) {
+            $self->{error} = $@;
+            chomp $self->{error};
+            $self->{error} =~ / at .*$/;
+            return undef;
         }
-        return $self->_set_internal ('owner', $owner, $user, $host, $time);
+        return $self->_set_internal ('owner', $acl->id, $user, $host, $time);
     } else {
         return $self->_get_internal ('owner');
     }
@@ -244,14 +253,18 @@ sub acl {
     my ($self, $type, $id, $user, $host, $time) = @_;
     if ($type !~ /^(get|store|show|destroy|flags)\z/) {
         $self->{error} = "invalid ACL type $type";
+        chomp $self->{error};
+        $self->{error} =~ / at .*$/;
         return;
     }
     my $attr = "acl_$type";
     if ($id) {
         my $acl;
-        eval { $acl = Wallet::ACL->new ($id) };
+        eval { $acl = Wallet::ACL->new ($id, $self->{dbh}) };
         if ($@) {
             $self->{error} = $@;
+            chomp $self->{error};
+            $self->{error} =~ / at .*$/;
             return undef;
         }
         return $self->_set_internal ($attr, $acl->id, $user, $host, $time);
@@ -326,12 +339,14 @@ sub show {
     };
     if ($@) {
         $self->{error} = "cannot retrieve data for ${type}:${name}: $@";
+        chomp $self->{error};
+        $self->{error} =~ / at .*$/;
         return undef;
     }
     my $output = '';
     for (my $i = 0; $i < @data; $i++) {
         next unless defined $data[$i];
-        if ($attrs[$i][0] =~ /^ob_acl_/) {
+        if ($attrs[$i][0] =~ /^ob_(owner|acl_)/) {
             my $acl = eval { Wallet::ACL->new ($data[$i], $self->{dbh}) };
             if ($acl and not $@) {
                 $data[$i] = $acl->name || $data[$i];
@@ -362,6 +377,8 @@ sub destroy {
     };
     if ($@) {
         $self->{error} = "cannot destroy ${type}:${name}: $@";
+        chomp $self->{error};
+        $self->{error} =~ / at .*$/;
         $self->{dbh}->rollback;
         return undef;
     }

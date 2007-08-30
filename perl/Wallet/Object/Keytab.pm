@@ -166,7 +166,7 @@ sub get {
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
-        $self->{error} = "error creating keytab for principal $princ: $!";
+        $self->{error} = "error opening keytab for principal $princ: $!";
         return undef;
     }
     local $/;
@@ -174,7 +174,7 @@ sub get {
     my $data = <KEYTAB>;
     if ($!) {
         my $princ = $self->{name};
-        $self->{error} = "error creating keytab for principal $princ: $!";
+        $self->{error} = "error reading keytab for principal $princ: $!";
         return undef;
     }
     close KEYTAB;
