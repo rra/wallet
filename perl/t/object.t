@@ -14,6 +14,7 @@ use Wallet::Server;
 # Use a local SQLite database for testing.
 $Wallet::Config::DB_DRIVER = 'SQLite';
 $Wallet::Config::DB_INFO = 'wallet-db';
+unlink 'wallet-db';
 
 # Some global defaults to use.
 my $user = 'admin@EXAMPLE.COM';

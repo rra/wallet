@@ -13,6 +13,7 @@ use Wallet::Server;
 # Use a local SQLite database for testing.
 $Wallet::Config::DB_DRIVER = 'SQLite';
 $Wallet::Config::DB_INFO = 'wallet-db';
+unlink 'wallet-db';
 
 # Use Wallet::Server to set up the database.
 my $server = eval { Wallet::Server->initialize ('admin@EXAMPLE.COM') };

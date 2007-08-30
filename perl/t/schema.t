@@ -17,6 +17,7 @@ ok (@sql > 0, 'sql() returns something');
 is (scalar (@sql), 22, ' and returns the right number of statements');
 
 # Create a SQLite database to use for create.
+unlink 'wallet-db';
 my $dbh = DBI->connect ("DBI:SQLite:wallet-db");
 if (not defined $dbh) {
     die "cannot create database wallet-db: $DBI::errstr\n";
