@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 44;
+use Test::More tests => 85;
 
 use DBD::SQLite;
 use Wallet::Config;
@@ -96,6 +96,86 @@ is ($server->acl_remove ('empty', 'krb5', $user1), undef,
 is ($server->error,
     "cannot remove krb5:$user1 from 5: entry not found in ACL",
     ' and returns the right error');
+
+# Now, create a few objects to use for testing and test the object API while
+# we're at it.
+is ($server->create ('base', 'service/admin'), 1,
+    'Creating an object works');
+is ($server->create ('base', 'service/admin'), undef, ' but not twice');
+like ($server->error, qr{^cannot create object base:service/admin: },
+      ' and returns the right error');
+is ($server->create ('srvtab', 'service.admin'), undef,
+    'Creating an unknown object fails');
+is ($server->error, 'unknown object type srvtab', ' with the right error');
+is ($server->create ('', 'service.admin'), undef,
+    ' and likewise with an empty type');
+is ($server->error, 'unknown object type ', ' with the right error');
+is ($server->create ('base', 'service/user1'), 1,
+    ' but we can create a base object');
+is ($server->create ('base', 'service/user2'), 1, ' and another');
+is ($server->create ('base', 'service/both'), 1, ' and another');
+is ($server->create ('base', 'service/test'), 1, ' and another');
+is ($server->create ('base', ''), undef, ' but not with an empty name');
+is ($server->error, 'invalid object name', ' with the right error');
+is ($server->destroy ('base', 'service/none'), undef,
+    'Destroying an unknown object fails');
+is ($server->error, 'cannot find base:service/none', ' with the right error');
+is ($server->destroy ('srvtab', 'service/test'), undef,
+    ' and destroying an unknown type fails');
+is ($server->error, 'unknown object type srvtab', ' with a different error');
+is ($server->destroy ('base', 'service/test'), 1,
+    ' but destroying a good object works');
+is ($server->destroy ('base', 'service/test'), undef, ' but not twice');
+is ($server->error, 'cannot find base:service/test', ' with the right error');
+
+# Because we're admin, we should be able to show one of these objects, but we
+# still shouldn't be able to get or store since there are no ACLs.
+is ($server->show ('base', 'service/test'), undef,
+    'Cannot show nonexistent object');
+is ($server->error, 'cannot find base:service/test', ' with the right error');
+my $show = $server->show ('base', 'service/admin');
+$show =~ s/(Created on:) \d+$/$1 0/;
+my $expected = <<"EOO";
+           Type: base
+           Name: service/admin
+     Created by: $admin
+   Created from: $host
+     Created on: 0
+EOO
+is ($show, $expected, ' but showing an existing object works');
+is ($server->get ('base', 'service/admin'), undef, 'Getting an object fails');
+is ($server->error, "$admin not authorized to get base:service/admin",
+    ' with the right error');
+is ($server->store ('base', 'service/admin', 'stuff'), undef,
+    ' and storing the object also fails');
+is ($server->error, "$admin not authorized to store base:service/admin",
+    ' with the right error');
+
+# Grant only the get ACL, which should give us partial permissions.
+is ($server->acl ('base', 'service/test', 'get', 'ADMIN'), undef,
+    'Setting ACL on unknown object fails');
+is ($server->error, 'cannot find base:service/test', ' with the right error');
+is ($server->acl ('base', 'service/admin', 'foo', 'ADMIN'), undef,
+    ' as does setting an unknown ACL');
+is ($server->error, 'invalid ACL type foo', ' with the right error');
+is ($server->acl ('base', 'service/admin', 'get', 'test2'), undef,
+    ' as does setting it to an unknown ACL');
+is ($server->error, 'ACL test2 not found', ' with the right error');
+is ($server->acl ('base', 'service/admin', 'get', 'ADMIN'), 1,
+    ' but setting the right ACL works');
+my $result = eval { $server->get ('base', 'service/admin') };
+is ($result, undef, 'Get still fails');
+is ($@, "Do not instantiate Wallet::Object::Base directly\n",
+    ' but the method is called');
+is ($server->store ('base', 'service/admin', 'stuff'), undef,
+    ' and storing the object still fails');
+is ($server->error, "$admin not authorized to store base:service/admin",
+    ' with the right error');
+is ($server->acl ('base', 'service/admin', 'get', ''), 1,
+    'Clearing the ACL works');
+is ($server->get ('base', 'service/admin'), undef, ' and now get fails');
+is ($server->error, "$admin not authorized to get base:service/admin",
+    ' with the right error');
 
 # Clean up.
 unlink 'wallet-db';
