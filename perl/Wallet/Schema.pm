@@ -62,12 +62,18 @@ sub sql {
 
 # Given a database handle, try to create our database by running the SQL.  Do
 # this in a transaction regardless of the database settings and throw an
-# exception if this fails.
+# exception if this fails.  We have to do a bit of fiddling to get syntax that
+# works with both MySQL and SQLite.
 sub create {
     my ($self, $dbh) = @_;
+    my $driver = $dbh->{Driver}->{Name};
     eval {
-        $dbh->begin_work;
+        $dbh->begin_work if $dbh->{AutoCommit};
         for my $sql (@{ $self->{sql} }) {
+            if ($driver eq 'SQLite') {
+                $sql =~ s{auto_increment primary key}
+                         {primary key autoincrement};
+            }
             $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
         }
         $dbh->commit;
