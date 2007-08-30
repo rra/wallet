@@ -60,6 +60,8 @@ sub create {
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
     $time ||= time;
+    die "invalid object type\n" unless $type;
+    die "invalid object name\n" unless $name;
     eval {
         my $sql = 'insert into objects (ob_type, ob_name, ob_created_by,
             ob_created_from, ob_created_on) values (?, ?, ?, ?, ?)';
@@ -182,7 +184,7 @@ sub log_set {
 ##############################################################################
 
 # Set a particular attribute.  Takes the attribute to set and its new value.
-# Returns undef on failure and the new value on success.
+# Returns undef on failure and true on success.
 sub _set_internal {
     my ($self, $attr, $value, $user, $host, $time) = @_;
     if ($attr !~ /^[a-z_]+\z/) {
@@ -210,7 +212,7 @@ sub _set_internal {
         $self->{dbh}->rollback;
         return;
     }
-    return $value;
+    return 1;
 }
 
 # Get a particular attribute.  Returns the attribute value.
@@ -226,25 +228,6 @@ sub _get_internal {
     my $sql = "select $attr from objects where ob_type = ? and ob_name = ?";
     my $value = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
     return $value;
-}
-
-# Get or set the owner of an object.  If setting it, trace information must
-# also be provided.
-sub owner {
-    my ($self, $owner, $user, $host, $time) = @_;
-    if ($owner) {
-        my $acl;
-        eval { $acl = Wallet::ACL->new ($owner, $self->{dbh}) };
-        if ($@) {
-            $self->{error} = $@;
-            chomp $self->{error};
-            $self->{error} =~ s/ at .*$//;
-            return undef;
-        }
-        return $self->_set_internal ('owner', $acl->id, $user, $host, $time);
-    } else {
-        return $self->_get_internal ('owner');
-    }
 }
 
 # Get or set an ACL on an object.  Takes the type of ACL and, if setting, the
@@ -268,6 +251,8 @@ sub acl {
             return undef;
         }
         return $self->_set_internal ($attr, $acl->id, $user, $host, $time);
+    } elsif (defined $id) {
+        return $self->_set_internal ($attr, undef, $user, $host, $time);
     } else {
         return $self->_get_internal ($attr);
     }
@@ -284,8 +269,31 @@ sub expires {
             return;
         }
         return $self->_set_internal ('expires', $expires, $user, $host, $time);
+    } elsif (defined $expires) {
+        return $self->_set_internal ('expires', undef, $user, $host, $time);
     } else {
         return $self->_get_internal ('expires');
+    }
+}
+
+# Get or set the owner of an object.  If setting it, trace information must
+# also be provided.
+sub owner {
+    my ($self, $owner, $user, $host, $time) = @_;
+    if ($owner) {
+        my $acl;
+        eval { $acl = Wallet::ACL->new ($owner, $self->{dbh}) };
+        if ($@) {
+            $self->{error} = $@;
+            chomp $self->{error};
+            $self->{error} =~ s/ at .*$//;
+            return undef;
+        }
+        return $self->_set_internal ('owner', $acl->id, $user, $host, $time);
+    } elsif (defined $owner) {
+        return $self->_set_internal ('owner', undef, $user, $host, $time);
+    } else {
+        return $self->_get_internal ('owner');
     }
 }
 
@@ -463,9 +471,10 @@ Sets or retrieves a given object ACL as a numeric ACL ID.  TYPE must be one
 of C<get>, C<store>, C<show>, C<destroy>, or C<flags>, corresponding to the
 ACLs kept on an object.  If no other arguments are given, returns the
 current ACL setting as an ACL ID or undef if that ACL isn't set.  If other
-arguments are given, change that ACL to ACL.  The other arguments are used
-for logging and history and should indicate the user and host from which the
-change is made and the time of the change.
+arguments are given, change that ACL to ACL and return true on success and
+false on failure.  Pass in the empty string for ACL to clear the ACL.  The
+other arguments are used for logging and history and should indicate the
+user and host from which the change is made and the time of the change.
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
@@ -489,9 +498,10 @@ message after an undef return from any other instance method.
 Sets or retrieves the expiration date of an object.  If no arguments are
 given, returns the current expiration or undef if no expiration is set.  If
 arguments are given, change the expiration to EXPIRES, which should be in
-seconds since epoch.  The other arguments are used for logging and history
-and should indicate the user and host from which the change is made and the
-time of the change.
+seconds since epoch, and return true on success and false on failure.  Pass
+in the empty string for EXPIRES to clear the expiration date.  The other
+arguments are used for logging and history and should indicate the user and
+host from which the change is made and the time of the change.
 
 =item get(PRINCIPAL, HOSTNAME [, DATETIME])
 
@@ -508,9 +518,11 @@ Returns the object's name.
 
 Sets or retrieves the owner of an object as a numeric ACL ID.  If no
 arguments are given, returns the current owner ACL ID or undef if none is
-set.  If arguments are given, change the owner to OWNER.  The other
-arguments are used for logging and history and should indicate the user and
-host from which the change is made and the time of the change.
+set.  If arguments are given, change the owner to OWNER and return true on
+success and false on failure.  Pass in the empty string for OWNER to clear
+the owner.  The other arguments are used for logging and history and should
+indicate the user and host from which the change is made and the time of the
+change.
 
 =item show()
 
