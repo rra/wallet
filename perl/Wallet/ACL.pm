@@ -69,6 +69,9 @@ sub new {
 # the newly created ACL in the object.  On failure, throws an exception.
 sub create {
     my ($class, $name, $dbh, $user, $host, $time) = @_;
+    if ($name =~ /^\d+\z/) {
+        die "ACL name may not be all numbers\n";
+    }
     $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
@@ -144,6 +147,10 @@ sub log_acl {
 # Returns true on success, false on failure.
 sub rename {
     my ($self, $name) = @_;
+    if ($name =~ /^\d+\z/) {
+        $self->{error} = "ACL name may not be all numbers";
+        return undef;
+    }
     eval {
         my $sql = 'update acls set ac_name = ? where ac_id = ?';
         $self->{dbh}->do ($sql, undef, $name, $self->{id});
@@ -156,6 +163,7 @@ sub rename {
         $self->{dbh}->rollback;
         return undef;
     }
+    $self->{name} = $name;
     return 1;
 }
 
