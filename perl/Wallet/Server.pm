@@ -151,7 +151,7 @@ sub create {
         $self->{error} =~ s/ at .*$//;
         return undef;
     } else {
-        return $object;
+        return 1;
     }
 }
 
@@ -181,7 +181,7 @@ sub object_error {
     my ($self, $object, $action) = @_;
     my $user = $self->{user};
     my $id = $object->type . ':' . $object->name;
-    if ($action !~ /^(create|get|set|show|destroy)\z/) {
+    if ($action !~ /^(create|get|store|show|destroy)\z/) {
         $action = "set $action for";
     }
     $self->{error} = "$self->{user} not authorized to $action $id";
@@ -189,14 +189,18 @@ sub object_error {
 
 # Given an object and an action, checks if the current user has access to
 # perform that object.  If so, returns true.  If not, returns undef and sets
-# the internal error message.
+# the internal error message.  Note that we do not allow any special access to
+# admins for get and store; if they want to do that with objects, they need to
+# set the ACL accordingly.
 sub acl_check {
     my ($self, $object, $action) = @_;
     unless ($action =~ /^(get|store|show|destroy|flags)\z/) {
         $self->{error} = "unknown action $action";
         return undef;
     }
-    return 1 if $self->{admin}->check ($self->{user});
+    if ($action ne 'get' and $action ne 'store') {
+        return 1 if $self->{admin}->check ($self->{user});
+    }
     my $id = $object->acl ($action);
     if (not defined $id && $action =~ /^(get|store|show)\z/) {
         $id = $object->owner;
@@ -205,7 +209,7 @@ sub acl_check {
         $self->object_error ($object, $action);
         return undef;
     }
-    my $acl = eval { Wallet::ACL->new ($id) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->{error} = $@;
         chomp $self->{error};
@@ -233,11 +237,14 @@ sub acl {
         $self->object_error ($object, 'ACL');
         return undef;
     }
-    if ($id) {
-        return $object->acl ($acl, $id, $self->{user}, $self->{host});
+    my $result;
+    if (defined $id) {
+        $result = $object->acl ($acl, $id, $self->{user}, $self->{host});
     } else {
-        return $object->acl ($acl);
+        $result = $object->acl ($acl);
     }
+    $self->{error} = $object->error unless defined $result;
+    return $result;
 }
 
 # Retrieves or sets the expiration of an object.
@@ -249,11 +256,14 @@ sub expires {
         $self->object_error ($object, 'expires');
         return undef;
     }
-    if ($expires) {
-        return $object->expires ($expires, $self->{user}, $self->{host});
+    my $result;
+    if (defined $expires) {
+        $result = $object->expires ($expires, $self->{user}, $self->{host});
     } else {
-        return $object->expires;
+        $result = $object->expires;
     }
+    $self->{error} = $object->error unless defined $result;
+    return $result;
 }
 
 # Retrieves or sets the owner of an object.
@@ -265,11 +275,14 @@ sub owner {
         $self->object_error ($object, 'owner');
         return undef;
     }
-    if ($owner) {
-        return $object->owner ($owner, $self->{user}, $self->{host});
+    my $result;
+    if (defined $owner) {
+        $result = $object->owner ($owner, $self->{user}, $self->{host});
     } else {
-        return $object->owner;
+        $result = $object->owner;
     }
+    $self->{error} = $object->error unless defined $result;
+    return $result;
 }
 
 # Retrieve the information associated with an object, or returns undef and
@@ -280,17 +293,26 @@ sub get {
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'get');
-    return $object->get ($self->{user}, $self->{host});
+    my $result = $object->get ($self->{user}, $self->{host});
+    $self->{error} = $object->error unless defined $result;
+    return $result;
 }
 
 # Store new data in an object, or returns undef and sets the internal error if
-# the object can't be found or if the user isn't authorized.
+# the object can't be found or if the user isn't authorized.  Also don't
+# permit storing undef, although storing the empty string is fine.
 sub store {
     my ($self, $type, $name, $data) = @_;
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'store');
-    return $object->store ($data, $self->{user}, $self->{host});
+    if (not defined ($data)) {
+        $self->{error} = "no data supplied to store";
+        return undef;
+    }
+    my $result = $object->store ($data, $self->{user}, $self->{host});
+    $self->{error} = $object->error unless defined $result;
+    return $result;
 }
 
 # Return a human-readable description of the object's metadata, or returns
@@ -301,7 +323,9 @@ sub show {
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'show');
-    return $object->show;
+    my $result = $object->show;
+    $self->{error} = $object->error unless defined $result;
+    return $result;
 }
 
 # Destroys the object, or returns undef and sets the internal error if the
@@ -314,7 +338,9 @@ sub destroy {
         $self->object_error ($object, 'owner');
         return undef;
     }
-    return $object->destroy ($self->{user}, $self->{host});
+    my $result = $object->destroy ($self->{user}, $self->{host});
+    $self->{error} = $object->error unless defined $result;
+    return $result;
 }
 
 ##############################################################################
