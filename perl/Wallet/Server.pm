@@ -43,11 +43,12 @@ $VERSION = '0.01';
 sub _open_db {
     my ($class) = @_;
     unless ($Wallet::Config::DB_DRIVER
-            and ($Wallet::Config::DB_INFO or $Wallet::Config::DB_NAME)) {
+            and (defined ($Wallet::Config::DB_INFO)
+                 or defined ($Wallet::Config::DB_NAME))) {
         die "database connection information not configured\n";
     }
     my $dsn = "DBI:$Wallet::Config::DB_DRIVER:";
-    if ($Wallet::Config::DB_INFO) {
+    if (defined $Wallet::Config::DB_INFO) {
         $dsn .= $Wallet::Config::DB_INFO;
     } else {
         $dsn .= "database=$Wallet::Config::DB_NAME";
