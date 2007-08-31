@@ -97,7 +97,7 @@ check().
 
 =head1 SEE ALSO
 
-wallet-backend(8)
+Wallet::ACL(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is available
 from L<http://www.eyrie.org/~eagle/software/wallet/>.
