@@ -197,3 +197,126 @@ sub get {
 
 1;
 __END__;
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+Wallet::Object::Keytab - Keytab object implementation for wallet
+
+=head1 SYNOPSIS
+
+    my @name = qw(keytab host/shell.example.com);
+    my @trace = ($user, $host, time);
+    my $object = Wallet::Object::Keytab->create (@name, $dbh, @trace);
+    my $keytab = $object->get (@trace);
+    $object->destroy (@trace);
+
+=head1 DESCRIPTION
+
+Wallet::Object::Keytab is a representation of Kerberos keytab objects in the
+wallet.  It implements then wallet object API and provides the necessary
+glue to create principals in a Kerberos KDC, create and return keytabs for
+those principals, and delete them out of Kerberos when the wallet object is
+destroyed.
+
+A keytab is an on-disk store for the key or keys for a Kerberos principal.
+Keytabs are used by services to verify incoming authentication from clients
+or by automated processes that need to authenticate to Kerberos.  To create
+a keytab, the principal has to be created in Kerberos and then a keytab is
+generated and stored in a file on disk.
+
+This implementation generates a new random key (and hence invalidates all
+existing keytabs) each time the keytab is retrieved with the get() method.
+
+To use this object, several configuration parameters must be set.  See
+Wallet::Config(3) for details on those configuration parameters and
+information about how to set wallet configuration.
+
+=head1 METHODS
+
+This object mostly inherits from Wallet::Object::Base.  See the
+documentation for that class for all generic methods.  Below are only those
+methods that are overridden or behave specially for this implementation.
+
+=over 4
+
+=item create(TYPE, NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+
+This is a class method and should be called on the Wallet::Object::Keytab
+class.  It creates a new object with the given TYPE and NAME (TYPE is
+normally C<keytab> and must be for the rest of the wallet system to use the
+right class, but this module doesn't check for ease of subclassing), using
+DBH as the handle to the wallet metadata database.  PRINCIPAL, HOSTNAME, and
+DATETIME are stored as history information.  PRINCIPAL should be the user
+who is downloading the keytab.  If DATETIME isn't given, the current time is
+used.
+
+When a new keytab object is created, the Kerberos principal designated by
+NAME is also created in the Kerberos realm determined from the wallet
+configuration.  If the Kerberos principal could not be created (including if
+it already exists), create() fails.  The principal is created with the
+C<-randkey> option to randomize its keys.
+
+If create() fails, it throws an exception.
+
+=item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
+
+Destroys a keytab object by removing all record of it from the database and
+deleting the principal out of Kerberos.  If deleting the principal fails,
+destroy() fails, but destroy() succeeds if the principal didn't exist when
+it was called (so that it can be used to clean up stranded entries).
+Returns true on success and false on failure.  The caller should call
+error() to get the error message after a failure.  PRINCIPAL, HOSTNAME, and
+DATETIME are stored as history information.  PRINCIPAL should be the user
+who is downloading the keytab.  If DATETIME isn't given, the current time is
+used.
+
+=item get(PRINCIPAL, HOSTNAME [, DATETIME])
+
+Retrieves a keytab for this object and returns the keytab data or undef on
+error.  The caller should call error() to get the error message if get()
+returns undef.  The keytab is created with C<ktadd>, invalidating any
+existing keytabs for that principal.  PRINCIPAL, HOSTNAME, and DATETIME are
+stored as history information.  PRINCIPAL should be the user who is
+downloading the keytab.  If DATETIME isn't given, the current time is used.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item KEYTAB_TMP/keytab.<pid>
+
+The keytab is created in this file using C<ktadd> and then read into memory.
+KEYTAB_TMP is set in the wallet configuration, and <pid> is the process ID
+of the current process.  The file is unlinked after being read.
+
+=back
+
+=head1 LIMITATIONS
+
+Currently, this implementation only supports MIT Kerberos and needs
+modifications to support Heimdal.  It calls an external B<kadmin> program
+rather than using a native Perl module and therefore requires B<kadmin> be
+installed and parses its output.  It may miss some error conditions if the
+output of B<kadmin> ever changes.
+
+Only one Kerberos realm is supported for a given wallet implementation and
+all keytab objects stored must be in that realm.
+
+=head1 SEE ALSO
+
+wallet-backend(8)
+
+This module is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut
