@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 23;
+use Test::More tests => 37;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -106,7 +106,7 @@ sub valid {
 }
 
 SKIP: {
-    skip 'no keytab configuration', 23 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 37 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -142,7 +142,11 @@ SKIP: {
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
-    ok (defined ($object), 'Creating good principal succeeds');
+    if (defined ($object)) {
+        ok (defined ($object), 'Creating good principal succeeds');
+    } else {
+        is ($@, '', 'Creating good principal succeeds');
+    }
     ok ($object->isa ('Wallet::Object::Keytab'), ' and is the right class');
     ok (created ('wallet/one'), ' and the principal was created');
     create ('wallet/two');
@@ -168,6 +172,18 @@ SKIP: {
     ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
 
     # Test error handling on keytab retrieval.
+    undef $Wallet::Config::KEYTAB_TMP;
+    $data = $object->get (@trace);
+    is ($data, undef, 'Getting a keytab without a tmp directory fails');
+    is ($object->error, 'KEYTAB_TMP configuration variable not set',
+        ' with the right error');
+    $Wallet::Config::KEYTAB_TMP = '.';
+    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+    $data = $object->get (@trace);
+    is ($data, undef, 'Cope with a failure to run kadmin');
+    like ($object->error, qr{^cannot run /some/nonexistent/file: },
+          ' with the right error');
+    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
     destroy ('wallet/one');
     $data = $object->get (@trace);
     is ($data, undef, 'Getting a keytab for a nonexistent principal fails');
@@ -176,14 +192,53 @@ SKIP: {
           ' with the right error');
     is ($object->destroy (@trace), 1, ' but we can still destroy it');
 
-    # Finally, test principal deletion on object destruction.
+    # Test principal deletion on object destruction.
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
     ok (defined ($object), 'Creating good principal succeeds');
     ok (created ('wallet/one'), ' and the principal was created');
+    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+    is ($object->destroy (@trace), undef,
+        ' and destroying it with bad kadmin fails');
+    like ($object->error, qr{^cannot run /some/nonexistent/file: },
+          ' with the right error');
+    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
     is ($object->destroy (@trace), 1, ' and destroying it succeeds');
     ok (! created ('wallet/one'), ' and now it does not exist');
+
+    # Test configuration errors.
+    undef $Wallet::Config::KEYTAB_FILE;
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, 'Creating with bad configuration fails');
+    is ($@, "keytab object implementation not configured\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_FILE = 't/data/test.keytab';
+    undef $Wallet::Config::KEYTAB_PRINCIPAL;
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, ' likewise with another missing variable');
+    is ($@, "keytab object implementation not configured\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
+    undef $Wallet::Config::KEYTAB_REALM;
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, ' and another');
+    is ($@, "keytab object implementation not configured\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_REALM = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, 'Cope with a failure to run kadmin');
+    like ($@, qr{^cannot run /some/nonexistent/file: },
+          ' with the right error');
 
     # Clean up.
     unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test');
