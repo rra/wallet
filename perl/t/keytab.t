@@ -5,7 +5,6 @@
 
 use Test::More tests => 23;
 
-use DBD::SQLite;
 use Wallet::Config;
 use Wallet::Object::Keytab;
 use Wallet::Server;

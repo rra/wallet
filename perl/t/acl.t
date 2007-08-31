@@ -5,7 +5,6 @@
 
 use Test::More tests => 97;
 
-use DBD::SQLite;
 use Wallet::ACL;
 use Wallet::Config;
 use Wallet::Server;

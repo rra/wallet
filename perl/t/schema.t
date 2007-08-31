@@ -5,7 +5,6 @@
 
 use Test::More tests => 5;
 
-use DBD::SQLite;
 use DBI;
 use Wallet::Schema;
 

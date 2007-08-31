@@ -5,7 +5,6 @@
 
 use Test::More tests => 198;
 
-use DBD::SQLite;
 use Wallet::Config;
 use Wallet::Server;
 
