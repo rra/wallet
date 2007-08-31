@@ -14,10 +14,36 @@ our $ID = q$Id$;
 
 use strict;
 use DBI;
-use DBD::MySQL;
 use Sys::Syslog qw(openlog syslog);
 use Wallet::Config;
 use Wallet::Server;
+
+##############################################################################
+# Parameter checking
+##############################################################################
+
+# Check all arguments against a very restricted set of allowed characters and
+# to ensure the right number of arguments are taken.  The arguments are the
+# number of arguments expected, a reference to an array of which argument
+# numbers shouldn't be checked, and then the arguments.
+#
+# This function is probably temporary and will be replaced with something that
+# knows more about the syntax of each command and can check more things.
+sub check_args {
+    my ($count, $exclude, @args) = @_;
+    if (@args < $count) {
+        die "insufficient arguments\n";
+    } elsif (@args > $count) {
+        die "too many arguments\n";
+    }
+    my %exclude = map { $_ => 1 } @$exclude;
+    for (my $i = 1; $i <= @args; $i++) {
+        next if $exclude{$i};
+        unless ($args[$i - 1] =~ m,^[\w_/.-]+\z,) {
+            die "invalid characters in argument: $args[$i - 1]\n";
+        }
+    }
+}
 
 ##############################################################################
 # Implementation
