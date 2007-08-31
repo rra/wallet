@@ -2,12 +2,11 @@
 
 Required to replace leland_srvtab:
 
-* Testing.  Most of the classes have no tests at all right now.  Doing
-  meaningful testing will require finding a way to set up a database
-  for testing purposes, probably using sqlite.
-
 * Documentation missing for Wallet::Server, Wallet::ACL, Wallet::Config,
   Wallet::Object::Keytab, wallet-backend, and wallet.
+
+* Write a test suite for the sanity checking in wallet-backend and
+  keytab-backend.
 
 * Add an ACL list function to display an ACL in human-readable form and
   call it from wallet-backend.
@@ -43,6 +42,8 @@ Future work:
 
 * Write the PTS ACL verifier.
 
+* Add a help function to wallet-backend listing the commands.
+
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
 
@@ -74,8 +75,22 @@ Future work:
 * Remove the hard-coded ADMIN ACL in the server with something more
   configurable, perhaps a global ACL table or something.
 
+* Add the database schema version to a global table so that we can use it
+  to support schema upgrades in the future.
+
 * Write a wallet-admin program to provide an interface to things like
   database initialization and, eventually, upgrades.
 
+* Add a function to wallet-admin to purge expired entries.  Possibly also
+  check expiration before allowing anyone to get or store objects.
+
 * Compiling kasetkey should be optional and probably not enabled by
   default.
+
+* Add a comment field for objects that can be set by the owner.
+
+* Add readline support to the wallet client to make it easier to issue
+  multiple commands.
+
+* The keytab backend currently only supports MIT Kerberos.  Add support
+  for Heimdal.
