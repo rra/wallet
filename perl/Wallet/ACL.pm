@@ -334,3 +334,173 @@ sub check_errors {
     }
     return wantarray ? @errors : join ("\n", @errors, '');
 }
+
+1;
+__END__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+Wallet::ACL - Implementation of ACLs in the wallet system
+
+=head1 SYNOPSIS
+
+    my $acl = Wallet::ACL->create ('group:sysadmin');
+    $acl->rename ('group:unix');
+    $acl->add ('krb5', 'alice@EXAMPLE.COM', $admin, $host);
+    $acl->add ('krb5', 'bob@EXAMPLE.COM', $admin, $host);
+    if ($acl->check ($user)) {
+        print "Permission granted\n";
+        warn scalar ($acl->check_errors) if $acl->check_errors;
+    }
+    $acl->remove ('krb5', 'bob@EXAMPLE.COM', $admin, $host);
+    my @entries = $acl->list;
+    $acl->destroy ($admin, $host);
+
+=head1 DESCRIPTION
+
+Wallet::ACL implements the ACL system for the wallet: the methods to create,
+find, rename, and destroy ACLs; the methods to add and remove entries from
+an ACL; and the methods to list the contents of an ACL and check a principal
+against it.
+
+An ACL is a list of zero or more ACL entries, each of which consists of a
+scheme and an identifier.  Each scheme is associated with a verifier module
+that checks Kerberos principals against identifiers for that scheme and
+returns whether the principal should be permitted access by that identifier.
+The interpretation of the identifier is entirely left to the scheme.  This
+module maintains the ACLs and dispatches check operations to the appropriate
+verifier module.
+
+Each ACL is identified by a human-readable name and a persistant unique
+numeric identifier.  The numeric identifier (ID) should be used to refer to
+the ACL so that it can be renamed as needed without breaking external
+references.
+
+=head1 CLASS METHODS
+
+=over 4
+
+=item new(ACL, DBH)
+
+Instantiate a new ACL object with the given ACL ID or name.  Takes the
+database handle to use for retrieving metadata from the wallet database.
+Returns a new ACL object if the ACL was found and throws an exception if it
+wasn't or on any other error.
+
+=item create(NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+
+Similar to new() in that it instantiates a new ACL object, but instead of
+finding an existing one, creates a new ACL record in the database with the
+given NAME.  NAME must not be all-numeric, since that would conflict with
+the automatically assigned IDs.  Returns the new object on success and
+throws an exception on failure.  PRINCIPAL, HOSTNAME, and DATETIME are
+stored as history information.  PRINCIPAL should be the user who is creating
+the ACL.  If DATETIME isn't given, the current time is used.
+
+=back
+
+=head1 INSTANCE METHODS
+
+=over 4
+
+=item add(SCHEME, INSTANCE, PRINCIPAL, HOSTNAME [, DATETIME])
+
+Add the given ACL entry (given by SCHEME and INSTANCE) to this ACL.  Returns
+true on success and false on failure.  On failure, the caller should call
+error() to get the error message.  PRINCIPAL, HOSTNAME, and DATETIME are
+stored as history information.  PRINCIPAL should be the user who is adding
+the ACL entry.  If DATETIME isn't given, the current time is used.
+
+=item check(PRINCIPAL)
+
+Checks whether the given PRINCIPAL should be allowed access given ACL.
+Returns 1 if access was granted, 0 if access is declined, and undef on
+error.  On error, the caller should call error() to get the error text.  Any
+errors found by the individual ACL verifiers can be retrieved by calling
+check_errors().  Errors from individual ACL verifiers will not result in an
+error return from check(); instead, the check will continue with the next
+entry in the ACL.
+
+check() returns success as soon as an entry in the ACL grants access to
+PRINCIPAL.  There is no provision for negative ACLs or exceptions.
+
+=item check_errors()
+
+Return (as a list in array context and a string with newlines between errors
+and at the end of the last error in scalar context) the errors, if any,
+returned by ACL verifiers for the last check operation.  If there were no
+errors from the last check() operation, returns the empty list in array
+context and undef in scalar context.
+
+=item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
+
+Destroys this ACL from the database.  Note that this will fail due to
+integrity constraint errors if the ACL is still referenced by any object;
+the ACL must be removed from all objects first.  Returns true on success and
+false on failure.  On failure, the caller should call error() to get the
+error message.  PRINCIPAL, HOSTNAME, and DATETIME are stored as history
+information.  PRINCIPAL should be the user who is destroying the ACL.  If
+DATETIME isn't given, the current time is used.
+
+=item error()
+
+Returns the error text of the last error.
+
+=item id()
+
+Returns the numeric system-generated ID of this ACL.
+
+=item list()
+
+Returns all the entries of this ACL.  The return value will be a list of
+references to pairs of scheme and identifier.  For example, for an ACL
+containing two entries, both of scheme C<krb5> and with values
+C<alice@EXAMPLE.COM> and C<bob@EXAMPLE.COM>, list() would return:
+
+    ([ 'krb5', 'alice@EXAMPLE.COM' ], [ 'krb5', 'bob@EXAMPLE.COM' ])
+
+Returns C<(undef)> (the list containing the single element undef) on
+failure, so that it can be distinguished from the empty list, which
+indicates the ACL contains no entries.  On failure, the caller should call
+error() to get the error message.
+
+=item name()
+
+Returns the human-readable name of this ACL.
+
+=item remove(SCHEME, INSTANCE, PRINCIPAL, HOSTNAME [, DATETIME])
+
+Remove the given ACL line (given by SCHEME and INSTANCE) from this ACL.
+Returns true on success and false on failure.  On failure, the caller should
+call error() to get the error message.  PRINCIPAL, HOSTNAME, and DATETIME
+are stored as history information.  PRINCIPAL should be the user who is
+removing the ACL entry.  If DATETIME isn't given, the current time is used.
+
+=item rename(NAME)
+
+Rename this ACL.  This changes the name used for human convenience but not
+the system-generated ACL ID that is used to reference this ACL.  The new
+NAME must not be all-numeric, since that would conflict with
+system-generated ACL IDs.  Returns true on success and false on failure.  On
+failure, the caller should call error() to get the error message.
+
+Note that rename() operations are not logged in the ACL history.
+
+=back
+
+=head1 SEE ALSO
+
+Wallet::ACL::Base(3), wallet-backend(8)
+
+This module is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut
