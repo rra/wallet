@@ -47,6 +47,11 @@ sub _valid_principal {
 # kadmin is often worthless.
 sub _kadmin {
     my ($self, $command) = @_;
+    unless (defined ($Wallet::Config::KEYTAB_PRINCIPAL)
+            and defined ($Wallet::Config::KEYTAB_FILE)
+            and defined ($Wallet::Config::KEYTAB_REALM)) {
+        die "keytab object implementation not configured\n";
+    }
     my @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k', '-t',
                 $Wallet::Config::KEYTAB_FILE, '-q', $command);
     push (@args, '-s', $Wallet::Config::KEYTAB_HOST)
@@ -55,15 +60,23 @@ sub _kadmin {
         if $Wallet::Config::KEYTAB_REALM;
     my $pid = open (KADMIN, '-|');
     if (not defined $pid) {
-        die "error: cannot fork: $!\n";
+        die "cannot fork: $!\n";
     } elsif ($pid == 0) {
-        open (STDERR, '>&STDOUT') or die "error: cannot dup stdout: $!\n";
-        exec ($Wallet::Config::KEYTAB_KADMIN, @args)
-            or die "error: cannot run $Wallet::Config::KEYTAB_KADMIN\n";
+        open (STDERR, '>&STDOUT') or die "cannot dup stdout: $!\n";
+
+        # Don't use die here; it will get trapped as an exception.
+        unless (exec ($Wallet::Config::KEYTAB_KADMIN, @args)) {
+            warn "wallet: cannot run $Wallet::Config::KEYTAB_KADMIN: $!\n";
+            exit 1;
+        }
     }
     local $_;
     my @output;
     while (<KADMIN>) {
+        if (/^wallet: cannot run /) {
+            s/^wallet: //;
+            die $_;
+        }
         push (@output, $_) unless /Authenticating as principal/;
     }
     close KADMIN;
@@ -71,7 +84,7 @@ sub _kadmin {
 }
 
 # Check whether a given principal already exists in Kerberos.  Returns true if
-# so, false otherwise.
+# so, false otherwise.  Throws an exception if kadmin fails.
 sub _kadmin_exists {
     my ($self, $principal) = @_;
     return undef unless $self->_valid_principal ($principal);
@@ -97,7 +110,7 @@ sub _kadmin_addprinc {
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $flags = $Wallet::Config::KEYTAB_FLAGS;
+    my $flags = $Wallet::Config::KEYTAB_FLAGS || '';
     my $output = $self->_kadmin ("addprinc -randkey $flags $principal");
     if ($output =~ /^add_principal: (.*)/m) {
         die "error adding principal $principal: $!\n";
@@ -116,8 +129,12 @@ sub _kadmin_ktadd {
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $output = $self->_kadmin ("ktadd -q -k $file $principal");
-    if ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
+    my $output = eval { $self->_kadmin ("ktadd -q -k $file $principal") };
+    if ($@) {
+        $self->{error} = $@;
+        chomp $self->{error};
+        return undef;
+    } elsif ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
         $self->{error} = "error creating keytab for $principal: $1";
         return undef;
     }
@@ -133,14 +150,23 @@ sub _kadmin_delprinc {
         $self->{error} = "invalid principal name: $principal";
         return undef;
     }
-    if (not $self->_kadmin_exists ($principal)) {
+    my $exists = eval { $self->_kadmin_exists ($principal) };
+    if ($@) {
+        $self->{error} = $@;
+        chomp $self->{error};
+        return undef;
+    } elsif (not $exists) {
         return 1;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $output = $self->_kadmin ("delprinc -force $principal");
-    if ($output =~ /^delete_principal: (.*)/m) {
+    my $output = eval { $self->_kadmin ("delprinc -force $principal") };
+    if ($@) {
+        $self->{error} = $@;
+        chomp $self->{error};
+        return undef;
+    } elsif ($output =~ /^delete_principal: (.*)/m) {
         $self->{error} = "error deleting $principal: $1";
         return undef;
     }
@@ -173,6 +199,10 @@ sub destroy {
 sub get {
     my ($self, $user, $host, $time) = @_;
     $time ||= time;
+    unless (defined ($Wallet::Config::KEYTAB_TMP)) {
+        $self->{error} = 'KEYTAB_TMP configuration variable not set';
+        return undef;
+    }
     my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
     return undef if not $self->_kadmin_ktadd ($self->{name}, $file);
     local *KEYTAB;
@@ -258,7 +288,9 @@ When a new keytab object is created, the Kerberos principal designated by
 NAME is also created in the Kerberos realm determined from the wallet
 configuration.  If the Kerberos principal could not be created (including if
 it already exists), create() fails.  The principal is created with the
-C<-randkey> option to randomize its keys.
+C<-randkey> option to randomize its keys.  NAME must not contain the realm;
+instead, the KEYTAB_REALM configuration variable should be set.  See
+Wallet::Config(3) for more information.
 
 If create() fails, it throws an exception.
 
@@ -306,7 +338,8 @@ installed and parses its output.  It may miss some error conditions if the
 output of B<kadmin> ever changes.
 
 Only one Kerberos realm is supported for a given wallet implementation and
-all keytab objects stored must be in that realm.
+all keytab objects stored must be in that realm.  Keytab names in the wallet
+database do not have realm information.
 
 =head1 SEE ALSO
 
