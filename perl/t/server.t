@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 198;
+use Test::More tests => 201;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -435,6 +435,21 @@ is ($server->error, 'cannot find base:service/both', ' because it is gone');
 is ($server->store ('base', 'service/both', 'stuff'), undef,
     ' or store it');
 is ($server->error, 'cannot find base:service/both', ' because it is gone');
+
+# Now test handling of some configuration errors.
+undef $Wallet::Config::DB_DRIVER;
+$server = eval { Wallet::Server->new ($user2, $host) };
+is ($@, "database connection information not configured\n",
+    'Fail if DB_DRIVER is not set');
+$Wallet::Config::DB_DRIVER = 'SQLite';
+undef $Wallet::Config::DB_INFO;
+$server = eval { Wallet::Server->new ($user2, $host) };
+is ($@, "database connection information not configured\n",
+    ' or if DB_INFO is not set');
+$Wallet::Config::DB_INFO = 't';
+$server = eval { Wallet::Server->new ($user2, $host) };
+like ($@, qr/^cannot connect to database: /,
+      ' or if the database connection fails');
 
 # Clean up.
 unlink 'wallet-db';
