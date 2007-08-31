@@ -4,6 +4,8 @@ Required to replace leland_srvtab:
 
 * Documentation missing for Wallet::Server, wallet-backend, and wallet.
 
+* Bring the design document up to date.
+
 * Write a test suite for the sanity checking in wallet-backend and
   keytab-backend.
 
@@ -87,6 +89,9 @@ Future work:
   default.
 
 * Add a comment field for objects that can be set by the owner.
+
+* Add details to design-api on how to write one's own ACL verifiers and
+  object implementations.
 
 * Add readline support to the wallet client to make it easier to issue
   multiple commands.
