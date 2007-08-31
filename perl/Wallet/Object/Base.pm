@@ -492,12 +492,6 @@ trailing newlines are removed, any text of the form S<C< at \S+ line
 as the error.  Only child classes should call this method with an error
 string.
 
-=item error()
-
-Returns the error message from the last failing operation or undef if no
-operations have failed.  Callers should call this function to get the error
-message after an undef return from any other instance method.
-
 =item expires([EXPIRES, PRINCIPAL, HOSTNAME [, DATETIME]])
 
 Sets or retrieves the expiration date of an object.  If no arguments are
