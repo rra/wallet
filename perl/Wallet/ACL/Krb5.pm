@@ -34,11 +34,11 @@ $VERSION = '0.01';
 sub check {
     my ($self, $principal, $acl) = @_;
     unless ($principal) {
-        $self->{error} = 'no principal specified';
+        $self->error ('no principal specified');
         return undef;
     }
     unless ($acl) {
-        $self->{error} = 'malformed krb5 ACL';
+        $self->error ('malformed krb5 ACL');
         return undef;
     }
     return ($principal eq $acl) ? 1 : 0;
@@ -80,7 +80,7 @@ principal if and only if the principal exactly matches the ACL.
 
 =item new()
 
-Creates a new ACL verifier.  The database handle is not used.
+Creates a new ACL verifier.  For this verifier, there is no setup work.
 
 =item check(PRINCIPAL, ACL)
 

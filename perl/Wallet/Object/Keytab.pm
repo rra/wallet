@@ -123,7 +123,7 @@ sub _kadmin_addprinc {
 sub _kadmin_ktadd {
     my ($self, $principal, $file) = @_;
     unless ($self->_valid_principal ($principal)) {
-        $self->{error} = "invalid principal name: $principal";
+        $self->error ("invalid principal name: $principal");
         return undef;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
@@ -131,11 +131,10 @@ sub _kadmin_ktadd {
     }
     my $output = eval { $self->_kadmin ("ktadd -q -k $file $principal") };
     if ($@) {
-        $self->{error} = $@;
-        chomp $self->{error};
+        $self->error ($@);
         return undef;
     } elsif ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
-        $self->{error} = "error creating keytab for $principal: $1";
+        $self->error ("error creating keytab for $principal: $1");
         return undef;
     }
     return 1;
@@ -147,13 +146,12 @@ sub _kadmin_ktadd {
 sub _kadmin_delprinc {
     my ($self, $principal) = @_;
     unless ($self->_valid_principal ($principal)) {
-        $self->{error} = "invalid principal name: $principal";
+        $self->error ("invalid principal name: $principal");
         return undef;
     }
     my $exists = eval { $self->_kadmin_exists ($principal) };
     if ($@) {
-        $self->{error} = $@;
-        chomp $self->{error};
+        $self->error ($@);
         return undef;
     } elsif (not $exists) {
         return 1;
@@ -163,11 +161,10 @@ sub _kadmin_delprinc {
     }
     my $output = eval { $self->_kadmin ("delprinc -force $principal") };
     if ($@) {
-        $self->{error} = $@;
-        chomp $self->{error};
+        $self->error ($@);
         return undef;
     } elsif ($output =~ /^delete_principal: (.*)/m) {
-        $self->{error} = "error deleting $principal: $1";
+        $self->error ("error deleting $principal: $1");
         return undef;
     }
     return 1;
@@ -200,7 +197,7 @@ sub get {
     my ($self, $user, $host, $time) = @_;
     $time ||= time;
     unless (defined ($Wallet::Config::KEYTAB_TMP)) {
-        $self->{error} = 'KEYTAB_TMP configuration variable not set';
+        $self->error ('KEYTAB_TMP configuration variable not set');
         return undef;
     }
     my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
@@ -208,7 +205,7 @@ sub get {
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
-        $self->{error} = "error opening keytab for principal $princ: $!";
+        $self->error ("error opening keytab for principal $princ: $!");
         return undef;
     }
     local $/;
@@ -216,7 +213,7 @@ sub get {
     my $data = <KEYTAB>;
     if ($!) {
         my $princ = $self->{name};
-        $self->{error} = "error reading keytab for principal $princ: $!";
+        $self->error ("error reading keytab for principal $princ: $!");
         return undef;
     }
     close KEYTAB;

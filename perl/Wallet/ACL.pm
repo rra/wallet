@@ -104,9 +104,15 @@ sub create {
 # Utility functions
 ##############################################################################
 
-# Returns the current error message of the object, if any.
+# Set or return the error stashed in the object.
 sub error {
-    my ($self) = @_;
+    my ($self, @error) = @_;
+    if (@error) {
+        my $error = join ('', @error);
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        $self->{error} = $error;
+    }
     return $self->{error};
 }
 
@@ -148,7 +154,7 @@ sub log_acl {
 sub rename {
     my ($self, $name) = @_;
     if ($name =~ /^\d+\z/) {
-        $self->{error} = "ACL name may not be all numbers";
+        $self->error ("ACL name may not be all numbers");
         return undef;
     }
     eval {
@@ -157,9 +163,7 @@ sub rename {
         $self->{dbh}->commit;
     };
     if ($@) {
-        $self->{error} = "cannot rename ACL $self->{id} to $name: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot rename ACL $self->{id} to $name: $@");
         $self->{dbh}->rollback;
         return undef;
     }
@@ -183,9 +187,7 @@ sub destroy {
         $self->{dbh}->commit;
     };
     if ($@) {
-        $self->{error} = "cannot destroy ACL $self->{id}: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot destroy ACL $self->{id}: $@");
         $self->{dbh}->rollback;
         return undef;
     }
@@ -201,7 +203,7 @@ sub add {
     my ($self, $scheme, $identifier, $user, $host, $time) = @_;
     $time ||= time;
     unless ($MAPPING{$scheme}) {
-        $self->{error} = "unknown ACL scheme $scheme";
+        $self->error ("unknown ACL scheme $scheme");
         return undef;
     }
     eval {
@@ -212,9 +214,7 @@ sub add {
         $self->{dbh}->commit;
     };
     if ($@) {
-        $self->{error} = "cannot add $scheme:$identifier to $self->{id}: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot add $scheme:$identifier to $self->{id}: $@");
         $self->{dbh}->rollback;
         return undef;
     }
@@ -243,9 +243,7 @@ sub remove {
     };
     if ($@) {
         my $entry = "$scheme:$identifier";
-        $self->{error} = "cannot remove $entry from $self->{id}: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot remove $entry from $self->{id}: $@");
         $self->{dbh}->rollback;
         return undef;
     }
@@ -273,9 +271,7 @@ sub list {
         }
     };
     if ($@) {
-        $self->{error} = "cannot retrieve ACL $self->{id}: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot retrieve ACL $self->{id}: $@");
         return (undef);
     } else {
         return @entries;
@@ -294,7 +290,7 @@ sub list {
 sub check {
     my ($self, $principal) = @_;
     unless ($principal) {
-        $self->{error} = 'no principal specified';
+        $self->error ('no principal specified');
         return undef;
     }
     my @entries = $self->list;
@@ -448,7 +444,9 @@ DATETIME isn't given, the current time is used.
 
 =item error()
 
-Returns the error text of the last error.
+Returns the error of the last failing operation or undef if no operations
+have failed.  Callers should call this function to get the error message
+after an undef return from any other instance method.
 
 =item id()
 

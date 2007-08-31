@@ -41,9 +41,15 @@ sub check {
     return 0;
 }
 
-# Return the error stashed in the object.
+# Set or return the error stashed in the object.
 sub error {
-    my ($self) = @_;
+    my ($self, @error) = @_;
+    if (@error) {
+        my $error = join ('', @error);
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        $self->{error} = $error;
+    }
     return $self->{error};
 }
 
@@ -87,11 +93,18 @@ and blesses an object.
 This method should always be overridden by child classes.  The default
 implementation just declines all access.
 
-=item error()
+=item error([ERROR ...])
 
-Returns whatever is stored in the error key of the object hash.  Child
-classes should store error messages in that key when returning undef from
-check().
+Returns the error of the last failing operation or undef if no operations
+have failed.  Callers should call this function to get the error message
+after an undef return from any other instance method.
+
+For the convenience of child classes, this method can also be called with
+one or more error strings.  If so, those strings are concatenated together,
+trailing newlines are removed, any text of the form S<C< at \S+ line
+\d+\.?>> at the end of the message is stripped off, and the result is stored
+as the error.  Only child classes should call this method with an error
+string.
 
 =back
 

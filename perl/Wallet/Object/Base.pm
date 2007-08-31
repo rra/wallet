@@ -88,9 +88,15 @@ sub create {
 # Utility functions
 ##############################################################################
 
-# Returns the current error message of the object, if any.
+# Set or return the error stashed in the object.
 sub error {
-    my ($self) = @_;
+    my ($self, @error) = @_;
+    if (@error) {
+        my $error = join ('', @error);
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        $self->{error} = $error;
+    }
     return $self->{error};
 }
 
@@ -115,7 +121,7 @@ sub name {
 sub log_action {
     my ($self, $action, $user, $host, $time) = @_;
     unless ($action =~ /^(get|store)\z/) {
-        $self->{error} = "invalid history action $action";
+        $self->error ("invalid history action $action");
         return undef;
     }
 
@@ -143,9 +149,7 @@ sub log_action {
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
-        $self->{error} = "cannot update history for $id: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot update history for $id: $@");
         $self->{dbh}->rollback;
         return undef;
     }
@@ -188,7 +192,7 @@ sub log_set {
 sub _set_internal {
     my ($self, $attr, $value, $user, $host, $time) = @_;
     if ($attr !~ /^[a-z_]+\z/) {
-        $self->{error} = "invalid attribute $attr";
+        $self->error ("invalid attribute $attr");
         return;
     }
     $time ||= time;
@@ -206,9 +210,7 @@ sub _set_internal {
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
-        $self->{error} = "cannot set $attr on $id: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*//;
+        $self->error ("cannot set $attr on $id: $@");
         $self->{dbh}->rollback;
         return;
     }
@@ -219,7 +221,7 @@ sub _set_internal {
 sub _get_internal {
     my ($self, $attr) = @_;
     if ($attr !~ /^[a-z_]+\z/) {
-        $self->{error} = "invalid attribute $attr";
+        $self->error ("invalid attribute $attr");
         return;
     }
     $attr = 'ob_' . $attr;
@@ -235,9 +237,7 @@ sub _get_internal {
 sub acl {
     my ($self, $type, $id, $user, $host, $time) = @_;
     if ($type !~ /^(get|store|show|destroy|flags)\z/) {
-        $self->{error} = "invalid ACL type $type";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("invalid ACL type $type");
         return;
     }
     my $attr = "acl_$type";
@@ -245,9 +245,7 @@ sub acl {
         my $acl;
         eval { $acl = Wallet::ACL->new ($id, $self->{dbh}) };
         if ($@) {
-            $self->{error} = $@;
-            chomp $self->{error};
-            $self->{error} =~ s/ at .*$//;
+            $self->error ($@);
             return undef;
         }
         return $self->_set_internal ($attr, $acl->id, $user, $host, $time);
@@ -265,7 +263,7 @@ sub expires {
     my ($self, $expires, $user, $host, $time) = @_;
     if ($expires) {
         if ($expires !~ /^\d+\z/ || $expires == 0) {
-            $self->{error} = "malformed expiration time $expires";
+            $self->error ("malformed expiration time $expires");
             return;
         }
         return $self->_set_internal ('expires', $expires, $user, $host, $time);
@@ -284,9 +282,7 @@ sub owner {
         my $acl;
         eval { $acl = Wallet::ACL->new ($owner, $self->{dbh}) };
         if ($@) {
-            $self->{error} = $@;
-            chomp $self->{error};
-            $self->{error} =~ s/ at .*$//;
+            $self->error ($@);
             return undef;
         }
         return $self->_set_internal ('owner', $acl->id, $user, $host, $time);
@@ -309,7 +305,7 @@ sub get { die "Do not instantiate Wallet::Object::Base directly\n"; }
 sub store {
     my ($self, $data, $user, $host, $time) = @_;
     my $id = $self->{type} . ':' . $self->{name};
-    $self->{error} = "cannot store $id: object type is immutable";
+    $self->error ("cannot store $id: object type is immutable");
     return;
 }
 
@@ -346,9 +342,7 @@ sub show {
         @data = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
     };
     if ($@) {
-        $self->{error} = "cannot retrieve data for ${type}:${name}: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot retrieve data for ${type}:${name}: $@");
         return undef;
     }
     my $output = '';
@@ -384,9 +378,7 @@ sub destroy {
         $self->{dbh}->commit;
     };
     if ($@) {
-        $self->{error} = "cannot destroy ${type}:${name}: $@";
-        chomp $self->{error};
-        $self->{error} =~ s/ at .*$//;
+        $self->error ("cannot destroy ${type}:${name}: $@");
         $self->{dbh}->rollback;
         return undef;
     }
@@ -486,6 +478,19 @@ call the parent method to handle the generic database cleanup.  Returns
 true on success and false on failure.  The arguments are used for logging
 and history and should indicate the user and host from which the change is
 made and the time of the change.
+
+=item error([ERROR ...])
+
+Returns the error of the last failing operation or undef if no operations
+have failed.  Callers should call this function to get the error message
+after an undef return from any other instance method.
+
+For the convenience of child classes, this method can also be called with
+one or more error strings.  If so, those strings are concatenated together,
+trailing newlines are removed, any text of the form S<C< at \S+ line
+\d+\.?>> at the end of the message is stripped off, and the result is stored
+as the error.  Only child classes should call this method with an error
+string.
 
 =item error()
 
