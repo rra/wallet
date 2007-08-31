@@ -251,7 +251,7 @@ normally C<keytab> and must be for the rest of the wallet system to use the
 right class, but this module doesn't check for ease of subclassing), using
 DBH as the handle to the wallet metadata database.  PRINCIPAL, HOSTNAME, and
 DATETIME are stored as history information.  PRINCIPAL should be the user
-who is downloading the keytab.  If DATETIME isn't given, the current time is
+who is creating the object.  If DATETIME isn't given, the current time is
 used.
 
 When a new keytab object is created, the Kerberos principal designated by
@@ -271,7 +271,7 @@ it was called (so that it can be used to clean up stranded entries).
 Returns true on success and false on failure.  The caller should call
 error() to get the error message after a failure.  PRINCIPAL, HOSTNAME, and
 DATETIME are stored as history information.  PRINCIPAL should be the user
-who is downloading the keytab.  If DATETIME isn't given, the current time is
+who is destroying the object.  If DATETIME isn't given, the current time is
 used.
 
 =item get(PRINCIPAL, HOSTNAME [, DATETIME])
@@ -310,7 +310,7 @@ all keytab objects stored must be in that realm.
 
 =head1 SEE ALSO
 
-wallet-backend(8)
+Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is available
 from L<http://www.eyrie.org/~eagle/software/wallet/>.
