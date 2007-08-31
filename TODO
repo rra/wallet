@@ -2,8 +2,7 @@
 
 Required to replace leland_srvtab:
 
-* Documentation missing for Wallet::Server, Wallet::ACL, Wallet::Config,
-  Wallet::Object::Keytab, wallet-backend, and wallet.
+* Documentation missing for Wallet::Server, wallet-backend, and wallet.
 
 * Write a test suite for the sanity checking in wallet-backend and
   keytab-backend.
