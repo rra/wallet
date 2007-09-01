@@ -12,93 +12,87 @@ Introduction
     See the documentation for Wallet::Object::Base and Wallet::ACL::Base,
     which contain additional information about creating new object and
     ACL verifier implementations and the documentation for all generic
-    methods.
+    methods.  Wallet::Object::Base also provides some utility methods that
+    are useful for subclasses.
 
 Object API
 
-  new(NAME, TYPE, DBH)
-
-    Creates a new object with the given object name and type based on data
-    already in the database.  Takes a database handle, which should be
-    stored with the object and used for any further operations.  This
-    method should inherit from the generic Wallet::Object::Base object,
-    which implements the following methods:
-
-        new(NAME, DBH)
-        create(NAME, DBH)
-        owner([ACL-ID, PRINCIPAL, HOSTNAME [, DATETIME]])
-        acl(TYPE [, ACL-ID, PRINCIPAL, HOSTNAME [, DATETIME]])
-        expires([DATETIME, PRINCIPAL, HOSTNAME [, DATETIME]])
-        store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
-        show()
-        destroy(PRINCIPAL, HOSTNAME [, DATETIME])
-        error()
-
-    that manipulate the basic object data.  Generally all this function
-    needs to do is call the parent new() constructor.  If the object
-    couldn't be found, throws an exception.  (Just returning undef would
-    provide no way of communicating the error message.)
+    All object implementations should inherit from Wallet::Object::Base
+    and most of the methods of that module can be used without change.
+    Below are summaries of the methods that a typical object
+    implementation will need to override.  Methods other than create()
+    should set the error with error() and return undef on failure.
 
   create(NAME, TYPE, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
-    Like new(), but instead creates a new entry in the database with the
-    given name.  As with new(), the generic function will normally do all
-    of the work.  Takes some additional information to put into the
-    created fields in the database.  If the object already exists or
-    creating it fails, throws an exception.  (Just returning undef would
-    provide no way of communicating the error message.)
+    Creates a new object of a particular type.  The parent method will
+    take care of all of the database manipulation.  A new object
+    implementation should override this method if it needs to create
+    something in an external system when an object is created.  For
+    example, the keytab backend overrides create() to create the principal
+    in the Kerberos KDC and then calls the parent method to do the
+    database setup.
+
+    This method should throw an exception on error.
 
   destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
-    Destroys the given object.  This should include destroying any
-    representation of the object in other systems as well (such as
-    deleting Kerberos principals out of a KDC).  Takes the information
-    about who is doing the deletion to store log entries.  The result is
-    true on success and false on failure.  On error, the caller should
-    call error() to get the error text.
+    Destroys the given object.  Backend implementations should override
+    this method if they need to destroy the object in an external system.
+    For example, the keytab backend overrides this method to destroy the
+    principal in the Kerberos KDC.  Be careful not to require that the
+    object exist in a remote system for destroy() to work, since an
+    administrator will want to destroy an orphaned wallet database entry
+    after something happened to the remote system entry.
 
   get(PRINCIPAL, HOSTNAME [, DATETIME])
 
-    Applied to a returned object, retrieves the data contained in the
-    object in question.  Takes the information about who is doing the
-    retrieval so that the database metadata can be updated.  The result is
-    either the relevant data or undef in the event of an error.  On error,
-    the caller should call error() to get the error text.
+    This is the one method that all object implementations must override.
+    Wallet::Object::Base just throws an exception if its get() method is
+    called.  Retrieves the object data from wherever that backend stores
+    it, or generates new object data, and should return it as a string.
+    Don't forget to call log_action() after successfully retrieving the
+    data to update the history and trace information.
 
   store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
 
     Store user-supplied data into the given object.  This may not be
     supported by all backends (for instance, backends that automatically
-    generate the data will not support this).  Takes the information about
-    who is doing the store so that the database metadata can be updated.
-    The result is true on success and false on failure.  On error, the
-    caller should call error() to get the error text.
+    generate the data will not support this).  Backends that don't support
+    storing data can just not implement this method and the default
+    store() method will return an appropriate error.
+
+    If this method is implemented, don't forget to call log_action() after
+    successfully storing the data to update the history and trace
+    information.
 
   show()
 
-    Returns a formatted text description of the object suitable for human
-    display, or undef on error.  On error, the caller should call error()
-    to get the error text.
-
-  error()
-
-    Returns the error text from the last failed call.
+    Normally, new backends don't need to override this method, since it
+    displays all the metadata in the database.  It's only necessary to
+    override it if the backend stores additional metadata separately.
+    When overriding, call the parent method first and then edit the
+    resulting string to add additional information as needed.
 
 ACL Verifier API
 
+    New ACL verifiers should inherit from Wallet::ACL::Base.  There are
+    only two methods that a new ACL verifier needs to override, and new()
+    is only needed if the ACL verifier has some setup that needs to be
+    done before starting to check ACLs.
+
   new()
 
-    Creates a persistant ACL verifier for the given ACL type.  This may do
-    nothing, but some ACL verifiers require some persistant data, like a
-    persistant LDAP connection.
+    Creates a persistant ACL verifier for the given ACL type.  The default
+    does nothing except create a blessed object.  Override if the verifier
+    needs persistant data, like a persistant LDAP connection.  On failure,
+    throw an exception.
 
   check(PRINCIPAL, ACL)
 
-    Checks whether the given PRINCIPAL should be allowed access given ACL.
-    Returns 1 if access is granted, 0 if access is declined, and undef on
-    error.  On error, the caller should call error() to get the error text
-    but generally should continue with checking other ACLs.
-
-  error()
-
-    Returns the error text of the last error.
+    This method must be overridden by any new ACL verifier implemenetation
+    since the default declines all access.  Checks whether the given
+    PRINCIPAL should be allowed access given ACL.  Returns 1 if access is
+    granted, 0 if access is declined, and undef on error.  On error, the
+    method should pass the error to error() to store it in the object for
+    retrieval by the caller.
