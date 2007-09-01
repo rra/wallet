@@ -1,0 +1,236 @@
+=head1 NAME
+
+wallet - Client for retrieving secure data from a central server
+
+=head1 SYNOPSIS
+
+B<wallet> [B<-hv>] [B<-c> I<command>] [B<-f> I<output>]
+[B<-k> I<principal>] [B<-p> I<port>] [B<-s> I<server>] I<command>
+[I<arg> ...]
+
+=head1 DESCRIPTION
+
+B<wallet> is a client for the wallet system, which stores or creates
+secure information such as Kerberos keytabs, associates them with ACLs and
+other metadata, and allows clients to view and download them.  This client
+provides the user interface to the wallet system for both users and wallet
+administrators.
+
+The B<wallet> command-line client takes a command and optional arguments
+on the command line, authenticates to the wallet server using Kerberos,
+and sends that command and arguments to server.  It then reads the results
+and displays them to the user or stores them in a file.  The client itself
+does not know which commands are valid and which aren't; apart from some
+special handling of particular commands, it sends all commands to the
+server to respond to appropriately.  This allows additional commands to be
+added to the wallet system without changing all of the clients.
+
+The primary commands of the wallet system are C<get>, which retrieves some
+secure data from the wallet, C<store>, which stores some secure data in
+the wallet, and C<show>, which stores the metadata about an object stored
+in the wallet.  Each object in the wallet has a type, which determines
+what data the object represents and may determine special handling when
+downloading or storing that object, and a name.  For example, a wallet
+object for the C<host/example.com> Kerberos keytab would have a type of
+C<keytab> and a name of C<host/example.com>.  The meaning of the name is
+specific to each type of object.
+
+Most other wallet commands besides those three are only available to
+wallet administrators.  The other commands allow setting ownership and
+ACLs on objects, creating and destroying objects, creating and destroying
+ACLs, and adding and removing entries from ACLs.  An ACL consists of one
+or more entries, each of which is a scheme and an identifier.  A scheme
+specifies a way of checking whether a user is authorized.  An identifier
+is some data specific to the scheme that specifies which users are
+authorized.  For example, for the C<krb5> scheme, the identifier is a
+principal name and only that principal is authorized by that ACL entry.
+For the C<pts> scheme, the identifier is a PTS group name, and all members
+of that PTS group are authorized by that ACL entry.
+
+To run the wallet command-line client, you must already have a Kerberos
+ticket.  You can obtain a Kerberos ticket with B<kinit> and see your
+current Kerberos tickets with B<klist>.  The wallet client uses the remctl
+protocol to talk to the wallet server.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-c> I<command>
+
+The command prefix (remctl type) to use.  Normally this is an internal
+implementation detail and the default (C<wallet>) should be fine.  It may
+sometimes be useful to use a different prefix for testing a different
+version of the wallet code on the server.
+
+=item B<-f> I<output>
+
+This flag is only used in combination with the C<get> command.  Rather
+than sending the secure data to standard output (the default), store the
+secure data in the file I<output>.  Any existing contents of I<output>
+will be destroyed.
+
+=item B<-k> I<principal>
+
+The service principal of the wallet server.  The default is to use the
+C<host> principal for the wallet server.  The principal chosen must match
+one of the keys in the keytab used by B<remctld> on the wallet server.
+
+=item B<-h>
+
+Display a brief summary of options and exit.  All other valid options and
+commands are ignored.
+
+=item B<-p> I<port>
+
+The port to connect to on the wallet server.  The default is the default
+remctl port (4444).
+
+=item B<-s> I<server>
+
+The wallet server to connect to.  The default is a hard-coded server value
+determined at configure time when compiling the wallet client.
+
+=item B<-v>
+
+Display the version of the B<wallet> client and exit.  All other valid
+options and commands are ignored.
+
+=back
+
+=head1 COMMANDS
+
+As mentioned above, most commands are only available to wallet
+administrators.  The exceptions are C<get>, C<store>, C<show>, and
+C<destroy>.  All of those commands have their own ACLs, and if the
+appropriate ACL is set, it alone is checked to see if the user has access.
+Otherwise, C<get>, C<store>, and C<show> access is permitted if the user
+is authorized by the owner ACL of the object.
+
+Administrators can run any command on any object or ACL except for C<get>
+and C<store>.  For C<get> and C<show>, they must still be authorized by
+either the appropriate specific ACL or the owner ACL.
+
+=over 4
+
+=item acl add <id> <scheme> <identifier>
+
+Adds an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
+either the name of an ACL or its numeric identifier.
+
+=item acl create <name>
+
+Create a new, empty ACL with name <name>.  When setting an ACL on an
+object with a set of entries that don't match an existing ACL, first
+create a new ACL with C<acl create>, add the appropriate entries to it
+with C<acl add>, and then set the ACL on an object with the C<owner> or
+C<setacl> commands.
+
+=item acl destroy <id>
+
+Destroy the ACL <id>.  This ACL must no longer be referenced by any object
+or the ACL destruction will fail.  The special ACL named C<ADMIN> cannot
+be destroyed.
+
+=item acl remove <id> <scheme> <identifier>
+
+Remove the entry with <scheme> and <identifier> from the ACL <id>.  <id>
+may be either the name of an ACL or its numeric identifier.  The last
+entry in the special ACL C<ADMIN> cannot be removed to protect against
+accidental lockout, but administrators can remove themselves from the
+C<ADMIN> ACL and can leave only a non-functioning entry on the ACL.  Use
+caution when removing entries from the C<ADMIN> ACL.
+
+=item create <type> <name>
+
+Create a new object of type <type> with name <name>.  With some backends,
+this will trigger creation of an entry in an external system as well.
+The new object will have no ACLs and no owner set, so usually the
+administrator will want to then set an owner with C<owner> so that the
+object will be usable.
+
+=item destroy <type> <name>
+
+Destroy the object identified by <type> and <name>.  With some backends,
+this will trigger destruction of an object in an external system as well.
+
+=item expires <type> <name> [<expires>]
+
+If <expires> is not given, displays the current expiration of the object
+identified by <type> and <name>, or C<No expiration set> if none is set.
+The expiration will be displayed in seconds since epoch.
+
+If <expires> is given, sets the expiration on the object identified by
+<type> and <name> to <expires>.  <expires> should be given in seconds
+since epoch.  If <expires> is the empty string, clears the expiration of
+the object.
+
+Currently, the expiration of an object is not used.
+
+=item get <type> <output>
+
+Prints to standard output the data associated with the object identified
+by <type> and <name>, or stores it in a file if the B<-f> option was
+given.  This may trigger generation of new data and invalidate old data
+for that object depending on the object type.
+
+=item getacl <type> <name> <acl>
+
+Prints the ACL <acl>, which must be one of C<get>, C<store>, C<show>,
+C<destroy>, or C<flags>, for the object identified by <type> and <name>.
+Prints C<No ACL set> if that ACL isn't set on that object.  Remember that
+if the C<get>, C<store>, or C<show> ACLs aren't set, authorization falls
+back to checking the owner ACL.  See the C<owner> command for displaying
+or setting it.
+
+=item owner <type> <name> [<owner>]
+
+If <owner> is not given, displays the current owner ACL of the object
+identified by <type> and <name>, or C<No owner set> if none is set.  The
+result will be the name of an ACL.
+
+If <owner> is given, sets the owner of the object identified by <type> and
+<name> to <owner>.  If <owner> is the empty string, clears the owner of
+the object.
+
+=item setacl <type> <name> <acl> <id>
+
+Sets the ACL <acl>, which must be one of C<get>, C<store>, C<show>,
+C<destroy>, or C<flags>, to <id> on the object identified by <type> and
+<name>.  If <id> is the empty string, clears that ACL on the object.
+
+=item show <type> <name>
+
+Displays the current object metadata for the object identified by <type>
+and <name>.  This human-readable output will show the object type and
+name, the owner, any specific ACLs set on the object, the expiration if
+any, and the user, remote host, and time when the object was created, last
+stored, and last downloaded.
+
+=item store <type> <name> <data>
+
+Stores <data> for the object identified by <type> and <name> for later
+retrieval with C<get>.  Not all object types support this.
+
+Currently, <data> is limited to not containing nul characters and may
+therefore not be binary data, and is limited by the maximum command line
+length of the operating system of the wallet server.  These restrictions
+will be lifted in the future.
+
+=back
+
+=head1 SEE ALSO
+
+remctl(1), remctld(8)
+
+This program is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
+B<wallet> uses the remctl protocol.  For more information about remctl,
+see L<http://www.eyrie.org/~eagle/software/remctl/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut
