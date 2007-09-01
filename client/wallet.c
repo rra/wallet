@@ -37,7 +37,7 @@ Options:\n\
     -p <port>       Port of server (default: 4444)\n\
     -S <srvtab>     For the get keytab command, srvtab output file\n\
     -s <server>     Server hostname (default: " SERVER "\n\
-    -v              Display the version of remctl\n";
+    -v              Display the version of wallet\n";
 
 
 /*
