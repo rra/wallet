@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 37;
+use Test::More tests => 38;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -170,6 +170,22 @@ SKIP: {
     }
     ok (! -f "./keytab.$$", ' and the temporary file was cleaned up');
     ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+
+    # For right now, this is the only backend type that we have for which we
+    # can do a get, so test display of the last download information.
+    my $show = $object->show;
+    $show =~ s/^(\s*(?:Created|Downloaded) on:) \d+$/$1 0/mg;
+    my $expected = <<"EOO";
+           Type: keytab
+           Name: wallet/one
+     Created by: $user
+   Created from: $host
+     Created on: 0
+  Downloaded by: $user
+Downloaded from: $host
+  Downloaded on: 0
+EOO
+    is ($show, $expected, 'Show output is correct');
 
     # Test error handling on keytab retrieval.
     undef $Wallet::Config::KEYTAB_TMP;
