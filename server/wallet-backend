@@ -161,6 +161,9 @@ __END__
 # Documentation
 ##############################################################################
 
+# The commands section of this document is duplicated from the documentation
+# for wallet and should be kept in sync.
+
 =head1 NAME
 
 wallet-backend - Wallet server for storing and retrieving secure data
