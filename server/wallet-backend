@@ -150,3 +150,142 @@ if ($command eq 'acl') {
     check_args (3, [2], @args);
     $server->store (@args) or die $server->error;
 }
+exit 0;
+__END__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+wallet-backend - Wallet server for storing and retrieving secure data
+
+=head1 SYNOPSIS
+
+B<wallet-backend> I<command> [I<args> ...]
+
+=head1 DESCRIPTION
+
+B<wallet-backend> implements the interface between B<remctld> and the wallet
+system.  It is written to run under B<remctld> and expects the authenticated
+identity of the remote user in the REMOTE_USER environment variable.  It
+uses REMOTE_HOST or REMOTE_ADDR if REMOTE_HOST isn't set for additional
+trace information.  It accepts the command from B<remctld> on the command
+line, creates a Wallet::Server object, and calls the appropriate methods.
+
+This program is a fairly thin wrapper around Wallet::Server that translates
+command strings into method calls and returns the results.  It does check
+all arguments except for the <data> argument to the store command and
+rejects any argument not matching C<^[\w_/.-]+\z>; in other words, only
+alphanumerics, underscore (C<_>), slash (C</>), period (C<.>), and hyphen
+(C<->) are permitted in arguments.  This provides some additional security
+over and above the checking already done by the rest of the wallet code.
+
+=head1 OPTIONS
+
+B<wallet-backend> takes no traditional options.
+
+=head1 COMMANDS
+
+The following commands are recognized.  Only brief descriptions are given
+here, along with any special notes about the output as formatted by
+B<wallet-backend>.
+
+Most commands can only be executed by someone authorized by the ADMIN ACL.
+The exceptions are get and store, which are authorized by the get and store
+ACLs if set and otherwise the owner ACL and to which the ADMIN ACL does not
+apply; show, which requires either the ADMIN ACL or checks the show ACL and
+the owner ACL if the show ACL isn't set; and destroy, which requires either
+the ADMIN ACL or the destroy ACL.
+
+For complete details, including the authorization model for who can execute
+which command, see Wallet::Server(3).
+
+=over 4
+
+=item acl add ID SCHEME IDENTIFIER
+
+Adds an entry with SCHEME and IDENTIFIER to the ACL ID.
+
+=item acl create NAME
+
+Create a new ACL with name NAME.
+
+=item acl destroy ID
+
+Destroy the ACL ID (which must not be reference by any object).
+
+=item acl remove ID SCHEME IDENTIFIER
+
+Remove the entry with SCHEME and IDENTIFIER from the ACL ID.
+
+=item create TYPE NAME
+
+Create a new object with TYPE and NAME and no ACLs set.
+
+=item destroy TYPE NAME
+
+Destroy the object identified by TYPE and NAME.
+
+=item expires TYPE NAME [EXPIRES]
+
+If EXPIRES is not given, displays the current expiration of the object
+identified by TYPE and NAME, or C<No expiration set> if none is set.  If
+EXPIRES is given, sets the expiration on the object identified by TYPE and
+NAME to EXPIRES, which should be in seconds since epoch.
+
+=item get TYPE NAME
+
+Prints to standard output the data associated with the object identified by
+TYPE and NAME.  This may trigger generation of new data and invalidate old
+data for that object depending on the object type.
+
+=item getacl TYPE NAME ACL
+
+Prints the ACL of type ACL, which must be one of C<get>, C<store>, C<show>,
+C<destroy>, or C<flags>, for the object identified by TYPE and NAME.  Prints
+C<No ACL set> if that ACL isn't set.
+
+=item owner TYPE NAME [OWNER]
+
+If OWNER is not given, displays the ACL name of the current owner of the
+object identified by TYPE and NAME, or C<No owner set> if none is set.  If
+OWNER is given, sets the owner of the object identified by TYPE and NAME to
+OWNER.
+
+=item setacl TYPE NAME ACL ID
+
+Sets the ACL type ACL, which must be one of C<get>, C<store>, C<show>,
+C<destroy>, or C<flags>, to ID on the object identified by TYPE and NAME.
+
+=item show TYPE NAME
+
+Displays the current object metadata for the object identified by TYPE and
+NAME.
+
+=item store TYPE NAME DATA
+
+Stores DATA for the object identified by TYPE and NAME for later retrieval
+with get.  Not all object types support this.
+
+=back
+
+=head1 EXIT STATUS
+
+Regular output is printed to standard output and errors are printed to
+standard error.  If the command was successful, B<wallet-backend> exits with
+status 0.  If it failed, B<wallet-backend> exits with a non-zero status.
+
+=head1 SEE ALSO
+
+Wallet::Server(3), remctld(8)
+
+This program is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut
