@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 201;
+use Test::More tests => 207;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -95,6 +95,16 @@ is ($server->acl_remove ('empty', 'krb5', $user1), undef,
 is ($server->error,
     "cannot remove krb5:$user1 from 5: entry not found in ACL",
     ' and returns the right error');
+
+# Make sure we can't cripple the ADMIN ACL.
+is ($server->acl_destroy ('ADMIN'), undef, 'Cannot destroy the ADMIN ACL');
+is ($server->error, 'cannot destroy the ADMIN ACL', ' with the right error');
+is ($server->acl_rename ('ADMIN', 'foo'), undef, ' or rename it');
+is ($server->error, 'cannot rename the ADMIN ACL', ' with the right error');
+is ($server->acl_remove ('ADMIN', 'krb5', $admin), undef,
+    ' or remove its last entry');
+is ($server->error, 'cannot remove last ADMIN ACL entry',
+    ' with the right error');
 
 # Now, create a few objects to use for testing and test the object API while
 # we're at it.

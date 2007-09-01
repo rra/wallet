@@ -401,6 +401,10 @@ sub acl_rename {
         $self->error ($@);
         return undef;
     }
+    if ($acl->name eq 'ADMIN') {
+        $self->error ('cannot rename the ADMIN ACL');
+        return undef;
+    }
     unless ($acl->rename ($name)) {
         $self->error ($acl->error);
         return undef;
@@ -419,6 +423,10 @@ sub acl_destroy {
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
+        return undef;
+    }
+    if ($acl->name eq 'ADMIN') {
+        $self->error ('cannot destroy the ADMIN ACL');
         return undef;
     }
     unless ($acl->destroy ($self->{user}, $self->{host})) {
@@ -461,6 +469,16 @@ sub acl_remove {
         $self->error ($@);
         return undef;
     }
+    if ($acl->name eq 'ADMIN') {
+        my @e = $acl->list;
+        if (@e == 1 and not defined ($e[0])) {
+            $self->error ($acl->error);
+            return undef;
+        } elsif (@e == 1 && $e[0][0] eq $scheme && $e[0][1] eq $identifier) {
+            $self->error ('cannot remove last ADMIN ACL entry');
+            return undef;
+        }
+    }
     my $user = $self->{user};
     my $host = $self->{host};
     unless ($acl->remove ($scheme, $identifier, $user, $host)) {
@@ -472,3 +490,240 @@ sub acl_remove {
 
 1;
 __END__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+Wallet::Server - Wallet system server implementation
+
+=head1 SYNOPSIS
+
+    use Wallet::Server;
+    my $server = Wallet::Server->new ($user, $host);
+    $server->create ('keytab', 'host/example.com@EXAMPLE.COM');
+
+=head1 DESCRIPTION
+
+Wallet::Server is the top-level class that implements the wallet server.
+The wallet is a system for storing, generating, and retrieving secure
+information such as Kerberos keytabs.  The server maintains metadata about
+the objects, checks access against ACLs, and dispatches requests for objects
+to backend implementations for that object type.
+
+Wallet::Server is normally instantiated and used by B<wallet-backend>, a
+thin wrapper around this object that determines the authenticated remote
+user and gets user input and then calls the appropriate method of this
+object.
+
+To use this object, several configuration variables must be set (at least
+the database configuration).  For information on those variables and how to
+set them, see Wallet::Config(3).
+
+=head1 CLASS METHODS
+
+=over 4
+
+=item initialize(PRINCIPAL)
+
+Initializes the database as configured in Wallet::Config and loads the
+wallet database schema.  Then, creates an ACL with the name ADMIN and adds
+an ACL entry of scheme C<krb5> and instance PRINCIPAL to that ACL.  This
+bootstraps the authorization system and lets that Kerberos identity make
+further changes to the ADMIN ACL and the rest of the wallet database.
+Returns a new Wallet::Server object, although that object should only be
+used to do other administrative functions.  Before performing normal
+operations, that object should be destroyed and the database reopened with
+new().  initialize() uses C<localhost> as the hostname and PRINCIPAL as the
+user when logging the history of the ADMIN ACL creation and for any
+subsequent actions on the object it returns.
+
+On any error, this method throws an exception.
+
+=item new(PRINCIPAL, HOSTNAME)
+
+Creates a new wallet server object for actions from the user PRINCIPAL
+connecting from HOSTNAME.  PRINCIPAL and HOSTNAME will be used for logging
+history information for all subsequent operations.  new() opens the
+database, using the database configuration as set by Wallet::Config and
+ensures that the C<ADMIN> ACL exists.  That ACL will be used to authorize
+privileged operations.
+
+On any error, this method throws an exception.
+
+=back
+
+=head1 INSTANCE METHODS
+
+For all methods that can fail, the caller should call error() after a
+failure to get the error message.
+
+=over 4
+
+=item acl(TYPE, NAME, ACL [, ID])
+
+Gets or sets the ACL type ACL to ID for the object identified by TYPE and
+NAME.  ACL should be one of C<get>, C<store>, C<show>, C<destroy>, or
+C<flags>.  If ID is not given, returns the current setting of that ACL as a
+numeric ACL ID or undef if that ACL isn't set or on failure.  To distinguish
+between an ACL that isn't set and a failure to retrieve the ACL, the caller
+should call error() after an undef return.  If error() also returns undef,
+that ACL wasn't set; otherwise, error() will return the error message.
+
+If ID is given, sets the specified ACL to ID, which can be either the name
+of an ACL or a numeric ACL ID.  To set an ACL, the current user must be
+authorized by the ADMIN ACL.  Returns true for success and false for
+failure.
+
+ACL settings are checked before the owner and override the owner setting.
+
+=item acl_add(ID, SCHEME, IDENTIFIER)
+
+Adds an ACL entry with scheme SCHEME and identifier IDENTIFIER to the ACL
+identified by ID.  ID may be either the ACL name or the numeric ACL ID.
+SCHEME must be a valid ACL scheme for which the wallet system has an ACL
+verifier implementation.  To add an entry to an ACL, the current user must
+be authorized by the ADMIN ACL.  Returns true for success and false for
+failure.
+
+=item acl_create(NAME)
+
+Create a new ACL with the specified NAME, which must not be all-numeric.
+The newly created ACL will be empty.  To create an ACL, the current user
+must be authorized by the ADMIN ACL.  Returns true on success and false on
+failure.
+
+=item acl_destroy(ID)
+
+Destroys the ACL identified by ID, which may be either the ACL name or its
+numeric ID.  This call will fail if the ACL is still referenced by any
+object.  The ADMIN ACL may not be destroyed.  To destroy an ACL, the current
+user must be authorized by the ADMIN ACL.  Returns true on success and false
+on failure.
+
+=item acl_remove(ID, SCHEME, IDENTIFIER)
+
+Removes from the ACL identified by ID the entry matching SCHEME and
+IDENTIFIER.  ID may be either the name of the ACL or its numeric ID.  The
+last entry in the ADMIN ACL cannot be removed.  To remove an entry from an
+ACL, the current user must be authorized by the ADMIN ACL.  Returns true on
+success and false on failure.
+
+=item acl_rename(OLD, NEW)
+
+Renames the ACL identified by OLD to NEW.  This changes the human-readable
+name, not the underlying numeric ID, so the ACL's associations with objects
+will be unchanged.  The ADMIN ACL may not be renamed.  OLD may be either the
+current name or the numeric ID.  NEW must not be all-numeric.  To rename an
+ACL, the current user must be authorized by the ADMIN ACL.  Returns true on
+success and false on failure.
+
+=item create(TYPE, NAME)
+
+Creates a new object of type TYPE and name NAME.  TYPE must be a recognized
+type for which the wallet system has a backend implementation.  To create an
+object, the current user must be authorized by the ADMIN ACL.  Returns true
+on success and false on failure.
+
+=item destroy(TYPE, NAME)
+
+Destroys the object identified by TYPE and NAME.  This destroys any data
+that the wallet had saved about the object, may remove the underlying object
+from other external systems, and destroys the wallet database entry for the
+object.  To destroy an object, the current user must be authorized by the
+ADMIN ACL or the destroy ACL on the object; the owner ACL is not sufficient.
+Returns true on success and false on failure.
+
+=item dbh()
+
+Returns the database handle of a Wallet::Server object.  This is used mostly
+for testing; normally, clients should perform all actions through the
+Wallet::Server object to ensure that authorization and history logging is
+done properly.
+
+=item error()
+
+Returns the error of the last failing operation or undef if no operations
+have failed.  Callers should call this function to get the error message
+after an undef return from any other instance method.
+
+=item expires(TYPE, NAME [, EXPIRES])
+
+Gets or sets the expiration for the object identified by TYPE and NAME.  If
+EXPIRES is not given, returns the current expiration or undef if no
+expiration is set or on an error.  To distinguish between an expiration that
+isn't set and a failure to retrieve the expiration, the caller should call
+error() after an undef return.  If error() also returns undef, that ACL
+wasn't set; otherwise, error() will return the error message.
+
+If EXPIRES is given, sets the expiration to EXPIRES, which should be in
+seconds since epoch.  To set an expiration, the current user must be
+authorized by the ADMIN ACL.  Returns true for success and false for
+failure.
+
+=item get(TYPE, NAME)
+
+Returns the data associated with the object identified by TYPE and NAME.
+Depending on the object TYPE, this may generate new data and invalidate any
+existing data or it may return data previously stored or generated.  Note
+that this data may be binary and may contain nul characters.  To get an
+object, the current user must either be authorized by the owner ACL or
+authorized by the get ACL; however, if the get ACL is set, the owner ACL
+will not be checked.  Being a member of the ADMIN ACL does not provide any
+special privileges to get objects.
+
+Returns undef on failure.  The caller should be careful to distinguish
+between undef and the empty string, which is valid object data.
+
+=item owner(TYPE, NAME [, OWNER])
+
+Gets or sets the owner for the object identified by TYPE and NAME.  If OWNER
+is not given, returns the current owner as a numeric ACL ID or undef if no
+owner is set or on an error.  To distinguish between an owner that isn't set
+and a failure to retrieve the owner, the caller should call error() after an
+undef return.  If error() also returns undef, that ACL wasn't set;
+otherwise, error() will return the error message.
+
+If OWNER is given, sets the owner to OWNER, which may be either the name of
+an ACL or a numeric ACL ID.  To set an owner, the current user must be
+authorized by the ADMIN ACL.  Returns true for success and false for
+failure.
+
+The owner of an object is permitted to get, store, and show that object, but
+cannot destroy or set flags on that object without being listed on those
+ACLs as well.
+
+=item show(TYPE, NAME)
+
+Returns (as a string) a human-readable representation of the metadata stored
+for the object identified by TYPE and NAME, or undef on error.  To show an
+object, the current user must be a member of the ADMIN ACL, authorized by
+the show ACL, or authorized by the owner ACL; however, if the show ACL is
+set, the owner ACL will not be checked.
+
+=item store(TYPE, NAME, DATA)
+
+Stores DATA for the object identified with TYPE and NAME for later retrieval
+with get.  Note that DATA may be binary and may contain nul characters.  To
+store an object, the current user must either be authorized by the owner ACL
+or authorized by the store ACL; however, if the store ACL is set, the owner
+ACL is not checked.  Being a member of the ADMIN ACL does not provide any
+special privileges to store objects.  Returns true on success and false on
+failure.
+
+=back
+
+=head1 SEE ALSO
+
+wallet-backend(8)
+
+This module is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut
