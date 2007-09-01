@@ -124,14 +124,17 @@ rcmd.slapshot with:
 
     kasetkey -k /.adminkey -a admin -r -f srvtab -s rcmd.slapshot
 
+=head1 SEE ALSO
+
+kas(8), kaserver(8), ktutil(8)
+
+This program is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
 =head1 AUTHORS
 
 Originally written by Roland Schemers.  Revised to use srvtabs rather than
 simple DES keys and to support principal deletion by Russ Allbery
 <rra@stanford.edu>, who currently maintains it.
-
-=head1 SEE ALSO
-
-kas(8), kaserver(8), ktutil(8)
 
 =cut
