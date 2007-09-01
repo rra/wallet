@@ -2,6 +2,13 @@
 
 MySQL Database Setup
 
+    The following instructions are for setting up the wallet with a MySQL
+    database on the same host as the wallet server.  Since the wallet is
+    designed to be a security-sensitive application, running MySQL on the
+    same system is recommended, although it will certainly work with a
+    remote MySQL server.  The instructions below would require only minor
+    modifications, mostly around the database host.
+
     After installing the MySQL server, connect as a user with permissions
     to create new databases and users.  Then, issue the following
     commands:
@@ -13,3 +20,72 @@ MySQL Database Setup
     This creates a wallet user that can be used by the rest of the wallet
     system and gives it access to the wallet database, where it can create
     its own tables.
+
+    Now, create an /etc/wallet.conf file and include settings like:
+
+        $DB_DRIVER = 'MySQL';
+        $DB_NAME = 'wallet';
+        $DB_HOST = 'localhost';
+        $DB_USER = 'wallet';
+        $DB_PASSWORD = 'WALLET';
+        1;
+
+SQLite Database Setup
+
+    SQLite is very nice in that you don't have to create the database
+    first.  You don't even have to create the file.  Just create
+    /etc/wallet.conf with something like:
+
+        $DB_DRIVER = 'SQLite';
+        $DB_INFO = '/path/to/database';
+        1;
+
+    That's all there is to it.
+
+Database Initialization
+
+    Now, you have to create the necessary tables, indexes, and similar
+    content in the database so that the wallet can start working.  There
+    is not, as yet, any command to do this easily, but you can do it with
+    the following one line of Perl:
+
+        perl -MWallet::Server -e "Wallet::Server->initialize ('USER')"
+
+    where USER is the fully-qualified Kerberos principal of an
+    administrator.  This will create the database, create an ADMIN ACL,
+    and put USER in that ACL so that user can add other administrators and
+    start creating objects.
+
+    There will eventually be a wallet-admin script to do this and similar
+    tasks.
+
+Wallet Configuration
+
+    Review the Wallet::Config documentation (with man Wallet::Config or
+    perldoc Wallet::Config) and set any other configuration variables that
+    you want or need.  If you're going to use the keytab object
+    implementation, you'll need to create a keytab with appropriate kadmin
+    privileges and set several configuration variables.
+
+    On the wallet server, install remctld.  Then, install the
+    configuration fragment in config/wallet in the remctld configuration.
+    You can do this either by adding the one non-comment line of that file
+    to your remctl.conf or, if your remctl.conf includes a directory of
+    configuration fragments, drop config/wallet into that directory.
+
+    Note that the default wallet configuration allows any authenticated
+    user to run the wallet backend and relies on the wallet's ACLs for all
+    access control.  Normally, this is what you want.  But if you're using
+    the wallet for a very limited purpose, you may want to change ANYUSER
+    in that configuration fragment to a path to a regular ACL file and
+    only allow certain users to run wallet commands at all.
+
+    Once you have the configuration in place, restart or send a HUP signal
+    to remctld to make it re-read the configuration.
+
+    Now, you can start using the wallet.  Read the wallet man page for
+    details on all the possible commands.  The first step is probably to
+    create a new object with the create command, create an ACL with the
+    acl create command, add the ACL entries that should own that object to
+    that ACL with acl add, and then set that ACL as the owner of the
+    object with the owner command.
