@@ -706,12 +706,12 @@ set, the owner ACL will not be checked.
 =item store(TYPE, NAME, DATA)
 
 Stores DATA for the object identified with TYPE and NAME for later retrieval
-with get.  Note that DATA may be binary and may contain nul characters.  To
-store an object, the current user must either be authorized by the owner ACL
-or authorized by the store ACL; however, if the store ACL is set, the owner
-ACL is not checked.  Being a member of the ADMIN ACL does not provide any
-special privileges to store objects.  Returns true on success and false on
-failure.
+with get.  Not all object types support this.  Note that DATA may be binary
+and may contain nul characters.  To store an object, the current user must
+either be authorized by the owner ACL or authorized by the store ACL;
+however, if the store ACL is set, the owner ACL is not checked.  Being a
+member of the ADMIN ACL does not provide any special privileges to store
+objects.  Returns true on success and false on failure.
 
 =back
 
