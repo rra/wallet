@@ -25,6 +25,8 @@ Required to replace leland_srvtab:
 
 * Implement the locked flag.
 
+* Add README and NEWS files and update web page.
+
 * Write the remctl configuration and finish Debian packaging of the
   wallet client and server.
 
