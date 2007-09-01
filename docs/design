@@ -69,37 +69,39 @@ Server Design
         create          Create a new wallet entry for an object
         destroy         Delete the wallet entry for a given object
         owner           Set the owner of an object
-        acl             Set the ACL on an object
+        acl             Set an ACL on an object
+        expires         Set the expiration of an object
         flag            Set or clear flags on an object
         show            Show the metainformation about the object
 
         get             Retrieve the named object from the wallet
         store           Store the named object in the wallet
 
-    The first six operations manipulate or display the metadata of the
+    The first seven operations manipulate or display the metadata of the
     object.  The next two operations store or retrieve the object itself.
 
-    The owner and acl operations are only available to wallet
+    The owner, acl, and expires operations are only available to wallet
     administrators.  Even if one is the listed owner of an object, one may
-    not change the owner or ACL on that object.  (This may be reconsidered
-    later to permit the owner to set the ACLs on an object.  This design
-    mirrors the existing Stanford University srvtab distribution system
-    and is maximally conservative.)
+    not change the owner, ACL, or expiration date on that object.  (This
+    may be reconsidered later to permit the owner to set the ACLs on an
+    object.  This design mirrors the existing Stanford University srvtab
+    distribution system and is maximally conservative.)
 
     Objects are created with a store command, a get command on a object
     type that supports data generation, or a create command (which creates
-    the metadata without storing any data).  New objects will be created
-    owned by the user running get, store, or create, no special ACLs, and
-    no flags.  Each backend can decide at its discretion whether a user
-    can get, store, or create an object that doesn't already exist.  The
-    default behavior in the absence of backend-specific configuration is
-    to only allow wallet administrators to do so.
+    the metadata without storing any data).  Administrators can create
+    objects with the create command.  Object creation via get or store
+    only happens via local policy.  When someone attempts to get or store
+    an object that doesn't already exist, the type and name of the object
+    and the operation is passed to a policy function, which returns an
+    ACL.  If the user is authorized by that ACL, the object is created and
+    that ACL becomes the object's new owner.
 
   ACLs
 
     Each ACL consists of zero or more lines, each of which has a scheme
-    and an identifier.  Initially, three schemes will be supported: krb5,
-    krb5-group, and netdb.
+    and an identifier.  Initially, two schemes will be supported: krb5 and
+    netdb.
 
     An ACL line of scheme krb5 will have a single fully-qualified
     principal name as an identifier; only that principal will be
@@ -118,19 +120,23 @@ Server Design
     For more details and other ACL types that will be supported in the
     future, see design-acl.
 
-    There will be one general system ACL that identifies wallet
-    administrators, who are permitted to perform any operation.
+    There will be one general system ACL with the special name ADMIN that
+    identifies wallet administrators.  Administrators are permitted to
+    perform any operation except get and store, and can add themselves to
+    ACLs to get and store objects.  (Requiring that they add themselves to
+    the ACLs first is not a security measure but a requirement to not be
+    sloppy with ACLs when one is an administrator.)
 
   Metadata
 
     Each object stored in the wallet has the following metadata associated
-    with it (with examples for a keytab for
-    host/windlord.stanford.edu@stanford.edu that should be retrievable by
-    the Kerberos principal rra/root@stanford.edu):
+    with it (with examples for a keytab for host/windlord.stanford.edu
+    that should be retrievable by the Kerberos principal
+    rra/root@stanford.edu):
 
     * The type and name of the object.  The name must be unique within
       that type.  For example, the type would be "keytab" and the name
-      would be "host/windlord.stanford.edu@stanford.edu".
+      would be "host/windlord.stanford.edu".
 
     * The owner of the object.  The owner by default has get, store, and
       show permissions on the object in the lack of more specific ACLs.
@@ -173,7 +179,9 @@ Server Design
     The wallet server will keep a history log of every operation performed
     against an object, keyed by object type and name (for object changes).
     A remctl interface will be provided so that wallet administrators can
-    query this log and see the history of a given object.
+    query this log and see the history of a given object.  The wallet
+    server will also keep a history log of every operation performed
+    against an ACL, keyed by the ACL ID.
 
     In addition, the wallet server will log to syslog every operation
     performed, not only on objects but on ACLs, Kerberos principal groups,
@@ -244,9 +252,9 @@ Client Design
     compile-time default, overridden by configuration in krb5.conf or by a
     command-line option.  It should support the get, store, and show
     operations (although we will skip store for the initial implementation
-    since it's not required for keytabs).  Other wallet protocol
-    operations can be done via direct remctl calls or through later
-    additions to the client.
+    since it's not required for keytabs), and in general should pass any
+    command on to the server so that we can add new commands later without
+    modifying the client code.
 
     When retrieving a keytab, the client should support either creating a
     new keytab file or adding the keys from the downloaded keytab to an
@@ -264,6 +272,9 @@ Client Design
     from the Kerberos v5 kvno), it will obtain a Kerberos v4 service
     ticket for that principal and extract the kvno from that service
     ticket.
+
+    Similarly, whenever a keytab is created or changed, the server needs
+    to synchronize the key with Kerberos v4.
 
 Security Considerations
 

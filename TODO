@@ -2,8 +2,6 @@
 
 Required to replace leland_srvtab:
 
-* Bring the design document up to date.
-
 * Write a test suite for the sanity checking in wallet-backend and
   keytab-backend.
 
@@ -34,6 +32,8 @@ Future work:
 
 * Provide some way of getting at the history tables.  Need to get object
   and ACL history either by object or for all objects, at least.
+
+* Log all actions to syslog.
 
 * Write the NetDB ACL verifier.
 
