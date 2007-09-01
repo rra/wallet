@@ -80,6 +80,8 @@ if ($command eq 'acl') {
     } elsif ($action eq 'rename') {
         check_args (2, [], @args);
         $server->acl_rename (@args) or die $server->error;
+    } else {
+        die "unknown command acl $action\n";
     }
 } elsif ($command eq 'create') {
     check_args (2, [], @args);
@@ -149,6 +151,8 @@ if ($command eq 'acl') {
 } elsif ($command eq 'store') {
     check_args (3, [2], @args);
     $server->store (@args) or die $server->error;
+} else {
+    die "unknown command $command\n";
 }
 exit 0;
 __END__
@@ -188,94 +192,124 @@ B<wallet-backend> takes no traditional options.
 
 =head1 COMMANDS
 
-The following commands are recognized.  Only brief descriptions are given
-here, along with any special notes about the output as formatted by
-B<wallet-backend>.
+Most commands are only available to wallet administrators (users on the
+C<ADMIN> ACL).  The exceptions are C<get>, C<store>, C<show>, and
+C<destroy>.  All of those commands have their own ACLs, and if the
+appropriate ACL is set, it alone is checked to see if the user has access.
+Otherwise, C<get>, C<store>, and C<show> access is permitted if the user is
+authorized by the owner ACL of the object.
 
-Most commands can only be executed by someone authorized by the ADMIN ACL.
-The exceptions are get and store, which are authorized by the get and store
-ACLs if set and otherwise the owner ACL and to which the ADMIN ACL does not
-apply; show, which requires either the ADMIN ACL or checks the show ACL and
-the owner ACL if the show ACL isn't set; and destroy, which requires either
-the ADMIN ACL or the destroy ACL.
-
-For complete details, including the authorization model for who can execute
-which command, see Wallet::Server(3).
+Administrators can run any command on any object or ACL except for C<get>
+and C<store>.  For C<get> and C<show>, they must still be authorized by
+either the appropriate specific ACL or the owner ACL.
 
 =over 4
 
-=item acl add ID SCHEME IDENTIFIER
+=item acl add <id> <scheme> <identifier>
 
-Adds an entry with SCHEME and IDENTIFIER to the ACL ID.
+Adds an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
+either the name of an ACL or its numeric identifier.
 
-=item acl create NAME
+=item acl create <name>
 
-Create a new ACL with name NAME.
+Create a new, empty ACL with name <name>.  When setting an ACL on an
+object with a set of entries that don't match an existing ACL, first
+create a new ACL with C<acl create>, add the appropriate entries to it
+with C<acl add>, and then set the ACL on an object with the C<owner> or
+C<setacl> commands.
 
-=item acl destroy ID
+=item acl destroy <id>
 
-Destroy the ACL ID (which must not be reference by any object).
+Destroy the ACL <id>.  This ACL must no longer be referenced by any object
+or the ACL destruction will fail.  The special ACL named C<ADMIN> cannot
+be destroyed.
 
-=item acl remove ID SCHEME IDENTIFIER
+=item acl remove <id> <scheme> <identifier>
 
-Remove the entry with SCHEME and IDENTIFIER from the ACL ID.
+Remove the entry with <scheme> and <identifier> from the ACL <id>.  <id>
+may be either the name of an ACL or its numeric identifier.  The last
+entry in the special ACL C<ADMIN> cannot be removed to protect against
+accidental lockout, but administrators can remove themselves from the
+C<ADMIN> ACL and can leave only a non-functioning entry on the ACL.  Use
+caution when removing entries from the C<ADMIN> ACL.
 
-=item create TYPE NAME
+=item create <type> <name>
 
-Create a new object with TYPE and NAME and no ACLs set.
+Create a new object of type <type> with name <name>.  With some backends,
+this will trigger creation of an entry in an external system as well.
+The new object will have no ACLs and no owner set, so usually the
+administrator will want to then set an owner with C<owner> so that the
+object will be usable.
 
-=item destroy TYPE NAME
+=item destroy <type> <name>
 
-Destroy the object identified by TYPE and NAME.
+Destroy the object identified by <type> and <name>.  With some backends,
+this will trigger destruction of an object in an external system as well.
 
-=item expires TYPE NAME [EXPIRES]
+=item expires <type> <name> [<expires>]
 
-If EXPIRES is not given, displays the current expiration of the object
-identified by TYPE and NAME, or C<No expiration set> if none is set.  If
-EXPIRES is given, sets the expiration on the object identified by TYPE and
-NAME to EXPIRES, which should be in seconds since epoch.
+If <expires> is not given, displays the current expiration of the object
+identified by <type> and <name>, or C<No expiration set> if none is set.
+The expiration will be displayed in seconds since epoch.
 
-=item get TYPE NAME
+If <expires> is given, sets the expiration on the object identified by
+<type> and <name> to <expires>.  <expires> should be given in seconds
+since epoch.  If <expires> is the empty string, clears the expiration of
+the object.
 
-Prints to standard output the data associated with the object identified by
-TYPE and NAME.  This may trigger generation of new data and invalidate old
-data for that object depending on the object type.
+Currently, the expiration of an object is not used.
 
-=item getacl TYPE NAME ACL
+=item get <type> <output>
 
-Prints the ACL of type ACL, which must be one of C<get>, C<store>, C<show>,
-C<destroy>, or C<flags>, for the object identified by TYPE and NAME.  Prints
-C<No ACL set> if that ACL isn't set.
+Prints to standard output the data associated with the object identified
+by <type> and <name>, or stores it in a file if the B<-f> option was
+given.  This may trigger generation of new data and invalidate old data
+for that object depending on the object type.
 
-=item owner TYPE NAME [OWNER]
+=item getacl <type> <name> <acl>
 
-If OWNER is not given, displays the ACL name of the current owner of the
-object identified by TYPE and NAME, or C<No owner set> if none is set.  If
-OWNER is given, sets the owner of the object identified by TYPE and NAME to
-OWNER.
+Prints the ACL <acl>, which must be one of C<get>, C<store>, C<show>,
+C<destroy>, or C<flags>, for the object identified by <type> and <name>.
+Prints C<No ACL set> if that ACL isn't set on that object.  Remember that
+if the C<get>, C<store>, or C<show> ACLs aren't set, authorization falls
+back to checking the owner ACL.  See the C<owner> command for displaying
+or setting it.
 
-=item setacl TYPE NAME ACL ID
+=item owner <type> <name> [<owner>]
 
-Sets the ACL type ACL, which must be one of C<get>, C<store>, C<show>,
-C<destroy>, or C<flags>, to ID on the object identified by TYPE and NAME.
+If <owner> is not given, displays the current owner ACL of the object
+identified by <type> and <name>, or C<No owner set> if none is set.  The
+result will be the name of an ACL.
 
-=item show TYPE NAME
+If <owner> is given, sets the owner of the object identified by <type> and
+<name> to <owner>.  If <owner> is the empty string, clears the owner of
+the object.
 
-Displays the current object metadata for the object identified by TYPE and
-NAME.
+=item setacl <type> <name> <acl> <id>
 
-=item store TYPE NAME DATA
+Sets the ACL <acl>, which must be one of C<get>, C<store>, C<show>,
+C<destroy>, or C<flags>, to <id> on the object identified by <type> and
+<name>.  If <id> is the empty string, clears that ACL on the object.
 
-Stores DATA for the object identified by TYPE and NAME for later retrieval
-with get.  Not all object types support this.
+=item show <type> <name>
+
+Displays the current object metadata for the object identified by <type>
+and <name>.  This human-readable output will show the object type and
+name, the owner, any specific ACLs set on the object, the expiration if
+any, and the user, remote host, and time when the object was created, last
+stored, and last downloaded.
+
+=item store <type> <name> <data>
+
+Stores <data> for the object identified by <type> and <name> for later
+retrieval with C<get>.  Not all object types support this.
+
+Currently, <data> is limited to not containing nul characters and may
+therefore not be binary data, and is limited by the maximum command line
+length of the operating system of the wallet server.  These restrictions
+will be lifted in the future.
 
 =back
-
-=head1 EXIT STATUS
-
-Regular output is printed to standard output and errors are printed to
-standard error.  If the command was successful, B<wallet-backend> exits with
-status 0.  If it failed, B<wallet-backend> exits with a non-zero status.
 
 =head1 SEE ALSO
 
