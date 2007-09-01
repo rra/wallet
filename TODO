@@ -2,7 +2,7 @@
 
 Required to replace leland_srvtab:
 
-* Documentation missing for Wallet::Server, wallet-backend, and wallet.
+* Fix and test downloaded trace information.
 
 * Bring the design document up to date.
 
@@ -44,6 +44,9 @@ Future work:
 * Write the PTS ACL verifier.
 
 * Add a help function to wallet-backend listing the commands.
+
+* Support displaying and possibly specifying dates in some format more
+  normal than seconds since epoch.
 
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
@@ -98,3 +101,7 @@ Future work:
 
 * The keytab backend currently only supports MIT Kerberos.  Add support
   for Heimdal.
+
+* The wallet-backend and wallet documentation share the COMMANDS section.
+  Work out some means to assemble the documentation without duplicating
+  content.
