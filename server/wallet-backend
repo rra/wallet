@@ -71,6 +71,9 @@ if ($command eq 'acl') {
     } elsif ($action eq 'create') {
         check_args (1, [], @args);
         $server->acl_create (@args) or die $server->error;
+    } elsif ($action eq 'destroy') {
+        check_args (1, [], @args);
+        $server->acl_destroy (@args) or die $server->error;
     } elsif ($action eq 'remove') {
         check_args (3, [], @args);
         $server->acl_remove (@args) or die $server->error;
@@ -92,7 +95,9 @@ if ($command eq 'acl') {
         check_args (2, [], @args);
         my $output = $server->expires (@args);
         if (defined $output) {
-            print $output;
+            print $output, "\n";
+        } elsif (not $server->error) {
+            print "No expiration set\n";
         } else {
             die $server->error;
         }
@@ -109,7 +114,9 @@ if ($command eq 'acl') {
     check_args (3, [], @args);
     my $output = $server->acl (@args);
     if (defined $output) {
-        print $output;
+        print $output, "\n";
+    } elsif (not $server->error) {
+        print "No ACL set\n";
     } else {
         die $server->error;
     }
@@ -121,7 +128,9 @@ if ($command eq 'acl') {
         check_args (2, [], @args);
         my $output = $server->owner (@args);
         if (defined $output) {
-            print $output;
+            print $output, "\n";
+        } elsif (not $server->error) {
+            print "No owner set\n";
         } else {
             die $server->error;
         }
