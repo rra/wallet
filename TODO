@@ -25,6 +25,11 @@ Required to replace leland_srvtab:
 
 * Implement the locked flag.
 
+* Add support to the test suite for specifying a different database than
+  SQLite for testing.  For MySQL and other database types that we can't
+  just delete, also requires adding a method to Wallet::Schema to drop all
+  of our tables and indices in reverse order of creation.
+
 * Add README and NEWS files and update web page.
 
 * Write the remctl configuration and finish Debian packaging of the
@@ -33,7 +38,14 @@ Required to replace leland_srvtab:
 Future work:
 
 * Provide some way of getting at the history tables.  Need to get object
-  and ACL history either by object or for all objects, at least.
+  and ACL history either by object or for all objects, at least.  Global
+  history should be by timestamp and possibly limit by timestamp.
+
+* Provide an interface to list all objects in the database by type, by
+  owner (including null), or by all uses of an ACL.
+
+* Provide an interface to list all ACLs in the database.  Most
+  interestingly, an interface to list all empty ACLs.
 
 * Log all actions to syslog.
 
@@ -45,6 +57,12 @@ Future work:
 
 * Add a help function to wallet-backend listing the commands.
 
+* Write a conventions document for ACL naming, object naming, and similar
+  issues.
+
+* Write a future design and roadmap document to collect notes about how
+  unimplemented features should be handled.
+
 * Support displaying and possibly specifying dates in some format more
   normal than seconds since epoch.
 
@@ -55,6 +73,20 @@ Future work:
   request for keytabs.
 
 * Implement special handling for keytabs in the wallet client.
+
+* Add support to the wallet client for getting Kerberos tickets, using the
+  -u option similar to leland_srvtab.  Needs good error messages on
+  Kerberos failures.
+
+* The wallet client should read configuration information from krb5.conf,
+  and possibly from some other configuration as well.
+
+* Add support for a default creation policy and default ACLs.  The policy
+  function needs to return a list of ACLs, and we'll need an ACL function
+  to check the user against such a list rather than an ACL that already
+  exists in the database.  When we create such an object, we'll also need
+  to name the ACL, which may require fallback logic if the name was
+  already taken.
 
 * Use the class names in the database tables when loading object and
   ACL verifier implementations.
@@ -82,6 +114,9 @@ Future work:
 * Add the database schema version to a global table so that we can use it
   to support schema upgrades in the future.
 
+* On upgrades, support adding new object types and ACL verifiers to the
+  class tables.
+
 * Write a wallet-admin program to provide an interface to things like
   database initialization and, eventually, upgrades.
 
@@ -93,8 +128,35 @@ Future work:
 
 * Add a comment field for objects that can be set by the owner.
 
+* Implement store support in the wallet client.  Add an option to read the
+  data from a file.  The initial implementation, depending on the
+  underlying remctl support, may have to ban nul characters in the
+  uploaded data.
+
+* Implement a simple file wallet object.  Document a naming convention for
+  those files (group-service, perhaps).
+
+* Implement an ssh keypair wallet object.  The server can run ssh-keygen
+  to generate a public/private key pair and return both to the client,
+  which would split them apart.  Used primarily for host keys.  May need a
+  side table to store key types, or a naming convention.
+
+* Implement an X.509 certificate object.  I expect this would store the
+  public and private key as a single file in the same format that Apache
+  can read for combined public and private keys.  There were requests for
+  storing the CSR, but I don't see why you'd want to do that.  Start with
+  store support.
+
+* Implement an X.509 CA so that you can get certificate objects without
+  storing them first.  Need to resolve naming conventions if you want to
+  run multiple CAs on the same wallet server (but why?).  Should this be a
+  different type than stored certificates?
+
 * Add details to design-api on how to write one's own ACL verifiers and
   object implementations.
+
+* Add support for enforcing a naming policy through another policy
+  function.
 
 * Add readline support to the wallet client to make it easier to issue
   multiple commands.
@@ -105,3 +167,17 @@ Future work:
 * The wallet-backend and wallet documentation share the COMMANDS section.
   Work out some means to assemble the documentation without duplicating
   content.
+
+* Add support for rekeying in the wallet client.  Need to resolve how to
+  get a list of principals to rekey and which keytabs to work on.  This
+  possibly should be a separate binary from the regular wallet client
+  binary.
+
+* Document using the wallet system over something other than remctl.
+
+* Provide a REST implementation of the wallet server.
+
+* Document all diagnostics for all wallet APIs.
+
+* Write a test suite to scan all wallet code looking for diagnostics that
+  aren't in the documentation and warn about them.
