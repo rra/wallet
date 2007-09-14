@@ -18,7 +18,8 @@ EXTRA_DIST = TODO client/wallet.pod docs/design docs/design-acl \
 	tests/data/fake-keytab tests/data/wallet.conf
 
 bin_PROGRAMS = client/wallet
-sbin_PROGRAMS = kasetkey/kasetkey server/keytab-backend server/wallet-backend
+sbin_PROGRAMS = kasetkey/kasetkey
+sbin_SCRIPTS = server/keytab-backend server/wallet-backend
 client_wallet_SOURCES = client/wallet.c system.h
 client_wallet_CPPFLAGS = @REMCTL_CPPFLAGS@
 client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
@@ -38,13 +39,13 @@ $(srcdir)/kasetkey/kasetkey.8: $(srcdir)/kasetkey/kasetkey.pod
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
 	    --section=8 $(srcdir)/kasetkey/kasetkey.pod > $@
 
-$(srcdir)/server/keytab-backend.8: $(srcdir)/server/keytab-backend.pod
+$(srcdir)/server/keytab-backend.8: $(srcdir)/server/keytab-backend
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=8 $(srcdir)/server/keytab-backend.pod > $@
+	    --section=8 $(srcdir)/server/keytab-backend > $@
 
-$(srcdir)/server/wallet-backend.8: $(srcdir)/server/wallet-backend.pod
+$(srcdir)/server/wallet-backend.8: $(srcdir)/server/wallet-backend
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=8 $(srcdir)/server/wallet-backend.pod > $@
+	    --section=8 $(srcdir)/server/wallet-backend > $@
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
 # without optimization turned on, and add -DDEBUG=1 so we'll also compile all
@@ -81,4 +82,6 @@ check_PROGRAMS = tests/runtests
 
 check-local: $(check_PROGRAMS)
 	cd tests && ./runtests TESTS
+	@echo ''
+	@echo ''
 	cd perl && $(MAKE) test
