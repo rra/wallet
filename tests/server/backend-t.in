@@ -1,0 +1,274 @@
+#!/usr/bin/perl -w
+# $Id$
+#
+# t/backend.t -- Tests for the wallet-backend dispatch code.
+
+use strict;
+use IO::String;
+use Test::More tests => 710;
+
+# Create a dummy class for Wallet::Server that prints what method was called
+# with its arguments and returns data for testing.
+package Wallet::Server;
+
+use vars qw($error $okay);
+$error = 0;
+$okay = 0;
+
+sub error {
+    if ($okay) {
+        $okay = 0;
+        return undef;
+    } else {
+        $error++;
+        return "error count $error\n";
+    }
+}
+
+sub new     { shift; print "new @_\n"; return bless ({}, 'Wallet::Server') }
+sub create  { shift; print "create @_\n"; ($_[0] eq 'error') ? undef : 1 }
+sub destroy { shift; print "destroy @_\n"; ($_[0] eq 'error') ? undef : 1 }
+sub store   { shift; print "store @_\n"; ($_[0] eq 'error') ? undef : 1 }
+
+sub acl_add
+    { shift; print "acl_add @_\n"; ($_[0] eq 'error') ? undef : 1 }
+sub acl_create
+    { shift; print "acl_create @_\n"; ($_[0] eq 'error') ? undef : 1 }
+sub acl_destroy
+    { shift; print "acl_destroy @_\n"; ($_[0] eq 'error') ? undef : 1 }
+sub acl_remove
+    { shift; print "acl_remove @_\n"; ($_[0] eq 'error') ? undef : 1 }
+sub acl_rename
+    { shift; print "acl_rename @_\n"; ($_[0] eq 'error') ? undef : 1 }
+
+sub acl {
+    shift;
+    print "acl @_\n";
+    if ($_[0] eq 'error') {
+        return undef;
+    } elsif ($_[1] eq 'empty') {
+        $okay = 1;
+        return undef;
+    } else {
+        return 'acl';
+    }
+}
+
+sub expires {
+    shift;
+    print "expires @_\n";
+    if ($_[0] eq 'error') {
+        return undef;
+    } elsif ($_[1] eq 'empty') {
+        $okay = 1;
+        return undef;
+    } else {
+        return 'expires';
+    }
+}
+
+sub get {
+    shift;
+    print "get @_\n";
+    return if $_[0] eq 'error';
+    return 'get';
+}
+
+sub owner {
+    shift;
+    print "owner @_\n";
+    if ($_[0] eq 'error') {
+        return undef;
+    } elsif ($_[1] eq 'empty') {
+        $okay = 1;
+        return undef;
+    } else {
+        return 'owner';
+    }
+}
+
+sub show {
+    shift;
+    print "show @_\n";
+    return if $_[0] eq 'error';
+    return 'show';
+}
+
+# Back to the main package and the actual test suite.  Lie about whether the
+# Wallet::Server package has already been loaded.
+package main;
+$INC{'Wallet/Server.pm'} = 'FAKE';
+eval { do '@abs_top_srcdir@/server/wallet-backend' };
+
+# Run the wallet backend.  This fun hack takes advantage of the fact that the
+# wallet backend is written in Perl so that we can substitute our own
+# Wallet::Server class.
+sub run_backend {
+    my (@args) = @_;
+    my $result;
+    my $output = IO::String->new (\$result);
+    $output->autoflush (1);
+    select $output;
+    eval { command (@args) };
+    my $error = $@;
+    select STDOUT;
+    return ($result, $error);
+}
+
+# Now for the actual tests.  First, check for lack of trace information.
+my ($out, $err) = run_backend;
+is ($err, "REMOTE_USER not set\n", 'REMOTE_USER required');
+$ENV{REMOTE_USER} = 'admin';
+($out, $err) = run_backend;
+is ($err, "neither REMOTE_HOST nor REMOTE_ADDR set\n",
+    'REMOTE_HOST or _ADDR required');
+$ENV{REMOTE_ADDR} = '1.2.3.4';
+my $new = 'new admin 1.2.3.4';
+
+# Check unknown commands.
+($out, $err) = run_backend ('foo');
+is ($err, "unknown command foo\n", 'Unknown command');
+is ($out, "$new\n", ' and nothing ran');
+($out, $err) = run_backend ('acl', 'foo');
+is ($err, "unknown command acl foo\n", 'Unknown ACL command');
+is ($out, "$new\n", ' and nothing ran');
+
+# Check too few, too many, and bad arguments for every command.
+my %commands = (create  => [2, 2],
+                destroy => [2, 2],
+                expires => [2, 3],
+                get     => [2, 2],
+                getacl  => [3, 3],
+                owner   => [2, 3],
+                setacl  => [4, 4],
+                show    => [2, 2],
+                store   => [3, 3]);
+my %acl_commands = (add     => [3, 3],
+                    create  => [1, 1],
+                    destroy => [1, 1],
+                    remove  => [3, 3],
+                    rename  => [2, 2]);
+for my $command (sort keys %commands) {
+    my ($min, $max) = @{ $commands{$command} };
+    ($out, $err) = run_backend ($command, ('foo') x ($min - 1));
+    is ($err, "insufficient arguments\n", "Too few arguments for $command");
+    is ($out, "$new\n", ' and nothing ran');
+    ($out, $err) = run_backend ($command, ('foo') x ($max + 1));
+    is ($err, "too many arguments\n", "Too many arguments for $command");
+    is ($out, "$new\n", ' and nothing ran');
+    my @base = ('foobar') x $max;
+    for my $arg (0 .. ($max - 1)) {
+        my @args = @base;
+        $args[$arg] = 'foo;bar';
+        ($out, $err) = run_backend ($command, @args);
+        if ($command eq 'store' and $arg == 2) {
+            is ($err, '', 'Store allows any characters');
+            is ($out, "$new\nstore foobar foobar foo;bar\n",
+                ' and calls the right method');
+        } else {
+            is ($err, "invalid characters in argument: foo;bar\n",
+                "Invalid arguments for $command $arg");
+            is ($out, "$new\n", ' and nothing ran');
+        }
+    }
+}
+for my $command (sort keys %acl_commands) {
+    my ($min, $max) = @{ $acl_commands{$command} };
+    ($out, $err) = run_backend ('acl', $command, ('foo') x ($min - 1));
+    is ($err, "insufficient arguments\n",
+        "Too few arguments for acl $command");
+    is ($out, "$new\n", ' and nothing ran');
+    ($out, $err) = run_backend ('acl', $command, ('foo') x ($max + 1));
+    is ($err, "too many arguments\n", "Too many arguments for acl $command");
+    is ($out, "$new\n", ' and nothing ran');
+    my @base = ('foobar') x $max;
+    for my $arg (0 .. ($max - 1)) {
+        my @args = @base;
+        $args[$arg] = 'foo;bar';
+        ($out, $err) = run_backend ('acl', $command, @args);
+        is ($err, "invalid characters in argument: foo;bar\n",
+            "Invalid arguments for acl $command $arg");
+        is ($out, "$new\n", ' and nothing ran');
+    }
+}
+
+# Now, test that we ran the right functions and passed the correct arguments.
+my $error = 1;
+for my $command (qw/create destroy setacl store/) {
+    my $method = ($command eq 'setacl') ? 'acl' : $command;
+    my @extra = ('foo') x ($commands{$command}[0] - 2);
+    my $extra = @extra ? join (' ', '', @extra) : '';
+    ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+    is ($err, '', "Command $command ran with no errors");
+    is ($out, "$new\n$method type name$extra\n",
+        ' and ran the right method');
+    ($out, $err) = run_backend ($command, 'error', 'name', @extra);
+    is ($err, "error count $error\n", "Command $command ran with errors");
+    is ($out, "$new\n$method error name$extra\n",
+        ' and ran the right method');
+    $error++;
+}
+for my $command (qw/expires get getacl owner show/) {
+    my $method = ($command eq 'getacl') ? 'acl' : $command;
+    my @extra = ('foo') x ($commands{$command}[0] - 2);
+    my $extra = @extra ? join (' ', '', @extra) : '';
+    my $newline = ($command eq 'get' or $command eq 'show') ? '' : "\n";
+    ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+    is ($err, '', "Command $command ran with no errors");
+    is ($out, "$new\n$method type name$extra\n$method$newline",
+        ' and ran the right method with output');
+    if ($command ne 'get' and $command ne 'getacl' and $command ne 'show') {
+        ($out, $err) = run_backend ($command, 'type', 'name', @extra, 'foo');
+        is ($err, '', "Command $command ran with no errors (setting)");
+        is ($out, "$new\n$method type name$extra foo\n",
+            ' and ran the right method');
+    }
+    if ($command ne 'get' and $command ne 'show') {
+        ($out, $err) = run_backend ($command, 'type', 'empty', @extra);
+        is ($err, '', "Command $command ran with no errors (empty)");
+        my $desc;
+        if    ($command eq 'expires') { $desc = 'expiration' }
+        elsif ($command eq 'getacl')  { $desc = 'ACL' }
+        elsif ($command eq 'owner')   { $desc = 'owner' }
+        is ($out, "$new\n$method type empty$extra\nNo $desc set\n",
+            ' and ran the right method with output');
+        $error++;
+    }
+    ($out, $err) = run_backend ($command, 'error', 'name', @extra);
+    is ($err, "error count $error\n", "Command $command ran with errors");
+    is ($out, "$new\n$method error name$extra\n",
+        ' and ran the right method');
+    $error++;
+}
+for my $command (sort keys %acl_commands) {
+    my @extra = ('foo') x ($acl_commands{$command}[0] - 1);
+    my $extra = @extra ? join (' ', '', @extra) : '';
+    ($out, $err) = run_backend ('acl', $command, 'name', @extra);
+    is ($err, '', "Command acl $command ran with no errors");
+    is ($out, "$new\nacl_$command name$extra\n", ' and ran the right method');
+    ($out, $err) = run_backend ('acl', $command, 'error', @extra);
+    is ($err, "error count $error\n", "Command acl $command ran with errors");
+    is ($out, "$new\nacl_$command error$extra\n",
+        ' and ran the right method');
+    $error++;
+}
+
+# Almost done.  All that remains is to test the robustness of the bad
+# character checks against every possible character.
+my $ok = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_/.-';
+($out, $err) = run_backend ('show', 'type', $ok);
+is ($err, '', 'Allowed all valid characters');
+is ($out, "$new\nshow type $ok\nshow", ' and returned the right output');
+for my $n (0 .. 255) {
+    my $c = chr ($n);
+    my $name = $ok . $c;
+    ($out, $err) = run_backend ('show', 'type', $name);
+    if (index ($ok, $c) == -1) {
+        is ($err, "invalid characters in argument: $name\n",
+            "Rejected invalid character $n");
+        is ($out, "$new\n", ' and did nothing');
+    } else {
+        is ($err, '', "Accepted valid character $n");
+        is ($out, "$new\nshow type $name\nshow", ' and ran the method');
+    }
+}
