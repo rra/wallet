@@ -15,7 +15,6 @@ our $ID = q$Id$;
 use strict;
 use DBI;
 use Sys::Syslog qw(openlog syslog);
-use Wallet::Config;
 use Wallet::Server;
 
 ##############################################################################
@@ -49,112 +48,111 @@ sub check_args {
 # Implementation
 ##############################################################################
 
-# Separately log our actions.  remctl keeps some logs and we store extensive
-# logs of successful actions in the database, but neither logs failed actions.
-openlog ('wallet-backend', 'pid', 'auth');
+# Parse and execute a command.  We wrap this in a subroutine call for easier
+# testing.
+sub command {
+    my $user = $ENV{REMOTE_USER} or die "REMOTE_USER not set\n";
+    my $host = $ENV{REMOTE_HOST} || $ENV{REMOTE_ADDR}
+        or die "neither REMOTE_HOST nor REMOTE_ADDR set\n";
 
-# Get our trace information.
-my $user = $ENV{REMOTE_USER} or die "REMOTE_USER not set\n";
-my $host = $ENV{REMOTE_HOST} || $ENV{REMOTE_ADDR}
-    or die "Neither REMOTE_HOST nor REMOTE_USER set\n";
+    # Instantiate the server object.
+    my $server = Wallet::Server->new ($user, $host);
 
-# Instantiate the server object.
-my $server = Wallet::Server->new ($user, $host);
-
-# Parse command-line options and dispatch to the appropriate calls.
-my ($command, @args) = @ARGV;
-if ($command eq 'acl') {
-    my $action = shift @args;
-    if ($action eq 'add') {
-        check_args (3, [], @args);
-        $server->acl_add (@args) or die $server->error;
-    } elsif ($action eq 'create') {
-        check_args (1, [], @args);
-        $server->acl_create (@args) or die $server->error;
-    } elsif ($action eq 'destroy') {
-        check_args (1, [], @args);
-        $server->acl_destroy (@args) or die $server->error;
-    } elsif ($action eq 'remove') {
-        check_args (3, [], @args);
-        $server->acl_remove (@args) or die $server->error;
-    } elsif ($action eq 'rename') {
+    # Parse command-line options and dispatch to the appropriate calls.
+    my ($command, @args) = @_;
+    if ($command eq 'acl') {
+        my $action = shift @args;
+        if ($action eq 'add') {
+            check_args (3, [], @args);
+            $server->acl_add (@args) or die $server->error;
+        } elsif ($action eq 'create') {
+            check_args (1, [], @args);
+            $server->acl_create (@args) or die $server->error;
+        } elsif ($action eq 'destroy') {
+            check_args (1, [], @args);
+            $server->acl_destroy (@args) or die $server->error;
+        } elsif ($action eq 'remove') {
+            check_args (3, [], @args);
+            $server->acl_remove (@args) or die $server->error;
+        } elsif ($action eq 'rename') {
+            check_args (2, [], @args);
+            $server->acl_rename (@args) or die $server->error;
+        } else {
+            die "unknown command acl $action\n";
+        }
+    } elsif ($command eq 'create') {
         check_args (2, [], @args);
-        $server->acl_rename (@args) or die $server->error;
-    } else {
-        die "unknown command acl $action\n";
-    }
-} elsif ($command eq 'create') {
-    check_args (2, [], @args);
-    $server->create (@args) or die $server->error;
-} elsif ($command eq 'destroy') {
-    check_args (2, [], @args);
-    $server->destroy (@args) or die $server->error;
-} elsif ($command eq 'expires') {
-    if (@args > 2) {
-        check_args (3, [], @args);
-        $server->expires (@args) or die $server->error;
-    } else {
+        $server->create (@args) or die $server->error;
+    } elsif ($command eq 'destroy') {
         check_args (2, [], @args);
-        my $output = $server->expires (@args);
+        $server->destroy (@args) or die $server->error;
+    } elsif ($command eq 'expires') {
+        if (@args > 2) {
+            check_args (3, [], @args);
+            $server->expires (@args) or die $server->error;
+        } else {
+            check_args (2, [], @args);
+            my $output = $server->expires (@args);
+            if (defined $output) {
+                print $output, "\n";
+            } elsif (not $server->error) {
+                print "No expiration set\n";
+            } else {
+                die $server->error;
+            }
+        }
+    } elsif ($command eq 'get') {
+        check_args (2, [], @args);
+        my $output = $server->get (@args);
         if (defined $output) {
-            print $output, "\n";
-        } elsif (not $server->error) {
-            print "No expiration set\n";
+            print $output;
         } else {
             die $server->error;
         }
-    }
-} elsif ($command eq 'get') {
-    check_args (2, [], @args);
-    my $output = $server->get (@args);
-    if (defined $output) {
-        print $output;
-    } else {
-        die $server->error;
-    }
-} elsif ($command eq 'getacl') {
-    check_args (3, [], @args);
-    my $output = $server->acl (@args);
-    if (defined $output) {
-        print $output, "\n";
-    } elsif (not $server->error) {
-        print "No ACL set\n";
-    } else {
-        die $server->error;
-    }
-} elsif ($command eq 'owner') {
-    if (@args > 2) {
+    } elsif ($command eq 'getacl') {
         check_args (3, [], @args);
-        $server->owner (@args) or die $server->error;
-    } else {
-        check_args (2, [], @args);
-        my $output = $server->owner (@args);
+        my $output = $server->acl (@args);
         if (defined $output) {
             print $output, "\n";
         } elsif (not $server->error) {
-            print "No owner set\n";
+            print "No ACL set\n";
         } else {
             die $server->error;
         }
-    }
-} elsif ($command eq 'setacl') {
-    check_args (4, [], @args);
-    $server->acl (@args) or die $server->error;
-} elsif ($command eq 'show') {
-    check_args (2, [], @args);
-    my $output = $server->show (@args);
-    if (defined $output) {
-        print $output;
+    } elsif ($command eq 'owner') {
+        if (@args > 2) {
+            check_args (3, [], @args);
+            $server->owner (@args) or die $server->error;
+        } else {
+            check_args (2, [], @args);
+            my $output = $server->owner (@args);
+            if (defined $output) {
+                print $output, "\n";
+            } elsif (not $server->error) {
+                print "No owner set\n";
+            } else {
+                die $server->error;
+            }
+        }
+    } elsif ($command eq 'setacl') {
+        check_args (4, [], @args);
+        $server->acl (@args) or die $server->error;
+    } elsif ($command eq 'show') {
+        check_args (2, [], @args);
+        my $output = $server->show (@args);
+        if (defined $output) {
+            print $output;
+        } else {
+            die $server->error;
+        }
+    } elsif ($command eq 'store') {
+        check_args (3, [3], @args);
+        $server->store (@args) or die $server->error;
     } else {
-        die $server->error;
+        die "unknown command $command\n";
     }
-} elsif ($command eq 'store') {
-    check_args (3, [2], @args);
-    $server->store (@args) or die $server->error;
-} else {
-    die "unknown command $command\n";
 }
-exit 0;
+command (@ARGV);
 __END__
 
 ##############################################################################
