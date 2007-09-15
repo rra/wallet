@@ -76,4 +76,5 @@ AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
 AC_CONFIG_FILES([tests/server/backend-t], [chmod +x tests/server/backend-t])
+AC_CONFIG_FILES([tests/server/keytab-t], [chmod +x tests/server/keytab-t])
 AC_OUTPUT

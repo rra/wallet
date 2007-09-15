@@ -2,9 +2,6 @@
 
 Required to replace leland_srvtab:
 
-* Write a test suite for the sanity checking in wallet-backend and
-  keytab-backend.
-
 * Add an ACL list function to display an ACL in human-readable form and
   call it from wallet-backend.
 

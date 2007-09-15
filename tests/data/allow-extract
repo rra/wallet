@@ -1,0 +1,8 @@
+# List of principal regexes that may be extracted.
+  # this is still a comment
+       
+^service/foo@EXAMPLE\.ORG$    
+.*/bar@EXAMPLE.NET$
+^host/example.org@EXAMPLE\.ORG$   
+#.*
+^error@EXAMPLE.ORG$

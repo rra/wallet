@@ -1,0 +1,20 @@
+#!/usr/bin/perl -w
+# $Id$
+#
+# fake-kadmin -- Fake kadmin.local used to test the keytab backend.
+
+unless ($ARGV[0] eq '-q' && @ARGV == 2) {
+    die "invalid arguments\n";
+}
+my @command = split (' ', $ARGV[1]);
+unless ("@command[0..3]" eq 'ktadd -q -norandkey -k') {
+    die "invalid command @command\n";
+}
+if ($command[5] eq 'error@EXAMPLE.ORG') {
+    warn "Some bad stuff\n";
+    exit 1;
+}
+open (OUT, '>', $command[4]) or die "cannot create $command[4]: $!\n";
+print OUT $command[5], "\n";
+close OUT;
+exit 0;
