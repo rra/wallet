@@ -18,7 +18,7 @@ our $ID = q$Id$;
 # The keytab for the extracted principal will be printed to standard output.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted, provided
@@ -38,17 +38,23 @@ our $ID = q$Id$;
 # Declarations and site configuration
 ##############################################################################
 
+# Do not use our here to permit overrides when testing.
 use strict;
+use vars qw($CONFIG $KADMIN $SYSLOG $TMP);
+
 use Sys::Syslog qw(openlog syslog);
 
 # Path to configuration file listing principals that may be extracted.
-our $CONFIG = '/etc/krb5kdc/allow-extract';
+$CONFIG = '/etc/krb5kdc/allow-extract';
 
 # The full path to a kadmin.local that supports -norandkey.
-our $KADMIN = '/usr/sbin/kadmin.local';
+$KADMIN = '/usr/sbin/kadmin.local';
 
 # A temporary area into which keytabs should be written.
-our $TMP = '/var/lib/keytabs';
+$TMP = '/var/lib/keytabs';
+
+# Set to zero to suppress syslog logging, which is used only for testing.
+$SYSLOG = 1 unless defined $SYSLOG;
 
 ##############################################################################
 # Logging
@@ -56,9 +62,9 @@ our $TMP = '/var/lib/keytabs';
 
 # Log a failure message to both syslog and to stderr and exit with a non-zero
 # status.
-sub fail {
+sub error {
     my $message = join ('', @_);
-    syslog ('err', '%s', $message);
+    syslog ('err', '%s', $message) if $SYSLOG;
     die "keytab-backend: $message\n";
 }
 
@@ -66,66 +72,75 @@ sub fail {
 # Implementation
 ##############################################################################
 
-# Separately log our actions.  remctl keeps some logs, but it won't tell us
-# whether the download is successful or not.
-openlog ('keytab-backend', 'pid', 'auth');
+# Check and download the keytab.  This is in a subroutine call for easier
+# testing.  We separately log actions unless $SYSLOG is set to 0.  remctld
+# keeps some logs, but it won't tell us whether the download is successful or
+# not.
+sub download {
+    my (@args) = @_;
+    openlog ('keytab-backend', 'pid', 'auth') if $SYSLOG;
 
-# Set up a default identity if run from the command line.
-$ENV{REMUSER} = getpwnam ($<) || 'UNKNOWN' unless $ENV{REMUSER};
+    # Set up a default identity if run from the command line.
+    $ENV{REMOTE_USER} = getpwnam ($<) || 'UNKNOWN' unless $ENV{REMOTE_USER};
 
-# Read the regexes of valid principals into memory.
-open (CONFIG, '<', $CONFIG) or fail "cannot open $CONFIG: $!";
-my @valid;
-while (<CONFIG>) {
-    next if /^\s*\#/;
-    next if /^\s*$/;
-    s/^\s+//;
-    s/\s+$//;
-    s/\s*\#.*//;
-    push (@valid, qr/$_/);
-}
-close CONFIG;
-
-# The first argument will be the remctl service, so skip it.
-if (@ARGV == 2) {
-    shift @ARGV;
-}
-if (@ARGV != 1) {
-    fail "invalid arguments: @ARGV";
-}
-my $principal = $ARGV[0];
-
-# Ensure that we're allowed to retrieve this principal.
-unless ($principal =~ m%^[\w-]+(?:/[\w-]+)?\@[\w.-]+\z%) {
-    fail "bad principal name $principal";
-}
-my $okay;
-for my $regex (@valid) {
-    if ($principal =~ /$regex/) {
-        $okay = 1;
-        last;
+    # Read the regexes of valid principals into memory.
+    open (CONFIG, '<', $CONFIG) or error "cannot open $CONFIG: $!";
+    my @valid;
+    while (<CONFIG>) {
+        next if /^\s*\#/;
+        next if /^\s*$/;
+        s/^\s+//;
+        s/\s+$//;
+        s/\s*\#.*//;
+        push (@valid, qr/$_/);
     }
-}
-unless ($okay) {
-    fail "permission denied: $ENV{REMUSER} may not retrieve $principal";
-}
+    close CONFIG;
 
-# Do the actual work.
-my $filename = "$TMP/keytab$$";
-my $output = `$KADMIN -q 'ktadd -q -norandkey -k $filename $principal' 2>&1`;
-if ($? != 0) {
-    my $status = ($? >> 8);
-    warn $output;
-    fail "retrieve of $principal failed for $ENV{REMUSER}: kadmin.local"
-        . " exited with status $status";
+    # The first argument will be the remctl service, so skip it.
+    if (@args == 2) {
+        shift @args;
+    }
+    if (@args != 1) {
+        error "invalid arguments: @args";
+    }
+    my $principal = $args[0];
+
+    # Ensure that we're allowed to retrieve this principal.
+    unless ($principal =~ m%^[\w-]+(?:/[\w.-]+)?\@[\w.-]+\z%) {
+        error "bad principal name $principal";
+    }
+    my $okay;
+    for my $regex (@valid) {
+        if ($principal =~ /$regex/) {
+            $okay = 1;
+            last;
+        }
+    }
+    unless ($okay) {
+        error "permission denied: $ENV{REMOTE_USER} may not retrieve"
+            . " $principal";
+    }
+
+    # Do the actual work.
+    my $filename = "$TMP/keytab$$";
+    my $command = "ktadd -q -norandkey -k $filename $principal";
+    my $output = `$KADMIN -q '$command' 2>&1`;
+    if ($? != 0) {
+        my $status = ($? >> 8);
+        warn $output;
+        error "retrieve of $principal failed for $ENV{REMOTE_USER}:"
+            . " kadmin.local exited with status $status";
+    }
+    open (KEYTAB, '<', $filename)
+        or error "cannot open temporary keytab $filename: $!";
+    print while <KEYTAB>;
+    close KEYTAB;
+    unlink $filename;
+    syslog ('info', '%s', "keytab $principal retrieved by $ENV{REMOTE_USER}")
+        if $SYSLOG;
 }
-open (KEYTAB, '<', $filename)
-    or fail "cannot open temporary keytab $filename: $!";
-print while <KEYTAB>;
-close KEYTAB;
-unlink $filename;
-syslog ('info', '%s', "keytab $principal retrieved by $ENV{REMUSER}");
-exit 0;
+download (@ARGV);
+__END__
 
 ##############################################################################
 # Documentation
@@ -198,7 +213,7 @@ Russ Allbery <rra@stanford.edu>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2006 Board of Trustees, Leland Stanford Jr. University
+Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted, provided
