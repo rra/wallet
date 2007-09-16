@@ -34,6 +34,11 @@ Required to replace leland_srvtab:
 
 Future work:
 
+* Add POD testing for the client and server programs.
+
+* Add POD coverage testing using Test::POD::Coverage for the server
+  modules.
+
 * Provide some way of getting at the history tables.  Need to get object
   and ACL history either by object or for all objects, at least.  Global
   history should be by timestamp and possibly limit by timestamp.
