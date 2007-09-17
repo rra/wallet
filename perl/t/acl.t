@@ -3,7 +3,7 @@
 #
 # t/api.t -- Tests for the wallet ACL API.
 
-use Test::More tests => 97;
+use Test::More tests => 100;
 
 use Wallet::ACL;
 use Wallet::Config;
@@ -79,7 +79,7 @@ ok (! $acl->rename ('ADMIN'), ' but renaming to an existing name fails');
 like ($acl->error, qr/^cannot rename ACL 2 to ADMIN: /,
       ' with the right error');
 
-# Test add, check, remove, and list.
+# Test add, check, remove, list, and show.
 my @entries = $acl->list;
 is (scalar (@entries), 0, 'ACL starts empty');
 is ($acl->check ($user1), 0, ' so check fails');
@@ -114,6 +114,12 @@ is ($entries[0][0], 'krb5', ' with the right scheme for 1');
 is ($entries[0][1], $user1, ' and the right identifier for 1');
 is ($entries[1][0], 'krb5', ' and the right scheme for 2');
 is ($entries[1][1], $user2, ' and the right identifier for 2');
+my $expected = <<"EOE";
+Members of ACL example (id: 2) are:
+  krb5 $user1
+  krb5 $user2
+EOE
+is ($acl->show, $expected, ' and show returns correctly');
 ok (! $acl->remove ('krb5', $admin, @trace),
     'Removing a nonexistent entry fails');
 is ($acl->error, "cannot remove krb5:$admin from 2: entry not found in ACL",
@@ -143,6 +149,12 @@ is ($entries[0][0], 'krb5', ' with the right scheme for 1');
 is ($entries[0][1], '', ' and the right identifier for 1');
 is ($entries[1][0], 'krb5', ' and the right scheme for 2');
 is ($entries[1][1], $user2, ' and the right identifier for 2');
+$expected = <<"EOE";
+Members of ACL example (id: 2) are:
+  krb5 
+  krb5 $user2
+EOE
+is ($acl->show, $expected, ' and show returns correctly');
 is ($acl->check ($user2), 1, ' and checking the good entry still works');
 is (scalar ($acl->check_errors), "malformed krb5 ACL\n",
     ' but now with the right error');
@@ -166,6 +178,7 @@ if ($acl->remove ('krb5', '', @trace)) {
 }
 @entries = $acl->list;
 is (scalar (@entries), 0, ' and now there are no entries');
+is ($acl->show, "Members of ACL example (id: 2) are:\n", ' and show concurs');
 is ($acl->check ($user2), 0, ' and the second user check fails');
 is (scalar ($acl->check_errors), '', ' with no error message');
 

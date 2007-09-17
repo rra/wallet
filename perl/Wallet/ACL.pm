@@ -278,6 +278,26 @@ sub list {
     }
 }
 
+# Return as a string a human-readable description of an ACL, including its
+# membership.  This method is only for human-readable output; use the list()
+# method if you are using the results in other code.  Returns undef on
+# failure.
+sub show {
+    my ($self) = @_;
+    my @entries = $self->list;
+    if (@entries == 1 and not defined ($entries[0])) {
+        return undef;
+    }
+    my $name = $self->name;
+    my $id = $self->id;
+    my $output = "Members of ACL $name (id: $id) are:\n";
+    for my $entry (sort { $$a[0] cmp $$b[0] or $$a[1] cmp $$b[1] } @entries) {
+        my ($scheme, $identifier) = @$entry;
+        $output .= "  $scheme $identifier\n";
+    }
+    return $output;
+}
+
 # Given a principal, check whether it should be granted access according to
 # this ACL.  Returns 1 if access was granted, 0 if access was denied, and
 # undef on some error.  Errors from ACL verifiers do not cause an error
@@ -487,6 +507,14 @@ system-generated ACL IDs.  Returns true on success and false on failure.  On
 failure, the caller should call error() to get the error message.
 
 Note that rename() operations are not logged in the ACL history.
+
+=item show()
+
+Returns a human-readable description of this ACL, including its membership.
+This method should only be used for display of the ACL to humans.  Use the
+list(), name(), and id() methods instead to get ACL information for use in
+other code.  On failure, returns undef, and the caller should call error()
+to get the error message.
 
 =back
 
