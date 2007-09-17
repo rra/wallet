@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 211;
+use Test::More tests => 221;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -38,10 +38,18 @@ ok (defined ($dbh), ' and returns a defined database handle');
 # We're currently running as the administrator, so everything should succeed.
 # Set up a bunch of data for us to test with, starting with some ACLs.  Test
 # the error handling while we're at it.
+is ($server->acl_show ('ADMIN'),
+    "Members of ACL ADMIN (id: 1) are:\n  krb5 $admin\n",
+    'Showing the ADMIN ACL works');
+is ($server->acl_show (1),
+    "Members of ACL ADMIN (id: 1) are:\n  krb5 $admin\n",
+    ' including by number');
 is ($server->acl_create (3), undef, 'Cannot create ACL with a numeric name');
 is ($server->error, 'ACL name may not be all numbers',
     ' and returns the right error');
 is ($server->acl_create ('user1'), 1, 'Can create regular ACL');
+is ($server->acl_show ('user1'), "Members of ACL user1 (id: 2) are:\n",
+    ' and show works');
 is ($server->acl_create ('user1'), undef, ' but not twice');
 like ($server->error, qr/^cannot create ACL user1: /,
       ' and returns a good error');
@@ -62,6 +70,8 @@ like ($server->error, qr/^cannot rename ACL 5 to test2: /,
 is ($server->acl_rename ('test', 'empty'), 1, 'Renaming does work');
 is ($server->acl_rename ('test', 'empty'), undef, ' but not twice');
 is ($server->error, 'ACL test not found', ' and returns the right error');
+is ($server->acl_show ('test'), undef, ' and show fails');
+is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_destroy ('test'), undef, 'Destroying the old name fails');
 is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_destroy ('test2'), 1, ' but destroying another one works');
@@ -76,6 +86,9 @@ is ($server->acl_add ('user2', 'krb5', $user2), 1, 'Add another entry');
 is ($server->acl_add ('both', 'krb5', $user1), 1, ' and another');
 is ($server->acl_add ('both', 'krb5', $user2), 1,
     ' and another to the same ACL');
+is ($server->acl_show ('both'),
+    "Members of ACL both (id: 4) are:\n  krb5 $user1\n  krb5 $user2\n",
+    ' and show returns the correct result');
 is ($server->acl_add ('empty', 'krb5', $user1), 1, ' and another to empty');
 is ($server->acl_add ('test', 'krb5', $user1), undef,
     ' but adding to an unknown ACL fails');
@@ -88,6 +101,9 @@ is ($server->acl_remove ('empty', 'krb5', $user2), undef,
 is ($server->error,
     "cannot remove krb5:$user2 from 5: entry not found in ACL",
     ' and returns the right error');
+is ($server->acl_show ('empty'),
+    "Members of ACL empty (id: 5) are:\n  krb5 $user1\n",
+    ' and show returns the correct status');
 is ($server->acl_remove ('empty', 'krb5', $user1), 1,
     ' but removing a good one works');
 is ($server->acl_remove ('empty', 'krb5', $user1), undef,
@@ -95,6 +111,8 @@ is ($server->acl_remove ('empty', 'krb5', $user1), undef,
 is ($server->error,
     "cannot remove krb5:$user1 from 5: entry not found in ACL",
     ' and returns the right error');
+is ($server->acl_show ('empty'), "Members of ACL empty (id: 5) are:\n",
+    ' and show returns the correct status');
 
 # Make sure we can't cripple the ADMIN ACL.
 is ($server->acl_destroy ('ADMIN'), undef, 'Cannot destroy the ADMIN ACL');
@@ -299,6 +317,8 @@ is ($server->error, "$user1 not authorized to create ACL", ' with error');
 is ($server->acl_rename ('user1', 'alice'), undef, ' or rename ACLs');
 is ($server->error, "$user1 not authorized to rename ACL user1",
     ' with error');
+is ($server->acl_show ('user1'), undef, ' or show ACLs');
+is ($server->error, "$user1 not authorized to show ACL user1", ' with error');
 is ($server->acl_destroy ('user2'), undef, ' or destroy ACLs');
 is ($server->error, "$user1 not authorized to destroy ACL user2",
     ' with error');

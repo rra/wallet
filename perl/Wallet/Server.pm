@@ -388,6 +388,26 @@ sub acl_error {
     $self->error ("$self->{user} not authorized to $action ACL $acl");
 }
 
+# Display the membership of an ACL or return undef and set the internal error.
+sub acl_show {
+    my ($self, $id) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($id, 'show');
+        return undef;
+    }
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        $self->error ($@);
+        return undef;
+    }
+    my $result = $acl->show;
+    if (not defined $result) {
+        $self->error ($acl->error);
+        return undef;
+    }
+    return $result;
+}
+
 # Change the human-readable name of an ACL or return undef and set the
 # internal error.
 sub acl_rename {
@@ -620,6 +640,15 @@ current name or the numeric ID.  NEW must not be all-numeric.  To rename an
 ACL, the current user must be authorized by the ADMIN ACL.  Returns true on
 success and false on failure.
 
+=item acl_show(ID)
+
+Returns a human-readable description, including membership, of the ACL
+identified by ID, which may be either the ACL name or its numeric ID.  To
+show an ACL, the current user must be authorized by the ADMIN ACL (although
+be aware that anyone with show access to an object can see the membership of
+ACLs associated with that object through the show() method).  Returns the
+human-readable description on success and undef on failure.
+
 =item create(TYPE, NAME)
 
 Creates a new object of type TYPE and name NAME.  TYPE must be a recognized
@@ -698,7 +727,8 @@ ACLs as well.
 =item show(TYPE, NAME)
 
 Returns (as a string) a human-readable representation of the metadata stored
-for the object identified by TYPE and NAME, or undef on error.  To show an
+for the object identified by TYPE and NAME, or undef on error.  Included is
+the metadata and entries of any ACLs associated with the object.  To show an
 object, the current user must be a member of the ADMIN ACL, authorized by
 the show ACL, or authorized by the owner ACL; however, if the show ACL is
 set, the owner ACL will not be checked.
