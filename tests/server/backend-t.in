@@ -5,7 +5,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 710;
+use Test::More tests => 720;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -40,6 +40,13 @@ sub acl_remove
     { shift; print "acl_remove @_\n"; ($_[0] eq 'error') ? undef : 1 }
 sub acl_rename
     { shift; print "acl_rename @_\n"; ($_[0] eq 'error') ? undef : 1 }
+
+sub acl_show {
+    shift;
+    print "acl_show @_\n";
+    return if $_[0] eq 'error';
+    return 'acl_show';
+}
 
 sub acl {
     shift;
@@ -147,7 +154,8 @@ my %acl_commands = (add     => [3, 3],
                     create  => [1, 1],
                     destroy => [1, 1],
                     remove  => [3, 3],
-                    rename  => [2, 2]);
+                    rename  => [2, 2],
+                    show    => [1, 1]);
 for my $command (sort keys %commands) {
     my ($min, $max) = @{ $commands{$command} };
     ($out, $err) = run_backend ($command, ('foo') x ($min - 1));
@@ -245,7 +253,13 @@ for my $command (sort keys %acl_commands) {
     my $extra = @extra ? join (' ', '', @extra) : '';
     ($out, $err) = run_backend ('acl', $command, 'name', @extra);
     is ($err, '', "Command acl $command ran with no errors");
-    is ($out, "$new\nacl_$command name$extra\n", ' and ran the right method');
+    my $expected;
+    if ($command eq 'show') {
+        $expected = "$new\nacl_$command name$extra\nacl_show";
+    } else {
+        $expected = "$new\nacl_$command name$extra\n";
+    }
+    is ($out, $expected, ' and ran the right method');
     ($out, $err) = run_backend ('acl', $command, 'error', @extra);
     is ($err, "error count $error\n", "Command acl $command ran with errors");
     is ($out, "$new\nacl_$command error$extra\n",

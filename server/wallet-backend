@@ -77,6 +77,14 @@ sub command {
         } elsif ($action eq 'rename') {
             check_args (2, [], @args);
             $server->acl_rename (@args) or die $server->error;
+        } elsif ($action eq 'show') {
+            check_args (1, [], @args);
+            my $output = $server->acl_show (@args);
+            if (defined $output) {
+                print $output;
+            } else {
+                die $server->error;
+            }
         } else {
             die "unknown command acl $action\n";
         }
@@ -233,6 +241,10 @@ entry in the special ACL C<ADMIN> cannot be removed to protect against
 accidental lockout, but administrators can remove themselves from the
 C<ADMIN> ACL and can leave only a non-functioning entry on the ACL.  Use
 caution when removing entries from the C<ADMIN> ACL.
+
+=item acl show <id>
+
+Display the name, numeric ID, and entries of the ACL <id>.
 
 =item create <type> <name>
 

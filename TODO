@@ -2,11 +2,6 @@
 
 Required to replace leland_srvtab:
 
-* Add an ACL list function to display an ACL in human-readable form and
-  call it from wallet-backend.
-
-* Display ACL details when displaying objects.
-
 * Write new files atomically in the wallet client and save backups unless
   told not to (write to file.new, link the old file to file.old, and do
   an atomic rename).

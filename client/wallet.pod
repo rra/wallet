@@ -141,6 +141,10 @@ accidental lockout, but administrators can remove themselves from the
 C<ADMIN> ACL and can leave only a non-functioning entry on the ACL.  Use
 caution when removing entries from the C<ADMIN> ACL.
 
+=item acl show <id>
+
+Display the name, numeric ID, and entries of the ACL <id>.
+
 =item create <type> <name>
 
 Create a new object of type <type> with name <name>.  With some backends,
