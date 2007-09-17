@@ -314,6 +314,10 @@ used when type-specific data is changed, and in that case (and only that
 case) some type-specific name for the data being changed is stored in
 oh_type_field.
 
+When clearing a flag, oh_old will have the name of the flag and oh_new
+will be null.  When setting a flag, oh_old will be null and oh_new will
+have the name of the flag.
+
 oh_by stores the authenticated identity that made the change, oh_from stores
 the host from which they made the change, and oh_on stores the time the
 change was made.
