@@ -217,9 +217,12 @@ sub _set_internal {
     return 1;
 }
 
-# Get a particular attribute.  Returns the attribute value.
+# Get a particular attribute.  Returns the attribute value or undef if the
+# value isn't set or on a database error.  The two cases can be distinguished
+# by whether $self->{error} is set.
 sub _get_internal {
     my ($self, $attr) = @_;
+    undef $self->{error};
     if ($attr !~ /^[a-z_]+\z/) {
         $self->error ("invalid attribute $attr");
         return;
@@ -227,8 +230,16 @@ sub _get_internal {
     $attr = 'ob_' . $attr;
     my $name = $self->{name};
     my $type = $self->{type};
-    my $sql = "select $attr from objects where ob_type = ? and ob_name = ?";
-    my $value = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
+    my $value;
+    eval {
+        my $sql = "select $attr from objects where ob_type = ? and
+            ob_name = ?";
+        $value = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
+    };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
     return $value;
 }
 
@@ -291,6 +302,115 @@ sub owner {
     } else {
         return $self->_get_internal ('owner');
     }
+}
+
+##############################################################################
+# Flags
+##############################################################################
+
+# Check whether a flag is set on the object.  Returns true if set, 0 if not
+# set, and undef on error.
+sub flag_check {
+    my ($self, $flag) = @_;
+    my $name = $self->{name};
+    my $type = $self->{type};
+    my $dbh = $self->{dbh};
+    my $value;
+    eval {
+        my $sql = 'select fl_flag from flags where fl_type = ? and fl_name = ?
+            and fl_flag = ?';
+        $value = $dbh->selectrow_array ($sql, undef, $type, $name, $flag);
+    };
+    if ($@) {
+        $self->error ("cannot check flag $flag for ${type}:${name}: $@");
+        return;
+    } elsif ($value) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+# Clear a flag on an object.  Takes the flag and trace information.  Returns
+# true on success and undef on failure.
+sub flag_clear {
+    my ($self, $flag, $user, $host, $time) = @_;
+    $time ||= time;
+    my $name = $self->{name};
+    my $type = $self->{type};
+    my $dbh = $self->{dbh};
+    eval {
+        my $sql = 'select * from flags where fl_type = ? and fl_name = ? and
+            fl_flag = ?';
+        my ($data) = $dbh->selectrow_array ($sql, undef, $type, $name, $flag);
+        unless (defined $data) {
+            die "flag not set\n";
+        }
+        $sql = 'delete from flags where fl_type = ? and fl_name = ? and
+            fl_flag = ?';
+        $dbh->do ($sql, undef, $type, $name, $flag);
+        $self->log_set ('flags', $flag, undef, $user, $host, $time);
+        $dbh->commit;
+    };
+    if ($@) {
+        $self->error ("cannot clear flag $flag on ${type}:${name}: $@");
+        $dbh->rollback;
+        return undef;
+    }
+    return 1;
+}
+
+# List the flags on an object.  Returns a list of flag names, which may be
+# empty.  On error, returns (undef) (a list containing one undefined element).
+sub flag_list {
+    my ($self) = @_;
+    my @flags;
+    eval {
+        my $sql = 'select fl_flag from flags where fl_type = ? and
+            fl_name = ? order by fl_flag';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($self->{type}, $self->{name});
+        my $flag;
+        while (defined ($flag = $sth->fetchrow_array)) {
+            push (@flags, $flag);
+        }
+    };
+    if ($@) {
+        my $id = $self->{type} . ':' . $self->{name};
+        $self->error ("cannot retrieve flags for $id: $@");
+        return (undef);
+    } else {
+        return @flags;
+    }
+}
+
+# Set a flag on an object.  Takes the flag and trace information.  Returns
+# true on success and undef on failure.
+sub flag_set {
+    my ($self, $flag, $user, $host, $time) = @_;
+    $time ||= time;
+    my $name = $self->{name};
+    my $type = $self->{type};
+    my $dbh = $self->{dbh};
+    eval {
+        my $sql = 'select * from flags where fl_type = ? and fl_name = ? and
+            fl_flag = ?';
+        my ($data) = $dbh->selectrow_array ($sql, undef, $type, $name, $flag);
+        if (defined $data) {
+            die "flag already set\n";
+        }
+        $sql = 'insert into flags (fl_type, fl_name, fl_flag)
+            values (?, ?, ?)';
+        $dbh->do ($sql, undef, $type, $name, $flag);
+        $self->log_set ('flags', undef, $flag, $user, $host, $time);
+        $dbh->commit;
+    };
+    if ($@) {
+        $self->error ("cannot set flag $flag on ${type}:${name}: $@");
+        $dbh->rollback;
+        return undef;
+    }
+    return 1;
 }
 
 ##############################################################################
@@ -510,6 +630,28 @@ seconds since epoch, and return true on success and false on failure.  Pass
 in the empty string for EXPIRES to clear the expiration date.  The other
 arguments are used for logging and history and should indicate the user and
 host from which the change is made and the time of the change.
+
+=item flag_check(FLAG)
+
+Check whether the given flag is set on an object.  Returns true if set, C<0>
+if not set, and undef on error.
+
+=item flag_clear(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
+
+Clears FLAG on an object.  Returns true on success and false on failure.
+The other arguments are used for logging and history and should indicate the
+user and host from which the change is made and the time of the change.
+
+=item flag_list()
+
+List the flags set on an object.  If no flags are set, returns the empty
+list.  On failure, returns the list consisting of one undefined element.
+
+=item flag_set(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
+
+Sets FLAG on an object.  Returns true on success and false on failure.
+The other arguments are used for logging and history and should indicate the
+user and host from which the change is made and the time of the change.
 
 =item get(PRINCIPAL, HOSTNAME [, DATETIME])
 

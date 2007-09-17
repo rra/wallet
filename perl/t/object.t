@@ -3,7 +3,7 @@
 #
 # t/object.t -- Tests for the basic object implementation.
 
-use Test::More tests => 74;
+use Test::More tests => 93;
 
 use Wallet::ACL;
 use Wallet::Config;
@@ -114,6 +114,40 @@ for my $type (qw/get store show destroy flags/) {
     is ($object->acl ($type), undef, ' at which point it is cleared');
     is ($object->acl ($type, $acl->id, @trace), 1,
         ' and setting it again works');
+}
+
+# Flags.
+my @flags = $object->flag_list;
+is (scalar (@flags), 0, 'No flags set to start');
+is ($object->flag_check ('locked'), 0, ' and locked is not set');
+is ($object->flag_set ('locked', @trace), 1, ' and setting locked works');
+is ($object->flag_check ('locked'), 1, ' and now locked is set');
+@flags = $object->flag_list;
+is (scalar (@flags), 1, ' and there is one flag');
+is ($flags[0], 'locked', ' which is locked');
+is ($object->flag_set ('locked', @trace), undef, 'Setting locked again fails');
+is ($object->error,
+    "cannot set flag locked on keytab:$princ: flag already set",
+    ' with the right error');
+is ($object->flag_set ('unchanging', @trace), 1,
+    ' but setting unchanging works');
+is ($object->flag_check ('unchanging'), 1, ' and unchanging is now set');
+@flags = $object->flag_list;
+is (scalar (@flags), 2, ' and there are two flags');
+is ($flags[0], 'locked', ' which are locked');
+is ($flags[1], 'unchanging', ' and unchanging');
+is ($object->flag_clear ('locked', @trace), 1, 'Clearing locked works');
+is ($object->flag_check ('locked'), 0, ' and now it is not set');
+is ($object->flag_check ('unchanging'), 1, ' but unchanging still is');
+is ($object->flag_clear ('locked', @trace), undef,
+    ' and clearing it again fails');
+is ($object->error,
+    "cannot clear flag locked on keytab:$princ: flag not set",
+    ' with the right error');
+if ($object->flag_set ('locked', @trace)) {
+    ok (1, ' and setting it again works');
+} else {
+    is ($object->error, '', ' and setting it again works');
 }
 
 # Test stub methods.
