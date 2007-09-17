@@ -346,15 +346,24 @@ sub show {
         return undef;
     }
     my $output = '';
+    my @acls;
     for (my $i = 0; $i < @data; $i++) {
         next unless defined $data[$i];
         if ($attrs[$i][0] =~ /^ob_(owner|acl_)/) {
             my $acl = eval { Wallet::ACL->new ($data[$i], $self->{dbh}) };
             if ($acl and not $@) {
                 $data[$i] = $acl->name || $data[$i];
+                push (@acls, [ $acl, $data[$i] ]);
             }
         }
         $output .= sprintf ("%15s: %s\n", $attrs[$i][1], $data[$i]);
+    }
+    if (@acls) {
+        my %seen;
+        @acls = grep { !$seen{$_->[1]}++ } @acls;
+        for my $acl (@acls) {
+            $output .= "\n" . $acl->[0]->show;
+        }
     }
     return $output;
 }
@@ -529,9 +538,11 @@ Returns a formatted text description of the object suitable for human
 display, or undef on error.  The default implementation shows all of the
 base metadata about the object, formatted as key: value pairs with the keys
 aligned in the first 15 characters followed by a space, a colon, and the
-value.  Object implementations with additional data to display can rely on
-that format to add additional settings into the formatted output or at the
-end with a matching format.
+value.  If any ACLs or an owner are set, after this data there is a blank
+line and then the information for each unique ACL, separated by blank lines.
+Object implementations with additional data to display can rely on that
+format to add additional settings into the formatted output or at the end
+with a matching format.
 
 =item store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
 

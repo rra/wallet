@@ -344,7 +344,7 @@ is ($server->error,
     "cannot store base:service/user1: object type is immutable",
     ' and the method is called');
 $show = $server->show ('base', 'service/user1');
-$show =~ s/(Created on:) \d+$/$1 0/;
+$show =~ s/(Created on:) \d+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/user1
@@ -352,6 +352,9 @@ $expected = <<"EOO";
      Created by: $admin
    Created from: $host
      Created on: 0
+
+Members of ACL user1 (id: 2) are:
+  krb5 $user1
 EOO
 is ($show, $expected, ' and show an object we own');
 
@@ -379,7 +382,7 @@ is ($server->error,
     "cannot store base:service/both: object type is immutable",
     ' and the method is called');
 $show = $server->show ('base', 'service/both');
-$show =~ s/(Created on:) \d+$/$1 0/;
+$show =~ s/(Created on:) \d+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/both
@@ -389,6 +392,16 @@ $expected = <<"EOO";
      Created by: $admin
    Created from: $host
      Created on: 0
+
+Members of ACL both (id: 4) are:
+  krb5 $user1
+  krb5 $user2
+
+Members of ACL user1 (id: 2) are:
+  krb5 $user1
+
+Members of ACL user2 (id: 3) are:
+  krb5 $user2
 EOO
 is ($show, $expected, ' and show an object we jointly own');
 is ($server->destroy ('base', 'service/both'), undef,
@@ -410,7 +423,7 @@ is ($server->error,
     "cannot store base:service/user2: object type is immutable",
     ' and the method is called');
 $show = $server->show ('base', 'service/user2');
-$show =~ s/(Created on:) \d+$/$1 0/;
+$show =~ s/(Created on:) \d+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/user2
@@ -418,6 +431,9 @@ $expected = <<"EOO";
      Created by: $admin
    Created from: $host
      Created on: 0
+
+Members of ACL user2 (id: 3) are:
+  krb5 $user2
 EOO
 is ($show, $expected, ' and show an object we own');
 

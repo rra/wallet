@@ -138,6 +138,9 @@ my $output = <<"EOO";
      Created by: $user
    Created from: $host
      Created on: $created
+
+Members of ACL ADMIN (id: 1) are:
+  krb5 $user
 EOO
 is ($object->show, $output, 'Show output is correct');
 
