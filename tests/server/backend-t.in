@@ -5,7 +5,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 720;
+use Test::More tests => 750;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -47,6 +47,11 @@ sub acl_show {
     return if $_[0] eq 'error';
     return 'acl_show';
 }
+
+sub flag_clear
+    { shift; print "flag_clear @_\n"; ($_[0] eq 'error') ? undef : 1 }
+sub flag_set
+    { shift; print "flag_set @_\n"; ($_[0] eq 'error') ? undef : 1 }
 
 sub acl {
     shift;
@@ -139,6 +144,9 @@ is ($out, "$new\n", ' and nothing ran');
 ($out, $err) = run_backend ('acl', 'foo');
 is ($err, "unknown command acl foo\n", 'Unknown ACL command');
 is ($out, "$new\n", ' and nothing ran');
+($out, $err) = run_backend ('flag', 'foo');
+is ($err, "unknown command flag foo\n", 'Unknown flag command');
+is ($out, "$new\n", ' and nothing ran');
 
 # Check too few, too many, and bad arguments for every command.
 my %commands = (create  => [2, 2],
@@ -156,6 +164,8 @@ my %acl_commands = (add     => [3, 3],
                     remove  => [3, 3],
                     rename  => [2, 2],
                     show    => [1, 1]);
+my %flag_commands = (clear => [3, 3],
+                     set   => [3, 3]);
 for my $command (sort keys %commands) {
     my ($min, $max) = @{ $commands{$command} };
     ($out, $err) = run_backend ($command, ('foo') x ($min - 1));
@@ -196,6 +206,25 @@ for my $command (sort keys %acl_commands) {
         ($out, $err) = run_backend ('acl', $command, @args);
         is ($err, "invalid characters in argument: foo;bar\n",
             "Invalid arguments for acl $command $arg");
+        is ($out, "$new\n", ' and nothing ran');
+    }
+}
+for my $command (sort keys %flag_commands) {
+    my ($min, $max) = @{ $flag_commands{$command} };
+    ($out, $err) = run_backend ('flag', $command, ('foo') x ($min - 1));
+    is ($err, "insufficient arguments\n",
+        "Too few arguments for flag $command");
+    is ($out, "$new\n", ' and nothing ran');
+    ($out, $err) = run_backend ('flag', $command, ('foo') x ($max + 1));
+    is ($err, "too many arguments\n", "Too many arguments for flag $command");
+    is ($out, "$new\n", ' and nothing ran');
+    my @base = ('foobar') x $max;
+    for my $arg (0 .. ($max - 1)) {
+        my @args = @base;
+        $args[$arg] = 'foo;bar';
+        ($out, $err) = run_backend ('flag', $command, @args);
+        is ($err, "invalid characters in argument: foo;bar\n",
+            "Invalid arguments for flag $command $arg");
         is ($out, "$new\n", ' and nothing ran');
     }
 }
@@ -263,6 +292,20 @@ for my $command (sort keys %acl_commands) {
     ($out, $err) = run_backend ('acl', $command, 'error', @extra);
     is ($err, "error count $error\n", "Command acl $command ran with errors");
     is ($out, "$new\nacl_$command error$extra\n",
+        ' and ran the right method');
+    $error++;
+}
+for my $command (sort keys %flag_commands) {
+    my @extra = ('foo') x ($flag_commands{$command}[0] - 2);
+    my $extra = @extra ? join (' ', '', @extra) : '';
+    ($out, $err) = run_backend ('flag', $command, 'type', 'name', @extra);
+    is ($err, '', "Command flag $command ran with no errors");
+    is ($out, "$new\nflag_$command type name$extra\n",
+        ' and ran the right method');
+    ($out, $err) = run_backend ('flag', $command, 'error', 'name', @extra);
+    is ($err, "error count $error\n",
+        "Command flag $command ran with errors");
+    is ($out, "$new\nflag_$command error name$extra\n",
         ' and ran the right method');
     $error++;
 }

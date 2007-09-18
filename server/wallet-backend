@@ -109,6 +109,17 @@ sub command {
                 die $server->error;
             }
         }
+    } elsif ($command eq 'flag') {
+        my $action = shift @args;
+        if ($action eq 'clear') {
+            check_args (3, [], @args);
+            $server->flag_clear (@args) or die $server->error;
+        } elsif ($action eq 'set') {
+            check_args (3, [], @args);
+            $server->flag_set (@args) or die $server->error;
+        } else {
+            die "unknown command flag $action\n";
+        }
     } elsif ($command eq 'get') {
         check_args (2, [], @args);
         my $output = $server->get (@args);
@@ -202,11 +213,11 @@ B<wallet-backend> takes no traditional options.
 =head1 COMMANDS
 
 Most commands are only available to wallet administrators (users on the
-C<ADMIN> ACL).  The exceptions are C<get>, C<store>, C<show>, and
-C<destroy>.  All of those commands have their own ACLs, and if the
-appropriate ACL is set, it alone is checked to see if the user has access.
-Otherwise, C<get>, C<store>, and C<show> access is permitted if the user is
-authorized by the owner ACL of the object.
+C<ADMIN> ACL).  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
+C<flag clear>, and C<flag set>.  All of those commands have their own ACLs,
+and if the appropriate ACL is set, it alone is checked to see if the user
+has access.  Otherwise, C<get>, C<store>, and C<show> access is permitted if
+the user is authorized by the owner ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<show>, they must still be authorized by
@@ -272,12 +283,24 @@ the object.
 
 Currently, the expiration of an object is not used.
 
-=item get <type> <output>
+=item flag clear <type> <name> <flag>
 
-Prints to standard output the data associated with the object identified
-by <type> and <name>, or stores it in a file if the B<-f> option was
-given.  This may trigger generation of new data and invalidate old data
-for that object depending on the object type.
+Clears the flag <flag> on the object identified by <type> and <name>.
+
+=item flag set <type> <name> <flag>
+
+Sets the flag <flag> on the object identified by <type> and <name>.
+Recognized flags are C<locked>, which prevents all further actions on that
+object until the flag is cleared, and C<unchanging>, which tells the object
+backend to not generate new data on get but instead return the same data as
+previously returned.  The C<unchanging> flag is not meaningful for objects
+that do not generate new data on the fly.
+
+=item get <type> <name>
+
+Prints to standard output the data associated with the object identified by
+<type> and <name>.  This may trigger generation of new data and invalidate
+old data for that object depending on the object type.
 
 =item getacl <type> <name> <acl>
 
