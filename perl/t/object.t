@@ -3,7 +3,7 @@
 #
 # t/object.t -- Tests for the basic object implementation.
 
-use Test::More tests => 93;
+use Test::More tests => 118;
 
 use Wallet::ACL;
 use Wallet::Config;
@@ -150,8 +150,27 @@ if ($object->flag_set ('locked', @trace)) {
     is ($object->error, '', ' and setting it again works');
 }
 
-# Test stub methods.
-eval { $object->get };
+# Test stub methods and locked status.
+is ($object->store ("Some data", @trace), undef, 'Store fails');
+is ($object->error, "cannot store keytab:${princ}: object is locked",
+    ' because the object is locked');
+is ($object->owner ('', @trace), undef, ' and owner fails');
+is ($object->error, "cannot modify keytab:${princ}: object is locked",
+    ' for the same reason');
+is ($object->expires ('', @trace), undef, ' and expires fails');
+is ($object->error, "cannot modify keytab:${princ}: object is locked",
+    ' for the same reason');
+for my $acl (qw/get store show destroy flags/) {
+    is ($object->acl ($acl, '', @trace), undef, " and setting $acl ACL fails");
+    is ($object->error, "cannot modify keytab:${princ}: object is locked",
+        ' for the same reason');
+}
+is ($object->flag_check ('locked'), 1, ' and checking flags works');
+@flags = $object->flag_list;
+is (scalar (@flags), 2, ' and listing flags works');
+is ("@flags", 'locked unchanging', ' and returns the right data');
+is ($object->flag_clear ('locked', @trace), 1, 'Clearing locked succeeds');
+eval { $object->get (@trace) };
 is ($@, "Do not instantiate Wallet::Object::Base directly\n",
     'Get fails with the right error');
 ok (! $object->store ("Some data", @trace), 'Store fails');
@@ -169,7 +188,7 @@ my $output = <<"EOO";
     Destroy ACL: ADMIN
       Flags ACL: ADMIN
         Expires: $now
-          Flags: locked unchanging
+          Flags: unchanging
      Created by: $user
    Created from: $host
      Created on: $created
@@ -178,8 +197,33 @@ Members of ACL ADMIN (id: 1) are:
   krb5 $user
 EOO
 is ($object->show, $output, 'Show output is correct');
+is ($object->flag_set ('locked', @trace), 1, ' and setting locked works');
+$output = <<"EOO";
+           Type: keytab
+           Name: $princ
+          Owner: ADMIN
+        Get ACL: ADMIN
+      Store ACL: ADMIN
+       Show ACL: ADMIN
+    Destroy ACL: ADMIN
+      Flags ACL: ADMIN
+        Expires: $now
+          Flags: locked unchanging
+     Created by: $user
+   Created from: $host
+     Created on: $created
+
+Members of ACL ADMIN (id: 1) are:
+  krb5 $user
+EOO
+is ($object->show, $output, ' and show still works and is correct');
 
 # Test destroy.
+is ($object->destroy (@trace), undef, 'Destroy fails');
+is ($object->error, "cannot destroy keytab:${princ}: object is locked",
+    ' because of the locked status');
+is ($object->flag_clear ('locked', @trace), 1,
+    ' and clearing locked status works');
 if ($object->destroy (@trace)) {
     ok (1, 'Destroy is successful');
 } else {

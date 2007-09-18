@@ -187,6 +187,11 @@ sub create {
 # Override destroy to delete the principal out of Kerberos as well.
 sub destroy {
     my ($self, $user, $host, $time) = @_;
+    my $id = $self->{type} . ':' . $self->{name};
+    if ($self->flag_check ('locked')) {
+        $self->error ("cannot destroy $id: object is locked");
+        return;
+    }
     return undef if not $self->_kadmin_delprinc ($self->{name});
     return $self->SUPER::destroy ($user, $host, $time);
 }
@@ -196,6 +201,11 @@ sub destroy {
 sub get {
     my ($self, $user, $host, $time) = @_;
     $time ||= time;
+    my $id = $self->{type} . ':' . $self->{name};
+    if ($self->flag_check ('locked')) {
+        $self->error ("cannot get $id: object is locked");
+        return;
+    }
     unless (defined ($Wallet::Config::KEYTAB_TMP)) {
         $self->error ('KEYTAB_TMP configuration variable not set');
         return undef;

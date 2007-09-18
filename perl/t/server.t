@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 241;
+use Test::More tests => 261;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -300,6 +300,8 @@ is ($server->store ('base', 'service/admin', 'stuff'), undef,
     ' and now store fails');
 is ($server->error, "$admin not authorized to store base:service/admin",
     ' due to permissions again');
+is ($server->owner ('base', 'service/admin', 'ADMIN'), 1,
+    ' and setting the owner again works');
 
 # Test manipulating flags.
 is ($server->flag_clear ('base', 'service/admin', 'locked'), undef,
@@ -312,8 +314,27 @@ if ($server->flag_set ('base', 'service/admin', 'locked')) {
 } else {
     is ($server->error, '', ' but setting it works');
 }
+is ($server->store ('base', 'service/admin', 'stuff'), undef,
+    ' now store fails');
+is ($server->error, 'cannot store base:service/admin: object is locked',
+    ' because the object is locked');
+is ($server->expires ('base', 'service/admin', ''), undef,
+    ' and expires fails');
+is ($server->error, 'cannot modify base:service/admin: object is locked',
+    ' because the object is locked');
+is ($server->owner ('base', 'service/admin', ''), undef, ' and owner fails');
+is ($server->error, 'cannot modify base:service/admin: object is locked',
+    ' because the object is locked');
+for my $acl (qw/get store show destroy flags/) {
+    is ($server->acl ('base', 'service/admin', $acl, ''), undef,
+        " and setting $acl ACL fails");
+    is ($server->error, 'cannot modify base:service/admin: object is locked',
+        ' for the same reason');
+}
 is ($server->flag_clear ('base', 'service/admin', 'locked'), 1,
     ' and then clearing it works');
+is ($server->owner ('base', 'service/admin', ''), 1,
+    ' and then clearing owner works');
 is ($server->flag_set ('base', 'service/admin', 'unchanging'), 1,
     ' and setting unchanging works');
 is ($server->flag_clear ('base', 'service/admin', 'locked'), undef,
@@ -438,8 +459,6 @@ is ($server->error,
 is ($server->flag_set ('base', 'service/both', 'unchanging'), 1,
     ' and set flags on an object we have an ACL');
 is ($server->flag_set ('base', 'service/both', 'locked'), 1, ' both flags');
-is ($server->flag_clear ('base', 'service/both', 'locked'), 1,
-    ' and clear flags');
 $show = $server->show ('base', 'service/both');
 $show =~ s/(Created on:) \d+$/$1 0/m;
 $expected = <<"EOO";
@@ -449,7 +468,7 @@ $expected = <<"EOO";
        Show ACL: user1
     Destroy ACL: user2
       Flags ACL: user1
-          Flags: unchanging
+          Flags: locked unchanging
      Created by: $admin
    Created from: $host
      Created on: 0
@@ -465,6 +484,12 @@ Members of ACL user2 (id: 3) are:
   krb5 $user2
 EOO
 is ($show, $expected, ' and show an object we jointly own');
+is ($server->store ('base', 'service/both', 'stuff'), undef,
+    ' but not store data');
+is ($server->error, 'cannot store base:service/both: object is locked',
+    ' when the object is locked');
+is ($server->flag_clear ('base', 'service/both', 'locked'), 1,
+    ' and clear flags');
 is ($server->destroy ('base', 'service/both'), undef,
     ' but not destroy it');
 is ($server->error, "$user1 not authorized to destroy base:service/both",

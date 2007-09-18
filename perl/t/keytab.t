@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 38;
+use Test::More tests => 46;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -162,6 +162,12 @@ SKIP: {
     $object = Wallet::Object::Keytab->new ('keytab', 'wallet/one', $dbh);
     ok (defined ($object), 'Retrieving the object works');
     ok ($object->isa ('Wallet::Object::Keytab'), ' and is the right type');
+    is ($object->flag_set ('locked', @trace), 1, ' and setting locked works');
+    is ($object->get (@trace), undef, ' and get fails');
+    is ($object->error, "cannot get keytab:wallet/one: object is locked",
+        ' because it is locked');
+    is ($object->flag_clear ('locked', @trace), 1,
+        ' and clearing locked works');
     my $data = $object->get (@trace);
     if (defined ($data)) {
         ok (defined ($data), ' and getting the keytab works');
@@ -220,6 +226,12 @@ EOO
     like ($object->error, qr{^cannot run /some/nonexistent/file: },
           ' with the right error');
     $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+    is ($object->flag_set ('locked', @trace), 1, ' and setting locked works');
+    is ($object->destroy (@trace), undef, ' and destroying it fails');
+    is ($object->error, "cannot destroy keytab:wallet/one: object is locked",
+        ' because it is locked');
+    is ($object->flag_clear ('locked', @trace), 1,
+        ' and clearing locked works');
     is ($object->destroy (@trace), 1, ' and destroying it succeeds');
     ok (! created ('wallet/one'), ' and now it does not exist');
 

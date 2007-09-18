@@ -198,6 +198,10 @@ sub _set_internal {
     $time ||= time;
     my $name = $self->{name};
     my $type = $self->{type};
+    if ($self->flag_check ('locked')) {
+        $self->error ("cannot modify ${type}:${name}: object is locked");
+        return;
+    }
     eval {
         my $sql = "select ob_$attr from objects where ob_type = ? and
             ob_name = ?";
@@ -425,6 +429,10 @@ sub get { die "Do not instantiate Wallet::Object::Base directly\n"; }
 sub store {
     my ($self, $data, $user, $host, $time) = @_;
     my $id = $self->{type} . ':' . $self->{name};
+    if ($self->flag_check ('locked')) {
+        $self->error ("cannot store $id: object is locked");
+        return;
+    }
     $self->error ("cannot store $id: object type is immutable");
     return;
 }
@@ -508,6 +516,10 @@ sub destroy {
     $time ||= time;
     my $name = $self->{name};
     my $type = $self->{type};
+    if ($self->flag_check ('locked')) {
+        $self->error ("cannot destroy ${type}:${name}: object is locked");
+        return;
+    }
     eval {
         my $sql = 'delete from flags where fl_type = ? and fl_name = ?';
         $self->{dbh}->do ($sql, undef, $type, $name);
@@ -595,6 +607,10 @@ current time is used.  The database handle is treated as with new().
 The following methods may be called on instantiated wallet objects.
 Normally, the only methods that a subclass will need to override are get(),
 store(), show(), and destroy().
+
+If the locked flag is set on an object, no actions may be performed on that
+object except for the flag methods and show().  All other actions will be
+rejected with an error saying the object is locked.
 
 =over 4
 
