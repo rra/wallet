@@ -467,7 +467,19 @@ sub show {
     }
     my $output = '';
     my @acls;
+
+    # Format the results.  We use a hack to insert the flags before the first
+    # trace field since they're not a field in the object in their own right.
     for (my $i = 0; $i < @data; $i++) {
+        if ($attrs[$i][0] eq 'ob_created_by') {
+            my @flags = $self->flag_list;
+            if (@flags == 1 and not defined $flags[0]) {
+                return undef;
+            }
+            if (@flags) {
+                $output .= sprintf ("%15s: %s\n", 'Flags', "@flags");
+            }
+        }
         next unless defined $data[$i];
         if ($attrs[$i][0] =~ /^ob_(owner|acl_)/) {
             my $acl = eval { Wallet::ACL->new ($data[$i], $self->{dbh}) };

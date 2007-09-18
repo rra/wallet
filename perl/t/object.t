@@ -169,6 +169,7 @@ my $output = <<"EOO";
     Destroy ACL: ADMIN
       Flags ACL: ADMIN
         Expires: $now
+          Flags: locked unchanging
      Created by: $user
    Created from: $host
      Created on: $created

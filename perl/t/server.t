@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 229;
+use Test::More tests => 241;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -331,6 +331,7 @@ is ($server->owner ('base', 'service/both', 'both'), 1, 'Set both owner');
 is ($server->acl ('base', 'service/both', 'show', 'user1'), 1, ' and show');
 is ($server->acl ('base', 'service/both', 'destroy', 'user2'), 1,
     ' and destroy');
+is ($server->acl ('base', 'service/both', 'flags', 'user1'), 1, ' and flags');
 
 # Okay, now we can switch users and be sure we don't have admin rights.
 $server = eval { Wallet::Server->new ($user1, $host) };
@@ -374,6 +375,16 @@ is ($server->acl ('base', 'service/user1', 'get', 'user1'), undef,
     ' or set an ACL');
 is ($server->error,
     "$user1 not authorized to set ACL for base:service/user1",
+    ' with error');
+is ($server->flag_set ('base', 'service/user1', 'unchanging'), undef,
+    ' or set flags');
+is ($server->error,
+    "$user1 not authorized to set flags for base:service/user1",
+    ' with error');
+is ($server->flag_clear ('base', 'service/user1', 'unchanging'), undef,
+    ' or clear flags');
+is ($server->error,
+    "$user1 not authorized to set flags for base:service/user1",
     ' with error');
 
 # However, we can perform object actions on things we own.
@@ -424,6 +435,11 @@ is ($server->store ('base', 'service/both', 'stuff'), undef,
 is ($server->error,
     "cannot store base:service/both: object type is immutable",
     ' and the method is called');
+is ($server->flag_set ('base', 'service/both', 'unchanging'), 1,
+    ' and set flags on an object we have an ACL');
+is ($server->flag_set ('base', 'service/both', 'locked'), 1, ' both flags');
+is ($server->flag_clear ('base', 'service/both', 'locked'), 1,
+    ' and clear flags');
 $show = $server->show ('base', 'service/both');
 $show =~ s/(Created on:) \d+$/$1 0/m;
 $expected = <<"EOO";
@@ -432,6 +448,8 @@ $expected = <<"EOO";
           Owner: both
        Show ACL: user1
     Destroy ACL: user2
+      Flags ACL: user1
+          Flags: unchanging
      Created by: $admin
    Created from: $host
      Created on: 0
@@ -505,6 +523,16 @@ is ($server->error,
     ' and the method is called');
 is ($server->show ('base', 'service/both'), undef, ' but we cannot show it');
 is ($server->error, "$user2 not authorized to show base:service/both",
+    ' with the right error');
+is ($server->flag_set ('base', 'service/both', 'locked'), undef,
+    ' or set flags on it');
+is ($server->error,
+    "$user2 not authorized to set flags for base:service/both",
+    ' with the right error');
+is ($server->flag_clear ('base', 'service/both', 'unchanging'), undef,
+    ' or clear flags on it');
+is ($server->error,
+    "$user2 not authorized to set flags for base:service/both",
     ' with the right error');
 is ($server->destroy ('base', 'service/both'), 1, ' and we can destroy it');
 is ($server->get ('base', 'service/both'), undef, ' and now cannot get it');

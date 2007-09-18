@@ -2,8 +2,6 @@
 
 Required to replace leland_srvtab:
 
-* Implement flag setting and retrieval.
-
 * Implement support for the unchanging flag on keytabs and the backend
   remctl calls to retrieve the existing keytab.
 
