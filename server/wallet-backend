@@ -223,6 +223,11 @@ Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<show>, they must still be authorized by
 either the appropriate specific ACL or the owner ACL.
 
+If the locked flag is set on an object, no commands can be run on that
+object that change data except the C<flags> commands, nor can the C<get>
+command be used on that object.  C<show>, C<getacl>, and C<owner> or
+C<expires> without an argument can still be used on that object.
+
 =over 4
 
 =item acl add <id> <scheme> <identifier>

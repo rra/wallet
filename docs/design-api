@@ -45,6 +45,10 @@ Object API
     administrator will want to destroy an orphaned wallet database entry
     after something happened to the remote system entry.
 
+    If you override this method and perform actions before calling the
+    parent method, be sure to check the locked flag first and abort if the
+    object is locked.
+
   flag_clear(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
 
     Normally, objects won't have to override this method, but if the
@@ -68,6 +72,9 @@ Object API
     Don't forget to call log_action() after successfully retrieving the
     data to update the history and trace information.
 
+    Be sure to check the locked flag first and abort if the object is
+    locked before returning any data.
+
   store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
 
     Store user-supplied data into the given object.  This may not be
@@ -75,6 +82,9 @@ Object API
     generate the data will not support this).  Backends that don't support
     storing data can just not implement this method and the default
     store() method will return an appropriate error.
+
+    Be sure to check the locked flag first and abort if the object is
+    locked without storing any data.
 
     If this method is implemented, don't forget to call log_action() after
     successfully storing the data to update the history and trace

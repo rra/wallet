@@ -5,8 +5,6 @@ Required to replace leland_srvtab:
 * Implement support for the unchanging flag on keytabs and the backend
   remctl calls to retrieve the existing keytab.
 
-* Implement the locked flag.
-
 * Add arbitrary attribute setting and retrieval to objects and include the
   attributes in the object show display.
 
