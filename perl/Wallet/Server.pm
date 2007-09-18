@@ -352,6 +352,34 @@ sub destroy {
 }
 
 ##############################################################################
+# Object flag methods
+##############################################################################
+
+# Clear a flag on an object.  Takes the object and the flag.  Returns true on
+# success or undef and sets the internal error on failure.
+sub flag_clear {
+    my ($self, $type, $name, $flag) = @_;
+    my $object = $self->retrieve ($type, $name);
+    return undef unless defined $object;
+    return undef unless $self->acl_check ($object, 'flags');
+    my $result = $object->flag_clear ($flag, $self->{user}, $self->{host});
+    $self->error ($object->error) unless defined $result;
+    return $result;
+}
+
+# Set a flag on an object.  Takes the object and the flag.  Returns true on
+# success or undef and sets the internal error on failure.
+sub flag_set {
+    my ($self, $type, $name, $flag) = @_;
+    my $object = $self->retrieve ($type, $name);
+    return undef unless defined $object;
+    return undef unless $self->acl_check ($object, 'flags');
+    my $result = $object->flag_set ($flag, $self->{user}, $self->{host});
+    $self->error ($object->error) unless defined $result;
+    return $result;
+}
+
+##############################################################################
 # ACL methods
 ##############################################################################
 
@@ -691,6 +719,18 @@ If EXPIRES is given, sets the expiration to EXPIRES, which should be in
 seconds since epoch.  To set an expiration, the current user must be
 authorized by the ADMIN ACL.  Returns true for success and false for
 failure.
+
+=item flag_clear(TYPE, NAME, FLAG)
+
+Clears the flag FLAG on the object identified by TYPE and NAME.  To clear a
+flag, the current user must be authorized by the ADMIN ACL or the flags ACL
+on the object.
+
+=item flag_set(TYPE, NAME, FLAG)
+
+Sets the flag FLAG on the object identified by TYPE and NAME.  To set a
+flag, the current user must be authorized by the ADMIN ACL or the flags ACL
+on the object.
 
 =item get(TYPE, NAME)
 

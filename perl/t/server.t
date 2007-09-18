@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 221;
+use Test::More tests => 229;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -300,6 +300,29 @@ is ($server->store ('base', 'service/admin', 'stuff'), undef,
     ' and now store fails');
 is ($server->error, "$admin not authorized to store base:service/admin",
     ' due to permissions again');
+
+# Test manipulating flags.
+is ($server->flag_clear ('base', 'service/admin', 'locked'), undef,
+    'Clearing an unset flag fails');
+is ($server->error,
+    "cannot clear flag locked on base:service/admin: flag not set",
+    ' with the right error');
+if ($server->flag_set ('base', 'service/admin', 'locked')) {
+    ok (1, ' but setting it works');
+} else {
+    is ($server->error, '', ' but setting it works');
+}
+is ($server->flag_clear ('base', 'service/admin', 'locked'), 1,
+    ' and then clearing it works');
+is ($server->flag_set ('base', 'service/admin', 'unchanging'), 1,
+    ' and setting unchanging works');
+is ($server->flag_clear ('base', 'service/admin', 'locked'), undef,
+    ' and clearing locked still does not');
+is ($server->error,
+    "cannot clear flag locked on base:service/admin: flag not set",
+    ' with the right error');
+is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
+    ' and clearing unchanging works');
 
 # Now let's set up some additional ACLs for future tests.
 is ($server->owner ('base', 'service/user1', 'user1'), 1, 'Set user1 owner');
