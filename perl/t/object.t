@@ -3,7 +3,7 @@
 #
 # t/object.t -- Tests for the basic object implementation.
 
-use Test::More tests => 118;
+use Test::More tests => 125;
 
 use Wallet::ACL;
 use Wallet::Config;
@@ -154,16 +154,19 @@ if ($object->flag_set ('locked', @trace)) {
 is ($object->store ("Some data", @trace), undef, 'Store fails');
 is ($object->error, "cannot store keytab:${princ}: object is locked",
     ' because the object is locked');
-is ($object->owner ('', @trace), undef, ' and owner fails');
+is ($object->owner ('', @trace), undef, ' and setting owner fails');
 is ($object->error, "cannot modify keytab:${princ}: object is locked",
     ' for the same reason');
-is ($object->expires ('', @trace), undef, ' and expires fails');
+is ($object->owner, 1, ' but retrieving the owner works');
+is ($object->expires ('', @trace), undef, ' and setting expires fails');
 is ($object->error, "cannot modify keytab:${princ}: object is locked",
     ' for the same reason');
+is ($object->expires, $now, ' but retrieving expires works');
 for my $acl (qw/get store show destroy flags/) {
     is ($object->acl ($acl, '', @trace), undef, " and setting $acl ACL fails");
     is ($object->error, "cannot modify keytab:${princ}: object is locked",
         ' for the same reason');
+    is ($object->acl ($acl), 1, " but retrieving $acl ACL works");
 }
 is ($object->flag_check ('locked'), 1, ' and checking flags works');
 @flags = $object->flag_list;
