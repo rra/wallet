@@ -45,6 +45,20 @@ Object API
     administrator will want to destroy an orphaned wallet database entry
     after something happened to the remote system entry.
 
+  flag_clear(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
+
+    Normally, objects won't have to override this method, but if the
+    object implementation has to take special action when the unchanging
+    flag is cleared, this is the place to do it.  Take whatever action is
+    needed and then call the parent method to do the database work.
+
+  flag_set(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
+
+    As with flag_set(), normally object implementations won't need to
+    override this method but may want to if they have to take special
+    actions when the unchanging flag is set.  Take whatever action is
+    needed and then call the parent method to do the database work.
+
   get(PRINCIPAL, HOSTNAME [, DATETIME])
 
     This is the one method that all object implementations must override.
