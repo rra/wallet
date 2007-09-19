@@ -34,7 +34,7 @@ $VERSION = '0.01';
 # will cause us problems when talking to kadmin.  Takes a principal and
 # returns true if it's okay, false otherwise.  Note that we do not permit
 # realm information here.
-sub _valid_principal {
+sub valid_principal {
     my ($self, $principal) = @_;
     if ($principal !~ m,^[\w-]+(/[\w_-]+)?\z,) {
         return undef;
@@ -45,7 +45,7 @@ sub _valid_principal {
 # Run a kadmin command and capture the output.  Returns the output, either as
 # a list of lines or, in scalar context, as one string.  The exit status of
 # kadmin is often worthless.
-sub _kadmin {
+sub kadmin {
     my ($self, $command) = @_;
     unless (defined ($Wallet::Config::KEYTAB_PRINCIPAL)
             and defined ($Wallet::Config::KEYTAB_FILE)
@@ -85,13 +85,13 @@ sub _kadmin {
 
 # Check whether a given principal already exists in Kerberos.  Returns true if
 # so, false otherwise.  Throws an exception if kadmin fails.
-sub _kadmin_exists {
+sub kadmin_exists {
     my ($self, $principal) = @_;
-    return undef unless $self->_valid_principal ($principal);
+    return undef unless $self->valid_principal ($principal);
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $output = $self->_kadmin ("getprinc $principal");
+    my $output = $self->kadmin ("getprinc $principal");
     if ($output =~ /does not exist/) {
         return undef;
     } else {
@@ -102,16 +102,16 @@ sub _kadmin_exists {
 # Create a principal in Kerberos.  Since this is only called by create, it
 # throws an exception on failure rather than setting the error and returning
 # undef.
-sub _kadmin_addprinc {
+sub kadmin_addprinc {
     my ($self, $principal) = @_;
-    unless ($self->_valid_principal ($principal)) {
+    unless ($self->valid_principal ($principal)) {
         die "invalid principal name $principal\n";
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     my $flags = $Wallet::Config::KEYTAB_FLAGS || '';
-    my $output = $self->_kadmin ("addprinc -randkey $flags $principal");
+    my $output = $self->kadmin ("addprinc -randkey $flags $principal");
     if ($output =~ /^add_principal: (.*)/m) {
         die "error adding principal $principal: $!\n";
     }
@@ -120,16 +120,16 @@ sub _kadmin_addprinc {
 
 # Create a keytab from a principal.  Return true if successful, false
 # otherwise.  If the keytab creation fails, sets the error.
-sub _kadmin_ktadd {
+sub kadmin_ktadd {
     my ($self, $principal, $file) = @_;
-    unless ($self->_valid_principal ($principal)) {
+    unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
         return undef;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $output = eval { $self->_kadmin ("ktadd -q -k $file $principal") };
+    my $output = eval { $self->kadmin ("ktadd -q -k $file $principal") };
     if ($@) {
         $self->error ($@);
         return undef;
@@ -143,13 +143,13 @@ sub _kadmin_ktadd {
 # Delete a principal from Kerberos.  Return true if successful, false
 # otherwise.  If the deletion fails, sets the error.  If the principal doesn't
 # exist, return success; we're bringing reality in line with our expectations.
-sub _kadmin_delprinc {
+sub kadmin_delprinc {
     my ($self, $principal) = @_;
-    unless ($self->_valid_principal ($principal)) {
+    unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
         return undef;
     }
-    my $exists = eval { $self->_kadmin_exists ($principal) };
+    my $exists = eval { $self->kadmin_exists ($principal) };
     if ($@) {
         $self->error ($@);
         return undef;
@@ -159,7 +159,7 @@ sub _kadmin_delprinc {
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $output = eval { $self->_kadmin ("delprinc -force $principal") };
+    my $output = eval { $self->kadmin ("delprinc -force $principal") };
     if ($@) {
         $self->error ($@);
         return undef;
@@ -180,7 +180,7 @@ sub _kadmin_delprinc {
 # caller.
 sub create {
     my ($class, $type, $name, $dbh, $creator, $host, $time) = @_;
-    $class->_kadmin_addprinc ($name);
+    $class->kadmin_addprinc ($name);
     return $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
 }
 
@@ -192,7 +192,7 @@ sub destroy {
         $self->error ("cannot destroy $id: object is locked");
         return;
     }
-    return undef if not $self->_kadmin_delprinc ($self->{name});
+    return undef if not $self->kadmin_delprinc ($self->{name});
     return $self->SUPER::destroy ($user, $host, $time);
 }
 
@@ -211,7 +211,7 @@ sub get {
         return undef;
     }
     my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
-    return undef if not $self->_kadmin_ktadd ($self->{name}, $file);
+    return undef if not $self->kadmin_ktadd ($self->{name}, $file);
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
