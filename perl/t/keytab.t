@@ -317,6 +317,8 @@ SKIP: {
     my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
     my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
     skip 'remctld not found', 16 unless $remctld;
+    eval { require Net::Remctl };
+    skip 'Net::Remctl not available', 16 if $@;
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
