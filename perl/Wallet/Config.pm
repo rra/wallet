@@ -170,6 +170,17 @@ client.
 
 =over 4
 
+=item KEYTAB_CACHE
+
+Specifies the ticket cache to use when retrieving existing keytabs from the
+KDC.  This is only used to implement support for the C<unchanging> flag.
+The ticket cache must be for a principal with access to run C<keytab
+retrieve> via remctl on KEYTAB_REMCTL_HOST.
+
+=cut
+
+our $KEYTAB_CACHE;
+
 =item KEYTAB_FILE
 
 Specifies the keytab to use to authenticate to B<kadmind>.  The principal
@@ -244,6 +255,39 @@ default to the local realm.
 =cut
 
 our $KEYTAB_REALM;
+
+=item KEYTAB_REMCTL_HOST
+
+The host to which to connect with remctl to retrieve existing keytabs.  This
+is only used to implement support for the C<unchanging> flag.  This host
+must provide the C<keytab retrieve> command and KEYTAB_CACHE must also be
+set to a ticket cache for a principal with access to run that command.
+
+=cut
+
+our $KEYTAB_REMCTL_HOST;
+
+=item KEYTAB_REMCTL_PRINCIPAL
+
+The service principal to which to authenticate when retrieving existing
+keytabs.  This is only used to implement support for the C<unchanging> flag.
+If this variable is not set, the default is formed by prepending C<host/> to
+KEYTAB_REMCTL_HOST.  (Note that KEYTAB_REMCTL_HOST is not lowercased first.)
+
+=cut
+
+our $KEYTAB_REMCTL_PRINCIPAL;
+
+=item KEYTAB_REMCTL_PORT
+
+The port on KEYTAB_REMCTL_HOST to which to connect with remctl to retrieve
+existing keytabs.  This is only used to implement support for the
+C<unchanging> flag.  If this variable is not set, the default remctl port
+will be used.
+
+=cut
+
+our $KEYTAB_REMCTL_PORT;
 
 =item KEYTAB_TMP
 

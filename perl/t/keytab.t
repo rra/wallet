@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 50;
+use Test::More tests => 66;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -18,6 +18,9 @@ unlink 'wallet-db';
 my $user = 'admin@EXAMPLE.COM';
 my $host = 'localhost';
 my @trace = ($user, $host);
+
+# Flush all output immediately.
+$| = 1;
 
 # Returns the one-line contents of a file as a string, removing the newline.
 sub contents {
@@ -78,7 +81,6 @@ sub getcreds {
     );
     for my $command (@commands) {
         if (system ($command) == 0) {
-            unlink ('keytab');
             return 1;
         }
     }
@@ -102,11 +104,50 @@ sub valid {
     print KEYTAB $keytab;
     close KEYTAB;
     $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    return getcreds ('keytab', $principal);
+    my $result = getcreds ('keytab', $principal);
+    if ($result) {
+        unlink 'keytab';
+    }
+    return $result;
 }
 
+# Start remctld with the appropriate options to run our fake keytab backend.
+sub spawn_remctld {
+    my ($path, $principal, $keytab) = @_;
+    unlink 'test-pid';
+    my $pid = fork;
+    if (not defined $pid) {
+        die "cannot fork: $!\n";
+    } elsif ($pid == 0) {
+        exec ($path, '-m', '-p', 14373, '-s', $principal, '-P', 'test-pid',
+              '-f', 't/data/keytab.conf', '-S', '-F', '-k', $keytab) == 0
+            or die "cannot exec $path: $!\n";
+    } else {
+        my $tries = 0;
+        while ($tries < 10 && ! -f 'test-pid') {
+            select (undef, undef, undef, 0.25);
+        }
+    }
+}
+
+# Stop the running remctld process.
+sub stop_remctld {
+    open (PID, '<', 'test-pid') or return;
+    my $pid = <PID>;
+    close PID;
+    chomp $pid;
+    kill 15, $pid;
+}
+
+# Use Wallet::Server to set up the database.
+my $server = eval { Wallet::Server->initialize ($user) };
+is ($@, '', 'Database initialization did not die');
+ok ($server->isa ('Wallet::Server'), ' and returned the right class');
+my $dbh = $server->dbh;
+
+# Basic keytab creation and manipulation tests.
 SKIP: {
-    skip 'no keytab configuration', 37 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 48 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -121,12 +162,6 @@ SKIP: {
 
     # Don't destroy the user's Kerberos ticket cache.
     $ENV{KRB5CCNAME} = 'krb5cc_test';
-
-    # Use Wallet::Server to set up the database.
-    my $server = eval { Wallet::Server->initialize ($user) };
-    is ($@, '', 'Database initialization did not die');
-    ok ($server->isa ('Wallet::Server'), ' and returned the right class');
-    my $dbh = $server->dbh;
 
     # Okay, now we can test.  First, create.
     $object = eval {
@@ -272,7 +307,72 @@ EOO
     is ($object, undef, 'Cope with a failure to run kadmin');
     like ($@, qr{^cannot run /some/nonexistent/file: },
           ' with the right error');
-
-    # Clean up.
-    unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test');
+    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
 }
+
+# Tests for unchanging support.  Skip these if we don't have a keytab or if we
+# can't find remctld.
+SKIP: {
+    skip 'no keytab configuration', 16 unless -f 't/data/test.keytab';
+    my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
+    my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
+    skip 'remctld not found', 16 unless $remctld;
+
+    # Set up our configuration.
+    $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
+    $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
+    $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_TMP       = '.';
+    my $realm = $Wallet::Config::KEYTAB_REALM;
+    my $principal = $Wallet::Config::KEYTAB_PRINCIPAL;
+
+    # Create the objects for testing and set the unchanging flag.
+    my $one = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    ok (defined ($one), 'Creating wallet/one succeeds');
+    is ($one->flag_set ('unchanging', @trace), 1, ' and setting unchanging');
+    my $two = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/two', $dbh, @trace);
+      };
+    ok (defined ($two), 'Creating wallet/two succeeds');
+    is ($two->flag_set ('unchanging', @trace), 1, ' and setting unchanging');
+
+    # Now spawn our remctld server and get a ticket cache.
+    spawn_remctld ($remctld, $principal, 't/data/test.keytab');
+    $ENV{KRB5CCNAME} = 'krb5cc_test';
+    getcreds ('t/data/test.keytab', $principal);
+    $ENV{KRB5CCNAME} = 'krb5cc_good';
+
+    # Finally we can test.
+    is ($one->get (@trace), undef, 'Get without configuration fails');
+    is ($one->error, 'keytab unchanging support not configured',
+        ' with the right error');
+    $Wallet::Config::KEYTAB_CACHE = 'krb5cc_test';
+    is ($one->get (@trace), undef, ' and still fails without host');
+    is ($one->error, 'keytab unchanging support not configured',
+        ' with the right error');
+    $Wallet::Config::KEYTAB_REMCTL_HOST = 'localhost';
+    $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL = $principal;
+    $Wallet::Config::KEYTAB_REMCTL_PORT = 14373;
+    is ($one->get (@trace), undef, ' and still fails without ACL');
+    is ($one->error,
+        "cannot retrieve keytab for wallet/one\@$realm: Access denied",
+        ' with the right error');
+    open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
+    print ACL "$principal\n";
+    close ACL;
+    is ($one->get (@trace), 'Keytab for wallet/one', 'Now get works');
+    is ($ENV{KRB5CCNAME}, 'krb5cc_good',
+        ' and we did not nuke the cache name');
+    is ($two->get (@trace), undef, ' but get for wallet/two does not');
+    is ($two->error,
+        "cannot retrieve keytab for wallet/two\@$realm: bite me",
+        ' with the right error');
+    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+    is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
+    stop_remctld;
+}
+
+# Clean up.
+unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');

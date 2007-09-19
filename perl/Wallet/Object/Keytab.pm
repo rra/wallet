@@ -172,7 +172,50 @@ sub kadmin_delprinc {
 }
 
 ##############################################################################
-# Implementation
+# Keytab retrieval
+##############################################################################
+
+# Retrieve an existing keytab from the KDC via a remctl call.  The KDC needs
+# to be running the keytab-backend script and support the keytab retrieve
+# remctl command.  In addition, the user must have configured us with the path
+# to a ticket cache and the host to which to connect with remctl.  Returns the
+# keytab on success and undef on failure.
+sub keytab_retrieve {
+    my ($self, $keytab) = @_;
+    my $host = $Wallet::Config::KEYTAB_REMCTL_HOST;
+    unless ($host and $Wallet::Config::KEYTAB_CACHE) {
+        $self->error ('keytab unchanging support not configured');
+        return undef;
+    }
+    eval { require Net::Remctl };
+    if ($@) {
+        $self->error ("keytab unchanging support not available: $@");
+        return undef;
+    }
+    if ($Wallet::Config::KEYTAB_REALM) {
+        $keytab .= '@' . $Wallet::Config::KEYTAB_REALM;
+    }
+    local $ENV{KRB5CCNAME} = $Wallet::Config::KEYTAB_CACHE;
+    my $port = $Wallet::Config::KEYTAB_REMCTL_PORT;
+    my $principal = $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL;
+    my @command = ('keytab', 'retrieve', $keytab);
+    my $result = Net::Remctl::remctl ($host, $port, $principal, @command);
+    if ($result->error) {
+        $self->error ("cannot retrieve keytab for $keytab: ", $result->error);
+        return undef;
+    } elsif ($result->status != 0) {
+        my $error = $result->stderr;
+        $error =~ s/\s+$//;
+        $error =~ s/\n/ /g;
+        $self->error ("cannot retrieve keytab for $keytab: $error");
+        return undef;
+    } else {
+        return $result->stdout;
+    }
+}
+
+##############################################################################
+# Core methods
 ##############################################################################
 
 # Override create to start by creating the principal in Kerberos and only
@@ -206,6 +249,13 @@ sub get {
     if ($self->flag_check ('locked')) {
         $self->error ("cannot get $id: object is locked");
         return;
+    }
+    if ($self->flag_check ('unchanging')) {
+        my $result = $self->keytab_retrieve ($self->{name});
+        if (defined $result) {
+            $self->log_action ('get', $user, $host, $time);
+        }
+        return $result;
     }
     unless (defined ($Wallet::Config::KEYTAB_TMP)) {
         $self->error ('KEYTAB_TMP configuration variable not set');

@@ -1,0 +1,29 @@
+#!/bin/sh
+# $Id$
+#
+# keytab-fake -- Fake keytab-backend implementation.
+#
+# This keytab-fake script is meant to be run by remctld during testing of
+# the keytab object implementation.  It returns a fixed string for
+# wallet/one and returns an error for wallet/two.
+
+set -e
+
+if [ "$1" != "retrieve" ] ; then
+    echo "Invalid command $1" >&2
+    exit 1
+fi
+
+case "$2" in
+wallet/one@*)
+    printf 'Keytab for wallet/one'
+    ;;
+wallet/two@*)
+    echo 'bite me' >&2
+    exit 1
+    ;;
+*)
+    echo "Unknown principal $2" >&2
+    exit 1
+    ;;
+esac
