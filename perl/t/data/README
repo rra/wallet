@@ -14,7 +14,8 @@ including the admin_server for the realm.
 
 The test process will create the principals wallet/one and wallet/two and
 on success will clean up after itself.  If the test fails, they may be
-left behind in the KDC.
+left behind in the KDC.  It will also attempt to create wallet-test/one
+and expects that attempt to be rejected by the KDC.
 
 For MIT Kerberos, to grant appropriate permissions, add the line:
 

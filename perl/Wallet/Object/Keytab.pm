@@ -92,7 +92,7 @@ sub kadmin_exists {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     my $output = $self->kadmin ("getprinc $principal");
-    if ($output =~ /does not exist/) {
+    if ($output =~ /^get_principal: /) {
         return undef;
     } else {
         return 1;
@@ -107,6 +107,7 @@ sub kadmin_addprinc {
     unless ($self->valid_principal ($principal)) {
         die "invalid principal name $principal\n";
     }
+    return 1 if $self->kadmin_exists ($principal);
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
@@ -293,11 +294,12 @@ used.
 
 When a new keytab object is created, the Kerberos principal designated by
 NAME is also created in the Kerberos realm determined from the wallet
-configuration.  If the Kerberos principal could not be created (including if
-it already exists), create() fails.  The principal is created with the
-C<-randkey> option to randomize its keys.  NAME must not contain the realm;
-instead, the KEYTAB_REALM configuration variable should be set.  See
-Wallet::Config(3) for more information.
+configuration.  If the principal already exists, create() still succeeds (so
+that a previously unmanaged principal can be imported into the wallet).
+Otherwise, if the Kerberos principal could not be created, create() fails.
+The principal is created with the C<-randkey> option to randomize its keys.
+NAME must not contain the realm; instead, the KEYTAB_REALM configuration
+variable should be set.  See Wallet::Config(3) for more information.
 
 If create() fails, it throws an exception.
 

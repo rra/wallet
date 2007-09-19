@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 46;
+use Test::More tests => 50;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -153,10 +153,15 @@ SKIP: {
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/two', $dbh, @trace)
       };
-    is ($object, undef, 'Creating an existing principal fails');
-    like ($@, qr{^error adding principal wallet/two\@\Q$realm\E: },
-          ' with the right error message');
-    destroy ('wallet/two');
+    ok (defined ($object), 'Creating an existing principal succeeds');
+    ok ($object->isa ('Wallet::Object::Keytab'), ' and is the right class');
+    is ($object->destroy (@trace), 1, ' and destroying it succeeds');
+    ok (! created ('wallet/two'), ' and now it does not exist');
+    my @name = qw(keytab wallet-test/one);
+    $object = eval { Wallet::Object::Keytab->create (@name, $dbh, @trace) };
+    is ($object, undef, 'Creation without permissions fails');
+    like ($@, qr{^error adding principal wallet-test/one\@\Q$realm: },
+          ' with the right error');
 
     # Now, try retrieving the keytab.
     $object = Wallet::Object::Keytab->new ('keytab', 'wallet/one', $dbh);
