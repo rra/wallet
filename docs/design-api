@@ -21,7 +21,29 @@ Object API
     and most of the methods of that module can be used without change.
     Below are summaries of the methods that a typical object
     implementation will need to override.  Methods other than create()
-    should set the error with error() and return undef on failure.
+    should set the error with error() and return undef on failure unless
+    otherwise noted.
+
+  attr(ATTRIBUTE [, VALUES, PRINCIPAL, HOSTNAME [, DATETIME]])
+
+    Sets or retrieves a given object attribute.  Attributes are used to
+    store backend-specific information for a particular object type.  The
+    default implementation rejects all ATTRIBUTEs as unknown, so if your
+    backend has custom attributes, you will need to override this method.
+
+    If no other arguments besides ATTRIBUTE are given, returns the values
+    of that attribute, if any, as a list.  On error, returns a list
+    containing one undefined element; (undef), in other words.
+
+    If other arguments are given, sets the given ATTRIBUTE values to
+    VALUES, which must be a reference to an array (even if only one value
+    is being set).  Pass a reference to an empty array to clear the
+    attribute values.  Returns true on success and false on failure.
+
+    If you override this method, be sure to check the locked flag first
+    and abort if the object is locked, and be sure to call log_set() (with
+    a "type_data <attribute>" argument) as part of storing the attribute
+    in the database to update the history information.
 
   create(NAME, TYPE, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
@@ -38,8 +60,9 @@ Object API
   destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
     Destroys the given object.  Backend implementations should override
-    this method if they need to destroy the object in an external system.
-    For example, the keytab backend overrides this method to destroy the
+    this method if they need to destroy the object in an external system
+    and then call the parent method to do the database cleanup.  For
+    example, the keytab backend overrides this method to destroy the
     principal in the Kerberos KDC.  Be careful not to require that the
     object exist in a remote system for destroy() to work, since an
     administrator will want to destroy an orphaned wallet database entry
@@ -81,7 +104,9 @@ Object API
     supported by all backends (for instance, backends that automatically
     generate the data will not support this).  Backends that don't support
     storing data can just not implement this method and the default
-    store() method will return an appropriate error.
+    store() method will return an appropriate error.  Don't forget to call
+    log_action() after successfully storing the data to update the history
+    and trace information.
 
     Be sure to check the locked flag first and abort if the object is
     locked without storing any data.

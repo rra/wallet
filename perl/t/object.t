@@ -3,7 +3,7 @@
 #
 # t/object.t -- Tests for the basic object implementation.
 
-use Test::More tests => 125;
+use Test::More tests => 129;
 
 use Wallet::ACL;
 use Wallet::Config;
@@ -149,6 +149,12 @@ if ($object->flag_set ('locked', @trace)) {
 } else {
     is ($object->error, '', ' and setting it again works');
 }
+
+# Attributes.  Very boring.
+is ($object->attr ('foo'), undef, 'Retrieving an attribute fails');
+is ($object->error, 'unknown attribute foo', ' with the right error');
+is ($object->attr ('foo', [ 'foo' ], @trace), undef, ' and setting fails');
+is ($object->error, 'unknown attribute foo', ' with the right error');
 
 # Test stub methods and locked status.
 is ($object->store ("Some data", @trace), undef, 'Store fails');

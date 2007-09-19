@@ -271,6 +271,19 @@ sub acl {
     }
 }
 
+# Get or set an attribute on an object.  Takes the name of the attribute and,
+# if setting, the values and trace information.  The values must be provided
+# as a reference to an array, even if there is only one value.
+#
+# Attributes are used by backends for backend-specific information (such as
+# enctypes for a keytab).  The default implementation rejects all attribute
+# names as unknown.
+sub attr {
+    my ($self, $attr, $values, $user, $host, $time) = @_;
+    $self->error ("unknown attribute $attr");
+    return;
+}
+
 # Get or set the expires value of an object.  Expects an expiration time in
 # seconds since epoch.  If setting the expiration, trace information must also
 # be provided.
@@ -624,6 +637,24 @@ arguments are given, change that ACL to ACL and return true on success and
 false on failure.  Pass in the empty string for ACL to clear the ACL.  The
 other arguments are used for logging and history and should indicate the
 user and host from which the change is made and the time of the change.
+
+=item attr(ATTRIBUTE [, VALUES, PRINCIPAL, HOSTNAME [, DATETIME]])
+
+Sets or retrieves a given object attribute.  Attributes are used to store
+backend-specific information for a particular object type and ATTRIBUTE must
+be an attribute type known to the underlying object implementation.  The
+default implementation of this method rejects all attributes as unknown.
+
+If no other arguments besides ATTRIBUTE are given, returns the values of
+that attribute, if any, as a list.  On error, returns a list containing one
+undefined element.
+
+If other arguments are given, sets the given ATTRIBUTE values to VALUES,
+which must be a reference to an array (even if only one value is being set).
+Pass a reference to an empty array to clear the attribute values.  The other
+arguments are used for logging and history and should indicate the user and
+host from which the change is made and the time of the change.  Returns true
+on success and false on failure.
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
