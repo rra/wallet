@@ -265,15 +265,15 @@ sub acl {
 
 # Retrieves or sets an attribute on an object.
 sub attr {
-    my ($self, $type, $name, $attr, $values) = @_;
+    my ($self, $type, $name, $attr, @values) = @_;
     undef $self->{error};
     my $object = $self->retrieve ($type, $name);
     return undef unless defined $object;
     my $user = $self->{user};
     my $host = $self->{host};
-    if (defined $values) {
+    if (@values) {
         return unless $self->acl_check ($object, 'setattr');
-        my $result = $object->attr ($attr, $values, $user, $host);
+        my $result = $object->attr ($attr, [ @values ], $user, $host);
         $self->error ($object->error) unless $result;
         return $result;
     } else {
@@ -713,25 +713,24 @@ be aware that anyone with show access to an object can see the membership of
 ACLs associated with that object through the show() method).  Returns the
 human-readable description on success and undef on failure.
 
-=item attr(TYPE, NAME, ATTRIBUTE [, VALUES])
+=item attr(TYPE, NAME, ATTRIBUTE [, VALUE ...])
 
 Sets or retrieves a given object attribute.  Attributes are used to store
 backend-specific information for a particular object type and ATTRIBUTE must
 be an attribute type known to the underlying object implementation.
 
-If VALUES is not given, returns the values of that attribute, if any, as a
+If VALUE is not given, returns the values of that attribute, if any, as a
 list.  On error, returns the empty list.  To distinguish between an error
 and an empty return, call error() afterwards.  It is guaranteed to return
 undef unless there was an error.  To retrieve an attribute setting, the user
 must be authorized by the ADMIN ACL, the show ACL if set, or the owner ACL
 if the show ACL is not set.
 
-If VALUES is given, sets the given ATTRIBUTE values to VALUES, which must be
-a reference to an array (even if only one value is being set).  Pass a
-reference to an empty array to clear the attribute values.  Returns true on
-success and false on failure.  To set an attribute value, the user must be
-authorized by the ADMIN ACL, the store ACL if set, or the owner ACL if the
-store ACL is not set.
+If VALUE is given, sets the given ATTRIBUTE values to VALUE, which is one or
+more attribute values.  Pass the empty string as the only VALUE to clear the
+attribute values.  Returns true on success and false on failure.  To set an
+attribute value, the user must be authorized by the ADMIN ACL, the store ACL
+if set, or the owner ACL if the store ACL is not set.
 
 =item create(TYPE, NAME)
 
