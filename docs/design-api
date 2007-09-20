@@ -32,8 +32,10 @@ Object API
     backend has custom attributes, you will need to override this method.
 
     If no other arguments besides ATTRIBUTE are given, returns the values
-    of that attribute, if any, as a list.  On error, returns a list
-    containing one undefined element; (undef), in other words.
+    of that attribute, if any, as a list.  To distinguish between the
+    empty attribute list and an error, be sure to undefine $self->{error}
+    at the start of the method and only set the error on failure so that
+    the caller can call error() to determine if there was a a failure.
 
     If other arguments are given, sets the given ATTRIBUTE values to
     VALUES, which must be a reference to an array (even if only one value

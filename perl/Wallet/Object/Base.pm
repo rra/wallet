@@ -646,8 +646,9 @@ be an attribute type known to the underlying object implementation.  The
 default implementation of this method rejects all attributes as unknown.
 
 If no other arguments besides ATTRIBUTE are given, returns the values of
-that attribute, if any, as a list.  On error, returns a list containing one
-undefined element.
+that attribute, if any, as a list.  On error, returns the empty list.  To
+distinguish between an error and an empty return, call error() afterwards.
+It is guaranteed to return undef unless there was an error.
 
 If other arguments are given, sets the given ATTRIBUTE values to VALUES,
 which must be a reference to an array (even if only one value is being set).
