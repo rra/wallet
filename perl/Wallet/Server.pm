@@ -185,7 +185,11 @@ sub object_error {
     my ($self, $object, $action) = @_;
     my $user = $self->{user};
     my $id = $object->type . ':' . $object->name;
-    if ($action !~ /^(create|get|store|show|destroy)\z/) {
+    if ($action eq 'getattr') {
+        $action = "get attributes for";
+    } elsif ($action eq 'setattr') {
+        $action = "set attributes for";
+    } elsif ($action !~ /^(create|get|store|show|destroy)\z/) {
         $action = "set $action for";
     }
     $self->error ("$self->{user} not authorized to $action $id");
@@ -198,15 +202,22 @@ sub object_error {
 # set the ACL accordingly.
 sub acl_check {
     my ($self, $object, $action) = @_;
-    unless ($action =~ /^(get|store|show|destroy|flags)\z/) {
+    unless ($action =~ /^(get|store|show|destroy|flags|setattr|getattr)\z/) {
         $self->error ("unknown action $action");
         return undef;
     }
     if ($action ne 'get' and $action ne 'store') {
         return 1 if $self->{admin}->check ($self->{user});
     }
-    my $id = $object->acl ($action);
-    if (not defined ($id) and $action =~ /^(get|store|show)\z/) {
+    my $id;
+    if ($action eq 'getattr') {
+        $id = $object->acl ('show');
+    } elsif ($action eq 'setattr') {
+        $id = $object->acl ('store');
+    } else {
+        $id = $object->acl ($action);
+    }
+    if (! defined ($id) and $action =~ /^(get|(get|set)attr|store|show)\z/) {
         $id = $object->owner;
     }
     unless (defined $id) {
@@ -250,6 +261,31 @@ sub acl {
         $self->error ($object->error);
     }
     return $result;
+}
+
+# Retrieves or sets an attribute on an object.
+sub attr {
+    my ($self, $type, $name, $attr, $values) = @_;
+    undef $self->{error};
+    my $object = $self->retrieve ($type, $name);
+    return undef unless defined $object;
+    my $user = $self->{user};
+    my $host = $self->{host};
+    if (defined $values) {
+        return unless $self->acl_check ($object, 'setattr');
+        my $result = $object->attr ($attr, $values, $user, $host);
+        $self->error ($object->error) unless $result;
+        return $result;
+    } else {
+        return unless $self->acl_check ($object, 'getattr');
+        my @result = $object->attr ($attr);
+        if (not @result and $object->error) {
+            $self->error ($object->error);
+            return;
+        } else {
+            return @result;
+        }
+    }
 }
 
 # Retrieves or sets the expiration of an object.
@@ -676,6 +712,26 @@ show an ACL, the current user must be authorized by the ADMIN ACL (although
 be aware that anyone with show access to an object can see the membership of
 ACLs associated with that object through the show() method).  Returns the
 human-readable description on success and undef on failure.
+
+=item attr(TYPE, NAME, ATTRIBUTE [, VALUES])
+
+Sets or retrieves a given object attribute.  Attributes are used to store
+backend-specific information for a particular object type and ATTRIBUTE must
+be an attribute type known to the underlying object implementation.
+
+If VALUES is not given, returns the values of that attribute, if any, as a
+list.  On error, returns the empty list.  To distinguish between an error
+and an empty return, call error() afterwards.  It is guaranteed to return
+undef unless there was an error.  To retrieve an attribute setting, the user
+must be authorized by the ADMIN ACL, the show ACL if set, or the owner ACL
+if the show ACL is not set.
+
+If VALUES is given, sets the given ATTRIBUTE values to VALUES, which must be
+a reference to an array (even if only one value is being set).  Pass a
+reference to an empty array to clear the attribute values.  Returns true on
+success and false on failure.  To set an attribute value, the user must be
+authorized by the ADMIN ACL, the store ACL if set, or the owner ACL if the
+store ACL is not set.
 
 =item create(TYPE, NAME)
 

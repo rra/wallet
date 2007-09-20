@@ -3,7 +3,7 @@
 #
 # t/server.t -- Tests for the wallet server API.
 
-use Test::More tests => 261;
+use Test::More tests => 286;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -182,6 +182,14 @@ is ($server->expires ('base', 'service/admin', ''), 1, ' and clear it');
 is ($server->expires ('base', 'service/admin'), undef, ' and now it is gone');
 is ($server->error, undef, ' and still no error');
 
+# Test attributes.
+is ($server->attr ('base', 'service/admin', 'foo'), undef,
+    'Getting an attribute fails');
+is ($server->error, 'unknown attribute foo', ' but called the method');
+is ($server->attr ('base', 'service/admin', 'foo', 'foo'), undef,
+    ' and setting an attribute fails');
+is ($server->error, 'unknown attribute foo', ' and called the method');
+
 # Because we're admin, we should be able to show one of these objects, but we
 # still shouldn't be able to get or store since there are no ACLs.
 is ($server->show ('base', 'service/test'), undef,
@@ -353,6 +361,8 @@ is ($server->acl ('base', 'service/both', 'show', 'user1'), 1, ' and show');
 is ($server->acl ('base', 'service/both', 'destroy', 'user2'), 1,
     ' and destroy');
 is ($server->acl ('base', 'service/both', 'flags', 'user1'), 1, ' and flags');
+is ($server->acl ('base', 'service/admin', 'store', 'user1'), 1,
+    'Set admin store');
 
 # Okay, now we can switch users and be sure we don't have admin rights.
 $server = eval { Wallet::Server->new ($user1, $host) };
@@ -432,6 +442,12 @@ Members of ACL user1 (id: 2) are:
   krb5 $user1
 EOO
 is ($show, $expected, ' and show an object we own');
+is ($server->attr ('base', 'service/user1', 'foo'), undef,
+    ' and getting an attribute fails');
+is ($server->error, 'unknown attribute foo', ' but calls the method');
+is ($server->attr ('base', 'service/user1', 'foo', 'foo'), undef,
+    ' and setting an attribute fails');
+is ($server->error, 'unknown attribute foo', ' but calls the method');
 
 # But not on things we don't own.
 is ($server->get ('base', 'service/user2'), undef,
@@ -444,6 +460,16 @@ is ($server->error, "$user1 not authorized to store base:service/user2",
     ' with the right error');
 is ($server->show ('base', 'service/user2'), undef, ' or show it');
 is ($server->error, "$user1 not authorized to show base:service/user2",
+    ' with the right error');
+is ($server->attr ('base', 'service/user2', 'foo'), undef,
+    ' or get attributes');
+is ($server->error,
+    "$user1 not authorized to get attributes for base:service/user2",
+    ' with the right error');
+is ($server->attr ('base', 'service/user2', 'foo', 'foo'), undef,
+    ' and set attributes');
+is ($server->error,
+    "$user1 not authorized to set attributes for base:service/user2",
     ' with the right error');
 
 # And only some things on an object we own with some ACLs.
@@ -494,6 +520,20 @@ is ($server->destroy ('base', 'service/both'), undef,
     ' but not destroy it');
 is ($server->error, "$user1 not authorized to destroy base:service/both",
     ' due to permissions');
+is ($server->attr ('base', 'service/both', 'foo'), undef,
+    'Getting an attribute fails');
+is ($server->error, 'unknown attribute foo', ' but calls the method');
+is ($server->attr ('base', 'service/both', 'foo', 'foo'), undef,
+    ' and setting an attribute fails');
+is ($server->error, 'unknown attribute foo', ' but calls the method');
+is ($server->attr ('base', 'service/admin', 'foo', 'foo'), undef,
+    ' but setting an attribute on service/admin fails');
+is ($server->error, 'unknown attribute foo', ' and calls the method');
+is ($server->attr ('base', 'service/admin', 'foo'), undef,
+    ' while getting an attribute on service/admin fails');
+is ($server->error,
+    "$user1 not authorized to get attributes for base:service/admin",
+    ' with a permission error');
 
 # Now switch to the other user and make sure we can do things on objects we
 # own.
@@ -559,6 +599,14 @@ is ($server->flag_clear ('base', 'service/both', 'unchanging'), undef,
 is ($server->error,
     "$user2 not authorized to set flags for base:service/both",
     ' with the right error');
+is ($server->attr ('base', 'service/both', 'foo'), undef,
+    ' or getting an attribute');
+is ($server->error,
+    "$user2 not authorized to get attributes for base:service/both",
+    ' with the right error');
+is ($server->attr ('base', 'service/both', 'foo', 'foo'), undef,
+    ' but setting an attribute fails');
+is ($server->error, 'unknown attribute foo', ' but calls the method');
 is ($server->destroy ('base', 'service/both'), 1, ' and we can destroy it');
 is ($server->get ('base', 'service/both'), undef, ' and now cannot get it');
 is ($server->error, 'cannot find base:service/both', ' because it is gone');
