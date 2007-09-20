@@ -259,6 +259,7 @@ sub remove {
 # error.  Sets the internal error string on error.
 sub list {
     my ($self) = @_;
+    undef $self->{error};
     my @entries;
     eval {
         my $sql = 'select ae_scheme, ae_identifier from acl_entries where
@@ -272,7 +273,7 @@ sub list {
     };
     if ($@) {
         $self->error ("cannot retrieve ACL $self->{id}: $@");
-        return (undef);
+        return;
     } else {
         return @entries;
     }
@@ -285,7 +286,7 @@ sub list {
 sub show {
     my ($self) = @_;
     my @entries = $self->list;
-    if (@entries == 1 and not defined ($entries[0])) {
+    if (not @entries and $self->error) {
         return undef;
     }
     my $name = $self->name;
@@ -314,7 +315,7 @@ sub check {
         return undef;
     }
     my @entries = $self->list;
-    return undef if (@entries == 1 and not defined $entries[0]);
+    return undef if (not @entries and $self->error);
     my %verifier;
     $self->{check_errors} = [];
     for my $entry (@entries) {
@@ -481,10 +482,10 @@ C<alice@EXAMPLE.COM> and C<bob@EXAMPLE.COM>, list() would return:
 
     ([ 'krb5', 'alice@EXAMPLE.COM' ], [ 'krb5', 'bob@EXAMPLE.COM' ])
 
-Returns C<(undef)> (the list containing the single element undef) on
-failure, so that it can be distinguished from the empty list, which
-indicates the ACL contains no entries.  On failure, the caller should call
-error() to get the error message.
+Returns the empty list on failure.  To distinguish between this and the
+ACL containing no entries, the caller should call error().  error() is
+guaranteed to return the error message if there was an error and undef if
+there was no error.
 
 =item name()
 

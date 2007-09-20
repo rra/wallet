@@ -555,7 +555,7 @@ sub acl_remove {
     }
     if ($acl->name eq 'ADMIN') {
         my @e = $acl->list;
-        if (@e == 1 and not defined ($e[0])) {
+        if (not @e and $acl->error) {
             $self->error ($acl->error);
             return undef;
         } elsif (@e == 1 && $e[0][0] eq $scheme && $e[0][1] eq $identifier) {
