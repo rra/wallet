@@ -378,9 +378,11 @@ sub flag_clear {
 }
 
 # List the flags on an object.  Returns a list of flag names, which may be
-# empty.  On error, returns (undef) (a list containing one undefined element).
+# empty.  On error, returns the empty list.  The caller should call error() in
+# this case to determine if an error occurred.
 sub flag_list {
     my ($self) = @_;
+    undef $self->{error};
     my @flags;
     eval {
         my $sql = 'select fl_flag from flags where fl_type = ? and
@@ -395,7 +397,7 @@ sub flag_list {
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot retrieve flags for $id: $@");
-        return (undef);
+        return;
     } else {
         return @flags;
     }
@@ -494,7 +496,7 @@ sub show {
     for (my $i = 0; $i < @data; $i++) {
         if ($attrs[$i][0] eq 'ob_created_by') {
             my @flags = $self->flag_list;
-            if (@flags == 1 and not defined $flags[0]) {
+            if (not @flags and $self->error) {
                 return undef;
             }
             if (@flags) {
@@ -705,7 +707,9 @@ user and host from which the change is made and the time of the change.
 =item flag_list()
 
 List the flags set on an object.  If no flags are set, returns the empty
-list.  On failure, returns the list consisting of one undefined element.
+list.  On failure, returns an empty list.  To distinguish between the empty
+response and an error, the caller should call error() after an empty return.
+It is guaranteed to return undef if there was no error.
 
 =item flag_set(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
 
