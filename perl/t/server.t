@@ -186,7 +186,7 @@ is ($server->error, undef, ' and still no error');
 is ($server->attr ('base', 'service/admin', 'foo'), undef,
     'Getting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' but called the method');
-is ($server->attr ('base', 'service/admin', 'foo', 'foo'), undef,
+is ($server->attr ('base', 'service/admin', 'foo', [ 'foo' ]), undef,
     ' and setting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' and called the method');
 
@@ -445,7 +445,7 @@ is ($show, $expected, ' and show an object we own');
 is ($server->attr ('base', 'service/user1', 'foo'), undef,
     ' and getting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' but calls the method');
-is ($server->attr ('base', 'service/user1', 'foo', 'foo'), undef,
+is ($server->attr ('base', 'service/user1', 'foo', [ 'foo' ]), undef,
     ' and setting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' but calls the method');
 
@@ -466,7 +466,7 @@ is ($server->attr ('base', 'service/user2', 'foo'), undef,
 is ($server->error,
     "$user1 not authorized to get attributes for base:service/user2",
     ' with the right error');
-is ($server->attr ('base', 'service/user2', 'foo', 'foo'), undef,
+is ($server->attr ('base', 'service/user2', 'foo', [ 'foo' ]), undef,
     ' and set attributes');
 is ($server->error,
     "$user1 not authorized to set attributes for base:service/user2",
@@ -523,10 +523,10 @@ is ($server->error, "$user1 not authorized to destroy base:service/both",
 is ($server->attr ('base', 'service/both', 'foo'), undef,
     'Getting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' but calls the method');
-is ($server->attr ('base', 'service/both', 'foo', 'foo'), undef,
+is ($server->attr ('base', 'service/both', 'foo', [ 'foo' ]), undef,
     ' and setting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' but calls the method');
-is ($server->attr ('base', 'service/admin', 'foo', 'foo'), undef,
+is ($server->attr ('base', 'service/admin', 'foo', [ 'foo' ]), undef,
     ' but setting an attribute on service/admin fails');
 is ($server->error, 'unknown attribute foo', ' and calls the method');
 is ($server->attr ('base', 'service/admin', 'foo'), undef,
@@ -604,7 +604,7 @@ is ($server->attr ('base', 'service/both', 'foo'), undef,
 is ($server->error,
     "$user2 not authorized to get attributes for base:service/both",
     ' with the right error');
-is ($server->attr ('base', 'service/both', 'foo', 'foo'), undef,
+is ($server->attr ('base', 'service/both', 'foo', [ 'foo' ]), undef,
     ' but setting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' but calls the method');
 is ($server->destroy ('base', 'service/both'), 1, ' and we can destroy it');
