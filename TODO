@@ -2,14 +2,12 @@
 
 Required to replace leland_srvtab:
 
-* Add arbitrary attribute setting and retrieval to objects and include the
-  attributes in the object show display.
-
 * Add support for limiting the enctypes of created keytabs by setting the
-  enctype attribute on the object.
+  enctype attribute on the object and include the enctypes in the object
+  show display.
 
 * Add an attribute indicating that the principal should be synchronized
-  with Kerberos v4.
+  with Kerberos v4 and include it in the object show display.
 
 * Implement creation of srvtabs from keytabs in the wallet client.
 

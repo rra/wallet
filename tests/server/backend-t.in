@@ -5,7 +5,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 750;
+use Test::More tests => 790;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -63,6 +63,21 @@ sub acl {
         return undef;
     } else {
         return 'acl';
+    }
+}
+
+sub attr {
+    shift;
+    print "attr @_\n";
+    if ($_[0] eq 'error') {
+        return;
+    } elsif ($_[1] eq 'empty') {
+        $okay = 1;
+        return;
+    } elsif (@_ == 3) {
+        return ('attr1', 'attr2');
+    } else {
+        return 'attr';
     }
 }
 
@@ -144,7 +159,7 @@ is ($out, "$new\n", ' and nothing ran');
 ($out, $err) = run_backend ('acl', 'foo');
 is ($err, "unknown command acl foo\n", 'Unknown ACL command');
 is ($out, "$new\n", ' and nothing ran');
-($out, $err) = run_backend ('flag', 'foo');
+($out, $err) = run_backend ('flag', 'foo', 'service', 'foo', 'foo');
 is ($err, "unknown command flag foo\n", 'Unknown flag command');
 is ($out, "$new\n", ' and nothing ran');
 
@@ -154,8 +169,10 @@ my %commands = (create  => [2, 2],
                 expires => [2, 3],
                 get     => [2, 2],
                 getacl  => [3, 3],
+                getattr => [3, 3],
                 owner   => [2, 3],
                 setacl  => [4, 4],
+                setattr => [4, 9],
                 show    => [2, 2],
                 store   => [3, 3]);
 my %acl_commands = (add     => [3, 3],
@@ -171,9 +188,11 @@ for my $command (sort keys %commands) {
     ($out, $err) = run_backend ($command, ('foo') x ($min - 1));
     is ($err, "insufficient arguments\n", "Too few arguments for $command");
     is ($out, "$new\n", ' and nothing ran');
-    ($out, $err) = run_backend ($command, ('foo') x ($max + 1));
-    is ($err, "too many arguments\n", "Too many arguments for $command");
-    is ($out, "$new\n", ' and nothing ran');
+    unless ($max >= 9) {
+        ($out, $err) = run_backend ($command, ('foo') x ($max + 1));
+        is ($err, "too many arguments\n", "Too many arguments for $command");
+        is ($out, "$new\n", ' and nothing ran');
+    }
     my @base = ('foobar') x $max;
     for my $arg (0 .. ($max - 1)) {
         my @args = @base;
@@ -231,8 +250,9 @@ for my $command (sort keys %flag_commands) {
 
 # Now, test that we ran the right functions and passed the correct arguments.
 my $error = 1;
-for my $command (qw/create destroy setacl store/) {
-    my $method = ($command eq 'setacl') ? 'acl' : $command;
+for my $command (qw/create destroy setacl setattr store/) {
+    my $method = { setacl => 'acl', setattr => 'attr' }->{$command};
+    $method ||= $command;
     my @extra = ('foo') x ($commands{$command}[0] - 2);
     my $extra = @extra ? join (' ', '', @extra) : '';
     ($out, $err) = run_backend ($command, 'type', 'name', @extra);
@@ -245,22 +265,30 @@ for my $command (qw/create destroy setacl store/) {
         ' and ran the right method');
     $error++;
 }
-for my $command (qw/expires get getacl owner show/) {
-    my $method = ($command eq 'getacl') ? 'acl' : $command;
+for my $command (qw/expires get getacl getattr owner show/) {
+    my $method = { getacl => 'acl', getattr => 'attr' }->{$command};
+    $method ||= $command;
     my @extra = ('foo') x ($commands{$command}[0] - 2);
     my $extra = @extra ? join (' ', '', @extra) : '';
-    my $newline = ($command eq 'get' or $command eq 'show') ? '' : "\n";
-    ($out, $err) = run_backend ($command, 'type', 'name', @extra);
-    is ($err, '', "Command $command ran with no errors");
-    is ($out, "$new\n$method type name$extra\n$method$newline",
-        ' and ran the right method with output');
-    if ($command ne 'get' and $command ne 'getacl' and $command ne 'show') {
+    if ($command eq 'getattr') {
+        ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+        is ($err, '', "Command $command ran with no errors");
+        is ($out, "$new\n$method type name$extra\nattr1\nattr2\n",
+            ' and ran the right method with output');
+    } else {
+        my $newline = ($command eq 'get' or $command eq 'show') ? '' : "\n";
+        ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+        is ($err, '', "Command $command ran with no errors");
+        is ($out, "$new\n$method type name$extra\n$method$newline",
+            ' and ran the right method with output');
+    }
+    if ($command eq 'expires' or $command eq 'owner') {
         ($out, $err) = run_backend ($command, 'type', 'name', @extra, 'foo');
         is ($err, '', "Command $command ran with no errors (setting)");
         is ($out, "$new\n$method type name$extra foo\n",
             ' and ran the right method');
     }
-    if ($command ne 'get' and $command ne 'show') {
+    if ($command eq 'expires' or $command eq 'getacl' or $command eq 'owner') {
         ($out, $err) = run_backend ($command, 'type', 'empty', @extra);
         is ($err, '', "Command $command ran with no errors (empty)");
         my $desc;
@@ -268,6 +296,12 @@ for my $command (qw/expires get getacl owner show/) {
         elsif ($command eq 'getacl')  { $desc = 'ACL' }
         elsif ($command eq 'owner')   { $desc = 'owner' }
         is ($out, "$new\n$method type empty$extra\nNo $desc set\n",
+            ' and ran the right method with output');
+        $error++;
+    } elsif ($command eq 'getattr') {
+        ($out, $err) = run_backend ($command, 'type', 'empty', @extra);
+        is ($err, '', "Command $command ran with no errors (empty)");
+        is ($out, "$new\n$method type empty$extra\n",
             ' and ran the right method with output');
         $error++;
     }

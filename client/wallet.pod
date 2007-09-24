@@ -102,10 +102,12 @@ options and commands are ignored.
 
 As mentioned above, most commands are only available to wallet
 administrators.  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
-C<flag clear>, and C<flag set>.  All of those commands have their own
-ACLs, and if the appropriate ACL is set, it alone is checked to see if the
-user has access.  Otherwise, C<get>, C<store>, and C<show> access is
-permitted if the user is authorized by the owner ACL of the object.
+C<flag clear>, C<flag set>, C<getattr>, and C<setattr>.  All of those
+commands have their own ACLs except C<getattr>, which uses the C<show>
+ACL, and C<setattr>, which uses the C<show> ACL.  If the appropriate ACL
+is set, it alone is checked to see if the user has access.  Otherwise,
+C<get>, C<store>, C<show>, C<getattr>, and C<setattr> access is permitted
+if the user is authorized by the owner ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<show>, they must still be authorized by
@@ -205,6 +207,15 @@ if the C<get>, C<store>, or C<show> ACLs aren't set, authorization falls
 back to checking the owner ACL.  See the C<owner> command for displaying
 or setting it.
 
+=item getattr <type> <name> <attr>
+
+Prints the object attribute <attr> for the object identified by <type> and
+<name>.  Attributes are used to store backend-specific information for a
+particular object type, and <attr> must be an attribute type known to the
+underlying object implementation.  The attribute values, if any, are
+printed one per line.  If the attribute is not set on this object, nothing
+is printed.
+
 =item owner <type> <name> [<owner>]
 
 If <owner> is not given, displays the current owner ACL of the object
@@ -220,6 +231,16 @@ the object.
 Sets the ACL <acl>, which must be one of C<get>, C<store>, C<show>,
 C<destroy>, or C<flags>, to <id> on the object identified by <type> and
 <name>.  If <id> is the empty string, clears that ACL on the object.
+
+=item setattr <type> <name> <attr> <value> [<value> ...]
+
+Sets the object attribute <attr> for the object identified by <type> and
+<name>.  Attributes are used to store backend-specific information for a
+particular object type, and <attr> must be an attribute type known to the
+underlying object implementation.  To clear the attribute for this object,
+pass in a <value> of the empty string (C<''>).
+
+Currently, no object attributes are implemented.
 
 =item show <type> <name>
 

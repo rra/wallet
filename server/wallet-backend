@@ -23,16 +23,16 @@ use Wallet::Server;
 
 # Check all arguments against a very restricted set of allowed characters and
 # to ensure the right number of arguments are taken.  The arguments are the
-# number of arguments expected, a reference to an array of which argument
-# numbers shouldn't be checked, and then the arguments.
+# number of arguments expected (minimum and maximum), a reference to an array
+# of which argument numbers shouldn't be checked, and then the arguments.
 #
 # This function is probably temporary and will be replaced with something that
 # knows more about the syntax of each command and can check more things.
 sub check_args {
-    my ($count, $exclude, @args) = @_;
-    if (@args < $count) {
+    my ($min, $max, $exclude, @args) = @_;
+    if (@args < $min) {
         die "insufficient arguments\n";
-    } elsif (@args > $count) {
+    } elsif (@args > $max and $max != -1) {
         die "too many arguments\n";
     }
     my %exclude = map { $_ => 1 } @$exclude;
@@ -63,22 +63,22 @@ sub command {
     if ($command eq 'acl') {
         my $action = shift @args;
         if ($action eq 'add') {
-            check_args (3, [], @args);
+            check_args (3, 3, [], @args);
             $server->acl_add (@args) or die $server->error;
         } elsif ($action eq 'create') {
-            check_args (1, [], @args);
+            check_args (1, 1, [], @args);
             $server->acl_create (@args) or die $server->error;
         } elsif ($action eq 'destroy') {
-            check_args (1, [], @args);
+            check_args (1, 1, [], @args);
             $server->acl_destroy (@args) or die $server->error;
         } elsif ($action eq 'remove') {
-            check_args (3, [], @args);
+            check_args (3, 3, [], @args);
             $server->acl_remove (@args) or die $server->error;
         } elsif ($action eq 'rename') {
-            check_args (2, [], @args);
+            check_args (2, 2, [], @args);
             $server->acl_rename (@args) or die $server->error;
         } elsif ($action eq 'show') {
-            check_args (1, [], @args);
+            check_args (1, 1, [], @args);
             my $output = $server->acl_show (@args);
             if (defined $output) {
                 print $output;
@@ -89,17 +89,16 @@ sub command {
             die "unknown command acl $action\n";
         }
     } elsif ($command eq 'create') {
-        check_args (2, [], @args);
+        check_args (2, 2, [], @args);
         $server->create (@args) or die $server->error;
     } elsif ($command eq 'destroy') {
-        check_args (2, [], @args);
+        check_args (2, 2, [], @args);
         $server->destroy (@args) or die $server->error;
     } elsif ($command eq 'expires') {
+        check_args (2, 3, [], @args);
         if (@args > 2) {
-            check_args (3, [], @args);
             $server->expires (@args) or die $server->error;
         } else {
-            check_args (2, [], @args);
             my $output = $server->expires (@args);
             if (defined $output) {
                 print $output, "\n";
@@ -111,17 +110,16 @@ sub command {
         }
     } elsif ($command eq 'flag') {
         my $action = shift @args;
+        check_args (3, 3, [], @args);
         if ($action eq 'clear') {
-            check_args (3, [], @args);
             $server->flag_clear (@args) or die $server->error;
         } elsif ($action eq 'set') {
-            check_args (3, [], @args);
             $server->flag_set (@args) or die $server->error;
         } else {
             die "unknown command flag $action\n";
         }
     } elsif ($command eq 'get') {
-        check_args (2, [], @args);
+        check_args (2, 2, [], @args);
         my $output = $server->get (@args);
         if (defined $output) {
             print $output;
@@ -129,7 +127,7 @@ sub command {
             die $server->error;
         }
     } elsif ($command eq 'getacl') {
-        check_args (3, [], @args);
+        check_args (3, 3, [], @args);
         my $output = $server->acl (@args);
         if (defined $output) {
             print $output, "\n";
@@ -138,12 +136,19 @@ sub command {
         } else {
             die $server->error;
         }
+    } elsif ($command eq 'getattr') {
+        check_args (3, 3, [], @args);
+        my @result = $server->attr (@args);
+        if (not @result and $server->error) {
+            die $server->error;
+        } elsif (@result) {
+            print join ("\n", @result, '');
+        }
     } elsif ($command eq 'owner') {
+        check_args (2, 3, [], @args);
         if (@args > 2) {
-            check_args (3, [], @args);
             $server->owner (@args) or die $server->error;
         } else {
-            check_args (2, [], @args);
             my $output = $server->owner (@args);
             if (defined $output) {
                 print $output, "\n";
@@ -154,10 +159,13 @@ sub command {
             }
         }
     } elsif ($command eq 'setacl') {
-        check_args (4, [], @args);
+        check_args (4, 4, [], @args);
         $server->acl (@args) or die $server->error;
+    } elsif ($command eq 'setattr') {
+        check_args (4, -1, [], @args);
+        $server->attr (@args) or die $server->error;
     } elsif ($command eq 'show') {
-        check_args (2, [], @args);
+        check_args (2, 2, [], @args);
         my $output = $server->show (@args);
         if (defined $output) {
             print $output;
@@ -165,7 +173,7 @@ sub command {
             die $server->error;
         }
     } elsif ($command eq 'store') {
-        check_args (3, [3], @args);
+        check_args (3, 3, [3], @args);
         $server->store (@args) or die $server->error;
     } else {
         die "unknown command $command\n";
@@ -214,10 +222,12 @@ B<wallet-backend> takes no traditional options.
 
 Most commands are only available to wallet administrators (users on the
 C<ADMIN> ACL).  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
-C<flag clear>, and C<flag set>.  All of those commands have their own ACLs,
-and if the appropriate ACL is set, it alone is checked to see if the user
-has access.  Otherwise, C<get>, C<store>, and C<show> access is permitted if
-the user is authorized by the owner ACL of the object.
+C<flag clear>, C<flag set>, C<getattr>, and C<setattr>.  All of those
+commands have their own ACLs except C<getattr>, which uses the C<show> ACL,
+and C<setattr>, which uses the C<show> ACL.  If the appropriate ACL is set,
+it alone is checked to see if the user has access.  Otherwise, C<get>,
+C<store>, C<show>, C<getattr>, and C<setattr> access is permitted if the
+user is authorized by the owner ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<show>, they must still be authorized by
@@ -316,6 +326,15 @@ if the C<get>, C<store>, or C<show> ACLs aren't set, authorization falls
 back to checking the owner ACL.  See the C<owner> command for displaying
 or setting it.
 
+=item getattr <type> <name> <attr>
+
+Prints the object attribute <attr> for the object identified by <type> and
+<name>.  Attributes are used to store backend-specific information for a
+particular object type, and <attr> must be an attribute type known to the
+underlying object implementation.  The attribute values, if any, are printed
+one per line.  If the attribute is not set on this object, nothing is
+printed.
+
 =item owner <type> <name> [<owner>]
 
 If <owner> is not given, displays the current owner ACL of the object
@@ -331,6 +350,16 @@ the object.
 Sets the ACL <acl>, which must be one of C<get>, C<store>, C<show>,
 C<destroy>, or C<flags>, to <id> on the object identified by <type> and
 <name>.  If <id> is the empty string, clears that ACL on the object.
+
+=item setattr <type> <name> <attr> <value> [<value> ...]
+
+Sets the object attribute <attr> for the object identified by <type> and
+<name>.  Attributes are used to store backend-specific information for a
+particular object type, and <attr> must be an attribute type known to the
+underlying object implementation.  To clear the attribute for this object,
+pass in a <value> of the empty string (C<''>).
+
+Currently, no object attributes are implemented.
 
 =item show <type> <name>
 
