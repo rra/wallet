@@ -151,13 +151,15 @@ usage(int status)
 
 /*
  * Parse a principal name into name, inst, and cell, filling in the cell from
- * local_cell if none was given.
+ * local_cell if none was given.  cell here is actually a realm and shouldn't
+ * need any further conversion.
  */
 static void
 parse_principal(struct config *config, char *principal, char *name,
                 char *inst, char *cell)
 {
     long code;
+    int local;
 
     code = ka_ParseLoginName(principal, name, inst, cell);
     if (config->debug)
@@ -165,8 +167,8 @@ parse_principal(struct config *config, char *principal, char *name,
     if (code != 0)
         die("can't parse principal %s", principal);
     if (cell[0] == '\0') {
-        strncpy(cell, config->local_cell, MAXKTCREALMLEN - 1);
-        cell[MAXKTCREALMLEN - 1] = '\0';
+        if (ka_CellToRealm(config->local_cell, cell, &local) == KANOCELL)
+            die("unable to determine realm from local cell");
     }
 }
 
@@ -179,11 +181,8 @@ static void
 write_srvtab(const char *filename, const char *name, const char *inst,
              char *cell, unsigned char kvno, struct ktc_encryptionKey *key)
 {
-    char realm[MAXKTCREALMLEN];
-    int fd, local;
+    int fd;
 
-    if (ka_CellToRealm(cell, realm, &local) == KANOCELL)
-        die("unable to determine realm");
     fd = open(filename, O_WRONLY | O_CREAT, 0600);
     if (fd == -1)
         sysdie("can't create srvtab %s", filename);
@@ -191,7 +190,7 @@ write_srvtab(const char *filename, const char *name, const char *inst,
         sysdie("can't write to srvtab %s", filename);
     if (write(fd, inst, strlen(inst) + 1) != (ssize_t) strlen(inst) + 1)
         sysdie("can't write to srvtab %s", filename);
-    if (write(fd, realm, strlen(realm) + 1) != (ssize_t) strlen(realm) + 1)
+    if (write(fd, cell, strlen(cell) + 1) != (ssize_t) strlen(cell) + 1)
         sysdie("can't write to srvtab %s", filename);
     if (write(fd, &kvno, 1) != 1)
         sysdie("can't write to srvtab %s", filename);
@@ -249,23 +248,19 @@ authenticate(struct config *config, struct ktc_token *token)
     char name[MAXKTCNAMELEN];
     char inst[MAXKTCNAMELEN];
     char cell[MAXKTCNAMELEN];
-    char realm[MAXKTCREALMLEN];
     long code;
-    int local;
     struct ktc_encryptionKey key;
 
     /* Get the admin password one way or the other. */
     parse_principal(config, config->admin, name, inst, cell);
-    if (ka_CellToRealm(cell, realm, &local) == KANOCELL)
-        die("unable to determine realm");
     if (config->keyfile) {
-        code = read_service_key(name, inst, realm, 0, config->keyfile,
+        code = read_service_key(name, inst, cell, 0, config->keyfile,
                                 (char *) &key);
         if (config->debug)
             printf("read_service_key %ld\n", code);
         if (code != 0)
             die("can't get key for %s.%s@%s from srvtab %s", name, inst,
-                realm, config->keyfile);
+                cell, config->keyfile);
     } else {
         char buffer[MAXKTCNAMELEN * 3 + 40];
 
@@ -301,7 +296,7 @@ delete_principal(struct config *config)
     parse_principal(config, config->delete, name, inst, cell);
     code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
     if (config->debug)
-        printf("ka_AuthServerConn %ld\n", code);
+        printf("ka_AuthServerConn %s %ld\n", cell, code);
     if (code != 0)
         die("can't make connection to auth server");
 
@@ -339,7 +334,7 @@ generate_srvtab(struct config *config)
     parse_principal(config, config->service, name, inst, cell);
     code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
     if (config->debug)
-        printf("ka_AuthServerConn %ld\n", code);
+        printf("ka_AuthServerConn %s %ld\n", cell, code);
     if (code != 0)
         die("can't make connection to auth server");
 
@@ -379,7 +374,7 @@ generate_srvtab(struct config *config)
     } else if (config->random) {
         code = ubik_Call(KAM_GetRandomKey, conn, 0, &key);
         if (config->debug)
-            printf("ka_AuthServerConn %ld\n", code);
+            printf("ubik_Call KAM_GetRandomKey %ld\n", code);
         if (code != 0)
             die("can't get random key");
     } else {
@@ -411,12 +406,7 @@ generate_srvtab(struct config *config)
 
     /* Create the srvtab file.  Don't bother if we have a converted one. */
     if (config->srvtab && !config->k5srvtab) {
-        char realm[MAXKTCREALMLEN];
-        int local;
         unsigned char kvno = 0;
-
-        if (ka_CellToRealm(cell, realm, &local) == KANOCELL)
-            die("unable to determine realm");
 
         /* Make a backup copy of any existing one, just in case. */
         if (access(config->srvtab, F_OK) == 0) {
