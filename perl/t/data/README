@@ -27,3 +27,20 @@ and <realm> is the Kerberos realm.
 
 Again, I do not recommend using a production realm; the test doesn't need
 a production realm and it's more secure to stick to a test realm.
+
+In order to test the AFS kaserver synchronization, you will need to grant
+the test processes access to a principal with ADMIN rights in a test AFS
+kaserver.  This should not be pointed at a production cell!  Create the
+following files:
+
+    test.admin          Fully-qualified principal of ADMIN user
+    test.cell           AFS kaserver test cell
+
+The ADMIN user will be parsed to determine the default realm for
+principals created in the kaserver.  You cannot use cross-realm
+authentication for this test.  This AFS kaserver Kerberos v4 realm will
+also need to be configured in your local krb.conf (but not krb.realms).
+
+The test process will create the principals wallet.one and wallet.two and
+on success will clean up after itself.  If the test fails, they may be
+left behind in the AFS kaserver.

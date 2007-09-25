@@ -322,7 +322,25 @@ oh_by stores the authenticated identity that made the change, oh_from stores
 the host from which they made the change, and oh_on stores the time the
 change was made.
 
-=head2 Storage Backend Data
+=head2 Keytab Backend Data
+
+The keytab backend supports synchronizing keys with an external system.  The
+permitted external systems are listed in a normalization table:
+
+  create table sync_targets
+     (st_name             varchar(255) primary key);
+  insert into sync_targets (st_name) values ('kaserver');
+
+and then the synchronization targets for a given keytab are stored in this
+table:
+
+  create table keytab_sync
+     (ks_name             varchar(255)
+          not null references objects(ob_name),
+      ks_target           varchar(255)
+          not null references sync_targets(st_name),
+      primary key (ks_name, ks_target));
+  create index ks_name on keytab_sync (ks_name);
 
 The keytab backend supports restricting the allowable enctypes for a given
 keytab.  The permitted enctypes are listed in a normalization table:
@@ -333,12 +351,12 @@ keytab.  The permitted enctypes are listed in a normalization table:
 and then the restrictions for a given keytab are stored in this table:
 
   create table keytab_enctypes
-     (ke_principal        varchar(255)
+     (ke_name             varchar(255)
           not null references objects(ob_name),
       ke_enctype          varchar(255)
           not null references enctypes(en_name),
-      primary key (ke_principal, ke_enctype));
-  create index ke_principal on keytab_enctypes (ke_principal);
+      primary key (ke_name, ke_enctype));
+  create index ke_name on keytab_enctypes (ke_name);
 
 To use this functionality, you will need to populate the enctypes table with
 the enctypes that a keytab may be restricted to.  Currently, there is no

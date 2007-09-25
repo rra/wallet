@@ -170,17 +170,6 @@ client.
 
 =over 4
 
-=item KEYTAB_CACHE
-
-Specifies the ticket cache to use when retrieving existing keytabs from the
-KDC.  This is only used to implement support for the C<unchanging> flag.
-The ticket cache must be for a principal with access to run C<keytab
-retrieve> via remctl on KEYTAB_REMCTL_HOST.
-
-=cut
-
-our $KEYTAB_CACHE;
-
 =item KEYTAB_FILE
 
 Specifies the keytab to use to authenticate to B<kadmind>.  The principal
@@ -256,6 +245,44 @@ default to the local realm.
 
 our $KEYTAB_REALM;
 
+=item KEYTAB_TMP
+
+A directory into which the wallet can write keytabs temporarily while
+processing C<get> commands from clients.  The keytabs are written into this
+directory with predictable names, so this should not be a system temporary
+directory such as F</tmp> or F</var/tmp>.  It's best to create a directory
+solely for this purpose that's owned by the user the wallet server will run
+as.
+
+KEYTAB_TMP must be set to use keytab objects.
+
+=cut
+
+our $KEYTAB_TMP;
+
+=back
+
+=head2 Retrieving Existing Keytabs
+
+The keytab object backend optionally supports retrieving existing keys, and
+hence keytabs, for Kerberos principals by contacting the KDC via remctl and
+talking to B<keytab-backend>.  This is enabled by setting the C<unchanging>
+flag on keytab objects.  To configure that support, set the following
+variables.
+
+=over 4
+
+=item KEYTAB_REMCTL_CACHE
+
+Specifies the ticket cache to use when retrieving existing keytabs from the
+KDC.  This is only used to implement support for the C<unchanging> flag.
+The ticket cache must be for a principal with access to run C<keytab
+retrieve> via remctl on KEYTAB_REMCTL_HOST.
+
+=cut
+
+our $KEYTAB_CACHE;
+
 =item KEYTAB_REMCTL_HOST
 
 The host to which to connect with remctl to retrieve existing keytabs.  This
@@ -289,20 +316,60 @@ will be used.
 
 our $KEYTAB_REMCTL_PORT;
 
-=item KEYTAB_TMP
+=back
 
-A directory into which the wallet can write keytabs temporarily while
-processing C<get> commands from clients.  The keytabs are written into this
-directory with predictable names, so this should not be a system temporary
-directory such as F</tmp> or F</var/tmp>.  It's best to create a directory
-solely for this purpose that's owned by the user the wallet server will run
-as.
+=head2 Synchronization with AFS kaserver
 
-KEYTAB_TMP must be set to use keytab objects.
+The keytab backend optionally supports synchronizing keys between the
+Kerberos v5 realm and a Kerberos v4 realm using kaserver.  This
+synchronization is done using B<kasetkey> and is controlled by the C<sync>
+attribute on keytab objects.  To configure that support, set the following
+variables.
+
+=over 4
+
+=item $KEYTAB_AFS_ADMIN
+
+The Kerberos v4 principal to use for authentication to the AFS kaserver.  If
+this principal is not in the default local Kerberos v4 realm, it must be
+fully qualified.  A srvtab for this principal must be stored in the path set
+in $KEYTAB_AFS_SRVTAB.  This principal must have the ADMIN flag set in the
+AFS kaserver so that it can create and remove principals.  This variable
+must be set to use the kaserver synchronization support.
 
 =cut
 
-our $KEYTAB_TMP;
+our $KEYTAB_AFS_ADMIN;
+
+=item $KEYTAB_AFS_KASETKEY
+
+The path to the B<kasetkey> command-line client.  The default value is
+C<kasetkey>, which will cause the wallet to search for B<kasetkey> on its
+default PATH.
+
+=cut
+
+our $KEYTAB_AFS_KASETKEY = 'kasetkey';
+
+=item $KEYTAB_AFS_REALM
+
+The name of the Kerberos v4 realm with which to synchronize keys.  This is a
+realm, not a cell, so it should be in all uppercase.  If this variable is
+not set, the default is the realm determined from the local cell name.
+
+=cut
+
+our $KEYTAB_AFS_REALM;
+
+=item $KEYTAB_AFS_SRVTAB
+
+The path to a srvtab used to authenticate to the AFS kaserver.  This srvtab
+should be for the principal set in $KEYTAB_AFS_ADMIN.  This variable must be
+set to use the kaserver synchronization support.
+
+=cut
+
+our $KEYTAB_AFS_SRVTAB;
 
 =back
 

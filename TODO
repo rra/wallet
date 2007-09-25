@@ -6,12 +6,7 @@ Required to replace leland_srvtab:
   enctype attribute on the object and include the enctypes in the object
   show display.
 
-* Add an attribute indicating that the principal should be synchronized
-  with Kerberos v4 and include it in the object show display.
-
 * Implement creation of srvtabs from keytabs in the wallet client.
-
-* Add kasetkey support to the keytab object backend.
 
 * Write new files atomically in the wallet client and save backups unless
   told not to (write to file.new, link the old file to file.old, and do
