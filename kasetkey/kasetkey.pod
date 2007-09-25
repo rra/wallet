@@ -124,6 +124,14 @@ rcmd.slapshot with:
 
     kasetkey -k /.adminkey -a admin -r -f srvtab -s rcmd.slapshot
 
+=head1 CAVEATS
+
+The error reporting of this program is not great.  If an action fails, run
+it again with the B<-d> flag, which will print out the return status of
+every AFS operation.  You can then pass the failing error code to the
+B<translate_et> program, installed with AFS, to translate the code into an
+error message.
+
 =head1 SEE ALSO
 
 kas(8), kaserver(8), ktutil(8)
