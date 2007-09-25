@@ -298,6 +298,7 @@ delete_principal(struct config *config)
 
     /* Make connection to AuthServer. */
     authenticate(config, &token);
+    parse_principal(config, config->delete, name, inst, cell);
     code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
     if (config->debug)
         printf("ka_AuthServerConn %ld\n", code);
@@ -305,7 +306,6 @@ delete_principal(struct config *config)
         die("can't make connection to auth server");
 
     /* Delete the user. */
-    parse_principal(config, config->delete, name, inst, cell);
     code = ubik_Call(KAM_DeleteUser, conn, 0, name, inst);
     if (config->debug)
         printf("ubik_Call KAM_DeleteUser %ld\n", code);
@@ -336,6 +336,7 @@ generate_srvtab(struct config *config)
 
     /* Make connection to AuthServer. */
     authenticate(config, &token);
+    parse_principal(config, config->service, name, inst, cell);
     code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
     if (config->debug)
         printf("ka_AuthServerConn %ld\n", code);
@@ -343,7 +344,6 @@ generate_srvtab(struct config *config)
         die("can't make connection to auth server");
 
     /* Get the key for the principal we're creating. */
-    parse_principal(config, config->service, name, inst, cell);
     if (config->k5srvtab != NULL) { 
         char buffer[SNAME_SZ * 4];
         char *p;
