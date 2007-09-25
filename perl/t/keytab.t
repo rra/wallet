@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 96;
+use Test::More tests => 100;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -94,21 +94,6 @@ sub created {
     local $ENV{KRB5CCNAME} = 'krb5cc_temp';
     getcreds ('t/data/test.keytab', $Wallet::Config::KEYTAB_PRINCIPAL);
     return (system_quiet ('kvno', $principal) == 0);
-}
-
-# Check whether a principal exists in the kaserver.  Requires that the admin
-# and srvtab variables be set up already.
-sub created_kaserver {
-    my ($principal) = @_;
-    my $admin = $Wallet::Config::KEYTAB_AFS_ADMIN;
-    my $srvtab = $Wallet::Config::KEYTAB_AFS_SRVTAB;
-    my $realm = $Wallet::Config::KEYTAB_AFS_REALM;
-    my ($name, $instance) = split (/\./, $principal);
-    $ENV{KRBTKFILE} = 'krb4cc_temp';
-    system ("k4start -f $srvtab -r $realm -S $name -I $instance $admin"
-            . " 2>&1 >/dev/null </dev/null");
-    unlink 'krb4cc_temp';
-    return ($? == 0) ? 1 : 0;
 }
 
 # Given keytab data and the principal, write it to a file and try
@@ -412,8 +397,8 @@ SKIP: {
 
 # Tests for kaserver synchronization support.
 SKIP: {
-    skip 'no keytab configuration', 30 unless -f 't/data/test.keytab';
-    skip 'no AFS kaserver configuration', 30 unless -f 't/data/test.srvtab';
+    skip 'no keytab configuration', 34 unless -f 't/data/test.keytab';
+    skip 'no AFS kaserver configuration', 34 unless -f 't/data/test.srvtab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
@@ -477,12 +462,20 @@ SKIP: {
     @targets = $one->attr ('sync');
     is (scalar (@targets), 0, ' and now there is no attribute');
     is ($one->error, undef, ' and no error');
-    $keytab = $one->get (@trace);
-    ok (defined ($keytab), ' and get still works');
-    ok (! valid_srvtab ($one, $keytab, $k5, $k4), ' but the srvtab does not');
-    ok (created_kaserver ('wallet.one'), ' and the principal is still there');
+    my $new_keytab = $one->get (@trace);
+    ok (defined ($new_keytab), ' and get still works');
+    ok (! valid_srvtab ($one, $new_keytab, $k5, $k4),
+        ' but the srvtab does not');
+    ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the old one does');
+    is ($one->destroy (@trace), 1, ' and destroying wallet/one works');
+    ok (valid_srvtab ($one, $keytab, $k5, $k4),
+        ' and the principal is still there');
 
     # Put it back and make sure it works again.
+    $one = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    ok (defined ($one), 'Creating wallet/one succeeds');
     is ($one->attr ('sync', [ 'kaserver' ], @trace), 1, 'Setting sync works');
     $keytab = $one->get (@trace);
     ok (defined ($keytab), ' and get works');
@@ -490,6 +483,8 @@ SKIP: {
 
     # Destroy the principal.
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+    ok (! valid_srvtab ($one, $keytab, $k5, $k4),
+        ' and the principal is gone');
 }
 
 # Clean up.

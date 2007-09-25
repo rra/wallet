@@ -200,6 +200,40 @@ sub kaserver_name {
     return $k4;
 }
 
+# Run kasetkey with the given arguments.  Returns true on success and false on
+# failure.  On failure, sets the internal error to the error from kasetkey.
+sub kaserver_kasetkey {
+    my ($self, @args) = @_;
+    my $admin = $Wallet::Config::KEYTAB_AFS_ADMIN;
+    my $admin_srvtab = $Wallet::Config::KEYTAB_AFS_SRVTAB;
+    my $kasetkey = $Wallet::Config::KEYTAB_AFS_KASETKEY;
+    unless ($kasetkey and $admin and $admin_srvtab) {
+        $self->error ('kaserver synchronization not configured');
+        return undef;
+    }
+    my $pid = open (KASETKEY, '-|');
+    if (not defined $pid) {
+        $self->error ("cannot fork: $!");
+        return undef;
+    } elsif ($pid == 0) {
+        open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
+        exec ($kasetkey, '-k', $admin_srvtab, '-a', $admin, @args)
+            or die "cannot exec $kasetkey: $!\n";
+    } else {
+        local $/;
+        my $output = <KASETKEY>;
+        close KASETKEY;
+        if ($? != 0) {
+            $output =~ s/\s+\z//;
+            $output =~ s/\n/, /g;
+            $output = ': ' . $output if $output;
+            $self->error ("cannot synchronize key with kaserver$output");
+            return undef;
+        }
+    }
+    return 1;
+}
+
 # Given a keytab file name, the Kerberos v5 principal that's stored in that
 # keytab, a srvtab file name, and the corresponding Kerberos v4 principal,
 # write out a srvtab file containing the DES key in that keytab.  Fails if
@@ -246,7 +280,9 @@ sub kaserver_srvtab {
     # nul-terminated realm, single character kvno (which we always set to 0),
     # and DES keyblock.
     my ($principal, $realm) = split ('@', $k4);
+    $realm ||= '';
     my ($name, $inst) = split (/\./, $principal, 2);
+    $inst ||= '';
     my $data = join ("\0", $name, $inst, $realm);
     $data .= "\0\0" . $key->contents;
     print SRVTAB $data;
@@ -263,13 +299,6 @@ sub kaserver_srvtab {
 # On failure, sets the internal error.
 sub kaserver_sync {
     my ($self, $principal, $keytab) = @_;
-    my $admin = $Wallet::Config::KEYTAB_AFS_ADMIN;
-    my $admin_srvtab = $Wallet::Config::KEYTAB_AFS_SRVTAB;
-    my $kasetkey = $Wallet::Config::KEYTAB_AFS_KASETKEY;
-    unless ($kasetkey and $admin and $admin_srvtab) {
-        $self->error ('kaserver synchronization not configured');
-        return undef;
-    }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
@@ -282,31 +311,25 @@ sub kaserver_sync {
     unless ($self->kaserver_srvtab ($keytab, $principal, $srvtab, $k4)) {
         return undef;
     }
-    my $pid = open (KASETKEY, '-|');
-    if (not defined $pid) {
-        $self->error ("cannot fork: $!");
+    unless ($self->kaserver_kasetkey ('-c', $srvtab, '-s', $k4)) {
         unlink $srvtab;
         return undef;
-    } elsif ($pid == 0) {
-        open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
-        exec ($kasetkey, '-k', $admin_srvtab, '-a', $admin, '-c', $srvtab,
-              '-s', $k4)
-            or die "cannot exec $kasetkey: $!\n";
-    } else {
-        local $/;
-        my $output = <KASETKEY>;
-        close KASETKEY;
-        if ($? != 0) {
-            $output =~ s/\s+\z//;
-            $output =~ s/\n/, /g;
-            $output = ': ' . $output if $output;
-            $self->error ("cannot synchronize key with kaserver$output");
-            unlink $srvtab;
-            return undef;
-        }
     }
     unlink $srvtab;
     return 1;
+}
+
+# Given a principal name, destroy the corresponding principal in the AFS
+# kaserver.  Returns true on success and false on failure, setting the object
+# error if it fails.
+sub kaserver_destroy {
+    my ($self, $principal) = @_;
+    my $k4 = $self->kaserver_name ($principal);
+    if (not defined $k4) {
+        $self->error ("cannot convert $principal to Kerberos v4");
+        return undef;
+    }
+    return $self->kaserver_kasetkey ('-D', $k4);
 }
 
 # Set the kaserver sync attribute.  Called by attr().  Returns true on success
@@ -472,6 +495,12 @@ sub destroy {
         $self->error ("cannot destroy $id: object is locked");
         return;
     }
+    my @sync = $self->attr ('sync');
+    if (grep { $_ eq 'kaserver' } @sync) {
+        unless ($self->kaserver_destroy ($self->{name})) {
+            return undef;
+        }
+    }
     return undef if not $self->kadmin_delprinc ($self->{name});
     return $self->SUPER::destroy ($user, $host, $time);
 }
@@ -597,6 +626,9 @@ if the first component is one of C<host>, C<ident>, C<imap>, C<pop>, or
 C<smtp>; and the first component is C<rcmd> if the Kerberos v5 principal
 component is C<host>.  The principal name must not contain more than two
 components.
+
+If this attribute is set, calling destroy() will also destroy the principal
+from the AFS kaserver, with a principal mapping determined as above.
 
 =back
 
