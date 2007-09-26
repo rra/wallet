@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 106;
+use Test::More tests => 158;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -397,23 +397,53 @@ SKIP: {
 
 # Tests for kaserver synchronization support.
 SKIP: {
-    skip 'no keytab configuration', 40 unless -f 't/data/test.keytab';
-    skip 'no AFS kaserver configuration', 40 unless -f 't/data/test.srvtab';
+    skip 'no keytab configuration', 92 unless -f 't/data/test.keytab';
 
-    # Set up our configuration.
-    $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
-    $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
-    $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
-    $Wallet::Config::KEYTAB_TMP          = '.';
-    $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
-    my $realm = $Wallet::Config::KEYTAB_REALM;
-    my $k5 = "wallet/one\@$realm";
-
-    # Create an object for testing and set the sync attribute.
+    # Test the principal mapping.  We can do this without having a kaserver
+    # configuration.  We only need a basic keytab object configuration.  Do
+    # this as white-box testing since we don't want to fill the test realm
+    # with a bunch of random principals.
     my $one = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
     ok (defined ($one), 'Creating wallet/one succeeds');
+    my %princs =
+        (foo                     => 'foo',
+         host                    => 'host',
+         rcmd                    => 'rcmd',
+         'rcmd.foo'              => 'rcmd.foo',
+         'host/foo.example.org'  => 'rcmd.foo',
+         'ident/foo.example.org' => 'ident.foo',
+         'imap/foo.example.org'  => 'imap.foo',
+         'pop/foo.example.org'   => 'pop.foo',
+         'smtp/foo.example.org'  => 'smtp.foo',
+         'service/foo'           => 'service.foo',
+         'foo/bar'               => 'foo.bar');
+    for my $princ (sort keys %princs) {
+        my $result = $princs{$princ};
+        is ($one->kaserver_name ($princ), $result, "Name mapping: $princ");
+        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), $result,
+            ' with K5 realm');
+        $Wallet::Config::KEYTAB_AFS_REALM = 'AFS.EXAMPLE.ORG';
+        is ($one->kaserver_name ($princ), "$result\@AFS.EXAMPLE.ORG",
+            ' with K4 realm');
+        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"),
+            "$result\@AFS.EXAMPLE.ORG", ' with K5 and K4 realm');
+        undef $Wallet::Config::KEYTAB_AFS_REALM;
+    }
+    for my $princ (qw{service/foo/bar foo/bar/baz}) {
+        is ($one->kaserver_name ($princ), undef, "Name mapping: $princ");
+        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), undef,
+            ' with K5 realm');
+        $Wallet::Config::KEYTAB_AFS_REALM = 'AFS.EXAMPLE.ORG';
+        is ($one->kaserver_name ($princ), undef, ' with K4 realm');
+        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), undef,
+            ' with K5 and K4 realm');
+        undef $Wallet::Config::KEYTAB_AFS_REALM;
+    }
+
+    # Test setting synchronization attributes, which can also be done without
+    # configuration.
     is ($one->attr ('foo', [ 'bar' ], @trace), undef,
         'Setting unknown attribute fails');
     is ($one->error, 'unknown attribute foo', ' with the right error');
@@ -434,6 +464,16 @@ SKIP: {
     is (scalar (@targets), 1, ' and now one target is set');
     is ($targets[0], 'kaserver', ' and it is correct');
     is ($one->error, undef, ' and there is no error');
+
+    # Set up our configuration.
+    skip 'no AFS kaserver configuration', 27 unless -f 't/data/test.srvtab';
+    $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
+    $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
+    $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_TMP          = '.';
+    $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
+    my $realm = $Wallet::Config::KEYTAB_REALM;
+    my $k5 = "wallet/one\@$realm";
 
     # Finally, we can test.
     is ($one->get (@trace), undef, 'Get without configuration fails');

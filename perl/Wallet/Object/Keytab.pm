@@ -185,11 +185,9 @@ sub kaserver_name {
     my %host = map { $_ => 1 } qw(host ident imap pop smtp);
     $k5 =~ s/\@.*//;
     my @parts = split ('/', $k5);
-    if (@parts == 1) {
-        return $parts[0];
-    } elsif (@parts > 2) {
+    if (@parts > 2) {
         return undef;
-    } elsif ($host{$parts[0]}) {
+    } elsif (@parts == 2 and $host{$parts[0]}) {
         $parts[1] =~ s/\..*//;
         $parts[0] = 'rcmd' if $parts[0] eq 'host';
     }
