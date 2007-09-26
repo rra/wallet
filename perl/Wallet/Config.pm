@@ -328,7 +328,7 @@ variables.
 
 =over 4
 
-=item $KEYTAB_AFS_ADMIN
+=item KEYTAB_AFS_ADMIN
 
 The Kerberos v4 principal to use for authentication to the AFS kaserver.  If
 this principal is not in the default local Kerberos v4 realm, it must be
@@ -341,7 +341,31 @@ must be set to use the kaserver synchronization support.
 
 our $KEYTAB_AFS_ADMIN;
 
-=item $KEYTAB_AFS_KASETKEY
+=item KEYTAB_AFS_DESTROY
+
+If this variable, which is false by default, is set to a true value, each
+time a keytab object that is not configured to be synchronized with the AFS
+kaserver, the corresponding Kerberos v4 principal will be deleted from the
+AFS kaserver.  Use this with caution; it will cause the AFS kaserver realm
+to be slowly stripped of principals.  This is intended for use with
+migration from Kerberos v4 to Kerberos v5, where the old principals should
+be deleted out of Kerberos v4 whenever not requested from the wallet to aid
+in tracking down and removing any systems with lingering Kerberos v4
+dependencies.
+
+Be aware that multiple Kerberos v5 principals map to the same Kerberos v4
+principal since in Kerberos v4 the domain name is stripped from the
+principal for machine principals.  If you create a keytab named
+host/foo.example.com and mark it synchronized, and then create another
+keytab named host/foo.example.net and don't mark it synchronized,
+downloading the second will destroy the Kerberos v4 principal of the first
+if this variable is set.
+
+=cut
+
+our $KEYTAB_AFS_DESTROY;
+
+=item KEYTAB_AFS_KASETKEY
 
 The path to the B<kasetkey> command-line client.  The default value is
 C<kasetkey>, which will cause the wallet to search for B<kasetkey> on its
@@ -351,7 +375,7 @@ default PATH.
 
 our $KEYTAB_AFS_KASETKEY = 'kasetkey';
 
-=item $KEYTAB_AFS_REALM
+=item KEYTAB_AFS_REALM
 
 The name of the Kerberos v4 realm with which to synchronize keys.  This is a
 realm, not a cell, so it should be in all uppercase.  If this variable is
@@ -361,7 +385,7 @@ not set, the default is the realm determined from the local cell name.
 
 our $KEYTAB_AFS_REALM;
 
-=item $KEYTAB_AFS_SRVTAB
+=item KEYTAB_AFS_SRVTAB
 
 The path to a srvtab used to authenticate to the AFS kaserver.  This srvtab
 should be for the principal set in $KEYTAB_AFS_ADMIN.  This variable must be

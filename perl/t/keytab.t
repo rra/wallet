@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 100;
+use Test::More tests => 106;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -397,8 +397,8 @@ SKIP: {
 
 # Tests for kaserver synchronization support.
 SKIP: {
-    skip 'no keytab configuration', 34 unless -f 't/data/test.keytab';
-    skip 'no AFS kaserver configuration', 34 unless -f 't/data/test.srvtab';
+    skip 'no keytab configuration', 40 unless -f 't/data/test.keytab';
+    skip 'no AFS kaserver configuration', 40 unless -f 't/data/test.srvtab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
@@ -471,15 +471,33 @@ SKIP: {
     ok (valid_srvtab ($one, $keytab, $k5, $k4),
         ' and the principal is still there');
 
-    # Put it back and make sure it works again.
+    # Test KEYTAB_AFS_DESTROY.
     $one = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
     ok (defined ($one), 'Creating wallet/one succeeds');
+    $Wallet::Config::KEYTAB_AFS_DESTROY = 1;
+    $new_keytab = $one->get (@trace);
+    ok (defined ($new_keytab), ' and get works');
+    ok (! valid_srvtab ($one, $new_keytab, $k5, $k4),
+        ' but the srvtab does not');
+    ok (! valid_srvtab ($one, $keytab, $k5, $k4),
+        ' and now neither does the old one');
+    $Wallet::Config::KEYTAB_AFS_DESTROY = 0;
+
+    # Put it back and make sure it works again.
     is ($one->attr ('sync', [ 'kaserver' ], @trace), 1, 'Setting sync works');
     $keytab = $one->get (@trace);
     ok (defined ($keytab), ' and get works');
     ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the srvtab is valid');
+    $Wallet::Config::KEYTAB_AFS_KASETKEY = '/path/to/nonexistent/file';
+    $new_keytab = $one->get (@trace);
+    ok (! defined ($new_keytab),
+        ' but it fails if we mess up the kasetkey path');
+    like ($one->error, qr{^cannot synchronize key with kaserver: },
+          ' with the right error message');
+    ok (! -f "keytab.$$", ' and the temporary file was cleaned up');
+    $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
 
     # Destroy the principal.
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');

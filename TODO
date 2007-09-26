@@ -2,9 +2,6 @@
 
 Required to replace leland_srvtab:
 
-* Add support for deleting principals from K4 when the corresponding
-  keytab is not registered for synchronization.
-
 * Include sync configuration in show output.
 
 * Add support for limiting the enctypes of created keytabs by setting the

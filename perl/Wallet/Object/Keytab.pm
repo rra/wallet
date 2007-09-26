@@ -548,8 +548,11 @@ sub get {
     my @sync = $self->attr ('sync');
     if (grep { $_ eq 'kaserver' } @sync) {
         unless ($self->kaserver_sync ($self->{name}, $file)) {
+            unlink $file;
             return undef;
         }
+    } elsif ($Wallet::Config::KEYTAB_AFS_DESTROY) {
+        $self->kaserver_destroy ($self->{name});
     }
     unlink $file;
     $self->log_action ('get', $user, $host, $time);
@@ -683,9 +686,15 @@ used.
 Retrieves a keytab for this object and returns the keytab data or undef on
 error.  The caller should call error() to get the error message if get()
 returns undef.  The keytab is created with C<ktadd>, invalidating any
-existing keytabs for that principal.  PRINCIPAL, HOSTNAME, and DATETIME are
-stored as history information.  PRINCIPAL should be the user who is
-downloading the keytab.  If DATETIME isn't given, the current time is used.
+existing keytabs for that principal.  PRINCIPAL, HOSTNAME, and DATETIME
+are stored as history information.  PRINCIPAL should be the user who is
+downloading the keytab.  If DATETIME isn't given, the current time is
+used.
+
+If the configuration variable $KEYTAB_AFS_DESTROY is set and the C<sync>
+attribute is not set to C<kaserver>, calling get() on a keytab object will
+cause the corresponding Kerberos v4 principal to be destroyed.  This
+variable is not set by default.
 
 =back
 
