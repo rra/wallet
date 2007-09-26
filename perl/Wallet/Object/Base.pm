@@ -284,6 +284,13 @@ sub attr {
     return;
 }
 
+# Format the object attributes for inclusion in show().  The default
+# implementation just returns the empty string.
+sub attr_show {
+    my ($self) = @_;
+    return '';
+}
+
 # Get or set the expires value of an object.  Expects an expiration time in
 # seconds since epoch.  If setting the expiration, trace information must also
 # be provided.
@@ -502,6 +509,11 @@ sub show {
             if (@flags) {
                 $output .= sprintf ("%15s: %s\n", 'Flags', "@flags");
             }
+            my $attr_output = $self->attr_show;
+            if (not defined $attr_output) {
+                return undef;
+            }
+            $output .= $attr_output;
         }
         next unless defined $data[$i];
         if ($attrs[$i][0] =~ /^ob_(owner|acl_)/) {
@@ -659,6 +671,15 @@ arguments are used for logging and history and should indicate the user and
 host from which the change is made and the time of the change.  Returns true
 on success and false on failure.
 
+=item attr_show()
+
+Returns a formatted text description of the type-specific attributes of the
+object, or undef on error.  The default implementation of this method always
+returns the empty string.  If there are any type-specific attributes set,
+this method should return that metadata, formatted as key: value pairs with
+the keys right-aligned in the first 15 characters, followed by a space, a
+colon, and the value.
+
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
 Destroys the object by removing all record of it from the database.  The
@@ -741,14 +762,13 @@ change.
 =item show()
 
 Returns a formatted text description of the object suitable for human
-display, or undef on error.  The default implementation shows all of the
-base metadata about the object, formatted as key: value pairs with the keys
-aligned in the first 15 characters followed by a space, a colon, and the
-value.  If any ACLs or an owner are set, after this data there is a blank
-line and then the information for each unique ACL, separated by blank lines.
-Object implementations with additional data to display can rely on that
-format to add additional settings into the formatted output or at the end
-with a matching format.
+display, or undef on error.  All of the base metadata about the object,
+formatted as key: value pairs with the keys aligned in the first 15
+characters followed by a space, a colon, and the value.  The attr_show()
+method of the object is also called and any formatted output it returns will
+be included.  If any ACLs or an owner are set, after this data there is a
+blank line and then the information for each unique ACL, separated by blank
+lines.
 
 =item store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
 

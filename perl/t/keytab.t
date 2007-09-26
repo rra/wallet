@@ -3,7 +3,7 @@
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 
-use Test::More tests => 158;
+use Test::More tests => 160;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -397,7 +397,7 @@ SKIP: {
 
 # Tests for kaserver synchronization support.
 SKIP: {
-    skip 'no keytab configuration', 92 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 94 unless -f 't/data/test.keytab';
 
     # Test the principal mapping.  We can do this without having a kaserver
     # configuration.  We only need a basic keytab object configuration.  Do
@@ -444,6 +444,16 @@ SKIP: {
 
     # Test setting synchronization attributes, which can also be done without
     # configuration.
+    my $show = $one->show;
+    $show =~ s/^(\s*Created on:) \d+$/$1 0/mg;
+    my $expected = <<"EOO";
+           Type: keytab
+           Name: wallet/one
+     Created by: $user
+   Created from: $host
+     Created on: 0
+EOO
+    is ($show, $expected, 'Show output displays no attributes');
     is ($one->attr ('foo', [ 'bar' ], @trace), undef,
         'Setting unknown attribute fails');
     is ($one->error, 'unknown attribute foo', ' with the right error');
@@ -464,6 +474,17 @@ SKIP: {
     is (scalar (@targets), 1, ' and now one target is set');
     is ($targets[0], 'kaserver', ' and it is correct');
     is ($one->error, undef, ' and there is no error');
+    $show = $one->show;
+    $show =~ s/^(\s*Created on:) \d+$/$1 0/mg;
+    $expected = <<"EOO";
+           Type: keytab
+           Name: wallet/one
+    Synced with: kaserver
+     Created by: $user
+   Created from: $host
+     Created on: 0
+EOO
+    is ($show, $expected, ' and show now displays the attribute');
 
     # Set up our configuration.
     skip 'no AFS kaserver configuration', 27 unless -f 't/data/test.srvtab';

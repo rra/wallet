@@ -2,8 +2,6 @@
 
 Required to replace leland_srvtab:
 
-* Include sync configuration in show output.
-
 * Add support for limiting the enctypes of created keytabs by setting the
   enctype attribute on the object and include the enctypes in the object
   show display.

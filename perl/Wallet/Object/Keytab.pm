@@ -475,6 +475,19 @@ sub attr {
     }
 }
 
+# Override attr_show to display the sync attribute.
+sub attr_show {
+    my ($self) = @_;
+    my @targets = $self->attr ('sync');
+    if (not @targets and $self->error) {
+        return undef;
+    } elsif (@targets) {
+        return sprintf ("%15s: %s\n", 'Synced with', "@targets");
+    } else {
+        return '';
+    }
+}
+
 # Override create to start by creating the principal in Kerberos and only
 # create the entry in the database if that succeeds.  Error handling isn't
 # great here since we don't have a way to communicate the error back to the

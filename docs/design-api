@@ -47,6 +47,19 @@ Object API
     a "type_data <attribute>" argument) as part of storing the attribute
     in the database to update the history information.
 
+  attr_show()
+
+    Returns formatted attribution information for inclusion in show().
+    Object implementations should not have to override show() (and
+    generally should not).  Instead, if there is any type-specific data,
+    they should implement this method and return that metadata, formatted
+    as key:value pairs with the keys right-aligned in the first 15
+    characters, followed by a space, a colon, and the value.  Each line
+    should end in a newline.  If any error occurs reading the data, return
+    undef set the internal reror and show() will abort with an error.
+
+    The default implementation of this method returns the empty string.
+
   create(NAME, TYPE, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
     Creates a new object of a particular type.  The parent method will
@@ -116,14 +129,6 @@ Object API
     If this method is implemented, don't forget to call log_action() after
     successfully storing the data to update the history and trace
     information.
-
-  show()
-
-    Normally, new backends don't need to override this method, since it
-    displays all the metadata in the database.  It's only necessary to
-    override it if the backend stores additional metadata separately.
-    When overriding, call the parent method first and then edit the
-    resulting string to add additional information as needed.
 
 ACL Verifier API
 
