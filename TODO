@@ -2,6 +2,11 @@
 
 Required to replace leland_srvtab:
 
+* Add support for deleting principals from K4 when the corresponding
+  keytab is not registered for synchronization.
+
+* Include sync configuration in show output.
+
 * Add support for limiting the enctypes of created keytabs by setting the
   enctype attribute on the object and include the enctypes in the object
   show display.
@@ -49,6 +54,8 @@ Future work:
 
 * Add a help function to wallet-backend listing the commands.
 
+* Add a test suite for kasetkey.
+
 * Write a conventions document for ACL naming, object naming, and similar
   issues.
 
@@ -86,12 +93,6 @@ Future work:
 * Error messages from ACL operations should refer to the ACLs by name
   instead of by ID.
 
-* The ACL implementation is currently rather inefficient for ACL
-  verifiers that need to maintain state (such as LDAP binds).  Now
-  they're created and destroyed when verifying each ACL.  We need to
-  somehow return global verifiers, probably through a factory
-  implementation.
-
 * There is a lot of duplicate code in wallet-backend.  Convert that to
   use some sort of data-driven model with argument count and flags so
   that the method calls can be written only once.
@@ -99,9 +100,6 @@ Future work:
 * There's a lot of code duplication in the dispatch functions in the
   Wallet::Server class.  Find a way to rewrite that so that the dispatch
   doesn't duplicate the same code patterns.
-
-* Remove the hard-coded ADMIN ACL in the server with something more
-  configurable, perhaps a global ACL table or something.
 
 * Add the database schema version to a global table so that we can use it
   to support schema upgrades in the future.
@@ -145,7 +143,7 @@ Future work:
   different type than stored certificates?
 
 * Add details to design-api on how to write one's own ACL verifiers and
-  object implementations.
+  object implementations and register them.
 
 * Add support for enforcing a naming policy through another policy
   function.
@@ -173,3 +171,14 @@ Future work:
 
 * Write a test suite to scan all wallet code looking for diagnostics that
   aren't in the documentation and warn about them.
+
+May or may not be good ideas:
+
+* Remove the hard-coded ADMIN ACL in the server with something more
+  configurable, perhaps a global ACL table or something.
+
+* The ACL implementation is currently rather inefficient for ACL
+  verifiers that need to maintain state (such as LDAP binds).  Now
+  they're created and destroyed when verifying each ACL.  It may be useful
+  to somehow return global verifiers, probably through a factory
+  implementation.  On the other hand, performance may not be worth it.
