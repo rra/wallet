@@ -5,8 +5,8 @@ wallet - Client for retrieving secure data from a central server
 =head1 SYNOPSIS
 
 B<wallet> [B<-hv>] [B<-c> I<command>] [B<-f> I<output>]
-[B<-k> I<principal>] [B<-p> I<port>] [B<-s> I<server>] I<command>
-[I<arg> ...]
+[B<-k> I<principal>] [B<-p> I<port>] [B<-s> I<server>] [B<-S> I<srvtab>]
+I<command> [I<arg> ...]
 
 =head1 DESCRIPTION
 
@@ -36,16 +36,17 @@ C<keytab> and a name of C<host/example.com>.  The meaning of the name is
 specific to each type of object.
 
 Most other wallet commands besides those three are only available to
-wallet administrators.  The other commands allow setting ownership and
-ACLs on objects, creating and destroying objects, creating and destroying
-ACLs, and adding and removing entries from ACLs.  An ACL consists of one
-or more entries, each of which is a scheme and an identifier.  A scheme
-specifies a way of checking whether a user is authorized.  An identifier
-is some data specific to the scheme that specifies which users are
-authorized.  For example, for the C<krb5> scheme, the identifier is a
-principal name and only that principal is authorized by that ACL entry.
-For the C<pts> scheme, the identifier is a PTS group name, and all members
-of that PTS group are authorized by that ACL entry.
+wallet administrators.  The exception is attribute commands; see
+L<ATTRIBUTES>.  The other commands allow setting ownership and ACLs on
+objects, creating and destroying objects, creating and destroying ACLs,
+and adding and removing entries from ACLs.  An ACL consists of one or more
+entries, each of which is a scheme and an identifier.  A scheme specifies
+a way of checking whether a user is authorized.  An identifier is some
+data specific to the scheme that specifies which users are authorized.
+For example, for the C<krb5> scheme, the identifier is a principal name
+and only that principal is authorized by that ACL entry.  For the C<pts>
+scheme, the identifier is a PTS group name, and all members of that PTS
+group are authorized by that ACL entry.
 
 To run the wallet command-line client, you must already have a Kerberos
 ticket.  You can obtain a Kerberos ticket with B<kinit> and see your
@@ -86,6 +87,17 @@ commands are ignored.
 The port to connect to on the wallet server.  The default is the default
 remctl port (4444).
 
+=item B<-S> I<srvtab>
+
+This flag is only used in combination with the C<get> command on a
+C<keytab> object, and must be used in conjunction with the B<-f> flag.
+After the keytab is saved to the file specified by B<-f>, the DES key for
+that principal will be extracted and written as a Kerberos v4 srvtab to
+the file I<srvtab>.  Any existing contents of I<srvtab> will be
+destroyed.  For more information on how the principal is converted to
+Kerberos v4, see the description of the B<sync> attribute under
+L<ATTRIBUTES>.
+
 =item B<-s> I<server>
 
 The wallet server to connect to.  The default is a hard-coded server value
@@ -117,6 +129,8 @@ If the locked flag is set on an object, no commands can be run on that
 object that change data except the C<flags> commands, nor can the C<get>
 command be used on that object.  C<show>, C<getacl>, and C<owner> or
 C<expires> without an argument can still be used on that object.
+
+For more information on attributes, see L<ATTRIBUTES>.
 
 =over 4
 
@@ -240,8 +254,6 @@ particular object type, and <attr> must be an attribute type known to the
 underlying object implementation.  To clear the attribute for this object,
 pass in a <value> of the empty string (C<''>).
 
-Currently, no object attributes are implemented.
-
 =item show <type> <name>
 
 Displays the current object metadata for the object identified by <type>
@@ -262,9 +274,52 @@ will be lifted in the future.
 
 =back
 
+=head1 ATTRIBUTES
+
+Object attributes store additional properties and configuration
+information for objects stored in the wallet.  They are displayed as part
+of the object data with C<show>, retrieved with C<getattr>, and set with
+C<setattr>.
+
+=head1 Keytab Attributes
+
+Keytab objects support the following attributes:
+
+=over 4
+
+=item sync
+
+Sets the external systems to which the key of a given principal is
+synchronized.  The only supported value for this attribute is C<kaserver>,
+which says to synchronize the key with an AFS Kerberos v4 kaserver.
+
+If this attribute is set on a keytab, whenever the C<get> command is run
+for that keytab, the DES key will be extracted from that keytab and set in
+the configured AFS kaserver.  If the B<-S> option is given to the
+B<wallet> client, the srvtab corresponding to the keytab will be written
+to the file specified with that option.  The Kerberos v4 principal name
+will be the same as the Kerberos v5 principal name except that the
+components are separated by C<.> instead of C</>; the second component is
+truncated after the first C<.> if the first component is one of C<host>,
+C<ident>, C<imap>, C<pop>, or C<smtp>; and the first component is C<rcmd>
+if the Kerberos v5 principal component is C<host>.  The principal name
+must not contain more than two components.
+
+If this attribute is set, calling C<destroy> will also destroy the
+principal from the AFS kaserver, with a principal mapping determined as
+above.
+
+The realm of the srvtab defaults to the same realm as the keytab.  You can
+change this by setting the v4_realm configuration option in the [realms]
+section of krb5.conf for the local realm.  The keytab must be for a
+principal in the default local realm for the B<-S> option to work
+correctly.
+
+=back
+
 =head1 SEE ALSO
 
-remctl(1), remctld(8)
+krb5.conf(5), remctl(1), remctld(8)
 
 This program is part of the wallet system.  The current version is available
 from L<http://www.eyrie.org/~eagle/software/wallet/>.

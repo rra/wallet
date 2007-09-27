@@ -2,11 +2,12 @@
 
 Required to replace leland_srvtab:
 
+* The wallet client should automatically set the sync attribute when
+  called with -S.
+
 * Add support for limiting the enctypes of created keytabs by setting the
   enctype attribute on the object and include the enctypes in the object
   show display.
-
-* Implement creation of srvtabs from keytabs in the wallet client.
 
 * Write new files atomically in the wallet client and save backups unless
   told not to (write to file.new, link the old file to file.old, and do
@@ -49,7 +50,15 @@ Future work:
 
 * Add a help function to wallet-backend listing the commands.
 
+* Rewrite the client test suite to use Perl and to make better use of
+  shared code so that it can be broken into function components.
+
+* Stop hard-coding library names in the build system for kasetkey and
+  wallet.
+
 * Add a test suite for kasetkey.
+
+* Use standard error handling routines in the wallet client.
 
 * Write a conventions document for ACL naming, object naming, and similar
   issues.

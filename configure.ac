@@ -71,6 +71,12 @@ AC_SUBST([AFS_LIBS])
 
 AC_CHECK_HEADERS([kerberosIV/krb.h])
 AC_CHECK_DECLS([ubik_Call], , , [#include <ubik.h>])
+save_LIBS=$LIBS
+LIBS=-lkrb5
+AC_CHECK_FUNCS([krb5_get_error_message \
+    krb5_free_error_message \
+    krb5_get_err_text])
+LIBS=$save_LIBS
 
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile perl/Makefile.PL])

@@ -19,13 +19,20 @@ fi
 
 case "$command" in
 get)
-    if [ "$1" = "service/fake-test" ] ; then
+    case "$1" in
+    service/fake-test)
+        cat data/fake-data
+        exit 0
+        ;;
+    service/fake-srvtab)
         cat data/fake-keytab
         exit 0
-    else
+        ;;
+    *)
         echo "Unknown keytab $1" >&2
         exit 1
-    fi
+        ;;
+    esac
     ;;
 show)
     if [ "$1" = "service/fake-test" ] ; then

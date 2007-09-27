@@ -13,16 +13,9 @@
 
 #include <errno.h>
 #include <fcntl.h>
-
 #include <remctl.h>
 
-/* Temporary until we have some real configuration. */
-#ifndef SERVER
-# define SERVER "wallet.stanford.edu"
-#endif
-#ifndef PORT
-# define PORT 4444
-#endif
+#include <client/internal.h>
 
 /* Usage message. */
 static const char usage_message[] = "\
@@ -120,11 +113,16 @@ main(int argc, char *argv[])
         fprintf(stderr, "wallet: -f only supported for get\n");
         exit(1);
     }
-    if (srvtab != NULL)
+    if (srvtab != NULL) {
         if (strcmp(argv[0], "get") != 0 || strcmp(argv[1], "keytab") != 0) {
             fprintf(stderr, "wallet: -S only supported for get keytab\n");
             exit(1);
         }
+        if (file == NULL) {
+            fprintf(stderr, "wallet: -S requires -f\n");
+            exit(1);
+        }
+    }
 
     /* Allocate space for the command to send to the server. */
     command = malloc(sizeof(char *) * (argc + 2));
@@ -169,6 +167,8 @@ main(int argc, char *argv[])
             fprintf(stderr, "close of %s failed: %s", file, strerror(errno));
             exit(1);
         }
+        if (srvtab != NULL)
+            write_srvtab(srvtab, command[3], file);
     } else {
         fwrite(result->stdout_buf, 1, result->stdout_len, stdout);
     }

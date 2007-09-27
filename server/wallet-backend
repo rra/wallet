@@ -238,6 +238,8 @@ object that change data except the C<flags> commands, nor can the C<get>
 command be used on that object.  C<show>, C<getacl>, and C<owner> or
 C<expires> without an argument can still be used on that object.
 
+For more information on attributes, see L<ATTRIBUTES>.
+
 =over 4
 
 =item acl add <id> <scheme> <identifier>
@@ -359,8 +361,6 @@ particular object type, and <attr> must be an attribute type known to the
 underlying object implementation.  To clear the attribute for this object,
 pass in a <value> of the empty string (C<''>).
 
-Currently, no object attributes are implemented.
-
 =item show <type> <name>
 
 Displays the current object metadata for the object identified by <type>
@@ -378,6 +378,41 @@ Currently, <data> is limited to not containing nul characters and may
 therefore not be binary data, and is limited by the maximum command line
 length of the operating system of the wallet server.  These restrictions
 will be lifted in the future.
+
+=back
+
+=head1 ATTRIBUTES
+
+Object attributes store additional properties and configuration
+information for objects stored in the wallet.  They are displayed as part
+of the object data with C<show>, retrieved with C<getattr>, and set with
+C<setattr>.
+
+=head1 Keytab Attributes
+
+Keytab objects support the following attributes:
+
+=over 4
+
+=item sync
+
+Sets the external systems to which the key of a given principal is
+synchronized.  The only supported value for this attribute is C<kaserver>,
+which says to synchronize the key with an AFS Kerberos v4 kaserver.
+
+If this attribute is set on a keytab, whenever the C<get> command is run for
+that keytab, the DES key will be extracted from that keytab and set in the
+configured AFS kaserver.  The Kerberos v4 principal name will be the same as
+the Kerberos v5 principal name except that the components are separated by
+C<.> instead of C</>; the second component is truncated after the first C<.>
+if the first component is one of C<host>, C<ident>, C<imap>, C<pop>, or
+C<smtp>; and the first component is C<rcmd> if the Kerberos v5 principal
+component is C<host>.  The principal name must not contain more than two
+components.
+
+If this attribute is set, calling C<destroy> will also destroy the
+principal from the AFS kaserver, with a principal mapping determined as
+above.
 
 =back
 

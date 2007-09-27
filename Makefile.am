@@ -20,10 +20,11 @@ EXTRA_DIST = TODO client/wallet.pod docs/design docs/design-acl \
 bin_PROGRAMS = client/wallet
 sbin_PROGRAMS = kasetkey/kasetkey
 sbin_SCRIPTS = server/keytab-backend server/wallet-backend
-client_wallet_SOURCES = client/wallet.c system.h
+client_wallet_SOURCES = client/internal.h client/srvtab.c client/wallet.c \
+	system.h
 client_wallet_CPPFLAGS = @REMCTL_CPPFLAGS@
 client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
-client_wallet_LDADD = -lremctl
+client_wallet_LDADD = -lremctl -lkrb5
 kasetkey_kasetkey_CPPFLAGS = @AFS_CPPFLAGS@
 kasetkey_kasetkey_LDFLAGS = @AFS_LDFLAGS@
 kasetkey_kasetkey_LDADD = @AFS_LIBS@ -lkrb4
