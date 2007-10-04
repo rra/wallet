@@ -1,3 +1,8 @@
 client/basic
+portable/asprintf
+portable/snprintf
 server/backend
 server/keytab
+util/concat
+util/messages
+util/xmalloc

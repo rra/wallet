@@ -1,4 +1,4 @@
-/*  $Id: clibrary.h 7121 2005-01-06 00:40:37Z rra $
+/*  $Id$
 **
 **  Declarations of routines and variables in the C library.  Including this
 **  file is the equivalent of including all of the following headers,
@@ -40,4 +40,45 @@
 # endif
 #endif
 
-#endif /* !CLIBRARY_H */
+/* BEGIN_DECLS is used at the beginning of declarations so that C++
+   compilers don't mangle their names.  END_DECLS is used at the end. */
+#undef BEGIN_DECLS
+#undef END_DECLS
+#ifdef __cplusplus
+# define BEGIN_DECLS    extern "C" {
+# define END_DECLS      }
+#else
+# define BEGIN_DECLS    /* empty */
+# define END_DECLS      /* empty */
+#endif
+
+BEGIN_DECLS
+
+/* Provide prototypes for functions not declared in system headers.  Use the
+   HAVE_DECL macros for those functions that may be prototyped but
+   implemented incorrectly or implemented without a prototype. */
+#if !HAVE_ASPRINTF
+extern int              asprintf(char **, const char *, ...);
+extern int              vasprintf(char **, const char *, va_list);
+#endif
+#if !HAVE_DECL_SNPRINTF
+extern int              snprintf(char *, size_t, const char *, ...)
+    __attribute__((__format__(printf, 3, 4)));
+#endif
+#if !HAVE_DECL_VSNPRINTF
+extern int              vsnprintf(char *, size_t, const char *, va_list);
+#endif
+
+END_DECLS
+
+/* C99 requires va_copy.  Older versions of GCC provide __va_copy.  Per the
+   Autoconf manual, memcpy is a generally portable fallback. */
+#ifndef va_copy
+# ifdef __va_copy
+#  define va_copy(d, s)         __va_copy((d), (s))
+# else
+#  define va_copy(d, s)         memcpy(&(d), &(s), sizeof(va_list))
+# endif
+#endif
+
+#endif /* !SYSTEM_H */

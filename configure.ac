@@ -70,7 +70,13 @@ LDFLAGS="$save_LDFLAGS"
 AC_SUBST([AFS_LIBS])
 
 AC_CHECK_HEADERS([kerberosIV/krb.h])
+AC_CHECK_DECLS([snprintf, vsnprintf])
 AC_CHECK_DECLS([ubik_Call], , , [#include <ubik.h>])
+RRA_C_C99_VAMACROS
+RRA_C_GNU_VAMACROS
+RRA_FUNC_SNPRINTF
+AC_REPLACE_FUNCS([asprintf])
+
 save_LIBS=$LIBS
 LIBS=-lkrb5
 AC_CHECK_FUNCS([krb5_get_error_message \
@@ -78,9 +84,13 @@ AC_CHECK_FUNCS([krb5_get_error_message \
     krb5_get_err_text])
 LIBS=$save_LIBS
 
+dnl Needed to get prototypes for functions like asprintf on Linux.
+AC_DEFINE([_GNU_SOURCE], [1], [Define to 1 on Linux to get full prototypes.])
+
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
 AC_CONFIG_FILES([tests/server/backend-t], [chmod +x tests/server/backend-t])
 AC_CONFIG_FILES([tests/server/keytab-t], [chmod +x tests/server/keytab-t])
+AC_CONFIG_FILES([tests/util/xmalloc-t], [chmod +x tests/util/xmalloc-t])
 AC_OUTPUT

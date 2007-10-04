@@ -6,6 +6,7 @@
 # See README for licensing terms.
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
+ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = TODO client/wallet.pod docs/design docs/design-acl \
 	docs/design-api docs/netdb-role-api docs/notes docs/setup \
 	kasetkey/kasetkey.pod perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
@@ -17,6 +18,12 @@ EXTRA_DIST = TODO client/wallet.pod docs/design docs/design-acl \
 	tests/client/basic-t.in tests/data/README tests/data/cmd-fake \
 	tests/data/fake-keytab tests/data/wallet.conf
 
+noinst_LIBRARIES = portable/libportable.a util/libutil.a
+portable_libportable_a_SOURCES = portable/dummy.c
+portable_libportable_a_LIBADD = $(LIBOBJS)
+util_libutil_a_SOURCES = util/concat.c util/messages.c util/util.h \
+	util/xmalloc.c
+
 bin_PROGRAMS = client/wallet
 sbin_PROGRAMS = kasetkey/kasetkey
 sbin_SCRIPTS = server/keytab-backend server/wallet-backend
@@ -24,10 +31,11 @@ client_wallet_SOURCES = client/internal.h client/srvtab.c client/wallet.c \
 	system.h
 client_wallet_CPPFLAGS = @REMCTL_CPPFLAGS@
 client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
-client_wallet_LDADD = -lremctl -lkrb5
+client_wallet_LDADD = util/libutil.a portable/libportable.a -lremctl -lkrb5
 kasetkey_kasetkey_CPPFLAGS = @AFS_CPPFLAGS@
 kasetkey_kasetkey_LDFLAGS = @AFS_LDFLAGS@
-kasetkey_kasetkey_LDADD = @AFS_LIBS@ -lkrb4
+kasetkey_kasetkey_LDADD = util/libutil.a portable/libportable.a @AFS_LIBS@ \
+	-lkrb4
 
 dist_man_MANS = client/wallet.1 kasetkey/kasetkey.8 server/keytab-backend.8 \
 	server/wallet-backend.8
@@ -79,7 +87,26 @@ clean-local:
 	cd perl && ( [ ! -f Makefile.old ] || mv Makefile.old Makefile )
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests
+check_PROGRAMS = tests/runtests tests/portable/asprintf-t \
+	tests/portable/snprintf-t tests/util/concat-t tests/util/messages-t \
+	tests/util/xmalloc
+check_LIBRARIES = tests/libtest.a
+tests_libtest_a_SOURCES = tests/libtest.c tests/libtest.h
+
+# All of the test programs.
+tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
+        tests/portable/asprintf.c
+tests_portable_asprintf_t_LDADD = tests/libtest.a util/libutil.a \
+	portable/libportable.a
+tests_portable_snprintf_t_SOURCES = tests/portable/snprintf-t.c \
+        tests/portable/snprintf.c
+tests_portable_snprintf_t_LDADD = tests/libtest.a util/libutil.a \
+	portable/libportable.a
+tests_util_concat_t_LDADD = tests/libtest.a util/libutil.a \
+	portable/libportable.a
+tests_util_messages_t_LDADD = tests/libtest.a util/libutil.a \
+	portable/libportable.
+tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.a
 
 check-local: $(check_PROGRAMS)
 	cd tests && ./runtests TESTS
