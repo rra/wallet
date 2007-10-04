@@ -14,10 +14,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <krb5.h>
-#include <string.h>
-#include <unistd.h>
 
 #include <client/internal.h>
+#include <util/util.h>
 
 #ifndef KRB5_KRB4_COMPAT
 # define ANAME_SZ 40
@@ -75,7 +74,7 @@ die_krb5(krb5_context ctx, const char *message, krb5_error_code code)
     const char *k5_msg = NULL;
 
     k5_msg = strerror_krb5(ctx, code);
-    fprintf(stderr, "%s: %s\n", message, k5_msg);
+    warn("%s: %s\n", message, k5_msg);
     strerror_krb5_free(ctx, k5_msg);
     exit(1);
 }
@@ -150,20 +149,13 @@ write_srvtab(const char *srvtab, const char *principal, const char *keytab)
 
     /* Write out the srvtab file. */
     fd = open(srvtab, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-    if (fd < 0) {
-        fprintf(stderr, "open of %s failed: %s", srvtab, strerror(errno));
-        exit(1);
-    }
+    if (fd < 0)
+        sysdie("open of %s failed", srvtab);
     status = write(fd, data, length);
-    if (status < 0) {
-        fprintf(stderr, "write to %s failed: %s", srvtab, strerror(errno));
-        exit(1);
-    } else if (status != (ssize_t) length) {
-        fprintf(stderr, "write to %s truncated", srvtab);
-        exit(1);
-    }
-    if (close(fd) < 0) {
-        fprintf(stderr, "close of %s failed: %s", srvtab, strerror(errno));
-        exit(1);
-    }
+    if (status < 0)
+        sysdie("write to %s failed", srvtab);
+    else if (status != (ssize_t) length)
+        die("write to %s truncated", srvtab);
+    if (close(fd) < 0)
+        sysdie("close of %s failed (file probably truncated)", srvtab);
 }

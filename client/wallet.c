@@ -16,6 +16,7 @@
 #include <remctl.h>
 
 #include <client/internal.h>
+#include <util/util.h>
 
 /* Usage message. */
 static const char usage_message[] = "\
@@ -65,6 +66,9 @@ main(int argc, char *argv[])
     long tmp;
     char *end;
 
+    /* Set up logging and identity. */
+    message_program_name = "wallet";
+
     while ((option = getopt(argc, argv, "c:f:k:hp:S:s:v")) != EOF) {
         switch (option) {
         case 'c':
@@ -82,10 +86,8 @@ main(int argc, char *argv[])
         case 'p':
             errno = 0;
             tmp = strtol(optarg, &end, 10);
-            if (tmp <= 0 || tmp > 65535 || *end != '\0') {
-                fprintf(stderr, "Invalid port number %s\n", optarg);
-                exit(1);
-            }
+            if (tmp <= 0 || tmp > 65535 || *end != '\0')
+                die("invalid port number %s", optarg);
             port = tmp;
             break;
         case 'S':
@@ -109,27 +111,17 @@ main(int argc, char *argv[])
         usage(1);
 
     /* -f is only supported for get and -S with get keytab. */
-    if (file != NULL && strcmp(argv[0], "get") != 0) {
-        fprintf(stderr, "wallet: -f only supported for get\n");
-        exit(1);
-    }
+    if (file != NULL && strcmp(argv[0], "get") != 0)
+        die("-f only supported for get");
     if (srvtab != NULL) {
-        if (strcmp(argv[0], "get") != 0 || strcmp(argv[1], "keytab") != 0) {
-            fprintf(stderr, "wallet: -S only supported for get keytab\n");
-            exit(1);
-        }
-        if (file == NULL) {
-            fprintf(stderr, "wallet: -S requires -f\n");
-            exit(1);
-        }
+        if (strcmp(argv[0], "get") != 0 || strcmp(argv[1], "keytab") != 0)
+            die("-S only supported for get keytab");
+        if (file == NULL)
+            die("-S option requires -f also be used");
     }
 
     /* Allocate space for the command to send to the server. */
-    command = malloc(sizeof(char *) * (argc + 2));
-    if (command == NULL) {
-        fprintf(stderr, "wallet: cannot allocate memory: %s", strerror(errno));
-        exit(1);
-    }
+    command = xmalloc(sizeof(char *) * (argc + 2));
     command[0] = type;
     for (i = 0; i < argc; i++)
         command[i + 1] = argv[i];
@@ -137,11 +129,9 @@ main(int argc, char *argv[])
 
     /* Run the command. */
     result = remctl(server, port, principal, command);
+    if (result == NULL)
+        sysdie("cannot allocate memory");
     free(command);
-    if (result == NULL) {
-        fprintf(stderr, "wallet: cannot allocate memory: %s", strerror(errno));
-        exit(1);
-    }
 
     /* Display the results. */
     if (result->error != NULL) {
@@ -151,22 +141,15 @@ main(int argc, char *argv[])
         fwrite(result->stderr_buf, 1, result->stderr_len, stderr);
     } else if (file != NULL && strcmp(command[1], "get") == 0) {
         fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-        if (fd < 0) {
-            fprintf(stderr, "open of %s failed: %s", file, strerror(errno));
-            exit(1);
-        }
+        if (fd < 0)
+            sysdie("open of %s failed", file);
         status = write(fd, result->stdout_buf, result->stdout_len);
-        if (status < 0) {
-            fprintf(stderr, "write to %s failed: %s", file, strerror(errno));
-            exit(1);
-        } else if (status != (ssize_t) result->stdout_len) {
-            fprintf(stderr, "write to %s truncated", file);
-            exit(1);
-        }
-        if (close(fd) < 0) {
-            fprintf(stderr, "close of %s failed: %s", file, strerror(errno));
-            exit(1);
-        }
+        if (status < 0)
+            sysdie("write to %s failed", file);
+        else if (status != (ssize_t) result->stdout_len)
+            die("write to %s truncated", file);
+        if (close(fd) < 0)
+            sysdie("close of %s failed (file probably truncated)", file);
         if (srvtab != NULL)
             write_srvtab(srvtab, command[3], file);
     } else {
