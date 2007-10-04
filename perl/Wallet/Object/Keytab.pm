@@ -62,9 +62,11 @@ sub kadmin {
     if (not defined $pid) {
         die "cannot fork: $!\n";
     } elsif ($pid == 0) {
-        open (STDERR, '>&STDOUT') or die "cannot dup stdout: $!\n";
-
         # Don't use die here; it will get trapped as an exception.
+        unless (open (STDERR, '>&STDOUT')) {
+            warn "wallet: cannot dup stdout: $!\n";
+            exit 1;
+        }
         unless (exec ($Wallet::Config::KEYTAB_KADMIN, @args)) {
             warn "wallet: cannot run $Wallet::Config::KEYTAB_KADMIN: $!\n";
             exit 1;
@@ -73,7 +75,7 @@ sub kadmin {
     local $_;
     my @output;
     while (<KADMIN>) {
-        if (/^wallet: cannot run /) {
+        if (/^wallet: cannot /) {
             s/^wallet: //;
             die $_;
         }
