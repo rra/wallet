@@ -105,7 +105,7 @@ tests_portable_snprintf_t_LDADD = tests/libtest.a util/libutil.a \
 tests_util_concat_t_LDADD = tests/libtest.a util/libutil.a \
 	portable/libportable.a
 tests_util_messages_t_LDADD = tests/libtest.a util/libutil.a \
-	portable/libportable.
+	portable/libportable.a
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.a
 
 check-local: $(check_PROGRAMS)

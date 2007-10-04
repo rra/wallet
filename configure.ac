@@ -6,11 +6,12 @@ dnl Copyright 2006 Board of Trustees, Leland Stanford Jr. University
 dnl
 dnl See README for licensing terms.
 
-AC_REVISION($Revision$)
-AC_PREREQ(2.57)
+AC_REVISION([$Revision$])
+AC_PREREQ([2.61])
 AC_INIT([wallet], [0.1], [rra@stanford.edu])
 AC_CONFIG_AUX_DIR([tools])
-AM_INIT_AUTOMAKE
+AC_CONFIG_LIBOBJ_DIR([portable])
+AM_INIT_AUTOMAKE([1.10])
 AM_MAINTAINER_MODE
 
 AFS_CPPFLAGS=
@@ -52,6 +53,7 @@ fi
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 AC_SEARCH_LIBS([gethostbyname], [nsl])
 AC_SEARCH_LIBS([socket], [socket], ,
     [AC_CHECK_LIB([nsl], [socket],
@@ -74,7 +76,9 @@ AC_CHECK_DECLS([snprintf, vsnprintf])
 AC_CHECK_DECLS([ubik_Call], , , [#include <ubik.h>])
 RRA_C_C99_VAMACROS
 RRA_C_GNU_VAMACROS
+AC_CHECK_TYPES([long long])
 RRA_FUNC_SNPRINTF
+AC_CHECK_FUNCS([setrlimit])
 AC_REPLACE_FUNCS([asprintf])
 
 save_LIBS=$LIBS
