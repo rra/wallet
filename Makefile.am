@@ -7,16 +7,20 @@
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = TODO client/wallet.pod docs/design docs/design-acl \
+EXTRA_DIST = TODO client/wallet.pod config/allow-extract config/keytab \
+	config/keytab.acl config/wallet docs/design docs/design-acl \
 	docs/design-api docs/netdb-role-api docs/notes docs/setup \
-	kasetkey/kasetkey.pod perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
-	perl/Wallet/ACL/Krb5.pm perl/Wallet/Config.pm \
-	perl/Wallet/Object/Base.pm perl/Wallet/Object/Keytab.pm \
-	perl/Wallet/Schema.pm perl/Wallet/Server.pm perl/t/acl.t \
-	perl/t/init.t perl/t/keytab.t perl/t/object.t perl/t/pod.t \
-	perl/t/schema.t perl/t/server.t perl/t/verifier.t tests/TESTS \
-	tests/client/basic-t.in tests/data/README tests/data/cmd-fake \
-	tests/data/fake-keytab tests/data/wallet.conf
+	kasetkey/README kasetkey/kasetkey.pod perl/Wallet/ACL.pm \
+	perl/Wallet/ACL/Base.pm perl/Wallet/ACL/Krb5.pm \
+	perl/Wallet/Config.pm perl/Wallet/Object/Base.pm \
+	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm \
+	perl/Wallet/Server.pm perl/t/acl.t perl/t/data/README \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf perl/t/init.t \
+	perl/t/keytab.t perl/t/object.t perl/t/pod.t perl/t/schema.t \
+	perl/t/server.t perl/t/verifier.t tests/TESTS tests/data/README \
+	tests/data/allow-extract tests/data/cmd-fake tests/data/fake-data \
+	tests/data/fake-kadmin tests/data/fake-keytab tests/data/fake-srvtab \
+	tests/data/wallet.conf
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c
