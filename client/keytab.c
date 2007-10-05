@@ -30,7 +30,7 @@ set_sync(struct remctl *r, const char *type, const char *name)
     int status;
 
     command[0] = type;
-    command[1] = "attr";
+    command[1] = "getattr";
     command[2] = "keytab";
     command[3] = name;
     command[4] = "sync";
@@ -39,6 +39,7 @@ set_sync(struct remctl *r, const char *type, const char *name)
     if (status != 0)
         return 0;
     if (data == NULL || strstr(data, "kaserver\n") == NULL) {
+        command[1] = "setattr";
         command[5] = "kaserver";
         command[6] = NULL;
         status = run_command(r, command, NULL, NULL);

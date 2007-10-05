@@ -7,13 +7,15 @@
 command="$1"
 shift
 type="$1"
-if [ "$1" != "keytab" ] ; then
-    echo "Unknown object type $1" >&2
+shift
+if [ "$type" != "keytab" ] ; then
+    echo "Unknown object type $type" >&2
     exit 1
 fi
-shift
-if [ "$command" = "attr" ] ; then
-    if [ -n "$4" ] ; then
+
+case "$command" in
+getattr)
+    if [ -n "$3" ] ; then
         echo "Too many arguments" >&2
         exit 1
     fi
@@ -21,26 +23,10 @@ if [ "$command" = "attr" ] ; then
         echo "Unknown attribute $2" >&2
         exit 1
     fi
-fi
-if [ "$command" != "attr" ] && [ -n "$2" ] ; then
-    echo "Too many arguments" >&2
-    exit 1
-fi
-
-case "$command" in
-attr)
     case "$1" in
     service/fake-srvtab)
-        if [ -n "$3" ] ; then
-            if [ "$3" != "kaserver" ] ; then
-                echo "Invalid attribute value $3" >&2
-                exit 1
-            fi
-            touch sync-kaserver
-        else
-            if [ -f sync-kaserver ] ; then
-                echo "kaserver"
-            fi
+        if [ -f sync-kaserver ] ; then
+            echo "kaserver"
         fi
         ;;
     *)
@@ -49,7 +35,34 @@ attr)
         ;;
     esac
     ;;
+setattr)
+    if [ -n "$4" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
+    if [ "$2" != sync ] ; then
+        echo "Unknown attribute $2" >&2
+        exit 1
+    fi
+    case "$1" in
+    service/fake-srvtab)
+        if [ "$3" != "kaserver" ] ; then
+            echo "Invalid attribute value $3" >&2
+            exit 1
+        fi
+        touch sync-kaserver
+        ;;
+    *)
+        echo "Looking at sync attribute of wrong keytab" >&2
+        exit 1
+        ;;
+    esac
+    ;;
 get)
+    if [ -n "$2" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
     case "$1" in
     service/fake-test)
         cat data/fake-data
@@ -66,6 +79,10 @@ get)
     esac
     ;;
 show)
+    if [ -n "$2" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
     if [ "$1" = "service/fake-test" ] ; then
         echo "Some stuff about $1"
         exit 0
@@ -75,6 +92,10 @@ show)
     fi
     ;;
 expires)
+    if [ -n "$2" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
     echo "Expiration date of $1"
     exit 0
     ;;
