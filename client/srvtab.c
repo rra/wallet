@@ -11,8 +11,6 @@
 #include <config.h>
 #include <system.h>
 
-#include <errno.h>
-#include <fcntl.h>
 #include <krb5.h>
 
 #include <client/internal.h>
@@ -100,8 +98,6 @@ write_srvtab(const char *srvtab, const char *principal, const char *keytab)
     krb5_keytab_entry entry;
     krb5_error_code ret;
     size_t length;
-    int fd;
-    ssize_t status;
     char aname[ANAME_SZ + 1] = "";
     char inst[INST_SZ + 1]   = "";
     char realm[REALM_SZ + 1] = "";

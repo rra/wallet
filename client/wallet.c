@@ -12,7 +12,6 @@
 #include <system.h>
 
 #include <errno.h>
-#include <fcntl.h>
 #include <remctl.h>
 
 #include <client/internal.h>
@@ -52,17 +51,16 @@ usage(int status)
 int
 main(int argc, char *argv[])
 {
-    int option, fd;
-    ssize_t status;
+    int option, i;
     const char **command;
-    struct remctl_result *result;
     const char *type = "wallet";
     const char *server = SERVER;
     const char *principal = NULL;
     unsigned short port = PORT;
     const char *file = NULL;
     const char *srvtab = NULL;
-    int i;
+    struct remctl *r;
+    struct remctl_output *output;
     long tmp;
     char *end;
 
@@ -120,31 +118,54 @@ main(int argc, char *argv[])
             die("-S option requires -f also be used");
     }
 
-    /* Allocate space for the command to send to the server. */
-    command = xmalloc(sizeof(char *) * (argc + 2));
-    command[0] = type;
-    for (i = 0; i < argc; i++)
-        command[i + 1] = argv[i];
-    command[argc + 1] = NULL;
-
-    /* Run the command. */
-    result = remctl(server, port, principal, command);
-    if (result == NULL)
+    /* Open a remctl connection. */
+    r = remctl_new();
+    if (r == NULL)
         sysdie("cannot allocate memory");
-    free(command);
+    if (!remctl_open(r, server, port, principal))
+        die("%s", remctl_error(r));
 
-    /* Display the results. */
-    if (result->error != NULL) {
-        fprintf(stderr, "wallet: %s\n", result->error);
-    } else if (result->stderr_len > 0) {
-        fprintf(stderr, "wallet: ");
-        fwrite(result->stderr_buf, 1, result->stderr_len, stderr);
-    } else if (file != NULL && strcmp(command[1], "get") == 0) {
-        write_file(file, result->stdout_buf, result->stdout_len);
+    /* Most commands, we handle ourselves, but keytab get commands with -f are
+       special. */
+    if (strcmp(argv[0], "get") == 0 && strcmp(argv[1], "keytab") == 0) {
+        if (argc > 3)
+            die("too many arguments");
+        get_keytab(r, type, argv[2], file);
         if (srvtab != NULL)
-            write_srvtab(srvtab, command[3], file);
+            write_srvtab(srvtab, argv[2], file);
+        exit(0);
     } else {
-        fwrite(result->stdout_buf, 1, result->stdout_len, stdout);
+        command = xmalloc(sizeof(char *) * (argc + 2));
+        command[0] = type;
+        for (i = 0; i < argc; i++)
+            command[i + 1] = argv[i];
+        command[argc + 1] = NULL;
+        if (!remctl_command(r, command))
+            die("%s", remctl_error(r));
+        do {
+            output = remctl_output(r);
+            switch (output->type) {
+            case REMCTL_OUT_OUTPUT:
+                if (output->stream == 1)
+                    fwrite(output->data, 1, output->length, stdout);
+                else {
+                    fprintf(stderr, "wallet: ");
+                    fwrite(output->data, 1, output->length, stderr);
+                }
+                break;
+            case REMCTL_OUT_STATUS:
+                exit(output->status);
+            case REMCTL_OUT_ERROR:
+                fprintf(stderr, "wallet: ");
+                fwrite(output->data, 1, output->length, stderr);
+                fputc('\n', stderr);
+                exit(255);
+            case REMCTL_OUT_DONE:
+                break;
+            }
+        } while (output->type != REMCTL_OUT_DONE);
     }
-    exit(result->status);
+
+    /* This should never be reached. */
+    die("invalid return from wallet server");
 }
