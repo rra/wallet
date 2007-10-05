@@ -27,6 +27,14 @@ struct remctl;
 
 BEGIN_DECLS
 
+/* Given a remctl object, run a remctl command.  If data is non-NULL, saves
+   the standard output from the command into data with the length in length.
+   Otherwise, prints it to standard output.  Either way, prints standard error
+   output and errors to standard error and returns the exit status or 255 for
+   a remctl internal error. */
+int run_command(struct remctl *, const char **command, char **data,
+                size_t *length);
+
 /* Given a remctl object, the type for the wallet interface, the name of a
    keytab object, and a file name, call the correct wallet commands to
    download a keytab and write it to that file. */

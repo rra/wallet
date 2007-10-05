@@ -26,49 +26,19 @@ get_keytab(struct remctl *r, const char *type, const char *name,
            const char *file)
 {
     const char *command[5];
-    struct remctl_output *output;
     char *data = NULL;
     size_t length = 0;
     int status = 255;
 
-    /* Run the command on the wallet server */
     command[0] = type;
     command[1] = "get";
     command[2] = "keytab";
     command[3] = name;
     command[4] = NULL;
-    if (!remctl_command(r, command))
-        die("%s", remctl_error(r));
-
-    /* Retrieve the results. */
-    do {
-        output = remctl_output(r);
-        switch (output->type) {
-        case REMCTL_OUT_OUTPUT:
-            if (output->stream == 1) {
-                data = xrealloc(data, length + output->length);
-                memcpy(data + length, output->data, output->length);
-                length += output->length;
-            } else {
-                fprintf(stderr, "wallet: ");
-                fwrite(output->data, 1, output->length, stderr);
-            }
-            break;
-        case REMCTL_OUT_STATUS:
-            status = output->status;
-            break;
-        case REMCTL_OUT_ERROR:
-            fprintf(stderr, "wallet: ");
-            fwrite(output->data, 1, output->length, stderr);
-            fputc('\n', stderr);
-            exit(255);
-        case REMCTL_OUT_DONE:
-            break;
-        }
-    } while (output->type != REMCTL_OUT_DONE);
+    status = run_command(r, command, &data, &length);
     if (status != 0)
         exit(status);
-
-    /* Okay, we now have the valid keytab data in data.  Write it out. */
+    if (data == NULL)
+        die("no data returned by wallet server");
     write_file(file, data, length);
 }

@@ -51,7 +51,7 @@ usage(int status)
 int
 main(int argc, char *argv[])
 {
-    int option, i;
+    int option, i, status;
     const char **command;
     const char *type = "wallet";
     const char *server = SERVER;
@@ -60,7 +60,6 @@ main(int argc, char *argv[])
     const char *file = NULL;
     const char *srvtab = NULL;
     struct remctl *r;
-    struct remctl_output *output;
     long tmp;
     char *end;
 
@@ -140,30 +139,8 @@ main(int argc, char *argv[])
         for (i = 0; i < argc; i++)
             command[i + 1] = argv[i];
         command[argc + 1] = NULL;
-        if (!remctl_command(r, command))
-            die("%s", remctl_error(r));
-        do {
-            output = remctl_output(r);
-            switch (output->type) {
-            case REMCTL_OUT_OUTPUT:
-                if (output->stream == 1)
-                    fwrite(output->data, 1, output->length, stdout);
-                else {
-                    fprintf(stderr, "wallet: ");
-                    fwrite(output->data, 1, output->length, stderr);
-                }
-                break;
-            case REMCTL_OUT_STATUS:
-                exit(output->status);
-            case REMCTL_OUT_ERROR:
-                fprintf(stderr, "wallet: ");
-                fwrite(output->data, 1, output->length, stderr);
-                fputc('\n', stderr);
-                exit(255);
-            case REMCTL_OUT_DONE:
-                break;
-            }
-        } while (output->type != REMCTL_OUT_DONE);
+        status = run_command(r, command, NULL, NULL);
+        exit(status);
     }
 
     /* This should never be reached. */
