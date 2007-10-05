@@ -9,10 +9,6 @@ Required to replace leland_srvtab:
   enctype attribute on the object and include the enctypes in the object
   show display.
 
-* Write new files atomically in the wallet client and save backups unless
-  told not to (write to file.new, link the old file to file.old, and do
-  an atomic rename).
-
 * Add support to the test suite for specifying a different database than
   SQLite for testing.  For MySQL and other database types that we can't
   just delete, also requires adding a method to Wallet::Schema to drop all
@@ -49,6 +45,9 @@ Future work:
 * Write the PTS ACL verifier.
 
 * Add a help function to wallet-backend listing the commands.
+
+* The client may not compile against Heimdal due to changes in how the
+  krb5_keyblock structure is laid out.  Check and fix.
 
 * Rewrite the client test suite to use Perl and to make better use of
   shared code so that it can be broken into function components.
@@ -152,11 +151,11 @@ Future work:
 * Add support for enforcing a naming policy through another policy
   function.
 
-* Add readline support to the wallet client to make it easier to issue
-  multiple commands.
-
 * The keytab backend currently only supports MIT Kerberos.  Add support
   for Heimdal.
+
+* Add readline support to the wallet client to make it easier to issue
+  multiple commands.
 
 * The wallet-backend and wallet documentation share the COMMANDS section.
   Work out some means to assemble the documentation without duplicating

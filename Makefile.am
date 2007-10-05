@@ -27,8 +27,8 @@ util_libutil_a_SOURCES = util/concat.c util/messages.c util/util.h \
 bin_PROGRAMS = client/wallet
 sbin_PROGRAMS = kasetkey/kasetkey
 sbin_SCRIPTS = server/keytab-backend server/wallet-backend
-client_wallet_SOURCES = client/internal.h client/srvtab.c client/wallet.c \
-	system.h
+client_wallet_SOURCES = client/file.c client/internal.h client/srvtab.c \
+	client/wallet.c system.h
 client_wallet_CPPFLAGS = @REMCTL_CPPFLAGS@
 client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
 client_wallet_LDADD = util/libutil.a portable/libportable.a -lremctl -lkrb5

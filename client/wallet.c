@@ -140,16 +140,7 @@ main(int argc, char *argv[])
         fprintf(stderr, "wallet: ");
         fwrite(result->stderr_buf, 1, result->stderr_len, stderr);
     } else if (file != NULL && strcmp(command[1], "get") == 0) {
-        fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-        if (fd < 0)
-            sysdie("open of %s failed", file);
-        status = write(fd, result->stdout_buf, result->stdout_len);
-        if (status < 0)
-            sysdie("write to %s failed", file);
-        else if (status != (ssize_t) result->stdout_len)
-            die("write to %s truncated", file);
-        if (close(fd) < 0)
-            sysdie("close of %s failed (file probably truncated)", file);
+        write_file(file, result->stdout_buf, result->stdout_len);
         if (srvtab != NULL)
             write_srvtab(srvtab, command[3], file);
     } else {

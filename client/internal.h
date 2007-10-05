@@ -11,29 +11,8 @@
 #ifndef CLIENT_INTERNAL_H
 #define CLIENT_INTERNAL_H 1
 
-/* __attribute__ is available in gcc 2.5 and later, but only with gcc 2.7
-   could you use the __format__ form of the attributes, which is what we use
-   (to avoid confusion with other macros). */
-#ifndef __attribute__
-# if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 7)
-#  define __attribute__(spec)   /* empty */
-# endif
-#endif
-
-/* Used for unused parameters to silence gcc warnings. */
-#define UNUSED  __attribute__((__unused__))
-
-/* BEGIN_DECLS is used at the beginning of declarations so that C++
-   compilers don't mangle their names.  END_DECLS is used at the end. */
-#undef BEGIN_DECLS
-#undef END_DECLS
-#ifdef __cplusplus
-# define BEGIN_DECLS    extern "C" {
-# define END_DECLS      }
-#else
-# define BEGIN_DECLS    /* empty */
-# define END_DECLS      /* empty */
-#endif
+#include <sys/types.h>
+#include <util/util.h>
 
 /* Temporary until we have some real configuration. */
 #ifndef SERVER
@@ -44,6 +23,11 @@
 #endif
 
 BEGIN_DECLS
+
+/* Given a filename, some data, and a length, write that data to the given
+   file safely and atomically by creating file.new, writing the data, linking
+   file to file.bak, and then renaming file.new to file. */
+void write_file(const char *name, const void *data, size_t length);
 
 /* Given a srvtab file, the Kerberos v5 principal, and the keytab file, write
    a srvtab file for the corresponding Kerberos v4 principal. */

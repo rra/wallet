@@ -148,14 +148,5 @@ write_srvtab(const char *srvtab, const char *principal, const char *keytab)
     krb5_free_keytab_entry_contents(ctx, &entry);
 
     /* Write out the srvtab file. */
-    fd = open(srvtab, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-    if (fd < 0)
-        sysdie("open of %s failed", srvtab);
-    status = write(fd, data, length);
-    if (status < 0)
-        sysdie("write to %s failed", srvtab);
-    else if (status != (ssize_t) length)
-        die("write to %s truncated", srvtab);
-    if (close(fd) < 0)
-        sysdie("close of %s failed (file probably truncated)", srvtab);
+    write_file(srvtab, data, length);
 }
