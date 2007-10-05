@@ -8,6 +8,8 @@
 **  Copyright 1994, 1998, 1999, 2000, 2006, 2007
 **      Board of Trustees, Leland Stanford Jr. University
 **
+**  See LICENSE for licensing terms.
+**
 **  Sets the key of a principal in the AFS kaserver given a srvtab.  This
 **  program is now used for synchronization of K5 and K4 and nothing else.
 **  It will no longer be used once K4 is retired.

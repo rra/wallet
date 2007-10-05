@@ -3,6 +3,10 @@
 #
 # This is a fake wallet backend that returns bogus data for verification by
 # the client test suite.  It doesn't test any of the wallet server code.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# See LICENSE for licensing terms.
 
 command="$1"
 shift

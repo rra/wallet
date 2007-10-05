@@ -3,7 +3,7 @@
 
 /* Written by Russ Allbery <rra@stanford.edu>
    Copyright 2006 Board of Trustees, Leland Stanford Jr. University
-   See README for licensing terms. */
+   See LICENSE for licensing terms. */
 
 #include <config.h>
 #include <system.h>

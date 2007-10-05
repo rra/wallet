@@ -2,6 +2,11 @@
 # $Id$
 #
 # t/pod.t -- Test POD formatting for the wallet Perl modules.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 eval 'use Test::Pod 1.00';
 if ($@) {

@@ -12,7 +12,7 @@ dnl fully working snprintf is found.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
 dnl Copyright 2006 Board of Trustees, Leland Stanford Jr. University
-dnl See README for licensing terms.
+dnl See LICENSE for licensing terms.
 
 dnl Source used by RRA_FUNC_SNPRINTF.
 define([_RRA_FUNC_SNPRINTF_SOURCE],

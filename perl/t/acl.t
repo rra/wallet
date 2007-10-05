@@ -2,6 +2,11 @@
 # $Id$
 #
 # t/api.t -- Tests for the wallet ACL API.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 use Test::More tests => 100;
 

@@ -2,6 +2,11 @@
 # $Id$
 #
 # t/object.t -- Tests for the basic object implementation.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
 
 use Test::More tests => 129;
 
