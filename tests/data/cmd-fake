@@ -12,12 +12,43 @@ if [ "$1" != "keytab" ] ; then
     exit 1
 fi
 shift
-if [ -n "$2" ] ; then
+if [ "$command" = "attr" ] ; then
+    if [ -n "$4" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
+    if [ "$2" != sync ] ; then
+        echo "Unknown attribute $2" >&2
+        exit 1
+    fi
+fi
+if [ "$command" != "attr" ] && [ -n "$2" ] ; then
     echo "Too many arguments" >&2
     exit 1
 fi
 
 case "$command" in
+attr)
+    case "$1" in
+    service/fake-srvtab)
+        if [ -n "$3" ] ; then
+            if [ "$3" != "kaserver" ] ; then
+                echo "Invalid attribute value $3" >&2
+                exit 1
+            fi
+            touch sync-kaserver
+        else
+            if [ -f sync-kaserver ] ; then
+                echo "kaserver"
+            fi
+        fi
+        ;;
+    *)
+        echo "Looking at sync attribute of wrong keytab" >&2
+        exit 1
+        ;;
+    esac
+    ;;
 get)
     case "$1" in
     service/fake-test)

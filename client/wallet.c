@@ -129,10 +129,9 @@ main(int argc, char *argv[])
     if (strcmp(argv[0], "get") == 0 && strcmp(argv[1], "keytab") == 0) {
         if (argc > 3)
             die("too many arguments");
-        get_keytab(r, type, argv[2], file);
-        if (srvtab != NULL)
-            write_srvtab(srvtab, argv[2], file);
-        exit(0);
+        status = get_keytab(r, type, argv[2], file, srvtab);
+        remctl_close(r);
+        exit(status);
     } else {
         command = xmalloc(sizeof(char *) * (argc + 2));
         command[0] = type;
@@ -140,6 +139,7 @@ main(int argc, char *argv[])
             command[i + 1] = argv[i];
         command[argc + 1] = NULL;
         status = run_command(r, command, NULL, NULL);
+        remctl_close(r);
         exit(status);
     }
 

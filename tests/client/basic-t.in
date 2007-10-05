@@ -1,10 +1,10 @@
 #! /bin/sh
 # $Id$
 #
-# Test suite for the remctl command-line client.
+# Test suite for the wallet command-line client.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
 # See README for licensing terms.
 
 # The count starts at 1 and is updated each time ok is printed.  printcount
@@ -54,7 +54,7 @@ runfailure () {
 }
 
 # Print the number of tests.
-echo 12
+echo 17
 
 # Find the client program.
 if [ -f ../data/test.keytab ] ; then
@@ -65,7 +65,7 @@ else
     fi
 fi
 if [ ! -f data/test.keytab ] || [ -z "@REMCTLD@" ] ; then
-    for n in 1 2 3 4 5 6 7 8 9 10 11 12 ; do
+    for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 ; do
         echo ok $n \# skip -- no Kerberos configuration
     done
     exit 0
@@ -121,6 +121,9 @@ EOF
     fi
 done
 
+# Make sure everything's clean.
+rm -f keytab keytab.bak srvtab srvtab.bak sync-kaserver
+
 # Now, we can finally run our tests.
 runsuccess "" -c fake-wallet get keytab -f keytab service/fake-test
 if cmp keytab data/fake-data >/dev/null 2>&1 ; then
@@ -146,10 +149,34 @@ if cmp keytab.bak data/fake-data >/dev/null 2>&1 ; then
 else
     printcount "not ok"
 fi
+if [ -f sync-kaserver ] ; then
+    printcount "ok"
+else
+    printcount "not ok"
+fi
+runsuccess "" -c fake-wallet get keytab -f keytab -S srvtab service/fake-srvtab
+if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
+    printcount "ok"
+    rm keytab
+else
+    printcount "not ok"
+fi
+if [ -f sync-kaserver ] ; then
+    printcount "ok"
+    rm sync-kaserver
+else
+    printcount "not ok"
+fi
 if [ -n "$krb5conf" ] ; then
     if cmp srvtab data/fake-srvtab >/dev/null 2>&1 ; then
         printcount "ok"
         rm srvtab
+    else
+        printcount "not ok"
+    fi
+    if cmp srvtab.bak data/fake-srvtab >/dev/null 2>&1 ; then
+        printcount "ok"
+        rm srvtab.bak
     else
         printcount "not ok"
     fi

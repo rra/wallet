@@ -37,9 +37,10 @@ int run_command(struct remctl *, const char **command, char **data,
 
 /* Given a remctl object, the type for the wallet interface, the name of a
    keytab object, and a file name, call the correct wallet commands to
-   download a keytab and write it to that file. */
-void get_keytab(struct remctl *, const char *type, const char *name,
-                const char *file);
+   download a keytab and write it to that file.  If srvtab is not NULL, write
+   a srvtab based on the keytab after a successful download. */
+int get_keytab(struct remctl *, const char *type, const char *name,
+               const char *file, const char *srvtab);
 
 /* Given a filename, some data, and a length, write that data to the given
    file safely and atomically by creating file.new, writing the data, linking

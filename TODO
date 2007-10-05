@@ -2,9 +2,6 @@
 
 Required to replace leland_srvtab:
 
-* The wallet client should automatically set the sync attribute when
-  called with -S.
-
 * Add support for limiting the enctypes of created keytabs by setting the
   enctype attribute on the object and include the enctypes in the object
   show display.
