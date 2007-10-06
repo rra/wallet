@@ -1,0 +1,12 @@
+                       User-Visible wallet Changes
+
+wallet 0.2 (unreleased)
+
+    First public alpha release.  Only tested with SQLite 3, no history
+    support, no object list support, and only keytab object and krb5 ACL
+    support.
+
+wallet 0.1 (2007-03-08)
+
+    Internal release containing only kasetkey, a stub client, and design
+    documentation.

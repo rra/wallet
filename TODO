@@ -1,6 +1,6 @@
                             wallet To-Do List
 
-Required to replace leland_srvtab:
+Minimum required to replace leland_srvtab:
 
 * Add support for limiting the enctypes of created keytabs by setting the
   enctype attribute on the object and include the enctypes in the object
@@ -16,30 +16,42 @@ Required to replace leland_srvtab:
 * Write the remctl configuration and finish Debian packaging of the
   wallet client and server.
 
-Future work:
-
-* Add POD testing for the client and server programs.
-
-* Add POD coverage testing using Test::POD::Coverage for the server
-  modules.
+Release 0.3:
 
 * Provide some way of getting at the history tables.  Need to get object
   and ACL history either by object or for all objects, at least.  Global
   history should be by timestamp and possibly limit by timestamp.
 
-* Provide an interface to list all objects in the database by type, by
-  owner (including null), or by all uses of an ACL.
-
-* Provide an interface to list all ACLs in the database.  Most
-  interestingly, an interface to list all empty ACLs.
-
-* Log all actions to syslog.
+* Log all server actions to syslog.
 
 * Write the NetDB ACL verifier.
 
 * Write the LDAP entitlement ACL verifier.
 
 * Write the PTS ACL verifier.
+
+* Add support for a default creation policy and default ACLs.  The policy
+  function needs to return a list of ACLs, and we'll need an ACL function
+  to check the user against such a list rather than an ACL that already
+  exists in the database.  When we create such an object, we'll also need
+  to name the ACL, which may require fallback logic if the name was
+  already taken.
+
+* Use the class names in the database tables when loading object and
+  ACL verifier implementations.
+
+Release 1.0:
+
+* Add POD testing for the client and server programs.
+
+* Add POD coverage testing using Test::POD::Coverage for the server
+  modules.
+
+* Provide an interface to list all objects in the database by type, by
+  owner (including null), or by all uses of an ACL.
+
+* Provide an interface to list all ACLs in the database.  Most
+  interestingly, an interface to list all empty ACLs.
 
 * Add a help function to wallet-backend listing the commands.
 
@@ -54,16 +66,8 @@ Future work:
 
 * Add a test suite for kasetkey.
 
-* Use standard error handling routines in the wallet client.
-
-* Write a conventions document for ACL naming, object naming, and similar
-  issues.
-
-* Write a future design and roadmap document to collect notes about how
-  unimplemented features should be handled.
-
-* Support displaying and possibly specifying dates in some format more
-  normal than seconds since epoch.
+* Compiling kasetkey should be optional and probably not enabled by
+  default.
 
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
@@ -80,26 +84,8 @@ Future work:
 * The wallet client should read configuration information from krb5.conf,
   and possibly from some other configuration as well.
 
-* Add support for a default creation policy and default ACLs.  The policy
-  function needs to return a list of ACLs, and we'll need an ACL function
-  to check the user against such a list rather than an ACL that already
-  exists in the database.  When we create such an object, we'll also need
-  to name the ACL, which may require fallback logic if the name was
-  already taken.
-
-* Use the class names in the database tables when loading object and
-  ACL verifier implementations.
-
 * Error messages from ACL operations should refer to the ACLs by name
   instead of by ID.
-
-* There is a lot of duplicate code in wallet-backend.  Convert that to
-  use some sort of data-driven model with argument count and flags so
-  that the method calls can be written only once.
-
-* There's a lot of code duplication in the dispatch functions in the
-  Wallet::Server class.  Find a way to rewrite that so that the dispatch
-  doesn't duplicate the same code patterns.
 
 * Add the database schema version to a global table so that we can use it
   to support schema upgrades in the future.
@@ -110,14 +96,6 @@ Future work:
 * Write a wallet-admin program to provide an interface to things like
   database initialization and, eventually, upgrades.
 
-* Add a function to wallet-admin to purge expired entries.  Possibly also
-  check expiration before allowing anyone to get or store objects.
-
-* Compiling kasetkey should be optional and probably not enabled by
-  default.
-
-* Add a comment field for objects that can be set by the owner.
-
 * Implement store support in the wallet client.  Add an option to read the
   data from a file.  The initial implementation, depending on the
   underlying remctl support, may have to ban nul characters in the
@@ -125,6 +103,30 @@ Future work:
 
 * Implement a simple file wallet object.  Document a naming convention for
   those files (group-service, perhaps).
+
+Future work:
+
+* Write a conventions document for ACL naming, object naming, and similar
+  issues.
+
+* Write a future design and roadmap document to collect notes about how
+  unimplemented features should be handled.
+
+* Support displaying and possibly specifying dates in some format more
+  normal than seconds since epoch.
+
+* There is a lot of duplicate code in wallet-backend.  Convert that to
+  use some sort of data-driven model with argument count and flags so
+  that the method calls can be written only once.
+
+* There's a lot of code duplication in the dispatch functions in the
+  Wallet::Server class.  Find a way to rewrite that so that the dispatch
+  doesn't duplicate the same code patterns.
+
+* Add a function to wallet-admin to purge expired entries.  Possibly also
+  check expiration before allowing anyone to get or store objects.
+
+* Add a comment field for objects that can be set by the owner.
 
 * Implement an ssh keypair wallet object.  The server can run ssh-keygen
   to generate a public/private key pair and return both to the client,
@@ -166,6 +168,8 @@ Future work:
 * Document using the wallet system over something other than remctl.
 
 * Provide a REST implementation of the wallet server.
+
+* Provide a CGI implementation of the wallet server.
 
 * Document all diagnostics for all wallet APIs.
 
