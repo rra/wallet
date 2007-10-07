@@ -187,6 +187,26 @@ TESTING
   If a test case fails, please run that individual test program directly
   and send me the output when reporting the problem.
 
+CONFIGURATION
+
+  For the basic setup and configuration of the wallet server, see the file
+  docs/setup in the source distribution.  You will need to set up a
+  database on the server (unless you're using SQLite), initialize the
+  database, install remctld and the wallet Perl modules, and set up
+  remctld to run the wallet-backend program.
+
+  Before setting up the wallet server, review the Wallet::Config
+  docuemntation (with man Wallet::Config or perldoc Wallet::Config).
+  There are many customization options, some of which must be set.  You
+  may also need to create a Kerberos keytab for the keytab object backend
+  and give it appropriate ACLs, set up keytab-backend and its remctld
+  configuration on your KDC if you want unchanging flag support, and set
+  up a srvtab if you want AFS kaserver synchronization support.
+
+  The client currently has no configuration options and hard-codes the
+  wallet server and port at compile time.  This will change in a future
+  release.
+
 THANKS
 
   To Roland Schemers for the original idea that kicked off this project
