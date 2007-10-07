@@ -17,7 +17,7 @@
 #include <client/internal.h>
 #include <util/util.h>
 
-/* Usage message. */
+/* Usage message.  Use as a format and pass the port number. */
 static const char usage_message[] = "\
 Usage: wallet [options] <command> <type> <name> [<arg> ...]\n\
        wallet [options] acl <command> <id> [<arg> ...]\n\
@@ -27,9 +27,9 @@ Options:\n\
     -f <output>     For the get command, output file (default: stdout)\n\
     -k <principal>  Kerberos principal of the server\n\
     -h              Display this help\n\
-    -p <port>       Port of server (default: 4444)\n\
+    -p <port>       Port of server (default: %d)\n\
     -S <srvtab>     For the get keytab command, srvtab output file\n\
-    -s <server>     Server hostname (default: " SERVER "\n\
+    -s <server>     Server hostname (default: " WALLET_SERVER "\n\
     -v              Display the version of wallet\n";
 
 
@@ -39,7 +39,7 @@ Options:\n\
 static void
 usage(int status)
 {
-    fprintf((status == 0) ? stdout : stderr, "%s", usage_message);
+    fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT);
     exit(status);
 }
 
@@ -54,9 +54,9 @@ main(int argc, char *argv[])
     int option, i, status;
     const char **command;
     const char *type = "wallet";
-    const char *server = SERVER;
+    const char *server = WALLET_SERVER;
     const char *principal = NULL;
-    unsigned short port = PORT;
+    unsigned short port = WALLET_PORT;
     const char *file = NULL;
     const char *srvtab = NULL;
     struct remctl *r;

@@ -18,11 +18,11 @@
 struct remctl;
 
 /* Temporary until we have some real configuration. */
-#ifndef SERVER
-# define SERVER "wallet.stanford.edu"
+#ifndef WALLET_SERVER
+# define WALLET_SERVER "wallet.stanford.edu"
 #endif
-#ifndef PORT
-# define PORT 4444
+#ifndef WALLET_PORT
+# define WALLET_PORT 4444
 #endif
 
 BEGIN_DECLS
