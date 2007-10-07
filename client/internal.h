@@ -22,7 +22,7 @@ struct remctl;
 # define WALLET_SERVER "wallet.stanford.edu"
 #endif
 #ifndef WALLET_PORT
-# define WALLET_PORT 4444
+# define WALLET_PORT 0
 #endif
 
 BEGIN_DECLS

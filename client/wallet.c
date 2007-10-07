@@ -27,7 +27,7 @@ Options:\n\
     -f <output>     For the get command, output file (default: stdout)\n\
     -k <principal>  Kerberos principal of the server\n\
     -h              Display this help\n\
-    -p <port>       Port of server (default: %d)\n\
+    -p <port>       Port of server (default: %d, if zero, remctl default)\n\
     -S <srvtab>     For the get keytab command, srvtab output file\n\
     -s <server>     Server hostname (default: " WALLET_SERVER "\n\
     -v              Display the version of wallet\n";
