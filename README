@@ -131,20 +131,23 @@ BUILD AND INSTALLATION
 
   You can build and install wallet with the standard commands:
 
-      ./configure
+      ./configure --with-wallet-server=<server>
       make
       make install
 
   The last step will probably have to be done as root.  Currently, this
-  always installs both the client and the server.  By default, wallet
-  installs itself under /usr/local except for the server Perl modules,
-  which are installed into whatever default site module path is used by
-  your Perl installation.  To change the installation location of the
-  files other than the Perl modules, pass the --prefix=DIR argument to
-  configure.  To change the Perl module installation location, you will
-  need to run perl on Makefile.PL in the perl subdirectory of the build
-  tree with appropriate options and rebuild the module after running make
-  and before running make install.
+  always installs both the client and the server.  You must specify the
+  default wallet server at configure time unless you're at Stanford.  This
+  will be replaced with real client configuration in a later release.
+
+  By default, wallet installs itself under /usr/local except for the
+  server Perl modules, which are installed into whatever default site
+  module path is used by your Perl installation.  To change the
+  installation location of the files other than the Perl modules, pass the
+  --prefix=DIR argument to configure.  To change the Perl module
+  installation location, you will need to run perl on Makefile.PL in the
+  perl subdirectory of the build tree with appropriate options and rebuild
+  the module after running make and before running make install.
 
   If remctl was installed in a path not normally searched by your
   compiler, you must specify its installation prefix to configure with the
