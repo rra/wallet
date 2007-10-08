@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.2 (unreleased)
+wallet 0.2 (2007-10-08)
 
     First public alpha release.  Only tested with SQLite 3, no history
     support, no object list support, and only keytab object and krb5 ACL
