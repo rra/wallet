@@ -281,7 +281,7 @@ information for objects stored in the wallet.  They are displayed as part
 of the object data with C<show>, retrieved with C<getattr>, and set with
 C<setattr>.
 
-=head1 Keytab Attributes
+=head2 Keytab Attributes
 
 Keytab objects support the following attributes:
 
