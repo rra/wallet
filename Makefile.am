@@ -7,10 +7,10 @@
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = LICENSE client/wallet.pod config/allow-extract config/keytab \
-	config/keytab.acl config/wallet docs/design docs/design-acl \
-	docs/design-api docs/netdb-role-api docs/notes docs/setup \
-	kasetkey/README kasetkey/kasetkey.pod perl/Wallet/ACL.pm \
+EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
+	config/keytab config/keytab.acl config/wallet docs/design \
+	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
+	docs/setup kasetkey/README kasetkey/kasetkey.pod perl/Wallet/ACL.pm \
 	perl/Wallet/ACL/Base.pm perl/Wallet/ACL/Krb5.pm \
 	perl/Wallet/Config.pm perl/Wallet/Object/Base.pm \
 	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm \
