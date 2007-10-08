@@ -43,6 +43,20 @@ AC_ARG_WITH([remctl],
 AC_SUBST([REMCTL_CPPFLAGS])
 AC_SUBST([REMCTL_LDFLAGS])
 
+AC_ARG_WITH([wallet-server],
+    AC_HELP_STRING([--with-wallet-server=HOST], [Default wallet server]),
+    [if test x"$withval" != xno ; then
+        AC_DEFINE_UNQUOTED([WALLET_SERVER], ["$withval"],
+            [Define to the default server host name.])
+     fi])
+AC_ARG_WITH([wallet-port],
+    AC_HELP_STRING([--with-wallet-port=PORT],
+        [Default wallet server port]),
+    [if test x"$withval" != xno ; then
+        AC_DEFINE_UNQUOTED([WALLET_PORT], [$withval],
+            [Define to the default server port.])
+     fi])
+
 AC_ARG_VAR([REMCTLD], [Path to the remctld binary])
 AC_PATH_PROG([REMCTLD], [remctld], , [$PATH:/usr/sbin:/usr/local/sbin])
 if test x"$REMCTLD" != x ; then
