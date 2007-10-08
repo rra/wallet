@@ -75,7 +75,8 @@ warnings:
 DISTCLEANFILES = perl/Makefile
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	configure client/wallet.1 kasetkey/kasetkey.8 \
-	server/keytab-backend.8	server/wallet-backend.8
+	server/keytab-backend.8	server/wallet-backend.8 tools/compile \
+	tools/depcomp tools/install-sh tools/missing
 
 # Take appropriate actions in the Perl directory as well.
 all-local:
