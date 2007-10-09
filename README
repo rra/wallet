@@ -109,18 +109,23 @@ REQUIREMENTS
   To support synchronization with an AFS kaserver, the server must have
   the Authen::Krb5 Perl module installed.
 
-  To run the full test suite, all of the above software requirements must
-  be met.  Tests requiring some bit of software that's not installed will
-  be skipped, but all the permutations have not yet been checked.  The
-  test suite also requires the Perl modules Test::More and Test::Pod.
-  Test::More comes with Perl 5.8 or later and is available separately from
-  CPAN.  Test::Pod is available from CPAN.  The test suite also requires
-  that remctld be installed and available on the user's path or in
-  /usr/local/sbin or /usr/sbin, that test cases can run services on and
-  connect to ports 14373 and 14444 on 127.0.0.1, and that kinit and kvno
-  (which come with Kerberos) be installed and available on the user's
-  path.  The full test suite also requires a local keytab, a srvtab with
-  ADMIN access to a test AFS kaserver, and some additional configuration.
+  To run the test suite, you must have the Perl modules Test::More, DBI,
+  and DBD::SQLite installed.  Test::More comes with Perl 5.8 or later.
+  The other modules are available from CPAN and may be available as part
+  of your OS (many Linux distributions have them as packages, for
+  example).
+
+  To run the full test suite, additionally all of the above software
+  requirements must be met.  Tests requiring some bit of software that's
+  not installed will be skipped, but all the permutations have not yet
+  been checked.  The test suite also requires the Test::Pod Perl module,
+  available from CPAN, that remctld be installed and available on the
+  user's path or in /usr/local/sbin or /usr/sbin, that test cases can run
+  services on and connect to ports 14373 and 14444 on 127.0.0.1, and that
+  kinit and kvno (which come with Kerberos) be installed and available on
+  the user's path.  The full test suite also requires a local keytab, a
+  srvtab with ADMIN access to a test AFS kaserver, and some additional
+  configuration.
 
   If you change the Automake files and need to regenerate Makefile.in, you
   will need Automake 1.10 or later.  If you change configure.ac or any of
