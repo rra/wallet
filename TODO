@@ -2,16 +2,10 @@
 
 Minimum required to replace leland_srvtab:
 
-* Add support for limiting the enctypes of created keytabs by setting the
-  enctype attribute on the object and include the enctypes in the object
-  show display.
-
 * Add support to the test suite for specifying a different database than
   SQLite for testing.  For MySQL and other database types that we can't
   just delete, also requires adding a method to Wallet::Schema to drop all
   of our tables and indices in reverse order of creation.
-
-* Add README and NEWS files and update web page.
 
 * Write the remctl configuration and finish Debian packaging of the
   wallet client and server.
