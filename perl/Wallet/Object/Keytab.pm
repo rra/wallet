@@ -425,7 +425,16 @@ sub enctypes_set {
                 $self->log_set ('type_data enctypes', $enctype, undef, @trace);
             }
         }
+
+        # When inserting new enctypes, we unfortunately have to do the
+        # consistency check against the enctypes table ourselves, since SQLite
+        # doesn't enforce integrity constraints.
         for my $enctype (keys %enctypes) {
+            $sql = 'select en_name from enctypes where en_name = ?';
+            my $status = $self->{dbh}->selectrow_array ($sql, undef, $enctype);
+            unless ($status) {
+                die "unknown encryption type $enctype\n";
+            }
             $sql = 'insert into keytab_enctypes (ke_name, ke_enctype) values
                 (?, ?)';
             $self->{dbh}->do ($sql, undef, $name, $enctype);
