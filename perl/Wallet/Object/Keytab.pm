@@ -121,10 +121,12 @@ sub kadmin_addprinc {
     return 1;
 }
 
-# Create a keytab from a principal.  Return true if successful, false
-# otherwise.  If the keytab creation fails, sets the error.
+# Create a keytab from a principal.  Takes the principal, the file, and
+# optionally a list of encryption types to which to limit the keytab.  Return
+# true if successful, false otherwise.  If the keytab creation fails, sets the
+# error.
 sub kadmin_ktadd {
-    my ($self, $principal, $file) = @_;
+    my ($self, $principal, $file, @enctypes) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
         return undef;
@@ -132,7 +134,12 @@ sub kadmin_ktadd {
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $output = eval { $self->kadmin ("ktadd -q -k $file $principal") };
+    my $command = "ktadd -q -k $file";
+    if (@enctypes) {
+        @enctypes = map { /:/ ? $_ : "$_:normal" } @enctypes;
+        $command .= ' -e "' . join (' ', @enctypes) . '"';
+    }
+    my $output = eval { $self->kadmin ("$command $principal") };
     if ($@) {
         $self->error ($@);
         return undef;
@@ -388,6 +395,77 @@ sub kaserver_clear {
 }
 
 ##############################################################################
+# Enctype restriction
+##############################################################################
+
+# Set the enctype restrictions for a keytab.  Called by attr() and takes a
+# reference to the encryption types to set.  Returns true on success and false
+# on failure, setting the object error if it fails.
+sub enctypes_set {
+    my ($self, $enctypes, $user, $host, $time) = @_;
+    $time ||= time;
+    my @trace = ($user, $host, $time);
+    my $name = $self->{name};
+    my %enctypes = map { $_ => 1 } @$enctypes;
+    eval {
+        my $sql = 'select ke_enctype from keytab_enctypes where ke_name = ?';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($name);
+        my (@current, $entry);
+        while (defined ($entry = $sth->fetchrow_arrayref)) {
+            push (@current, @$entry);
+        }
+        for my $enctype (@current) {
+            if ($enctypes{$enctype}) {
+                delete $enctypes{$enctype};
+            } else {
+                $sql = 'delete from keytab_enctypes where ke_name = ? and
+                    ke_enctype = ?';
+                $self->{dbh}->do ($sql, undef, $name, $enctype);
+                $self->log_set ('type_data enctypes', $enctype, undef, @trace);
+            }
+        }
+        for my $enctype (keys %enctypes) {
+            $sql = 'insert into keytab_enctypes (ke_name, ke_enctype) values
+                (?, ?)';
+            $self->{dbh}->do ($sql, undef, $name, $enctype);
+            $self->log_set ('type_data enctypes', undef, $enctype, @trace);
+        }
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ($@);
+        $self->{dbh}->rollback;
+        return undef;
+    }
+    return 1;
+}
+
+# Return a list of the encryption types current set for a keytab.  Called by
+# attr() or get().  Returns the empty list on failure or on an empty list of
+# enctype restrictions, but sets the object error on failure so the caller
+# should use that to determine success.
+sub enctypes_list {
+    my ($self) = @_;
+    my @enctypes;
+    eval {
+        my $sql = 'select ke_enctype from keytab_enctypes where ke_name = ?
+            order by ke_enctype';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($self->{name});
+        my $entry;
+        while (defined ($entry = $sth->fetchrow_arrayref)) {
+            push (@enctypes, @$entry);
+        }
+    };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+    return @enctypes;
+}
+
+##############################################################################
 # Keytab retrieval
 ##############################################################################
 
@@ -434,60 +512,77 @@ sub keytab_retrieve {
 # Core methods
 ##############################################################################
 
-# Override attr to support setting the sync attribute.
+# Override attr to support setting the enctypes and sync attributes.
 sub attr {
     my ($self, $attribute, $values, $user, $host, $time) = @_;
+    my %known = map { $_ => 1 } qw(enctypes sync);
     undef $self->{error};
-    if ($attribute ne 'sync') {
+    unless ($known{$attribute}) {
         $self->error ("unknown attribute $attribute");
         return;
     }
     if ($values) {
-        if (@$values > 1) {
-            $self->error ('only one synchronization target supported');
-            return;
-        } elsif (@$values and $values->[0] ne 'kaserver') {
-            $self->error ("unsupported synchronization target $values->[0]");
-            return;
-        }
-        $time ||= time;
-        my @trace = ($user, $host, $time);
-        if (@$values) {
-            return $self->kaserver_set ($user, $host, $time);
-        } else {
-            return $self->kaserver_clear ($user, $host, $time);
+        if ($attribute eq 'enctypes') {
+            $self->enctypes_set ($values, $user, $host, $time);
+        } elsif ($attribute eq 'sync') {
+            if (@$values > 1) {
+                $self->error ('only one synchronization target supported');
+                return;
+            } elsif (@$values and $values->[0] ne 'kaserver') {
+                my $target = $values->[0];
+                $self->error ("unsupported synchronization target $target");
+                return;
+            } elsif (@$values) {
+                return $self->kaserver_set ($user, $host, $time);
+            } else {
+                return $self->kaserver_clear ($user, $host, $time);
+            }
         }
     } else {
-        my @targets;
-        eval {
-            my $sql = 'select ks_target from keytab_sync where ks_name = ?
-                order by ks_target';
-            my $sth = $self->{dbh}->prepare ($sql);
-            $sth->execute ($self->{name});
-            my $target;
-            while (defined ($target = $sth->fetchrow_array)) {
-                push (@targets, $target);
+        if ($attribute eq 'enctypes') {
+            return $self->enctypes_list;
+        } elsif ($attribute eq 'sync') {
+            my @targets;
+            eval {
+                my $sql = 'select ks_target from keytab_sync where ks_name = ?
+                    order by ks_target';
+                my $sth = $self->{dbh}->prepare ($sql);
+                $sth->execute ($self->{name});
+                my $target;
+                while (defined ($target = $sth->fetchrow_array)) {
+                    push (@targets, $target);
+                }
+            };
+            if ($@) {
+                $self->error ($@);
+                return;
             }
-        };
-        if ($@) {
-            $self->error ($@);
-            return;
+            return @targets;
         }
-        return @targets;
     }
 }
 
-# Override attr_show to display the sync attribute.
+# Override attr_show to display the enctypes and sync attributes.
 sub attr_show {
     my ($self) = @_;
+    my $output = '';
     my @targets = $self->attr ('sync');
     if (not @targets and $self->error) {
         return undef;
     } elsif (@targets) {
-        return sprintf ("%15s: %s\n", 'Synced with', "@targets");
-    } else {
-        return '';
+        $output .= sprintf ("%15s: %s\n", 'Synced with', "@targets");
     }
+    my @enctypes = $self->attr ('enctypes');
+    if (not @enctypes and $self->error) {
+        return undef;
+    } elsif (@enctypes) {
+        $output .= sprintf ("%15s: %s\n", 'Enctypes', $enctypes[0]);
+        shift @enctypes;
+        for my $enctype (@enctypes) {
+            $output .= (' ' x 17) . $enctype . "\n";
+        }
+    }
+    return $output;
 }
 
 # Override create to start by creating the principal in Kerberos and only
@@ -513,6 +608,18 @@ sub destroy {
         unless ($self->kaserver_destroy ($self->{name})) {
             return undef;
         }
+    }
+    eval {
+        my $sql = 'delete from keytab_sync where ks_name = ?';
+        $self->{dbh}->do ($sql, undef, $self->{name});
+        $sql = 'delete from keytab_enctypes where ke_name = ?';
+        $self->{dbh}->do ($sql, undef, $self->{name});
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ($@);
+        $self->{dbh}->rollback;
+        return undef;
     }
     return undef if not $self->kadmin_delprinc ($self->{name});
     return $self->SUPER::destroy ($user, $host, $time);
@@ -541,7 +648,8 @@ sub get {
     }
     my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
     unlink $file;
-    return undef if not $self->kadmin_ktadd ($self->{name}, $file);
+    my @enctypes = $self->attr ('enctypes');
+    return undef if not $self->kadmin_ktadd ($self->{name}, $file, @enctypes);
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
@@ -626,6 +734,18 @@ Sets or retrieves a given object attribute.  The following attributes are
 supported:
 
 =over 4
+
+=item enctypes
+
+Restricts the generated keytab to a specific set of encryption types.  The
+values of this attribute must be enctype strings recognized by Kerberos
+(strings like C<aes256-cts> or C<des-cbc-crc>).  Note that the salt should
+not be included; since the salt is irrelevant for keytab keys, it will
+always be set to C<normal> by the wallet.
+
+If this attribute is set, the specified enctype list will be passed to
+ktadd when get() is called for that keytab.  If it is not set, the default
+set in the KDC will be used.
 
 =item sync
 

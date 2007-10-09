@@ -76,10 +76,12 @@ Object API
 
     Destroys the given object.  Backend implementations should override
     this method if they need to destroy the object in an external system
-    and then call the parent method to do the database cleanup.  For
-    example, the keytab backend overrides this method to destroy the
-    principal in the Kerberos KDC.  Be careful not to require that the
-    object exist in a remote system for destroy() to work, since an
+    or if they have any object-specific attributes to remove.  Overriding
+    methods should then call the parent method to do the database cleanup.
+    For example, the keytab backend overrides this method to destroy the
+    principal in the Kerberos KDC and remove the enctypes and sync
+    attribute data from auxiliary tables.  Be careful not to require that
+    the object exist in a remote system for destroy() to work, since an
     administrator will want to destroy an orphaned wallet database entry
     after something happened to the remote system entry.
 

@@ -8,11 +8,21 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 160;
+use Test::More tests => 172;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
 use Wallet::Server;
+
+# Mapping of klist -ke encryption type names to the strings that Kerberos uses
+# internally.  It's very annoying to have to maintain this, and it probably
+# breaks with Heimdal.
+my %enctype =
+    ('triple des cbc mode with hmac/sha1'      => 'des3-cbc-sha1',
+     'des cbc mode with crc-32'                => 'des-cbc-crc',
+     'des cbc mode with rsa-md5'               => 'des-cbc-md5',
+     'aes-256 cts mode with 96-bit sha-1 hmac' => 'aes256-cts',
+     'arcfour with hmac/md5'                   => 'rc4-hmac');
 
 # Use a local SQLite database for testing.
 $Wallet::Config::DB_DRIVER = 'SQLite';
@@ -114,6 +124,31 @@ sub valid {
         unlink 'keytab';
     }
     return $result;
+}
+
+# Given keytab data, write it to a file and try to determine the enctypes of
+# the keys present in that file.  Returns the enctypes as a list, with UNKNOWN
+# for encryption types that weren't recognized.  This is an ugly way of doing
+# this.
+sub enctypes {
+    my ($keytab) = @_;
+    open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
+    print KEYTAB $keytab;
+    close KEYTAB;
+    open (KLIST, '-|', 'klist', '-ke', 'keytab')
+        or die "cannot run klist: $!\n";
+    my @enctypes;
+    local $_;
+    while (<KLIST>) {
+        next unless /^ *\d+ /;
+        my ($string) = /\((.*)\)\s*$/;
+        next unless $string;
+        $enctype = $enctype{lc $string} || 'UNKNOWN';
+        push (@enctypes, $enctype);
+    }
+    close KLIST;
+    unlink 'keytab';
+    return @enctypes;
 }
 
 # Given a Wallet::Object::Keytab object, the keytab data, the Kerberos v5
@@ -402,7 +437,7 @@ SKIP: {
 
 # Tests for kaserver synchronization support.
 SKIP: {
-    skip 'no keytab configuration', 94 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 98 unless -f 't/data/test.keytab';
 
     # Test the principal mapping.  We can do this without having a kaserver
     # configuration.  We only need a basic keytab object configuration.  Do
@@ -492,7 +527,7 @@ EOO
     is ($show, $expected, ' and show now displays the attribute');
 
     # Set up our configuration.
-    skip 'no AFS kaserver configuration', 27 unless -f 't/data/test.srvtab';
+    skip 'no AFS kaserver configuration', 31 unless -f 't/data/test.srvtab';
     $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
@@ -565,10 +600,84 @@ EOO
     ok (! -f "keytab.$$", ' and the temporary file was cleaned up');
     $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
 
-    # Destroy the principal.
+    # Destroy the principal and recreate it and make sure we cleaned up.
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
     ok (! valid_srvtab ($one, $keytab, $k5, $k4),
         ' and the principal is gone');
+    $one = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    ok (defined ($one), ' and recreating it succeeds');
+    @targets = $one->attr ('sync');
+    is (scalar (@targets), 0, ' and now there is no attribute');
+    is ($one->error, undef, ' and no error');
+
+    # Now destroy it for good.
+    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+}
+
+# Tests for enctype restriction.
+SKIP: {
+    skip 'no keytab configuration', 8 unless -f 't/data/test.keytab';
+
+    # Set up our configuration.
+    $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
+    $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
+    $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_TMP       = '.';
+    my $realm = $Wallet::Config::KEYTAB_REALM;
+    my $principal = $Wallet::Config::KEYTAB_PRINCIPAL;
+
+    # Create an object for testing and determine the enctypes we have to work
+    # with.
+    my $one = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    ok (defined ($one), 'Creating wallet/one succeeds');
+    my $keytab = $one->get (@trace);
+    ok (defined ($keytab), ' and retrieving the keytab works');
+    my @enctypes = sort grep { $_ ne 'UNKNOWN' } enctypes ($keytab);
+
+    # No enctypes we recognize?
+    skip 'no recognized enctypes', 6 unless @enctypes;
+
+    # We can test.  Add the enctypes we recognized to the enctypes table so
+    # that we'll be allowed to use them.
+    for (@enctypes) {
+        my $sql = "insert into keytab_enctypes (ke_name, ke_enctype)
+            values ('wallet/one', ?)";
+        $dbh->do ($sql, undef, $_);
+    }
+
+    # Set those encryption types and make sure we get back a limited keytab.
+    is ($one->attr ('enctypes', [ @enctypes ], @trace), 1,
+        'Setting enctypes works');
+    my @values = $one->attr ('enctypes');
+    is ("@values", "@enctypes", ' and we get back the right enctype list');
+    my $eshow = join ("\n" . (' ' x 17), @enctypes);
+    $eshow =~ s/\s+\z/\n/;
+    my $show = $one->show;
+    $show =~ s/^(\s*(Created|Downloaded) on:) \d+$/$1 0/mg;
+    $expected = <<"EOO";
+           Type: keytab
+           Name: wallet/one
+       Enctypes: $eshow
+     Created by: $user
+   Created from: $host
+     Created on: 0
+  Downloaded by: $user
+Downloaded from: $host
+  Downloaded on: 0
+EOO
+    is ($show, $expected, ' and show now displays the enctype list');
+    $keytab = $one->get (@trace);
+    ok (defined ($keytab), ' and retrieving the keytab still works');
+    @values = enctypes ($keytab);
+    @values = sort @values;
+    is ("@values", "@enctypes", ' and the keytab has the right keys');
+
+    # All done.  Clean up.
+    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
 }
 
 # Clean up.
