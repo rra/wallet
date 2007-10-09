@@ -21,7 +21,7 @@ use DBI;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Implementation
@@ -289,7 +289,7 @@ this table:
       oh_type             varchar(16)
           not null references objects(ob_type),
       oh_name             varchar(255)
-          not null references objects(ob_object),
+          not null references objects(ob_name),
       oh_action           varchar(16) not null,
       oh_field            varchar(16) default null,
       oh_type_field       varchar(255) default null,
