@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 172;
+use Test::More tests => 194;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -148,7 +148,7 @@ sub enctypes {
     }
     close KLIST;
     unlink 'keytab';
-    return @enctypes;
+    return sort @enctypes;
 }
 
 # Given a Wallet::Object::Keytab object, the keytab data, the Kerberos v5
@@ -618,7 +618,7 @@ EOO
 
 # Tests for enctype restriction.
 SKIP: {
-    skip 'no keytab configuration', 8 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 30 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -636,16 +636,15 @@ SKIP: {
     ok (defined ($one), 'Creating wallet/one succeeds');
     my $keytab = $one->get (@trace);
     ok (defined ($keytab), ' and retrieving the keytab works');
-    my @enctypes = sort grep { $_ ne 'UNKNOWN' } enctypes ($keytab);
+    my @enctypes = grep { $_ ne 'UNKNOWN' } enctypes ($keytab);
 
     # No enctypes we recognize?
-    skip 'no recognized enctypes', 6 unless @enctypes;
+    skip 'no recognized enctypes', 28 unless @enctypes;
 
     # We can test.  Add the enctypes we recognized to the enctypes table so
     # that we'll be allowed to use them.
     for (@enctypes) {
-        my $sql = "insert into keytab_enctypes (ke_name, ke_enctype)
-            values ('wallet/one', ?)";
+        my $sql = 'insert into enctypes (en_name) values (?)';
         $dbh->do ($sql, undef, $_);
     }
 
@@ -673,8 +672,58 @@ EOO
     $keytab = $one->get (@trace);
     ok (defined ($keytab), ' and retrieving the keytab still works');
     @values = enctypes ($keytab);
-    @values = sort @values;
     is ("@values", "@enctypes", ' and the keytab has the right keys');
+    is ($one->attr ('enctypes', [ 'foo-bar' ], @trace), undef,
+        'Setting an unrecognized enctype fails');
+    is ($one->error, 'unknown encryption type foo-bar',
+        ' with the right error message');
+
+    # Now, try testing limiting the enctypes to just one.
+  SKIP: {
+        skip 'insufficient recognized enctypes', 12 unless @enctypes > 1;
+        is ($one->attr ('enctypes', [ $enctypes[0] ], @trace), 1,
+            'Setting a single enctype works');
+        @values = $one->attr ('enctypes');
+        is ("@values", $enctypes[0], ' and we get back the right value');
+        $keytab = $one->get (@trace);
+        ok (defined ($keytab), ' and retrieving the keytab still works');
+        @values = enctypes ($keytab);
+        is ("@values", $enctypes[0], ' and it has the right enctype');
+        is ($one->attr ('enctypes', [ $enctypes[1] ], @trace), 1,
+            'Setting a different single enctype works');
+        @values = $one->attr ('enctypes');
+        is ("@values", $enctypes[1], ' and we get back the right value');
+        $keytab = $one->get (@trace);
+        ok (defined ($keytab), ' and retrieving the keytab still works');
+        @values = enctypes ($keytab);
+        is ("@values", $enctypes[1], ' and it has the right enctype');
+        is ($one->attr ('enctypes', [ @enctypes[0..1] ], @trace), 1,
+            'Setting two enctypes works');
+        @values = $one->attr ('enctypes');
+        is ("@values", "@enctypes[0..1]", ' and we get back the right values');
+        $keytab = $one->get (@trace);
+        ok (defined ($keytab), ' and retrieving the keytab still works');
+        @values = enctypes ($keytab);
+        is ("@values", "@enctypes[0..1]", ' and it has the right enctypes');
+    }
+
+    # Test clearing enctypes.
+    is ($one->attr ('enctypes', [], @trace), 1, 'Clearing enctypes works');
+    @values = $one->attr ('enctypes');
+    ok (@values == 0, ' and now there are no enctypes');
+    is ($one->error, undef, ' and no error');
+
+    # Test deleting enctypes on object destruction.
+    is ($one->attr ('enctypes', [ $enctypes[0] ], @trace), 1,
+        'Setting a single enctype works');
+    is ($one->destroy (@trace), 1, ' and destroying the object works');
+    $one = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    ok (defined ($one), ' as does recreating it');
+    @values = $one->attr ('enctypes');
+    ok (@values == 0, ' and now there are no enctypes');
+    is ($one->error, undef, ' and no error');
 
     # All done.  Clean up.
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
