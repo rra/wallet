@@ -758,6 +758,11 @@ If this attribute is set, the specified enctype list will be passed to
 ktadd when get() is called for that keytab.  If it is not set, the default
 set in the KDC will be used.
 
+This attribute is ignored if the C<unchanging> flag is set on a keytab.
+Keytabs retrieved with C<unchanging> set will contain all keys present in
+the KDC for that Kerberos principal and therefore may contain different
+enctypes than those requested by this attribute.
+
 =item sync
 
 Sets the external systems to which the key of a given principal is
