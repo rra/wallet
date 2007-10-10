@@ -41,6 +41,11 @@ Release 1.0:
 * Add POD coverage testing using Test::POD::Coverage for the server
   modules.
 
+* Provide a way to get history for deleted objects and ACLs.
+
+* Display ACL names rather than index numbers when displaying history of
+  owner and acl_* settings.
+
 * Provide an interface to list all objects in the database by type, by
   owner (including null), or by all uses of an ACL.
 
