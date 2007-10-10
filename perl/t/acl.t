@@ -8,7 +8,8 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 100;
+use POSIX qw(strftime);
+use Test::More tests => 101;
 
 use Wallet::ACL;
 use Wallet::Config;
@@ -24,7 +25,7 @@ my $admin = 'admin@EXAMPLE.COM';
 my $user1 = 'alice@EXAMPLE.COM';
 my $user2 = 'bob@EXAMPLE.COM';
 my $host = 'localhost';
-my @trace = ($admin, $host);
+my @trace = ($admin, $host, time);
 
 # Use Wallet::Server to set up the database.
 my $server = eval { Wallet::Server->initialize ($admin) };
@@ -186,6 +187,26 @@ is (scalar (@entries), 0, ' and now there are no entries');
 is ($acl->show, "Members of ACL example (id: 2) are:\n", ' and show concurs');
 is ($acl->check ($user2), 0, ' and the second user check fails');
 is (scalar ($acl->check_errors), '', ' with no error message');
+
+# Test history.
+my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
+my $history = <<"EOO";
+$date  create
+    by $admin from $host
+$date  add krb5 $user1
+    by $admin from $host
+$date  add krb5 $user2
+    by $admin from $host
+$date  remove krb5 $user1
+    by $admin from $host
+$date  add krb5 
+    by $admin from $host
+$date  remove krb5 $user2
+    by $admin from $host
+$date  remove krb5 
+    by $admin from $host
+EOO
+is ($acl->history, $history, 'History is correct');
 
 # Test destroy.
 if ($acl->destroy (@trace)) {

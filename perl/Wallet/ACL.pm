@@ -17,12 +17,13 @@ use strict;
 use vars qw(%MAPPING $VERSION);
 
 use DBI;
+use POSIX qw(strftime);
 use Wallet::ACL::Krb5;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 # This is a mapping of schemes to class names, used to determine which ACL
 # verifier should be instantiated for a given ACL scheme.  Currently, there's
@@ -299,6 +300,34 @@ sub show {
     return $output;
 }
 
+# Return as a string the history of an ACL.  Returns undef on failure.
+sub history {
+    my ($self) = @_;
+    my $output = '';
+    eval {
+        my $sql = 'select ah_action, ah_scheme, ah_identifier, ah_by, ah_from,
+            ah_on from acl_history where ah_acl = ? order by ah_on';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($self->{id});
+        my @data;
+        while (@data = $sth->fetchrow_array) {
+            my $time = strftime ('%Y-%m-%d %H:%M:%S', localtime $data[5]);
+            $output .= "$time  ";
+            if ($data[0] eq 'add' or $data[0] eq 'remove') {
+                $output .= "$data[0] $data[1] $data[2]";
+            } else {
+                $output .= $data[0];
+            }
+            $output .= "\n    by $data[3] from $data[4]\n";
+        }
+    };
+    if ($@) {
+        $self->error ("cannot read history for $self->{id}: $@");
+        return undef;
+    }
+    return $output;
+}
+
 # Given a principal, check whether it should be granted access according to
 # this ACL.  Returns 1 if access was granted, 0 if access was denied, and
 # undef on some error.  Errors from ACL verifiers do not cause an error
@@ -375,6 +404,8 @@ Wallet::ACL - Implementation of ACLs in the wallet system
     }
     $acl->remove ('krb5', 'bob@EXAMPLE.COM', $admin, $host);
     my @entries = $acl->list;
+    my $summary = $acl->show;
+    my $history = $acl->history;
     $acl->destroy ($admin, $host);
 
 =head1 DESCRIPTION
@@ -468,6 +499,15 @@ DATETIME isn't given, the current time is used.
 Returns the error of the last failing operation or undef if no operations
 have failed.  Callers should call this function to get the error message
 after an undef return from any other instance method.
+
+=item history()
+
+Returns the human-readable history of this ACL.  Each action that changes
+the ACL (not including changes to the name of the ACL) will be represented
+by two lines.  The first line will have a timestamp of the change followed
+by a description of the change, and the second line will give the user who
+made the change and the host from which the change was made.  On failure,
+returns undef, and the caller should call error() to get the error message.
 
 =item id()
 
