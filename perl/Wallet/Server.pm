@@ -24,7 +24,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 # This is a mapping of object types to class names, used to determine which
 # object implementation should be instantiated for a given object type.
@@ -371,6 +371,19 @@ sub show {
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'show');
     my $result = $object->show;
+    $self->error ($object->error) unless defined $result;
+    return $result;
+}
+
+# Return a human-readable description of the object history, or returns undef
+# and sets the internal error if the object can't be found or if the user
+# isn't authorized.
+sub history {
+    my ($self, $type, $name) = @_;
+    my $object = $self->retrieve ($type, $name);
+    return undef unless defined $object;
+    return undef unless $self->acl_check ($object, 'show');
+    my $result = $object->history;
     $self->error ($object->error) unless defined $result;
     return $result;
 }
@@ -800,6 +813,14 @@ special privileges to get objects.
 
 Returns undef on failure.  The caller should be careful to distinguish
 between undef and the empty string, which is valid object data.
+
+=item history(TYPE, NAME)
+
+Returns (as a string) the human-readable history of the object identified by
+TYPE and NAME, or undef on error.  To see the object history, the current
+user must be a member of the ADMIN ACL, authorized by the show ACL, or
+authorized by the owner ACL; however, if the show ACL is set, the owner ACL
+will not be checked.
 
 =item owner(TYPE, NAME [, OWNER])
 
