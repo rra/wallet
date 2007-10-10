@@ -8,7 +8,8 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 194;
+use POSIX qw(strftime);
+use Test::More tests => 195;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -204,9 +205,13 @@ is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
 my $dbh = $server->dbh;
 
+# Use this to accumulate the history traces so that we can check history.
+my $history = '';
+my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
+
 # Basic keytab creation and manipulation tests.
 SKIP: {
-    skip 'no keytab configuration', 48 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 49 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -331,6 +336,29 @@ EOO
         ' and clearing locked works');
     is ($object->destroy (@trace), 1, ' and destroying it succeeds');
     ok (! created ('wallet/one'), ' and now it does not exist');
+
+    # Test history (which should still work after the object is deleted).
+    $history .= <<"EOO";
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  set flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  clear flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  set flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  clear flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+EOO
+    is ($object->history, $history, 'History is correct to this point');
 
     # Test configuration errors.
     undef $Wallet::Config::KEYTAB_FILE;
