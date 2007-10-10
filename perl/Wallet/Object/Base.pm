@@ -17,12 +17,13 @@ use strict;
 use vars qw($VERSION);
 
 use DBI;
+use POSIX qw(strftime);
 use Wallet::ACL;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Constructors
@@ -440,6 +441,59 @@ sub flag_set {
 }
 
 ##############################################################################
+# History
+##############################################################################
+
+# Return the formatted history for a given object or undef on error.
+# Currently always returns the complete history, but eventually will need to
+# provide some way of showing only recent entries.
+sub history {
+    my ($self) = @_;
+    my $output = '';
+    eval {
+        my $sql = 'select oh_action, oh_field, oh_type_field, oh_old, oh_new,
+            oh_by, oh_from, oh_on from object_history where oh_type = ? and
+            oh_name = ? order by oh_on';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($self->{type}, $self->{name});
+        my @data;
+        while (@data = $sth->fetchrow_array) {
+            my $time = strftime ('%Y-%m-%d %H:%M:%S', localtime $data[7]);
+            $output .= "$time  ";
+            if ($data[0] eq 'set' and $data[1] eq 'flags') {
+                if (defined ($data[4])) {
+                    $output .= "set flag $data[4]";
+                } elsif (defined ($data[3])) {
+                    $output .= "clear flag $data[3]";
+                }
+            } elsif ($data[0] eq 'set') {
+                my $field = $data[1];
+                if ($field eq 'type_data') {
+                    $field = $data[2];
+                }
+                my ($old, $new) = @data[3..4];
+                if (defined ($old) and defined ($new)) {
+                    $output .= "set $field to $new (was $old)";
+                } elsif (defined ($new)) {
+                    $output .= "set $field to $new";
+                } elsif (defined ($old)) {
+                    $output .= "unset $field";
+                }
+            } else {
+                $output .= $data[0];
+            }
+            $output .= "\n    by $data[5] from $data[6]\n";
+        }
+    };
+    if ($@) {
+        my $id = $self->{type} . ':' . $self->{name};
+        $self->error ("cannot read history for $id: $@");
+        return undef;
+    }
+    return $output;
+}
+
+##############################################################################
 # Object manipulation
 ##############################################################################
 
@@ -744,6 +798,14 @@ An object implementation must override this method with one that returns
 either the data of the object or undef on some error, using the provided
 arguments to update history information.  The Wallet::Object::Base
 implementation just throws an exception.
+
+=item history()
+
+Returns the formatted history for the object.  There will be two lines for
+each action on the object.  The first line has the timestamp of the action
+and the action, and the second line gives the user who performed the
+action and the host from which they performed it (based on the trace
+information passed into the other object methods).
 
 =item name()
 

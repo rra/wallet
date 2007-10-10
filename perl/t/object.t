@@ -8,7 +8,8 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 129;
+use POSIX qw(strftime);
+use Test::More tests => 131;
 
 use Wallet::ACL;
 use Wallet::Config;
@@ -23,7 +24,7 @@ unlink 'wallet-db';
 # Some global defaults to use.
 my $user = 'admin@EXAMPLE.COM';
 my $host = 'localhost';
-my @trace = ($user, $host);
+my @trace = ($user, $host, time);
 my $princ = 'service/test@EXAMPLE.COM';
 
 # Use Wallet::Server to set up the database.
@@ -34,13 +35,14 @@ my $dbh = $server->dbh;
 
 # Okay, now we have a database.  Test create and new.  We make believe this is
 # a keytab object; it won't matter for what we're doing.
-my $created = time;
-my $object = eval { Wallet::Object::Base->create ('keytab', $princ, $dbh,
-                                                  @trace, $created) };
+my $object = eval {
+    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+  };
 is ($@, '', 'Object creation did not die');
 ok ($object->isa ('Wallet::Object::Base'), ' and returned the right class');
-my $other =
-    eval { Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace) };
+my $other = eval {
+    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+  };
 like ($@, qr/^cannot create object \Qkeytab:$princ: /, 'Repeating fails');
 $other = eval { Wallet::Object::Base->create ('', $princ, $dbh, @trace) };
 is ($@, "invalid object type\n", 'Using an empty type fails');
@@ -205,7 +207,7 @@ my $output = <<"EOO";
           Flags: unchanging
      Created by: $user
    Created from: $host
-     Created on: $created
+     Created on: $trace[2]
 
 Members of ACL ADMIN (id: 1) are:
   krb5 $user
@@ -225,7 +227,7 @@ $output = <<"EOO";
           Flags: locked unchanging
      Created by: $user
    Created from: $host
-     Created on: $created
+     Created on: $trace[2]
 
 Members of ACL ADMIN (id: 1) are:
   krb5 $user
@@ -245,6 +247,78 @@ if ($object->destroy (@trace)) {
 }
 $object = eval { Wallet::Object::Base->new ('keytab', $princ, $dbh) };
 is ($@, "cannot find keytab:$princ\n", ' and object is all gone');
+
+# Test history.
+$object = eval {
+    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+  };
+ok (defined ($object), 'Recreating the object succeeds');
+my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
+$output = <<"EOO";
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  set owner to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  unset owner
+    by admin\@EXAMPLE.COM from localhost
+$date  set owner to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  set expires to $now
+    by admin\@EXAMPLE.COM from localhost
+$date  unset expires
+    by admin\@EXAMPLE.COM from localhost
+$date  set expires to $now
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_get to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  unset acl_get
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_get to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_store to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  unset acl_store
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_store to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_show to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  unset acl_show
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_show to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_destroy to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  unset acl_destroy
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_destroy to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_flags to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  unset acl_flags
+    by admin\@EXAMPLE.COM from localhost
+$date  set acl_flags to 1
+    by admin\@EXAMPLE.COM from localhost
+$date  set flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  set flag unchanging
+    by admin\@EXAMPLE.COM from localhost
+$date  clear flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  set flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  clear flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  set flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  clear flag locked
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+EOO
+is ($object->history, $output, ' and the history is correct');
 
 # Clean up.
 unlink 'wallet-db';
