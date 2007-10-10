@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 195;
+use Test::More tests => 196;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -640,7 +640,7 @@ EOO
 
 # Tests for enctype restriction.
 SKIP: {
-    skip 'no keytab configuration', 30 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 31 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -661,7 +661,7 @@ SKIP: {
     my @enctypes = grep { $_ ne 'UNKNOWN' } enctypes ($keytab);
 
     # No enctypes we recognize?
-    skip 'no recognized enctypes', 28 unless @enctypes;
+    skip 'no recognized enctypes', 29 unless @enctypes;
 
     # We can test.  Add the enctypes we recognized to the enctypes table so
     # that we'll be allowed to use them.
@@ -697,6 +697,8 @@ EOO
         'Setting an unrecognized enctype fails');
     is ($one->error, 'unknown encryption type foo-bar',
         ' with the right error message');
+    @values = enctypes ($keytab);
+    is ("@values", "@enctypes", ' and we did rollback properly');
 
     # Now, try testing limiting the enctypes to just one.
   SKIP: {
