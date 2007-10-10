@@ -460,24 +460,30 @@ sub history {
         while (@data = $sth->fetchrow_array) {
             my $time = strftime ('%Y-%m-%d %H:%M:%S', localtime $data[7]);
             $output .= "$time  ";
+            my ($old, $new) = @data[3..4];
             if ($data[0] eq 'set' and $data[1] eq 'flags') {
                 if (defined ($data[4])) {
                     $output .= "set flag $data[4]";
                 } elsif (defined ($data[3])) {
                     $output .= "clear flag $data[3]";
                 }
+            } elsif ($data[0] eq 'set' and $data[1] eq 'type_data') {
+                my $attr = $data[2];
+                if (defined ($old) and defined ($new)) {
+                    $output .= "set attribute $attr to $new (was $old)";
+                } elsif (defined ($old)) {
+                    $output .= "remove $old from attribute $attr";
+                } elsif (defined ($new)) {
+                    $output .= "add $new to attribute $attr";
+                }
             } elsif ($data[0] eq 'set') {
                 my $field = $data[1];
-                if ($field eq 'type_data') {
-                    $field = $data[2];
-                }
-                my ($old, $new) = @data[3..4];
                 if (defined ($old) and defined ($new)) {
                     $output .= "set $field to $new (was $old)";
                 } elsif (defined ($new)) {
                     $output .= "set $field to $new";
                 } elsif (defined ($old)) {
-                    $output .= "unset $field";
+                    $output .= "unset $field (was $old)";
                 }
             } else {
                 $output .= $data[0];
