@@ -144,6 +144,14 @@ sub command {
         } elsif (@result) {
             print join ("\n", @result, '');
         }
+    } elsif ($command eq 'history') {
+        check_args (2, 2, [], @args);
+        my $output = $server->history (@args);
+        if (defined $output) {
+            print $output;
+        } else {
+            die $server->error;
+        }
     } elsif ($command eq 'owner') {
         check_args (2, 3, [], @args);
         if (@args > 2) {
@@ -222,21 +230,23 @@ B<wallet-backend> takes no traditional options.
 
 Most commands are only available to wallet administrators (users on the
 C<ADMIN> ACL).  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
-C<flag clear>, C<flag set>, C<getattr>, and C<setattr>.  All of those
-commands have their own ACLs except C<getattr>, which uses the C<show> ACL,
-and C<setattr>, which uses the C<show> ACL.  If the appropriate ACL is set,
-it alone is checked to see if the user has access.  Otherwise, C<get>,
-C<store>, C<show>, C<getattr>, and C<setattr> access is permitted if the
-user is authorized by the owner ACL of the object.
+C<flag clear>, C<flag set>, C<getattr>, C<setattr>, and C<history>.  All
+of those commands have their own ACLs except C<getattr> and C<history>,
+which use the C<show> ACL, and C<setattr>, which uses the C<store> ACL.
+If the appropriate ACL is set, it alone is checked to see if the user has
+access.  Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, and
+C<history> access is permitted if the user is authorized by the owner ACL
+of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
-and C<store>.  For C<get> and C<show>, they must still be authorized by
+and C<store>.  For C<get> and C<store>, they must still be authorized by
 either the appropriate specific ACL or the owner ACL.
 
 If the locked flag is set on an object, no commands can be run on that
 object that change data except the C<flags> commands, nor can the C<get>
-command be used on that object.  C<show>, C<getacl>, and C<owner> or
-C<expires> without an argument can still be used on that object.
+command be used on that object.  C<show>, C<history>, C<getacl>,
+C<getattr>, and C<owner> or C<expires> without an argument can still be
+used on that object.
 
 For more information on attributes, see L<ATTRIBUTES>.
 
@@ -336,6 +346,14 @@ particular object type, and <attr> must be an attribute type known to the
 underlying object implementation.  The attribute values, if any, are printed
 one per line.  If the attribute is not set on this object, nothing is
 printed.
+
+=item history <type> <name>
+
+Displays the history for the object identified by <type> and <name>.
+This human-readable output will have two lines for each action that
+changes the object, plus for any get action.  The first line has the
+timestamp of the action and the action, and the second line gives the user
+who performed the action and the host from which they performed it.
 
 =item owner <type> <name> [<owner>]
 

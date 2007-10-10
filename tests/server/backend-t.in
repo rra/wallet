@@ -9,7 +9,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 790;
+use Test::More tests => 802;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -105,6 +105,13 @@ sub get {
     return 'get';
 }
 
+sub history {
+    shift;
+    print "history @_\n";
+    return if $_[0] eq 'error';
+    return 'history';
+}
+
 sub owner {
     shift;
     print "owner @_\n";
@@ -174,6 +181,7 @@ my %commands = (create  => [2, 2],
                 get     => [2, 2],
                 getacl  => [3, 3],
                 getattr => [3, 3],
+                history => [2, 2],
                 owner   => [2, 3],
                 setacl  => [4, 4],
                 setattr => [4, 9],
@@ -269,7 +277,7 @@ for my $command (qw/create destroy setacl setattr store/) {
         ' and ran the right method');
     $error++;
 }
-for my $command (qw/expires get getacl getattr owner show/) {
+for my $command (qw/expires get getacl getattr history owner show/) {
     my $method = { getacl => 'acl', getattr => 'attr' }->{$command};
     $method ||= $command;
     my @extra = ('foo') x ($commands{$command}[0] - 2);
@@ -280,7 +288,7 @@ for my $command (qw/expires get getacl getattr owner show/) {
         is ($out, "$new\n$method type name$extra\nattr1\nattr2\n",
             ' and ran the right method with output');
     } else {
-        my $newline = ($command eq 'get' or $command eq 'show') ? '' : "\n";
+        my $newline = ($command =~ /^(get|history|show)\z/) ? '' : "\n";
         ($out, $err) = run_backend ($command, 'type', 'name', @extra);
         is ($err, '', "Command $command ran with no errors");
         is ($out, "$new\n$method type name$extra\n$method$newline",
