@@ -256,67 +256,67 @@ ok (defined ($object), 'Recreating the object succeeds');
 my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 $output = <<"EOO";
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set owner to 1
-    by admin\@EXAMPLE.COM from localhost
-$date  unset owner
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
+$date  unset owner (was 1)
+    by $user from $host
 $date  set owner to 1
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set expires to $now
-    by admin\@EXAMPLE.COM from localhost
-$date  unset expires
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
+$date  unset expires (was $now)
+    by $user from $host
 $date  set expires to $now
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set acl_get to 1
-    by admin\@EXAMPLE.COM from localhost
-$date  unset acl_get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
+$date  unset acl_get (was 1)
+    by $user from $host
 $date  set acl_get to 1
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set acl_store to 1
-    by admin\@EXAMPLE.COM from localhost
-$date  unset acl_store
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
+$date  unset acl_store (was 1)
+    by $user from $host
 $date  set acl_store to 1
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set acl_show to 1
-    by admin\@EXAMPLE.COM from localhost
-$date  unset acl_show
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
+$date  unset acl_show (was 1)
+    by $user from $host
 $date  set acl_show to 1
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set acl_destroy to 1
-    by admin\@EXAMPLE.COM from localhost
-$date  unset acl_destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
+$date  unset acl_destroy (was 1)
+    by $user from $host
 $date  set acl_destroy to 1
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set acl_flags to 1
-    by admin\@EXAMPLE.COM from localhost
-$date  unset acl_flags
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
+$date  unset acl_flags (was 1)
+    by $user from $host
 $date  set acl_flags to 1
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set flag unchanging
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  clear flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  clear flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  clear flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
 is ($object->history, $output, ' and the history is correct');
 
