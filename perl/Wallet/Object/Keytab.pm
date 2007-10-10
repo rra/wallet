@@ -428,8 +428,9 @@ sub enctypes_set {
 
         # When inserting new enctypes, we unfortunately have to do the
         # consistency check against the enctypes table ourselves, since SQLite
-        # doesn't enforce integrity constraints.
-        for my $enctype (keys %enctypes) {
+        # doesn't enforce integrity constraints.  We do this in sorted order
+        # to make it easier to test.
+        for my $enctype (sort keys %enctypes) {
             $sql = 'select en_name from enctypes where en_name = ?';
             my $status = $self->{dbh}->selectrow_array ($sql, undef, $enctype);
             unless ($status) {
