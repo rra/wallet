@@ -32,7 +32,7 @@ unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
 # Some global defaults to use.
 my $user = 'admin@EXAMPLE.COM';
 my $host = 'localhost';
-my @trace = ($user, $host);
+my @trace = ($user, $host, time);
 
 # Flush all output immediately.
 $| = 1;
@@ -278,19 +278,17 @@ SKIP: {
 
     # For right now, this is the only backend type that we have for which we
     # can do a get, so test display of the last download information.
-    my $show = $object->show;
-    $show =~ s/^(\s*(?:Created|Downloaded) on:) \d+$/$1 0/mg;
     my $expected = <<"EOO";
            Type: keytab
            Name: wallet/one
      Created by: $user
    Created from: $host
-     Created on: 0
+     Created on: $trace[2]
   Downloaded by: $user
 Downloaded from: $host
-  Downloaded on: 0
+  Downloaded on: $trace[2]
 EOO
-    is ($show, $expected, 'Show output is correct');
+    is ($object->show, $expected, 'Show output is correct');
 
     # Test error handling on keytab retrieval.
     undef $Wallet::Config::KEYTAB_TMP;
@@ -484,16 +482,14 @@ SKIP: {
 
     # Test setting synchronization attributes, which can also be done without
     # configuration.
-    my $show = $one->show;
-    $show =~ s/^(\s*Created on:) \d+$/$1 0/mg;
     my $expected = <<"EOO";
            Type: keytab
            Name: wallet/one
      Created by: $user
    Created from: $host
-     Created on: 0
+     Created on: $trace[2]
 EOO
-    is ($show, $expected, 'Show output displays no attributes');
+    is ($one->show, $expected, 'Show output displays no attributes');
     is ($one->attr ('foo', [ 'bar' ], @trace), undef,
         'Setting unknown attribute fails');
     is ($one->error, 'unknown attribute foo', ' with the right error');
@@ -514,17 +510,15 @@ EOO
     is (scalar (@targets), 1, ' and now one target is set');
     is ($targets[0], 'kaserver', ' and it is correct');
     is ($one->error, undef, ' and there is no error');
-    $show = $one->show;
-    $show =~ s/^(\s*Created on:) \d+$/$1 0/mg;
     $expected = <<"EOO";
            Type: keytab
            Name: wallet/one
     Synced with: kaserver
      Created by: $user
    Created from: $host
-     Created on: 0
+     Created on: $trace[2]
 EOO
-    is ($show, $expected, ' and show now displays the attribute');
+    is ($one->show, $expected, ' and show now displays the attribute');
 
     # Set up our configuration.
     skip 'no AFS kaserver configuration', 31 unless -f 't/data/test.srvtab';
@@ -655,20 +649,18 @@ SKIP: {
     is ("@values", "@enctypes", ' and we get back the right enctype list');
     my $eshow = join ("\n" . (' ' x 17), @enctypes);
     $eshow =~ s/\s+\z/\n/;
-    my $show = $one->show;
-    $show =~ s/^(\s*(Created|Downloaded) on:) \d+$/$1 0/mg;
     $expected = <<"EOO";
            Type: keytab
            Name: wallet/one
        Enctypes: $eshow
      Created by: $user
    Created from: $host
-     Created on: 0
+     Created on: $trace[2]
   Downloaded by: $user
 Downloaded from: $host
-  Downloaded on: 0
+  Downloaded on: $trace[2]
 EOO
-    is ($show, $expected, ' and show now displays the enctype list');
+    is ($one->show, $expected, ' and show now displays the enctype list');
     $keytab = $one->get (@trace);
     ok (defined ($keytab), ' and retrieving the keytab still works');
     @values = enctypes ($keytab);
