@@ -340,23 +340,23 @@ EOO
     # Test history (which should still work after the object is deleted).
     $history .= <<"EOO";
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  clear flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  clear flag locked
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
     is ($object->history, $history, 'History is correct to this point');
 
@@ -463,13 +463,13 @@ SKIP: {
     # Check that history has been updated correctly.
     $history .= <<"EOO";
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  set flag unchanging
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
     is ($one->history, $history, 'History is correct to this point');
 }
@@ -562,9 +562,9 @@ EOO
     is ($one->show, $expected, ' and show now displays the attribute');
     $history .= <<"EOO";
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  add kaserver to attribute sync
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
     is ($one->history, $history, ' and history is correct for attributes');
 
@@ -660,27 +660,27 @@ EOO
     # Check that history is still correct.
     $history .= <<"EOO";
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  remove kaserver from attribute sync
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  add kaserver to attribute sync
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
     is ($one->history, $history, 'History is correct to this point');
 }
@@ -708,9 +708,9 @@ SKIP: {
     my @enctypes = grep { $_ ne 'UNKNOWN' } enctypes ($keytab);
     $history .= <<"EOO";
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
     is ($one->history, $history, ' and history is still correct');
 
@@ -729,7 +729,7 @@ EOO
         'Setting enctypes works');
     for my $enctype (@enctypes) {
         $history .= "$date  add $enctype to attribute enctypes\n";
-        $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+        $history .= "    by $user from $host\n";
     }
     my @values = $one->attr ('enctypes');
     is ("@values", "@enctypes", ' and we get back the right enctype list');
@@ -759,7 +759,7 @@ EOO
     is ("@values", "@enctypes", ' and we did rollback properly');
     $history .= <<"EOO";
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
     is ($one->history, $history, 'History is correct to this point');
 
@@ -771,7 +771,7 @@ EOO
         for my $enctype (@enctypes) {
             next if $enctype eq $enctypes[0];
             $history .= "$date  remove $enctype from attribute enctypes\n";
-            $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+            $history .= "    by $user from $host\n";
         }
         @values = $one->attr ('enctypes');
         is ("@values", $enctypes[0], ' and we get back the right value');
@@ -800,17 +800,17 @@ EOO
         # status whether or not we skipped this section.
         $history .= <<"EOO";
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  remove $enctypes[0] from attribute enctypes
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  add $enctypes[1] to attribute enctypes
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  add $enctypes[0] to attribute enctypes
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  get
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
         is ($one->attr ('enctypes', [ @enctypes ], @trace), 1,
             'Restoring all enctypes works');
@@ -818,7 +818,7 @@ EOO
             next if $enctype eq $enctypes[0];
             next if $enctype eq $enctypes[1];
             $history .= "$date  add $enctype to attribute enctypes\n";
-            $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+            $history .= "    by $user from $host\n";
         }
         is ($one->history, $history, 'History is correct to this point');
     }
@@ -827,7 +827,7 @@ EOO
     is ($one->attr ('enctypes', [], @trace), 1, 'Clearing enctypes works');
     for my $enctype (@enctypes) {
         $history .= "$date  remove $enctype from attribute enctypes\n";
-        $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+        $history .= "    by $user from $host\n";
     }
     @values = $one->attr ('enctypes');
     ok (@values == 0, ' and now there are no enctypes');
@@ -849,13 +849,13 @@ EOO
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
     $history .= <<"EOO";
 $date  add $enctypes[0] to attribute enctypes
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  create
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 $date  destroy
-    by admin\@EXAMPLE.COM from localhost
+    by $user from $host
 EOO
     is ($one->history, $history, 'History is correct to this point');
 }
