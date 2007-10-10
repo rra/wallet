@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 196;
+use Test::More tests => 204;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -398,12 +398,12 @@ EOO
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
 # can't find remctld.
 SKIP: {
-    skip 'no keytab configuration', 16 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 17 unless -f 't/data/test.keytab';
     my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
     my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-    skip 'remctld not found', 16 unless $remctld;
+    skip 'remctld not found', 17 unless $remctld;
     eval { require Net::Remctl };
-    skip 'Net::Remctl not available', 16 if $@;
+    skip 'Net::Remctl not available', 17 if $@;
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -459,11 +459,24 @@ SKIP: {
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
     is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
     stop_remctld;
+
+    # Check that history has been updated correctly.
+    $history .= <<"EOO";
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  set flag unchanging
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+EOO
+    is ($one->history, $history, 'History is correct to this point');
 }
 
 # Tests for kaserver synchronization support.
 SKIP: {
-    skip 'no keytab configuration', 98 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 100 unless -f 't/data/test.keytab';
 
     # Test the principal mapping.  We can do this without having a kaserver
     # configuration.  We only need a basic keytab object configuration.  Do
@@ -547,9 +560,16 @@ EOO
      Created on: $trace[2]
 EOO
     is ($one->show, $expected, ' and show now displays the attribute');
+    $history .= <<"EOO";
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  add kaserver to attribute sync
+    by admin\@EXAMPLE.COM from localhost
+EOO
+    is ($one->history, $history, ' and history is correct for attributes');
 
     # Set up our configuration.
-    skip 'no AFS kaserver configuration', 31 unless -f 't/data/test.srvtab';
+    skip 'no AFS kaserver configuration', 32 unless -f 't/data/test.srvtab';
     $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
@@ -636,11 +656,38 @@ EOO
 
     # Now destroy it for good.
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+
+    # Check that history is still correct.
+    $history .= <<"EOO";
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  remove kaserver from attribute sync
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  add kaserver to attribute sync
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+EOO
+    is ($one->history, $history, 'History is correct to this point');
 }
 
 # Tests for enctype restriction.
 SKIP: {
-    skip 'no keytab configuration', 31 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 38 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -659,20 +706,31 @@ SKIP: {
     my $keytab = $one->get (@trace);
     ok (defined ($keytab), ' and retrieving the keytab works');
     my @enctypes = grep { $_ ne 'UNKNOWN' } enctypes ($keytab);
+    $history .= <<"EOO";
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+EOO
+    is ($one->history, $history, ' and history is still correct');
 
     # No enctypes we recognize?
-    skip 'no recognized enctypes', 29 unless @enctypes;
+    skip 'no recognized enctypes', 33 unless @enctypes;
 
     # We can test.  Add the enctypes we recognized to the enctypes table so
     # that we'll be allowed to use them.
-    for (@enctypes) {
+    for my $enctype (@enctypes) {
         my $sql = 'insert into enctypes (en_name) values (?)';
-        $dbh->do ($sql, undef, $_);
+        $dbh->do ($sql, undef, $enctype);
     }
 
     # Set those encryption types and make sure we get back a limited keytab.
     is ($one->attr ('enctypes', [ @enctypes ], @trace), 1,
         'Setting enctypes works');
+    for my $enctype (@enctypes) {
+        $history .= "$date  add $enctype to attribute enctypes\n";
+        $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+    }
     my @values = $one->attr ('enctypes');
     is ("@values", "@enctypes", ' and we get back the right enctype list');
     my $eshow = join ("\n" . (' ' x 17), @enctypes);
@@ -699,12 +757,22 @@ EOO
         ' with the right error message');
     @values = enctypes ($keytab);
     is ("@values", "@enctypes", ' and we did rollback properly');
+    $history .= <<"EOO";
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+EOO
+    is ($one->history, $history, 'History is correct to this point');
 
     # Now, try testing limiting the enctypes to just one.
   SKIP: {
-        skip 'insufficient recognized enctypes', 12 unless @enctypes > 1;
+        skip 'insufficient recognized enctypes', 14 unless @enctypes > 1;
         is ($one->attr ('enctypes', [ $enctypes[0] ], @trace), 1,
             'Setting a single enctype works');
+        for my $enctype (@enctypes) {
+            next if $enctype eq $enctypes[0];
+            $history .= "$date  remove $enctype from attribute enctypes\n";
+            $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+        }
         @values = $one->attr ('enctypes');
         is ("@values", $enctypes[0], ' and we get back the right value');
         $keytab = $one->get (@trace);
@@ -727,10 +795,40 @@ EOO
         ok (defined ($keytab), ' and retrieving the keytab still works');
         @values = enctypes ($keytab);
         is ("@values", "@enctypes[0..1]", ' and it has the right enctypes');
+
+        # Check the history trace.  Put back all the enctypes for consistent
+        # status whether or not we skipped this section.
+        $history .= <<"EOO";
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  remove $enctypes[0] from attribute enctypes
+    by admin\@EXAMPLE.COM from localhost
+$date  add $enctypes[1] to attribute enctypes
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+$date  add $enctypes[0] to attribute enctypes
+    by admin\@EXAMPLE.COM from localhost
+$date  get
+    by admin\@EXAMPLE.COM from localhost
+EOO
+        is ($one->attr ('enctypes', [ @enctypes ], @trace), 1,
+            'Restoring all enctypes works');
+        for my $enctype (@enctypes) {
+            next if $enctype eq $enctypes[0];
+            next if $enctype eq $enctypes[1];
+            $history .= "$date  add $enctype to attribute enctypes\n";
+            $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+        }
+        is ($one->history, $history, 'History is correct to this point');
     }
 
     # Test clearing enctypes.
     is ($one->attr ('enctypes', [], @trace), 1, 'Clearing enctypes works');
+    for my $enctype (@enctypes) {
+        $history .= "$date  remove $enctype from attribute enctypes\n";
+        $history .= "    by admin\@EXAMPLE.COM from localhost\n";
+    }
     @values = $one->attr ('enctypes');
     ok (@values == 0, ' and now there are no enctypes');
     is ($one->error, undef, ' and no error');
@@ -747,8 +845,19 @@ EOO
     ok (@values == 0, ' and now there are no enctypes');
     is ($one->error, undef, ' and no error');
 
-    # All done.  Clean up.
+    # All done.  Clean up and check history.
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+    $history .= <<"EOO";
+$date  add $enctypes[0] to attribute enctypes
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+$date  create
+    by admin\@EXAMPLE.COM from localhost
+$date  destroy
+    by admin\@EXAMPLE.COM from localhost
+EOO
+    is ($one->history, $history, 'History is correct to this point');
 }
 
 # Clean up.
