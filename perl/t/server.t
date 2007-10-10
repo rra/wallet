@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 286;
+use Test::More tests => 296;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -358,6 +358,49 @@ is ($server->error,
 is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
     ' and clearing unchanging works');
 
+# Test history.
+my $history = <<"EOO";
+DATE  create
+    by $admin from $host
+DATE  set expires to $now
+    by $admin from $host
+DATE  unset expires (was $now)
+    by $admin from $host
+DATE  set acl_get to 1
+    by $admin from $host
+DATE  unset acl_get (was 1)
+    by $admin from $host
+DATE  set acl_store to 1
+    by $admin from $host
+DATE  unset acl_store (was 1)
+    by $admin from $host
+DATE  set owner to 1
+    by $admin from $host
+DATE  set acl_get to 5
+    by $admin from $host
+DATE  set acl_store to 5
+    by $admin from $host
+DATE  unset acl_store (was 5)
+    by $admin from $host
+DATE  unset owner (was 1)
+    by $admin from $host
+DATE  set owner to 1
+    by $admin from $host
+DATE  set flag locked
+    by $admin from $host
+DATE  clear flag locked
+    by $admin from $host
+DATE  unset owner (was 1)
+    by $admin from $host
+DATE  set flag unchanging
+    by $admin from $host
+DATE  clear flag unchanging
+    by $admin from $host
+EOO
+my $seen = $server->history ('base', 'service/admin');
+$seen =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($seen, $history, 'History for service/admin is correct');
+
 # Now let's set up some additional ACLs for future tests.
 is ($server->owner ('base', 'service/user1', 'user1'), 1, 'Set user1 owner');
 is ($server->owner ('base', 'service/user2', 'user2'), 1, 'Set user2 owner');
@@ -447,6 +490,15 @@ Members of ACL user1 (id: 2) are:
   krb5 $user1
 EOO
 is ($show, $expected, ' and show an object we own');
+$history = <<"EOO";
+DATE  create
+    by $admin from $host
+DATE  set owner to 2
+    by $admin from $host
+EOO
+$seen = $server->history ('base', 'service/user1');
+$seen =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($seen, $history, ' and see history for an object we own');
 is ($server->attr ('base', 'service/user1', 'foo'), undef,
     ' and getting an attribute fails');
 is ($server->error, 'unknown attribute foo', ' but calls the method');
@@ -464,6 +516,10 @@ is ($server->store ('base', 'service/user2', 'stuff'), undef,
 is ($server->error, "$user1 not authorized to store base:service/user2",
     ' with the right error');
 is ($server->show ('base', 'service/user2'), undef, ' or show it');
+is ($server->error, "$user1 not authorized to show base:service/user2",
+    ' with the right error');
+is ($server->history ('base', 'service/user2'), undef,
+    ' or see history for it');
 is ($server->error, "$user1 not authorized to show base:service/user2",
     ' with the right error');
 is ($server->attr ('base', 'service/user2', 'foo'), undef,
@@ -515,6 +571,25 @@ Members of ACL user2 (id: 3) are:
   krb5 $user2
 EOO
 is ($show, $expected, ' and show an object we jointly own');
+$history = <<"EOO";
+DATE  create
+    by $admin from $host
+DATE  set owner to 4
+    by $admin from $host
+DATE  set acl_show to 2
+    by $admin from $host
+DATE  set acl_destroy to 3
+    by $admin from $host
+DATE  set acl_flags to 2
+    by $admin from $host
+DATE  set flag unchanging
+    by $user1 from $host
+DATE  set flag locked
+    by $user1 from $host
+EOO
+$seen = $server->history ('base', 'service/both');
+$seen =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($seen, $history, ' and see history for an object we jointly own');
 is ($server->store ('base', 'service/both', 'stuff'), undef,
     ' but not store data');
 is ($server->error, 'cannot store base:service/both: object is locked',
@@ -567,6 +642,15 @@ Members of ACL user2 (id: 3) are:
   krb5 $user2
 EOO
 is ($show, $expected, ' and show an object we own');
+$history = <<"EOO";
+DATE  create
+    by $admin from $host
+DATE  set owner to 3
+    by $admin from $host
+EOO
+$seen = $server->history ('base', 'service/user2');
+$seen =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($seen, $history, ' and see history for an object we own');
 
 # But not on things we don't own.
 is ($server->get ('base', 'service/user1'), undef,
@@ -578,6 +662,10 @@ is ($server->store ('base', 'service/user1', 'stuff'), undef,
 is ($server->error, "$user2 not authorized to store base:service/user1",
     ' with the right error');
 is ($server->show ('base', 'service/user1'), undef, ' or show it');
+is ($server->error, "$user2 not authorized to show base:service/user1",
+    ' with the right error');
+is ($server->history ('base', 'service/user1'), undef,
+    ' or see history for it');
 is ($server->error, "$user2 not authorized to show base:service/user1",
     ' with the right error');
 
@@ -592,6 +680,10 @@ is ($server->error,
     "cannot store base:service/both: object type is immutable",
     ' and the method is called');
 is ($server->show ('base', 'service/both'), undef, ' but we cannot show it');
+is ($server->error, "$user2 not authorized to show base:service/both",
+    ' with the right error');
+is ($server->history ('base', 'service/both'), undef,
+    ' or see history for it');
 is ($server->error, "$user2 not authorized to show base:service/both",
     ' with the right error');
 is ($server->flag_set ('base', 'service/both', 'locked'), undef,
