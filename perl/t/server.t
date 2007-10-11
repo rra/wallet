@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 296;
+use Test::More tests => 303;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -49,6 +49,18 @@ is ($server->acl_show ('ADMIN'),
 is ($server->acl_show (1),
     "Members of ACL ADMIN (id: 1) are:\n  krb5 $admin\n",
     ' including by number');
+my $history = <<"EOO";
+DATE  create
+    by $admin from $host
+DATE  add krb5 $admin
+    by $admin from $host
+EOO
+my $result = $server->acl_history ('ADMIN');
+$result =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($result, $history, ' and displaying history works');
+$result = $server->acl_history (1);
+$result =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($result, $history, ' including by number');
 is ($server->acl_create (3), undef, 'Cannot create ACL with a numeric name');
 is ($server->error, 'ACL name may not be all numbers',
     ' and returns the right error');
@@ -77,6 +89,8 @@ is ($server->acl_rename ('test', 'empty'), undef, ' but not twice');
 is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_show ('test'), undef, ' and show fails');
 is ($server->error, 'ACL test not found', ' and returns the right error');
+is ($server->acl_history ('test'), undef, ' and history fails');
+is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_destroy ('test'), undef, 'Destroying the old name fails');
 is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_destroy ('test2'), 1, ' but destroying another one works');
@@ -94,6 +108,17 @@ is ($server->acl_add ('both', 'krb5', $user2), 1,
 is ($server->acl_show ('both'),
     "Members of ACL both (id: 4) are:\n  krb5 $user1\n  krb5 $user2\n",
     ' and show returns the correct result');
+$history = <<"EOO";
+DATE  create
+    by $admin from $host
+DATE  add krb5 $user1
+    by $admin from $host
+DATE  add krb5 $user2
+    by $admin from $host
+EOO
+$result = $server->acl_history ('both');
+$result =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($result, $history, ' as does history');
 is ($server->acl_add ('empty', 'krb5', $user1), 1, ' and another to empty');
 is ($server->acl_add ('test', 'krb5', $user1), undef,
     ' but adding to an unknown ACL fails');
@@ -230,7 +255,7 @@ is ($server->acl ('base', 'service/admin', 'get', 'test2'), undef,
 is ($server->error, 'ACL test2 not found', ' with the right error');
 is ($server->acl ('base', 'service/admin', 'get', 'ADMIN'), 1,
     ' but setting the right ACL works');
-my $result = eval { $server->get ('base', 'service/admin') };
+$result = eval { $server->get ('base', 'service/admin') };
 is ($result, undef, 'Get still fails');
 is ($@, "Do not instantiate Wallet::Object::Base directly\n",
     ' but the method is called');
@@ -359,7 +384,7 @@ is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
     ' and clearing unchanging works');
 
 # Test history.
-my $history = <<"EOO";
+$history = <<"EOO";
 DATE  create
     by $admin from $host
 DATE  set expires to $now
@@ -422,6 +447,9 @@ is ($server->error, "$user1 not authorized to rename ACL user1",
     ' with error');
 is ($server->acl_show ('user1'), undef, ' or show ACLs');
 is ($server->error, "$user1 not authorized to show ACL user1", ' with error');
+is ($server->acl_history ('user1'), undef, ' or see history for ACLs');
+is ($server->error, "$user1 not authorized to see history of ACL user1",
+    ' with error');
 is ($server->acl_destroy ('user2'), undef, ' or destroy ACLs');
 is ($server->error, "$user1 not authorized to destroy ACL user2",
     ' with error');

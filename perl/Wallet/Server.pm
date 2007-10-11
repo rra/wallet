@@ -461,8 +461,30 @@ sub acl_error {
         $action = 'add to';
     } elsif ($action eq 'remove') {
         $action = 'remove from';
+    } elsif ($action eq 'history') {
+        $action = 'see history of';
     }
     $self->error ("$self->{user} not authorized to $action ACL $acl");
+}
+
+# Display the history of an ACL or return undef and set the internal error.
+sub acl_history {
+    my ($self, $id) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($id, 'history');
+        return undef;
+    }
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        $self->error ($@);
+        return undef;
+    }
+    my $result = $acl->history;
+    if (not defined $result) {
+        $self->error ($acl->error);
+        return undef;
+    }
+    return $result;
 }
 
 # Display the membership of an ACL or return undef and set the internal error.
@@ -699,6 +721,16 @@ numeric ID.  This call will fail if the ACL is still referenced by any
 object.  The ADMIN ACL may not be destroyed.  To destroy an ACL, the current
 user must be authorized by the ADMIN ACL.  Returns true on success and false
 on failure.
+
+=item acl_history(ID)
+
+Returns the history of the ACL identified by ID, which may be either the ACL
+name or its numeric ID.  To see the history of an ACL, the current user must
+be authorized by the ADMIN ACL.  Each change that modifies the ACL (not
+counting changes in the name of the ACL) will be represented by two lines.
+The first line will have a timestamp of the change followed by a description
+of the change, and the second line will give the user who made the change
+and the host from which the change was made.  Returns undef on failure.
 
 =item acl_remove(ID, SCHEME, IDENTIFIER)
 
