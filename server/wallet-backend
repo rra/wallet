@@ -71,6 +71,14 @@ sub command {
         } elsif ($action eq 'destroy') {
             check_args (1, 1, [], @args);
             $server->acl_destroy (@args) or die $server->error;
+        } elsif ($action eq 'history') {
+            check_args (1, 1, [], @args);
+            my $output = $server->acl_history (@args);
+            if (defined $output) {
+                print $output;
+            } else {
+                die $server->error;
+            }
         } elsif ($action eq 'remove') {
             check_args (3, 3, [], @args);
             $server->acl_remove (@args) or die $server->error;
@@ -270,6 +278,14 @@ C<setacl> commands.
 Destroy the ACL <id>.  This ACL must no longer be referenced by any object
 or the ACL destruction will fail.  The special ACL named C<ADMIN> cannot
 be destroyed.
+
+=item acl history <id>
+
+Display the history of the ACL <id>.  Each change to the ACL (not
+including changes to the name of the ACL) will be represented by two
+lines.  The first line will have a timestamp of the change followed by a
+description of the change, and the second line will give the user who made
+the change and the host from which the change was mde.
 
 =item acl remove <id> <scheme> <identifier>
 

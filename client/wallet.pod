@@ -155,6 +155,14 @@ Destroy the ACL <id>.  This ACL must no longer be referenced by any object
 or the ACL destruction will fail.  The special ACL named C<ADMIN> cannot
 be destroyed.
 
+=item acl history <id>
+
+Display the history of the ACL <id>.  Each change to the ACL (not
+including changes to the name of the ACL) will be represented by two
+lines.  The first line will have a timestamp of the change followed by a
+description of the change, and the second line will give the user who made
+the change and the host from which the change was mde.
+
 =item acl remove <id> <scheme> <identifier>
 
 Remove the entry with <scheme> and <identifier> from the ACL <id>.  <id>

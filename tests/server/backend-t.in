@@ -9,7 +9,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 802;
+use Test::More tests => 812;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -44,6 +44,13 @@ sub acl_remove
     { shift; print "acl_remove @_\n"; ($_[0] eq 'error') ? undef : 1 }
 sub acl_rename
     { shift; print "acl_rename @_\n"; ($_[0] eq 'error') ? undef : 1 }
+
+sub acl_history {
+    shift;
+    print "acl_history @_\n";
+    return if $_[0] eq 'error';
+    return 'acl_history';
+}
 
 sub acl_show {
     shift;
@@ -190,6 +197,7 @@ my %commands = (create  => [2, 2],
 my %acl_commands = (add     => [3, 3],
                     create  => [1, 1],
                     destroy => [1, 1],
+                    history => [1, 1],
                     remove  => [3, 3],
                     rename  => [2, 2],
                     show    => [1, 1]);
@@ -331,6 +339,8 @@ for my $command (sort keys %acl_commands) {
     my $expected;
     if ($command eq 'show') {
         $expected = "$new\nacl_$command name$extra\nacl_show";
+    } elsif ($command eq 'history') {
+        $expected = "$new\nacl_$command name$extra\nacl_history";
     } else {
         $expected = "$new\nacl_$command name$extra\n";
     }

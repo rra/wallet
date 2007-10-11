@@ -12,10 +12,6 @@ Minimum required to replace leland_srvtab:
 
 Release 0.3:
 
-* Provide some way of getting at the history tables.  Need to get object
-  and ACL history either by object or for all objects, at least.  Global
-  history should be by timestamp and possibly limit by timestamp.
-
 * Log all server actions to syslog.
 
 * Write the NetDB ACL verifier.
@@ -113,6 +109,8 @@ Future work:
 
 * Support displaying and possibly specifying dates in some format more
   normal than seconds since epoch.
+
+* Support limiting returned history information by timestamp.
 
 * There is a lot of duplicate code in wallet-backend.  Convert that to
   use some sort of data-driven model with argument count and flags so

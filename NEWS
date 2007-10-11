@@ -2,6 +2,8 @@
 
 wallet 0.3 (unreleased)
 
+    Add support for displaying the history of objects and ACLs.
+
     The keytab backend now supports limiting generated keytabs to
     particular enctypes by setting an attribute on the object.
 
