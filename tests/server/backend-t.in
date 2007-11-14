@@ -9,7 +9,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 812;
+use Test::More tests => 1219;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -25,7 +25,7 @@ sub error {
         return undef;
     } else {
         $error++;
-        return "error count $error\n";
+        return "error count $error";
     }
 }
 
@@ -143,6 +143,8 @@ sub show {
 # Wallet::Server package has already been loaded.
 package main;
 $INC{'Wallet/Server.pm'} = 'FAKE';
+my $OUTPUT;
+our $SYSLOG = \$OUTPUT;
 eval { do '@abs_top_srcdir@/server/wallet-backend' };
 
 # Run the wallet backend.  This fun hack takes advantage of the fact that the
@@ -163,22 +165,31 @@ sub run_backend {
 # Now for the actual tests.  First, check for lack of trace information.
 my ($out, $err) = run_backend;
 is ($err, "REMOTE_USER not set\n", 'REMOTE_USER required');
+is ($OUTPUT, "error: REMOTE_USER not set\n", ' and syslog correct');
 $ENV{REMOTE_USER} = 'admin';
 ($out, $err) = run_backend;
 is ($err, "neither REMOTE_HOST nor REMOTE_ADDR set\n",
     'REMOTE_HOST or _ADDR required');
+is ($OUTPUT, "error for admin: neither REMOTE_HOST nor REMOTE_ADDR set\n",
+    ' and syslog correct');
 $ENV{REMOTE_ADDR} = '1.2.3.4';
 my $new = 'new admin 1.2.3.4';
 
 # Check unknown commands.
 ($out, $err) = run_backend ('foo');
 is ($err, "unknown command foo\n", 'Unknown command');
+is ($OUTPUT, "error for admin (1.2.3.4): unknown command foo\n",
+    ' and syslog correct');
 is ($out, "$new\n", ' and nothing ran');
 ($out, $err) = run_backend ('acl', 'foo');
 is ($err, "unknown command acl foo\n", 'Unknown ACL command');
+is ($OUTPUT, "error for admin (1.2.3.4): unknown command acl foo\n",
+    ' and syslog correct');
 is ($out, "$new\n", ' and nothing ran');
 ($out, $err) = run_backend ('flag', 'foo', 'service', 'foo', 'foo');
 is ($err, "unknown command flag foo\n", 'Unknown flag command');
+is ($OUTPUT, "error for admin (1.2.3.4): unknown command flag foo\n",
+    ' and syslog correct');
 is ($out, "$new\n", ' and nothing ran');
 
 # Check too few, too many, and bad arguments for every command.
@@ -207,10 +218,14 @@ for my $command (sort keys %commands) {
     my ($min, $max) = @{ $commands{$command} };
     ($out, $err) = run_backend ($command, ('foo') x ($min - 1));
     is ($err, "insufficient arguments\n", "Too few arguments for $command");
+    is ($OUTPUT, "error for admin (1.2.3.4): insufficient arguments\n",
+        ' and syslog correct');
     is ($out, "$new\n", ' and nothing ran');
     unless ($max >= 9) {
         ($out, $err) = run_backend ($command, ('foo') x ($max + 1));
         is ($err, "too many arguments\n", "Too many arguments for $command");
+        is ($OUTPUT, "error for admin (1.2.3.4): too many arguments\n",
+            ' and syslog correct');
         is ($out, "$new\n", ' and nothing ran');
     }
     my @base = ('foobar') x $max;
@@ -220,11 +235,15 @@ for my $command (sort keys %commands) {
         ($out, $err) = run_backend ($command, @args);
         if ($command eq 'store' and $arg == 2) {
             is ($err, '', 'Store allows any characters');
+            is ($OUTPUT, "command $command @args from admin (1.2.3.4)"
+                . " succeeded\n", ' and success logged');
             is ($out, "$new\nstore foobar foobar foo;bar\n",
                 ' and calls the right method');
         } else {
             is ($err, "invalid characters in argument: foo;bar\n",
                 "Invalid arguments for $command $arg");
+            is ($OUTPUT, "error for admin (1.2.3.4): invalid characters in"
+                . " argument: foo;bar\n", ' and syslog correct');
             is ($out, "$new\n", ' and nothing ran');
         }
     }
@@ -234,9 +253,13 @@ for my $command (sort keys %acl_commands) {
     ($out, $err) = run_backend ('acl', $command, ('foo') x ($min - 1));
     is ($err, "insufficient arguments\n",
         "Too few arguments for acl $command");
+    is ($OUTPUT, "error for admin (1.2.3.4): insufficient arguments\n",
+        ' and syslog correct');
     is ($out, "$new\n", ' and nothing ran');
     ($out, $err) = run_backend ('acl', $command, ('foo') x ($max + 1));
     is ($err, "too many arguments\n", "Too many arguments for acl $command");
+    is ($OUTPUT, "error for admin (1.2.3.4): too many arguments\n",
+        ' and syslog correct');
     is ($out, "$new\n", ' and nothing ran');
     my @base = ('foobar') x $max;
     for my $arg (0 .. ($max - 1)) {
@@ -245,6 +268,8 @@ for my $command (sort keys %acl_commands) {
         ($out, $err) = run_backend ('acl', $command, @args);
         is ($err, "invalid characters in argument: foo;bar\n",
             "Invalid arguments for acl $command $arg");
+        is ($OUTPUT, "error for admin (1.2.3.4): invalid characters in"
+            . " argument: foo;bar\n", ' and syslog correct');
         is ($out, "$new\n", ' and nothing ran');
     }
 }
@@ -253,9 +278,13 @@ for my $command (sort keys %flag_commands) {
     ($out, $err) = run_backend ('flag', $command, ('foo') x ($min - 1));
     is ($err, "insufficient arguments\n",
         "Too few arguments for flag $command");
+    is ($OUTPUT, "error for admin (1.2.3.4): insufficient arguments\n",
+        ' and syslog correct');
     is ($out, "$new\n", ' and nothing ran');
     ($out, $err) = run_backend ('flag', $command, ('foo') x ($max + 1));
     is ($err, "too many arguments\n", "Too many arguments for flag $command");
+    is ($OUTPUT, "error for admin (1.2.3.4): too many arguments\n",
+        ' and syslog correct');
     is ($out, "$new\n", ' and nothing ran');
     my @base = ('foobar') x $max;
     for my $arg (0 .. ($max - 1)) {
@@ -264,6 +293,8 @@ for my $command (sort keys %flag_commands) {
         ($out, $err) = run_backend ('flag', $command, @args);
         is ($err, "invalid characters in argument: foo;bar\n",
             "Invalid arguments for flag $command $arg");
+        is ($OUTPUT, "error for admin (1.2.3.4): invalid characters in"
+            . " argument: foo;bar\n", ' and syslog correct');
         is ($out, "$new\n", ' and nothing ran');
     }
 }
@@ -276,11 +307,17 @@ for my $command (qw/create destroy setacl setattr store/) {
     my @extra = ('foo') x ($commands{$command}[0] - 2);
     my $extra = @extra ? join (' ', '', @extra) : '';
     ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+    my $ran = "$command type name" . (@extra ? " @extra" : '');
     is ($err, '', "Command $command ran with no errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+        ' and success logged');
     is ($out, "$new\n$method type name$extra\n",
         ' and ran the right method');
     ($out, $err) = run_backend ($command, 'error', 'name', @extra);
+    $ran = "$command error name" . (@extra ? " @extra" : '');
     is ($err, "error count $error\n", "Command $command ran with errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) failed: error count"
+        . " $error\n", ' and syslog correct');
     is ($out, "$new\n$method error name$extra\n",
         ' and ran the right method');
     $error++;
@@ -292,25 +329,37 @@ for my $command (qw/expires get getacl getattr history owner show/) {
     my $extra = @extra ? join (' ', '', @extra) : '';
     if ($command eq 'getattr') {
         ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+        my $ran = "$command type name" . (@extra ? " @extra" : '');
         is ($err, '', "Command $command ran with no errors");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
         is ($out, "$new\n$method type name$extra\nattr1\nattr2\n",
             ' and ran the right method with output');
     } else {
         my $newline = ($command =~ /^(get|history|show)\z/) ? '' : "\n";
         ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+        my $ran = "$command type name" . (@extra ? " @extra" : '');
         is ($err, '', "Command $command ran with no errors");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
         is ($out, "$new\n$method type name$extra\n$method$newline",
             ' and ran the right method with output');
     }
     if ($command eq 'expires' or $command eq 'owner') {
         ($out, $err) = run_backend ($command, 'type', 'name', @extra, 'foo');
+        my $ran = "$command type name" . (@extra ? " @extra" : '') . ' foo';
         is ($err, '', "Command $command ran with no errors (setting)");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
         is ($out, "$new\n$method type name$extra foo\n",
             ' and ran the right method');
     }
     if ($command eq 'expires' or $command eq 'getacl' or $command eq 'owner') {
         ($out, $err) = run_backend ($command, 'type', 'empty', @extra);
+        my $ran = "$command type empty" . (@extra ? " @extra" : '');
         is ($err, '', "Command $command ran with no errors (empty)");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
         my $desc;
         if    ($command eq 'expires') { $desc = 'expiration' }
         elsif ($command eq 'getacl')  { $desc = 'ACL' }
@@ -320,13 +369,19 @@ for my $command (qw/expires get getacl getattr history owner show/) {
         $error++;
     } elsif ($command eq 'getattr') {
         ($out, $err) = run_backend ($command, 'type', 'empty', @extra);
+        my $ran = "$command type empty" . (@extra ? " @extra" : '');
         is ($err, '', "Command $command ran with no errors (empty)");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
         is ($out, "$new\n$method type empty$extra\n",
             ' and ran the right method with output');
         $error++;
     }
     ($out, $err) = run_backend ($command, 'error', 'name', @extra);
+    my $ran = "$command error name" . (@extra ? " @extra" : '');
     is ($err, "error count $error\n", "Command $command ran with errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) failed: error count"
+        . " $error\n", ' and syslog correct');
     is ($out, "$new\n$method error name$extra\n",
         ' and ran the right method');
     $error++;
@@ -335,7 +390,10 @@ for my $command (sort keys %acl_commands) {
     my @extra = ('foo') x ($acl_commands{$command}[0] - 1);
     my $extra = @extra ? join (' ', '', @extra) : '';
     ($out, $err) = run_backend ('acl', $command, 'name', @extra);
+    my $ran = "acl $command name" . (@extra ? " @extra" : '');
     is ($err, '', "Command acl $command ran with no errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+        ' and success logged');
     my $expected;
     if ($command eq 'show') {
         $expected = "$new\nacl_$command name$extra\nacl_show";
@@ -346,7 +404,10 @@ for my $command (sort keys %acl_commands) {
     }
     is ($out, $expected, ' and ran the right method');
     ($out, $err) = run_backend ('acl', $command, 'error', @extra);
+    $ran = "acl $command error" . (@extra ? " @extra" : '');
     is ($err, "error count $error\n", "Command acl $command ran with errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) failed: error count"
+        . " $error\n", ' and syslog correct');
     is ($out, "$new\nacl_$command error$extra\n",
         ' and ran the right method');
     $error++;
@@ -355,12 +416,18 @@ for my $command (sort keys %flag_commands) {
     my @extra = ('foo') x ($flag_commands{$command}[0] - 2);
     my $extra = @extra ? join (' ', '', @extra) : '';
     ($out, $err) = run_backend ('flag', $command, 'type', 'name', @extra);
+    my $ran = "flag $command type name" . (@extra ? " @extra" : '');
     is ($err, '', "Command flag $command ran with no errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+        ' and success logged');
     is ($out, "$new\nflag_$command type name$extra\n",
         ' and ran the right method');
     ($out, $err) = run_backend ('flag', $command, 'error', 'name', @extra);
+    $ran = "flag $command error name" . (@extra ? " @extra" : '');
     is ($err, "error count $error\n",
         "Command flag $command ran with errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) failed: error count"
+        . " $error\n", ' and syslog correct');
     is ($out, "$new\nflag_$command error name$extra\n",
         ' and ran the right method');
     $error++;
@@ -371,6 +438,8 @@ for my $command (sort keys %flag_commands) {
 my $ok = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_/.-';
 ($out, $err) = run_backend ('show', 'type', $ok);
 is ($err, '', 'Allowed all valid characters');
+is ($OUTPUT, "command show type $ok from admin (1.2.3.4) succeeded\n",
+    ' and success logged');
 is ($out, "$new\nshow type $ok\nshow", ' and returned the right output');
 for my $n (0 .. 255) {
     my $c = chr ($n);
@@ -379,9 +448,15 @@ for my $n (0 .. 255) {
     if (index ($ok, $c) == -1) {
         is ($err, "invalid characters in argument: $name\n",
             "Rejected invalid character $n");
+        my $stripped = $name;
+        $stripped =~ s/[^\x20-\x7e]/_/g;
+        is ($OUTPUT, "error for admin (1.2.3.4): invalid characters in"
+            . " argument: $stripped\n", ' and syslog correct');
         is ($out, "$new\n", ' and did nothing');
     } else {
         is ($err, '', "Accepted valid character $n");
+        is ($OUTPUT, "command show type $name from admin (1.2.3.4)"
+            . " succeeded\n", ' and success logged');
         is ($out, "$new\nshow type $name\nshow", ' and ran the method');
     }
 }

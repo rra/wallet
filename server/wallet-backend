@@ -17,6 +17,88 @@ use DBI;
 use Sys::Syslog qw(openlog syslog);
 use Wallet::Server;
 
+# Set to zero to suppress syslog logging, which is used only for testing.  Set
+# to a reference to a string to append messages to that string instead.
+our $SYSLOG;
+$SYSLOG = 0 unless defined $SYSLOG;
+
+##############################################################################
+# Logging
+##############################################################################
+
+# Initialize logging.
+sub log_init {
+    if (ref $SYSLOG) {
+        $$SYSLOG = '';
+    } elsif ($SYSLOG) {
+        openlog ('wallet-backend', 'pid', 'auth');
+    }
+}
+
+# Get an identity string for the user suitable for including in log messages.
+sub identity {
+    my $identity = '';
+    if ($ENV{REMOTE_USER}) {
+        $identity = $ENV{REMOTE_USER};
+        my $host = $ENV{REMOTE_HOST} || $ENV{REMOTE_ADDR};
+        $identity .= " ($host)" if $host;
+    }
+    return $identity;
+}
+
+# Log an error message to both syslog and to stderr and exit with a non-zero
+# status.
+sub error {
+    my $message = join ('', @_);
+    if ($SYSLOG) {
+        my $identity = identity;
+        my $log;
+        if ($identity) {
+            $log = "error for $identity: $message";
+        } else {
+            $log = "error: $message";
+        }
+        $log =~ s/[^\x20-\x7e]/_/g;
+        if (ref $SYSLOG) {
+            $$SYSLOG .= "$log\n";
+        } else {
+            syslog ('err', "%s", $log);
+        }
+    }
+    die "$message\n";
+}
+
+# Log a wallet failure message for a given command to both syslog and to
+# stderr and exit with a non-zero status.  Takes the message and the command
+# that was being run.
+sub failure {
+    my ($message, @command) = @_;
+    if ($SYSLOG) {
+        my $log = "command @command from " . identity . " failed: $message";
+        $log =~ s/[^\x20-\x7e]/_/g;
+        if (ref $SYSLOG) {
+            $$SYSLOG .= "$log\n";
+        } else {
+            syslog ('err', "%s", $log);
+        }
+    }
+    die "$message\n";
+}
+
+# Log a wallet success message for a given command.
+sub success {
+    my (@command) = @_;
+    if ($SYSLOG) {
+        my $log = "command @command from " . identity . " succeeded";
+        $log =~ s/[^\x20-\x7e]/_/g;
+        if (ref $SYSLOG) {
+            $$SYSLOG .= "$log\n";
+        } else {
+            syslog ('info', "%s", $log);
+        }
+    }
+}
+
 ##############################################################################
 # Parameter checking
 ##############################################################################
@@ -31,15 +113,15 @@ use Wallet::Server;
 sub check_args {
     my ($min, $max, $exclude, @args) = @_;
     if (@args < $min) {
-        die "insufficient arguments\n";
+        error "insufficient arguments";
     } elsif (@args > $max and $max != -1) {
-        die "too many arguments\n";
+        error "too many arguments";
     }
     my %exclude = map { $_ => 1 } @$exclude;
     for (my $i = 1; $i <= @args; $i++) {
         next if $exclude{$i};
         unless ($args[$i - 1] =~ m,^[\w_/.-]+\z,) {
-            die "invalid characters in argument: $args[$i - 1]\n";
+            error "invalid characters in argument: $args[$i - 1]";
         }
     }
 }
@@ -51,9 +133,10 @@ sub check_args {
 # Parse and execute a command.  We wrap this in a subroutine call for easier
 # testing.
 sub command {
-    my $user = $ENV{REMOTE_USER} or die "REMOTE_USER not set\n";
+    log_init;
+    my $user = $ENV{REMOTE_USER} or error "REMOTE_USER not set";
     my $host = $ENV{REMOTE_HOST} || $ENV{REMOTE_ADDR}
-        or die "neither REMOTE_HOST nor REMOTE_ADDR set\n";
+        or error "neither REMOTE_HOST nor REMOTE_ADDR set";
 
     # Instantiate the server object.
     my $server = Wallet::Server->new ($user, $host);
@@ -64,48 +147,48 @@ sub command {
         my $action = shift @args;
         if ($action eq 'add') {
             check_args (3, 3, [], @args);
-            $server->acl_add (@args) or die $server->error;
+            $server->acl_add (@args) or failure ($server->error, @_);
         } elsif ($action eq 'create') {
             check_args (1, 1, [], @args);
-            $server->acl_create (@args) or die $server->error;
+            $server->acl_create (@args) or failure ($server->error, @_);
         } elsif ($action eq 'destroy') {
             check_args (1, 1, [], @args);
-            $server->acl_destroy (@args) or die $server->error;
+            $server->acl_destroy (@args) or failure ($server->error, @_);
         } elsif ($action eq 'history') {
             check_args (1, 1, [], @args);
             my $output = $server->acl_history (@args);
             if (defined $output) {
                 print $output;
             } else {
-                die $server->error;
+                failure ($server->error, @_);
             }
         } elsif ($action eq 'remove') {
             check_args (3, 3, [], @args);
-            $server->acl_remove (@args) or die $server->error;
+            $server->acl_remove (@args) or failure ($server->error, @_);
         } elsif ($action eq 'rename') {
             check_args (2, 2, [], @args);
-            $server->acl_rename (@args) or die $server->error;
+            $server->acl_rename (@args) or failure ($server->error, @_);
         } elsif ($action eq 'show') {
             check_args (1, 1, [], @args);
             my $output = $server->acl_show (@args);
             if (defined $output) {
                 print $output;
             } else {
-                die $server->error;
+                failure ($server->error, @_);
             }
         } else {
-            die "unknown command acl $action\n";
+            error "unknown command acl $action";
         }
     } elsif ($command eq 'create') {
         check_args (2, 2, [], @args);
-        $server->create (@args) or die $server->error;
+        $server->create (@args) or failure ($server->error, @_);
     } elsif ($command eq 'destroy') {
         check_args (2, 2, [], @args);
-        $server->destroy (@args) or die $server->error;
+        $server->destroy (@args) or failure ($server->error, @_);
     } elsif ($command eq 'expires') {
         check_args (2, 3, [], @args);
         if (@args > 2) {
-            $server->expires (@args) or die $server->error;
+            $server->expires (@args) or failure ($server->error, @_);
         } else {
             my $output = $server->expires (@args);
             if (defined $output) {
@@ -113,18 +196,18 @@ sub command {
             } elsif (not $server->error) {
                 print "No expiration set\n";
             } else {
-                die $server->error;
+                failure ($server->error, @_);
             }
         }
     } elsif ($command eq 'flag') {
         my $action = shift @args;
         check_args (3, 3, [], @args);
         if ($action eq 'clear') {
-            $server->flag_clear (@args) or die $server->error;
+            $server->flag_clear (@args) or failure ($server->error, @_);
         } elsif ($action eq 'set') {
-            $server->flag_set (@args) or die $server->error;
+            $server->flag_set (@args) or failure ($server->error, @_);
         } else {
-            die "unknown command flag $action\n";
+            error "unknown command flag $action";
         }
     } elsif ($command eq 'get') {
         check_args (2, 2, [], @args);
@@ -132,7 +215,7 @@ sub command {
         if (defined $output) {
             print $output;
         } else {
-            die $server->error;
+            failure ($server->error, @_);
         }
     } elsif ($command eq 'getacl') {
         check_args (3, 3, [], @args);
@@ -142,13 +225,13 @@ sub command {
         } elsif (not $server->error) {
             print "No ACL set\n";
         } else {
-            die $server->error;
+            failure ($server->error, @_);
         }
     } elsif ($command eq 'getattr') {
         check_args (3, 3, [], @args);
         my @result = $server->attr (@args);
         if (not @result and $server->error) {
-            die $server->error;
+            failure ($server->error, @_);
         } elsif (@result) {
             print join ("\n", @result, '');
         }
@@ -158,12 +241,12 @@ sub command {
         if (defined $output) {
             print $output;
         } else {
-            die $server->error;
+            failure ($server->error, @_);
         }
     } elsif ($command eq 'owner') {
         check_args (2, 3, [], @args);
         if (@args > 2) {
-            $server->owner (@args) or die $server->error;
+            $server->owner (@args) or failure ($server->error, @_);
         } else {
             my $output = $server->owner (@args);
             if (defined $output) {
@@ -171,29 +254,30 @@ sub command {
             } elsif (not $server->error) {
                 print "No owner set\n";
             } else {
-                die $server->error;
+                failure ($server->error, @_);
             }
         }
     } elsif ($command eq 'setacl') {
         check_args (4, 4, [], @args);
-        $server->acl (@args) or die $server->error;
+        $server->acl (@args) or failure ($server->error, @_);
     } elsif ($command eq 'setattr') {
         check_args (4, -1, [], @args);
-        $server->attr (@args) or die $server->error;
+        $server->attr (@args) or failure ($server->error, @_);
     } elsif ($command eq 'show') {
         check_args (2, 2, [], @args);
         my $output = $server->show (@args);
         if (defined $output) {
             print $output;
         } else {
-            die $server->error;
+            failure ($server->error, @_);
         }
     } elsif ($command eq 'store') {
         check_args (3, 3, [3], @args);
-        $server->store (@args) or die $server->error;
+        $server->store (@args) or failure ($server->error, @_);
     } else {
-        die "unknown command $command\n";
+        error "unknown command $command";
     }
+    success (@_);
 }
 command (@ARGV);
 __END__

@@ -4,6 +4,8 @@ wallet 0.3 (unreleased)
 
     Add support for displaying the history of objects and ACLs.
 
+    The wallet backend script now logs all commands and errors to syslog.
+
     The keytab backend now supports limiting generated keytabs to
     particular enctypes by setting an attribute on the object.
 

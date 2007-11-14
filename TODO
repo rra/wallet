@@ -12,8 +12,6 @@ Minimum required to replace leland_srvtab:
 
 Release 0.3:
 
-* Log all server actions to syslog.
-
 * Write the NetDB ACL verifier.
 
 * Write the LDAP entitlement ACL verifier.
