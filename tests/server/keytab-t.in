@@ -11,10 +11,11 @@ use strict;
 use vars qw($CONFIG $KADMIN $SYSLOG $TMP);
 
 use IO::String;
-use Test::More tests => 43;
+use Test::More tests => 63;
 
 # Load the keytab-backend code and override various settings.
-$SYSLOG = 0;
+my $OUTPUT;
+$SYSLOG = \$OUTPUT;
 eval { do '@abs_top_srcdir@/server/keytab-backend' };
 $CONFIG = '@abs_top_srcdir@/tests/data/allow-extract';
 $KADMIN = '@abs_top_srcdir@/tests/data/fake-kadmin';
@@ -37,10 +38,12 @@ sub run_backend {
 $ENV{REMOTE_USER} = 'admin';
 my ($out, $err) = run_backend ();
 is ($err, "keytab-backend: invalid arguments: \n", 'Fails with no arguments');
+is ($OUTPUT, "invalid arguments: \n", ' and syslog matches');
 is ($out, '', ' and produces no output');
 ($out, $err) = run_backend ('foo', 'bar', 'baz');
 is ($err, "keytab-backend: invalid arguments: foo bar baz\n",
     'Fails with three arguments');
+is ($OUTPUT, "invalid arguments: foo bar baz\n", ' and syslog matches');
 is ($out, '', ' and produces no output');
 for my $bad (qw{service service\*@example =@example host/foo+bar@example
                 rcmd.foo@EXAMPLE host/foo/bar@EXAMPLE /bar@EXAMPLE.NET
@@ -48,6 +51,7 @@ for my $bad (qw{service service\*@example =@example host/foo+bar@example
     ($out, $err) = run_backend ('keytab', $bad);
     is ($err, "keytab-backend: bad principal name $bad\n",
         "Invalid principal $bad");
+    is ($OUTPUT, "bad principal name $bad\n", ' and syslog matches');
     is ($out, '', ' and produces no output');
 }
 for my $bad (qw{service/foo@EXAMPLE.ORGA bar@EXAMPLE.NET
@@ -56,6 +60,8 @@ for my $bad (qw{service/foo@EXAMPLE.ORGA bar@EXAMPLE.NET
     is ($err,
         "keytab-backend: permission denied: admin may not retrieve $bad\n",
         "Permission denied for $bad");
+    is ($OUTPUT, "permission denied: admin may not retrieve $bad\n",
+        ' and syslog matches');
     is ($out, '', ' and produces no output');
 }
 for my $good (qw{service/foo@EXAMPLE.ORG foo/bar@EXAMPLE.NET
@@ -63,12 +69,15 @@ for my $good (qw{service/foo@EXAMPLE.ORG foo/bar@EXAMPLE.NET
     ($out, $err) = run_backend ($good);
     is ($err, '', "Success for good keytab $good");
     is ($out, "$good\n", ' and the right output');
+    is ($OUTPUT, "keytab $good retrieved by admin\n", ' and syslog is right');
     ok (! -f "$TMP/keytab$$", ' and the file is gone');
 }
 ($out, $err) = run_backend ('keytab', 'error@EXAMPLE.ORG');
 is ($err, "keytab-backend: retrieve of error\@EXAMPLE.ORG failed for"
     . " admin: kadmin.local exited with status 1\n",
     'Good error on kadmin failure');
+is ($OUTPUT, "retrieve of error\@EXAMPLE.ORG failed for admin: kadmin.local"
+    . " exited with status 1\n", ' and syslog matches');
 is ($out, '', ' and no output');
 
 # Test a configuration failure.
@@ -76,4 +85,5 @@ $CONFIG = '/path/to/bad/file';
 ($out, $err) = run_backend ('get', 'service/foo@EXAMPLE.ORG');
 like ($err, qr{^keytab-backend: cannot open /path/to/bad/file: },
       'Fails with bad configuration file');
+like ($OUTPUT, qr{^cannot open /path/to/bad/file: }, ' and syslog matches');
 is ($out, '', ' and produces no output');

@@ -41,19 +41,43 @@ $KADMIN = '/usr/sbin/kadmin.local';
 # A temporary area into which keytabs should be written.
 $TMP = '/var/lib/keytabs';
 
-# Set to zero to suppress syslog logging, which is used only for testing.
+# Set to zero to suppress syslog logging, which is used only for testing.  Set
+# to a reference to a string to append messages to that string instead.
 $SYSLOG = 1 unless defined $SYSLOG;
 
 ##############################################################################
 # Logging
 ##############################################################################
 
+# Initialize logging.
+sub log_init {
+    if (ref $SYSLOG) {
+        $$SYSLOG = '';
+    } elsif ($SYSLOG) {
+        openlog ('keytab-backend', 'pid', 'auth');
+    }
+}
+
 # Log a failure message to both syslog and to stderr and exit with a non-zero
 # status.
 sub error {
     my $message = join ('', @_);
-    syslog ('err', '%s', $message) if $SYSLOG;
+    if (ref $SYSLOG) {
+        $$SYSLOG .= $message . "\n";
+    } elsif ($SYSLOG) {
+        syslog ('err', '%s', $message);
+    }
     die "keytab-backend: $message\n";
+}
+
+# Log a regular message, generally for success.
+sub info {
+    my $message = join ('', @_);
+    if (ref $SYSLOG) {
+        $$SYSLOG .= $message . "\n";
+    } elsif ($SYSLOG) {
+        syslog ('info', '%s', $message);
+    }
 }
 
 ##############################################################################
@@ -66,7 +90,7 @@ sub error {
 # not.
 sub download {
     my (@args) = @_;
-    openlog ('keytab-backend', 'pid', 'auth') if $SYSLOG;
+    log_init;
 
     # Set up a default identity if run from the command line.
     $ENV{REMOTE_USER} = getpwnam ($<) || 'UNKNOWN' unless $ENV{REMOTE_USER};
@@ -124,8 +148,7 @@ sub download {
     print while <KEYTAB>;
     close KEYTAB;
     unlink $filename;
-    syslog ('info', '%s', "keytab $principal retrieved by $ENV{REMOTE_USER}")
-        if $SYSLOG;
+    info ("keytab $principal retrieved by $ENV{REMOTE_USER}");
 }
 download (@ARGV);
 __END__
