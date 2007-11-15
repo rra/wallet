@@ -99,6 +99,7 @@ sub check {
         }
     } while ($output->type eq 'output');
     if ($status == 0) {
+        $roles ||= '';
         my @roles = split (' ', $roles);
         for my $role (@roles) {
             return 1 if $role eq 'admin';

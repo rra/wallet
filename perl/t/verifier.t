@@ -51,7 +51,7 @@ sub spawn_remctld {
     } elsif ($pid == 0) {
         open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
         exec ($path, '-m', '-p', 14373, '-s', $principal, '-P', 'test-pid',
-              '-f', 't/data/keytab.conf', '-S', '-F', '-k', $keytab) == 0
+              '-f', 't/data/netdb.conf', '-S', '-F', '-k', $keytab) == 0
             or die "cannot exec $path: $!\n";
     } else {
         my $tries = 0;
