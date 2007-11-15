@@ -1,0 +1,58 @@
+#!/bin/sh
+# $Id$
+#
+# netdb-fake -- Fake NetDB remctl interface.
+#
+# This netdb-fake script is meant to be run by remctld during testing of
+# the NetDB ACL verifier.  It returns known roles or errors for different
+# nodes.
+
+set -e
+
+if [ "$1" != "node-roles" ] ; then
+    echo "Invalid command $1" >&2
+    exit 1
+fi
+
+case "$2" in
+test-user)
+    case "$3" in
+    all)
+        echo 'admin'
+        echo 'team'
+        echo 'user'
+        ;;
+    admin)
+        echo 'admin'
+        ;;
+    team)
+        echo 'team'
+        ;;
+    user)
+        echo 'This is just ignored' >&2
+        echo 'user'
+        ;;
+    unknown)
+        echo 'admin' >&2
+        echo 'unknown'
+        ;;
+    none)
+        ;;
+    esac
+    ;;
+error)
+    case "$3" in
+    normal)
+        echo 'some error' >&2
+        exit 1
+        ;;
+    status)
+        exit 1
+        ;;
+    esac
+    ;;
+*)
+    echo "Unknown principal $2" >&2
+    exit 1
+    ;;
+esac

@@ -281,14 +281,15 @@ retrieve> via remctl on KEYTAB_REMCTL_HOST.
 
 =cut
 
-our $KEYTAB_CACHE;
+our $KEYTAB_REMCTL_CACHE;
 
 =item KEYTAB_REMCTL_HOST
 
 The host to which to connect with remctl to retrieve existing keytabs.  This
 is only used to implement support for the C<unchanging> flag.  This host
-must provide the C<keytab retrieve> command and KEYTAB_CACHE must also be
-set to a ticket cache for a principal with access to run that command.
+must provide the C<keytab retrieve> command and KEYTAB_REMCTL_CACHE must
+also be set to a ticket cache for a principal with access to run that
+command.
 
 =cut
 
@@ -394,6 +395,73 @@ set to use the kaserver synchronization support.
 =cut
 
 our $KEYTAB_AFS_SRVTAB;
+
+=back
+
+=head1 NETDB ACL CONFIGURATION
+
+These configuration variables are only needed if you intend to use the
+C<netdb> ACL type (the Wallet::ACL::NetDB class).  They specify the remctl
+connection information for retrieving user roles from NetDB and the local
+realm to remove from principals (since NetDB normally expects unscoped local
+usernames).
+
+=over 4
+
+=item NETDB_REALM
+
+The wallet uses fully-qualified principal names (including the realm), but
+NetDB normally expects local usernames without the realm.  If this variable
+is set, the given realm will be stripped from any principal names before
+passing them to NetDB.  Principals in other realms will be passed to NetDB
+without modification.
+
+=cut
+
+our $NETDB_REALM;
+
+=item NETDB_REMCTL_CACHE
+
+Specifies the ticket cache to use when querying the NetDB remctl interface
+for user roles.  The ticket cache must be for a principal with access to run
+C<netdb node-roles> via remctl on KEYTAB_REMCTL_HOST.  This variable must be
+set to use NetDB ACLs.
+
+=cut
+
+our $NETDB_REMCTL_CACHE;
+
+=item NETDB_REMCTL_HOST
+
+The host to which to connect with remctl to query NetDB for user roles.
+This host must provide the C<netdb node-roles> command and
+NETDB_REMCTL_CACHE must also be set to a ticket cache for a principal with
+access to run that command.  This variable must be set to use NetDB ACLs.
+
+=cut
+
+our $NETDB_REMCTL_HOST;
+
+=item NETDB_REMCTL_PRINCIPAL
+
+The service principal to which to authenticate when querying NetDB for user
+roles.  If this variable is not set, the default is formed by prepending
+C<host/> to NETDB_REMCTL_HOST.  (Note that NETDB_REMCTL_HOST is not
+lowercased first.)
+
+=cut
+
+our $NETDB_REMCTL_PRINCIPAL;
+
+=item NETDB_REMCTL_PORT
+
+The port on NETDB_REMCTL_HOST to which to connect with remctl to query NetDB
+for user roles.  If this variable is not set, the default remctl port will
+be used.
+
+=cut
+
+our $NETDB_REMCTL_PORT;
 
 =back
 

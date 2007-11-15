@@ -12,8 +12,6 @@ Minimum required to replace leland_srvtab:
 
 Release 0.3:
 
-* Write the NetDB ACL verifier.
-
 * Write the LDAP entitlement ACL verifier.
 
 * Write the PTS ACL verifier.
@@ -117,6 +115,11 @@ Future work:
 * There's a lot of code duplication in the dispatch functions in the
   Wallet::Server class.  Find a way to rewrite that so that the dispatch
   doesn't duplicate the same code patterns.
+
+* Refactor the test suite for the wallet backend to try to reduce the
+  duplicated code.
+
+* Pull common test suite code into a Perl library that can be reused.
 
 * Add a function to wallet-admin to purge expired entries.  Possibly also
   check expiration before allowing anyone to get or store objects.
