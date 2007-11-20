@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 311;
+use Test::More tests => 321;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -734,10 +734,12 @@ is ($server->attr ('base', 'service/both', 'foo', 'foo'), undef,
 is ($server->error, 'unknown attribute foo', ' but calls the method');
 is ($server->destroy ('base', 'service/both'), 1, ' and we can destroy it');
 is ($server->get ('base', 'service/both'), undef, ' and now cannot get it');
-is ($server->error, 'cannot find base:service/both', ' because it is gone');
+is ($server->error, "$user2 not authorized to create base:service/both",
+    ' because it is gone');
 is ($server->store ('base', 'service/both', 'stuff'), undef,
     ' or store it');
-is ($server->error, 'cannot find base:service/both', ' because it is gone');
+is ($server->error, "$user2 not authorized to create base:service/both",
+    ' because it is gone');
 
 # Test default ACLs on object creation.
 #
@@ -747,6 +749,9 @@ is ($server->error, 'cannot find base:service/both', ' because it is gone');
 # definition than the existing ACL), and $user2 to create service/default-2
 # with a default owner of user2 (with the same definition as the existing
 # ACL).
+#
+# Also add service/default-get and service/default-store to test auto-creation
+# on get and store.
 package Wallet::Config;
 sub default_owner {
     my ($type, $name) = @_;
@@ -755,6 +760,10 @@ sub default_owner {
     } elsif ($type eq 'base' and $name eq 'service/default-both') {
         return ('both', [ 'krb5', $user1 ]);
     } elsif ($type eq 'base' and $name eq 'service/default-2') {
+        return ('user2', [ 'krb5', $user2 ]);
+    } elsif ($type eq 'base' and $name eq 'service/default-get') {
+        return ('user2', [ 'krb5', $user2 ]);
+    } elsif ($type eq 'base' and $name eq 'service/default-store') {
         return ('user2', [ 'krb5', $user2 ]);
     } else {
         return;
@@ -789,7 +798,7 @@ EOO
     is ($server->error, undef, ' and the created object and ACL are correct');
 }
 
-# Try the other cases in default_acl.
+# Try the other basic cases in default_acl.
 is ($server->create ('base', 'service/default-both'), undef,
     'Creating an object with an ACL mismatch fails');
 is ($server->error, "ACL both exists and doesn't match default",
@@ -810,6 +819,52 @@ Members of ACL user2 (id: 3) are:
   krb5 $user2
 EOO
 is ($show, $expected, ' and the created object and ACL are correct');
+
+# Test auto-creation on get and store.
+$result = eval { $server->get ('base', 'service/default-get') };
+is ($result, undef, 'Auto-creation on get...');
+is ($@, "Do not instantiate Wallet::Object::Base directly\n", ' ...works');
+$show = $server->show ('base', 'service/default-get');
+$show =~ s/(Created on:) \d+$/$1 0/m;
+$expected = <<"EOO";
+           Type: base
+           Name: service/default-get
+          Owner: user2
+     Created by: $user2
+   Created from: $host
+     Created on: 0
+
+Members of ACL user2 (id: 3) are:
+  krb5 $user2
+EOO
+is ($show, $expected, ' and the created object and ACL are correct');
+is ($server->get ('base', 'service/foo'), undef,
+    ' but auto-creation of something else fails');
+is ($server->error, "$user2 not authorized to create base:service/foo",
+    ' with the right error');
+is ($server->store ('base', 'service/default-store', 'stuff'), undef,
+    'Auto-creation on store...');
+is ($server->error,
+    "cannot store base:service/default-store: object type is immutable",
+    ' ...works');
+$show = $server->show ('base', 'service/default-store');
+$show =~ s/(Created on:) \d+$/$1 0/m;
+$expected = <<"EOO";
+           Type: base
+           Name: service/default-store
+          Owner: user2
+     Created by: $user2
+   Created from: $host
+     Created on: 0
+
+Members of ACL user2 (id: 3) are:
+  krb5 $user2
+EOO
+is ($show, $expected, ' and the created object and ACL are correct');
+is ($server->store ('base', 'service/foo', 'stuff'), undef,
+    ' but auto-creation of something else fails');
+is ($server->error, "$user2 not authorized to create base:service/foo",
+    ' with the right error');
 
 # Now test handling of some configuration errors.
 undef $Wallet::Config::DB_DRIVER;

@@ -8,6 +8,9 @@ wallet 0.3 (unreleased)
     ACL.  This permits dynamic creation of new objects based on a default
     owner ACL programmatically determined from the name of the object.
 
+    Attempt to create the object with a default owner on get and store
+    when the object doesn't exist.
+
     Add support for displaying the history of objects and ACLs.
 
     Add an ACL verifier that checks access against NetDB roles using the

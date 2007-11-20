@@ -401,10 +401,16 @@ sub owner {
 
 # Retrieve the information associated with an object, or returns undef and
 # sets the internal error if the retrieval fails or if the user isn't
-# authorized.
+# authorized.  If the object doesn't exist, attempts dynamic creation of the
+# object using the default ACL mappings (if any).
 sub get {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
+    if (not defined $object and $self->error =~ /^cannot find/) {
+        if ($self->create ($type, $name)) {
+            $object = $self->retrieve ($type, $name);
+        }
+    }
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'get');
     my $result = $object->get ($self->{user}, $self->{host});
@@ -414,10 +420,17 @@ sub get {
 
 # Store new data in an object, or returns undef and sets the internal error if
 # the object can't be found or if the user isn't authorized.  Also don't
-# permit storing undef, although storing the empty string is fine.
+# permit storing undef, although storing the empty string is fine.  If the
+# object doesn't exist, attempts dynamic creation of the object using the
+# default ACL mappings (if any).
 sub store {
     my ($self, $type, $name, $data) = @_;
     my $object = $self->retrieve ($type, $name);
+    if (not defined $object and $self->error =~ /^cannot find/) {
+        if ($self->create ($type, $name)) {
+            $object = $self->retrieve ($type, $name);
+        }
+    }
     return undef unless defined $object;
     return undef unless $self->acl_check ($object, 'store');
     if (not defined ($data)) {
