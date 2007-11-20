@@ -16,13 +16,6 @@ Release 0.3:
 
 * Write the PTS ACL verifier.
 
-* Add support for a default creation policy and default ACLs.  The policy
-  function needs to return a list of ACLs, and we'll need an ACL function
-  to check the user against such a list rather than an ACL that already
-  exists in the database.  When we create such an object, we'll also need
-  to name the ACL, which may require fallback logic if the name was
-  already taken.
-
 * Use the class names in the database tables when loading object and
   ACL verifier implementations.
 
@@ -94,6 +87,10 @@ Release 1.0:
 
 * Implement a simple file wallet object.  Document a naming convention for
   those files (group-service, perhaps).
+
+* Revisit the way default ACL creation is handled.  Add a new function to
+  verify an ACL given as an array without requiring that it be in the
+  database first and write better code for comparing two ACLs.
 
 Future work:
 

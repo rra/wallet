@@ -133,11 +133,73 @@ sub DESTROY {
 # Object methods
 ##############################################################################
 
+# Given an object which doesn't currently exist, check whether a default_owner
+# function is defined and, if so, if it returns an ACL for that object.  If
+# so, create the ACL and check if the current user is authorized by that ACL.
+# Returns true if so, false if not, setting the internal error as appropriate.
+#
+# This leaves those new ACLs in the database, which may not be the best
+# behavior, but it's the simplest given the current Wallet::ACL API.  This
+# should probably be revisited later.
+sub create_check {
+    my ($self, $type, $name) = @_;
+    my $user = $self->{user};
+    my $host = $self->{host};
+    my $dbh = $self->{dbh};
+    unless (defined (&Wallet::Config::default_owner)) {
+        $self->error ("$user not authorized to create ${type}:${name}");
+        return;
+    }
+    my ($aname, @acl) = Wallet::Config::default_owner ($type, $name);
+    unless (defined $aname) {
+        $self->error ("$user not authorized to create ${type}:${name}");
+        return;
+    }
+    my $acl = eval { Wallet::ACL->new ($aname, $dbh) };
+    if ($@) {
+        $acl = eval { Wallet::ACL->create ($aname, $dbh, $user, $host) };
+        if ($@) {
+            $self->error ($@);
+            return;
+        }
+        for my $entry (@acl) {
+            unless ($acl->add ($entry->[0], $entry->[1], $user, $host)) {
+                $self->error ($acl->error);
+                return;
+            }
+        }
+    } else {
+        my @entries = $acl->list;
+        if (not @entries and $acl->error) {
+            $self->error ($acl->error);
+            return;
+        }
+        @entries = sort { $$a[0] cmp $$b[0] && $$a[1] cmp $$b[1] } @entries;
+        @acl     = sort { $$a[0] cmp $$b[0] && $$a[1] cmp $$b[1] } @acl;
+        my $okay = 1;
+        if (@entries != @acl) {
+            $okay = 0;
+        } else {
+            for my $i (0 .. $#entries) {
+                $okay = 0 unless ($entries[$i][0] eq $acl[$i][0]);
+                $okay = 0 unless ($entries[$i][1] eq $acl[$i][1]);
+            }
+        }
+        unless ($okay) {
+            $self->error ("ACL $aname exists and doesn't match default");
+            return;
+        }
+    }
+    if ($acl->check ($user)) {
+        return $aname;
+    } else {
+        $self->error ("$user not authorized to create ${type}:${name}");
+        return;
+    }
+}
+
 # Create a new object and returns that object.  On error, returns undef and
 # sets the internal error.
-#
-# For the time being, we hard-code an ACL named ADMIN to use to authorize
-# object creation.  This needs more work later.
 sub create {
     my ($self, $type, $name) = @_;
     unless ($MAPPING{$type}) {
@@ -148,15 +210,20 @@ sub create {
     my $dbh = $self->{dbh};
     my $user = $self->{user};
     my $host = $self->{host};
+    my $acl;
     unless ($self->{admin}->check ($user)) {
-        $self->error ("$user not authorized to create ${type}:${name}");
-        return undef;
+        $acl = $self->create_check ($type, $name);
+        return unless $acl;
     }
     my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     } else {
+        if ($acl and not $object->owner ($acl, $user, $host)) {
+            $self->error ($object->error);
+            return;
+        }
         return 1;
     }
 }
@@ -780,9 +847,13 @@ if set, or the owner ACL if the store ACL is not set.
 =item create(TYPE, NAME)
 
 Creates a new object of type TYPE and name NAME.  TYPE must be a recognized
-type for which the wallet system has a backend implementation.  To create an
-object, the current user must be authorized by the ADMIN ACL.  Returns true
+type for which the wallet system has a backend implementation.  Returns true
 on success and false on failure.
+
+To create an object, the current user must either be authorized by the ADMIN
+ACL or authorized by the default owner as determined by the wallet
+configuration.  For more information on how to map new objects to default
+owners, see Wallet::Config(3).
 
 =item destroy(TYPE, NAME)
 

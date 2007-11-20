@@ -465,6 +465,65 @@ our $NETDB_REMCTL_PORT;
 
 =back
 
+=head1 DEFAULT OWNERS
+
+By default, only users in the ADMIN ACL can create new objects in the
+wallet.  To allow other users to create new objects, define a Perl function
+named default_owner.  This function will be called whenever a non-ADMIN user
+tries to create a new object and will be passed the type and name of the
+object.  It should return undef if there is no default owner for that
+object.  If there is, it should return a list containing the name to use for
+the ACL and then zero or more anonymous arrays of two elements each giving
+the type and identifier for each ACL entry.
+
+For example, the following simple function says to use a default owner named
+C<default> with one entry of type C<krb5> and identifier C<rra@example.com>
+for the object with type C<keytab> and name C<host/example.com>:
+
+    sub default_owner {
+        my ($type, $name) = @_;
+        if ($type eq 'keytab' and $name eq 'host/example.com') {
+            return ('default', [ 'krb5', 'rra@example.com' ]);
+        } else {
+            return;
+        }
+    }
+
+Of course, normally this function is used for more complex mappings.  Here
+is a more complete example.  For objects of type keytab corresponding to
+various types of per-machine principals, return a default owner that sets as
+owner anyone with a NetDB role for that system and the system's host
+principal.  This permits authorization management using NetDB while also
+allowing the system to bootstrap itself once the host principal has been
+downloaded and rekey itself using the old host principal.
+
+    sub default_owner {
+        my ($type, $name) = @_;
+        my %allowed = map { $_ => 1 }
+            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
+        my $realm = 'example.com';
+        return unless $type eq 'keytab';
+        return unless $name =~ m%/%;
+        my ($service, $instance) = split ('/', $name, 2);
+        return unless $allowed{$service};
+        my $acl_name = "host/$instance";
+        my @acl = ([ 'netdb', $instance ],
+                   [ 'krb5', "host/$instance\@$realm" ]);
+        return ($acl_name, @acl);
+    }
+
+The auto-created ACL used for the owner of the new object will, in the above
+example, be named C<host/I<system>> where I<system> is the fully-qualified
+name of the system as derived from the keytab being requested.
+
+If the name of the ACL returned by the default_owner function matches an ACL
+that already exists in the wallet database, the existing ACL will be
+compared to the default ACL returned by the default_owner function.  If the
+existing ACL has the same entries as the one returned by default_owner,
+creation continues if the user is authorized by that ACL.  If they don't
+match, creation of the object is rejected, since the presence of an existing
+ACL may indicate that something different is being done with this object.
+
 =cut
 
 # Now, load the configuration file so that it can override the defaults.

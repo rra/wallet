@@ -2,6 +2,12 @@
 
 wallet 0.3 (unreleased)
 
+    Add support for running a user-defined function whenever an object is
+    created by a non-ADMIN user and using the default owner ACL returned
+    by that function provided that the calling user is authorized by that
+    ACL.  This permits dynamic creation of new objects based on a default
+    owner ACL programmatically determined from the name of the object.
+
     Add support for displaying the history of objects and ACLs.
 
     Add an ACL verifier that checks access against NetDB roles using the

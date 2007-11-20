@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 303;
+use Test::More tests => 311;
 
 use Wallet::Config;
 use Wallet::Server;
@@ -738,6 +738,78 @@ is ($server->error, 'cannot find base:service/both', ' because it is gone');
 is ($server->store ('base', 'service/both', 'stuff'), undef,
     ' or store it');
 is ($server->error, 'cannot find base:service/both', ' because it is gone');
+
+# Test default ACLs on object creation.
+#
+# Create a default_acl sub that permits $user2 to create service/default with
+# a default owner of default (the same as the both ACL), $user1 to create
+# service/default-both with a default owner of both (but a different
+# definition than the existing ACL), and $user2 to create service/default-2
+# with a default owner of user2 (with the same definition as the existing
+# ACL).
+package Wallet::Config;
+sub default_owner {
+    my ($type, $name) = @_;
+    if ($type eq 'base' and $name eq 'service/default') {
+        return ('default', [ 'krb5', $user1 ], [ 'krb5', $user2 ]);
+    } elsif ($type eq 'base' and $name eq 'service/default-both') {
+        return ('both', [ 'krb5', $user1 ]);
+    } elsif ($type eq 'base' and $name eq 'service/default-2') {
+        return ('user2', [ 'krb5', $user2 ]);
+    } else {
+        return;
+    }
+}
+package main;
+
+# We're still user2, so we should now be able to create service/default.  Make
+# sure we can and that the ACLs all look good.
+is ($server->create ('base', 'service/default'), 1,
+    'Creating an object with the default ACL works');
+is ($server->create ('base', 'service/foo'), undef, ' but not any object');
+is ($server->error, "$user2 not authorized to create base:service/foo",
+    ' with the right error');
+$show = $server->show ('base', 'service/default');
+if (defined $show) {
+    $show =~ s/(Created on:) \d+$/$1 0/m;
+    $expected = <<"EOO";
+           Type: base
+           Name: service/default
+          Owner: default
+     Created by: $user2
+   Created from: $host
+     Created on: 0
+
+Members of ACL default (id: 7) are:
+  krb5 $user1
+  krb5 $user2
+EOO
+    is ($show, $expected, ' and the created object and ACL are correct');
+} else {
+    is ($server->error, undef, ' and the created object and ACL are correct');
+}
+
+# Try the other cases in default_acl.
+is ($server->create ('base', 'service/default-both'), undef,
+    'Creating an object with an ACL mismatch fails');
+is ($server->error, "ACL both exists and doesn't match default",
+    ' with the right error');
+is ($server->create ('base', 'service/default-2'), 1,
+    'Creating an object with an existing ACL works');
+$show = $server->show ('base', 'service/default-2');
+$show =~ s/(Created on:) \d+$/$1 0/m;
+$expected = <<"EOO";
+           Type: base
+           Name: service/default-2
+          Owner: user2
+     Created by: $user2
+   Created from: $host
+     Created on: 0
+
+Members of ACL user2 (id: 3) are:
+  krb5 $user2
+EOO
+is ($show, $expected, ' and the created object and ACL are correct');
 
 # Now test handling of some configuration errors.
 undef $Wallet::Config::DB_DRIVER;
