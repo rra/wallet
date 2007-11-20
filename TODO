@@ -88,9 +88,11 @@ Release 1.0:
 * Implement a simple file wallet object.  Document a naming convention for
   those files (group-service, perhaps).
 
-* Revisit the way default ACL creation is handled.  Add a new function to
-  verify an ACL given as an array without requiring that it be in the
-  database first and write better code for comparing two ACLs.
+* Rename Wallet::ACL::* to Wallet::Verifier::*.  Add Wallet::ACL as a
+  generic interface with Wallet::ACL::Database and Wallet::ACL::List
+  implementations (or some similar name) so that we can create and check
+  an ACL without having to write it into the database.  Redo default ACL
+  creation using that functionality.
 
 Future work:
 
@@ -170,6 +172,9 @@ Future work:
 
 * Write a test suite to scan all wallet code looking for diagnostics that
   aren't in the documentation and warn about them.
+
+* The Wallet::Config class is very ugly and could use some better internal
+  API to reference the variables in it.
 
 May or may not be good ideas:
 
