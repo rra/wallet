@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 5;
+use Test::More tests => 8;
 
 use DBI;
 use Wallet::Schema;
@@ -31,5 +31,20 @@ $dbh->{PrintError} = 0;
 eval { $schema->create ($dbh) };
 is ($@, '', "create() doesn't die");
 
+# Test dropping the database.
+eval { $schema->drop ($dbh) };
+is ($@, '', "drop() doesn't die");
+my $sql = "select name from sqlite_master where type = 'table'";
+my $sth = $dbh->prepare ($sql);
+$sth->execute;
+my ($table, @tables);
+while (defined ($table = $sth->fetchrow_array)) {
+    push (@tables, $table) unless $table =~ /^sqlite_/;
+}
+is ("@tables", '', ' and there are no tables in the database');
+eval { $schema->create ($dbh) };
+is ($@, '', ' and we can run create again');
+
 # Clean up.
+eval { $schema->drop ($dbh) };
 unlink 'wallet-db';

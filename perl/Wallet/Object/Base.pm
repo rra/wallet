@@ -41,6 +41,7 @@ sub new {
     $dbh->{PrintError} = 0;
     my $sql = 'select ob_name from objects where ob_type = ? and ob_name = ?';
     my $data = $dbh->selectrow_array ($sql, undef, $type, $name);
+    $dbh->commit;
     die "cannot find ${type}:${name}\n" unless ($data and $data eq $name);
     my $self = {
         dbh  => $dbh,
@@ -240,9 +241,11 @@ sub _get_internal {
         my $sql = "select $attr from objects where ob_type = ? and
             ob_name = ?";
         $value = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
+        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ($@);
+        $self->{dbh}->rollback;
         return;
     }
     return $value;
@@ -345,9 +348,11 @@ sub flag_check {
         my $sql = 'select fl_flag from flags where fl_type = ? and fl_name = ?
             and fl_flag = ?';
         $value = $dbh->selectrow_array ($sql, undef, $type, $name, $flag);
+        $dbh->commit;
     };
     if ($@) {
         $self->error ("cannot check flag $flag for ${type}:${name}: $@");
+        $dbh->rollback;
         return;
     } elsif ($value) {
         return 1;
@@ -401,10 +406,12 @@ sub flag_list {
         while (defined ($flag = $sth->fetchrow_array)) {
             push (@flags, $flag);
         }
+        $self->{dbh}->commit;
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot retrieve flags for $id: $@");
+        $self->{dbh}->rollback;
         return;
     } else {
         return @flags;
@@ -490,10 +497,12 @@ sub history {
             }
             $output .= "\n    by $data[5] from $data[6]\n";
         }
+        $self->{dbh}->commit;
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot read history for $id: $@");
+        $self->{dbh}->rollback;
         return undef;
     }
     return $output;
@@ -550,9 +559,11 @@ sub show {
         my $sql = "select $fields from objects where ob_type = ? and
             ob_name = ?";
         @data = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
+        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ("cannot retrieve data for ${type}:${name}: $@");
+        $self->{dbh}->rollback;
         return undef;
     }
     my $output = '';

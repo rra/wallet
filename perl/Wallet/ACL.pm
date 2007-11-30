@@ -50,8 +50,12 @@ sub new {
     } else {
         $sql = 'select ac_id, ac_name from acls where ac_name = ?';
     }
-    ($data, $name) = eval { $dbh->selectrow_array ($sql, undef, $id) };
+    eval {
+        ($data, $name) = $dbh->selectrow_array ($sql, undef, $id);
+        $dbh->commit;
+    };
     if ($@) {
+        $dbh->rollback;
         die "cannot search for ACL $id: $@\n";
     } elsif (not defined $data) {
         die "ACL $id not found\n";
@@ -271,9 +275,11 @@ sub list {
         while (defined ($entry = $sth->fetchrow_arrayref)) {
             push (@entries, [ @$entry ]);
         }
+        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ("cannot retrieve ACL $self->{id}: $@");
+        $self->{dbh}->rollback;
         return;
     } else {
         return @entries;
@@ -320,9 +326,11 @@ sub history {
             }
             $output .= "\n    by $data[3] from $data[4]\n";
         }
+        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ("cannot read history for $self->{id}: $@");
+        $self->{dbh}->rollback;
         return undef;
     }
     return $output;

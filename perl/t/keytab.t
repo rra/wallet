@@ -200,7 +200,7 @@ sub stop_remctld {
 }
 
 # Use Wallet::Server to set up the database.
-my $server = eval { Wallet::Server->initialize ($user) };
+my $server = eval { Wallet::Server->reinitialize ($user) };
 is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
 my $dbh = $server->dbh;
@@ -861,4 +861,6 @@ EOO
 }
 
 # Clean up.
+my $schema = Wallet::Schema->new;
+$schema->drop ($dbh);
 unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');

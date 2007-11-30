@@ -85,6 +85,18 @@ sub initialize {
     return $class->new ($user, 'localhost');
 }
 
+# The same as initialize, but also drops any existing tables first before
+# creating the schema.  Takes the same arguments and throws an exception on
+# failure.
+sub reinitialize {
+    my ($class, $user) = @_;
+    my $dbh = $class->_open_db;
+    my $schema = Wallet::Schema->new;
+    $schema->drop ($dbh);
+    $dbh->disconnect;
+    return $class->initialize ($user);
+}
+
 # Create a new wallet server object.  A new server should be created for each
 # user who is making changes to the wallet.  Takes the principal and host who
 # are sending wallet requests.  Opens a connection to the database that will
@@ -749,6 +761,15 @@ history information for all subsequent operations.  new() opens the
 database, using the database configuration as set by Wallet::Config and
 ensures that the C<ADMIN> ACL exists.  That ACL will be used to authorize
 privileged operations.
+
+On any error, this method throws an exception.
+
+=item reinitialize(PRINCIPAL)
+
+Performs the same actions as initialize(), but first drops any existing
+wallet database tables from the database, allowing this function to be
+called on a prior wallet database.  All data stored in the database will be
+deleted and a fresh set of wallet database tables will be created.
 
 On any error, this method throws an exception.
 

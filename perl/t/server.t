@@ -866,6 +866,11 @@ is ($server->store ('base', 'service/foo', 'stuff'), undef,
 is ($server->error, "$user2 not authorized to create base:service/foo",
     ' with the right error');
 
+# Clean up.
+my $schema = Wallet::Schema->new;
+$schema->drop ($server->dbh);
+unlink 'wallet-db';
+
 # Now test handling of some configuration errors.
 undef $Wallet::Config::DB_DRIVER;
 $server = eval { Wallet::Server->new ($user2, $host) };
@@ -880,6 +885,3 @@ $Wallet::Config::DB_INFO = 't';
 $server = eval { Wallet::Server->new ($user2, $host) };
 like ($@, qr/^cannot connect to database: /,
       ' or if the database connection fails');
-
-# Clean up.
-unlink 'wallet-db';

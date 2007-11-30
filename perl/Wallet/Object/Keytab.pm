@@ -467,9 +467,11 @@ sub enctypes_list {
         while (defined ($entry = $sth->fetchrow_arrayref)) {
             push (@enctypes, @$entry);
         }
+        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ($@);
+        $self->{dbh}->rollback;
         return;
     }
     return @enctypes;
@@ -562,9 +564,11 @@ sub attr {
                 while (defined ($target = $sth->fetchrow_array)) {
                     push (@targets, $target);
                 }
+                $self->{dbh}->commit;
             };
             if ($@) {
                 $self->error ($@);
+                $self->{dbh}->rollback;
                 return;
             }
             return @targets;

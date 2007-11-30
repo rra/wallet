@@ -28,7 +28,7 @@ my @trace = ($user, $host, time);
 my $princ = 'service/test@EXAMPLE.COM';
 
 # Use Wallet::Server to set up the database.
-my $server = eval { Wallet::Server->initialize ($user) };
+my $server = eval { Wallet::Server->reinitialize ($user) };
 is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
 my $dbh = $server->dbh;
@@ -321,4 +321,6 @@ EOO
 is ($object->history, $output, ' and the history is correct');
 
 # Clean up.
+my $schema = Wallet::Schema->new;
+$schema->drop ($dbh);
 unlink 'wallet-db';

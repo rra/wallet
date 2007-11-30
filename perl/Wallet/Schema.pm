@@ -14,7 +14,7 @@ package Wallet::Schema;
 require 5.006;
 
 use strict;
-use vars qw(@TABLES $VERSION);
+use vars qw(@SQL @TABLES $VERSION);
 
 use DBI;
 
@@ -28,28 +28,31 @@ $VERSION = '0.02';
 ##############################################################################
 
 # Create a new Wallet::Schema object, parse the SQL out of the documentation,
-# and store it in the object.
+# and store it in the object.  We have to store the SQL in a static variable,
+# since we can't read DATA multiple times.
 sub new {
     my ($class) = @_;
-    local $_;
-    my ($found, @sql);
-    my $command = '';
-    while (<DATA>) {
-        if (not $found and /^=head1 SCHEMA/) {
-            $found = 1;
-        } elsif ($found and /^=head1 /) {
-            last;
-        } elsif ($found and /^  /) {
-            s/^  //;
-            $command .= $_;
-            if (/;$/) {
-                push (@sql, $command);
-                $command = '';
+    unless (@SQL) {
+        local $_;
+        my $found;
+        my $command = '';
+        while (<DATA>) {
+            if (not $found and /^=head1 SCHEMA/) {
+                $found = 1;
+            } elsif ($found and /^=head1 /) {
+                last;
+            } elsif ($found and /^  /) {
+                s/^  //;
+                $command .= $_;
+                if (/;$/) {
+                    push (@SQL, $command);
+                    $command = '';
+                }
             }
         }
+        close DATA;
     }
-    close DATA;
-    my $self = { sql => [ @sql ] };
+    my $self = { sql => [ @SQL ] };
     bless ($self, $class);
     return $self;
 }
@@ -74,6 +77,31 @@ sub create {
                 $sql =~ s{auto_increment primary key}
                          {primary key autoincrement};
             }
+            $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
+        }
+        $dbh->commit;
+    };
+    if ($@) {
+        $dbh->rollback;
+        die "$@\n";
+    }
+}
+
+# Given a database handle, try to remove the wallet database tables by
+# reversing the SQL.  Do this in a transaction regardless of the database
+# settings and throw an exception if this fails.
+sub drop {
+    my ($self, $dbh) = @_;
+    my @drop = map {
+        if (/^\s*create\s+table\s+(\S+)/i) {
+            "drop table if exists $1;";
+        } else {
+            ();
+        }
+    } reverse @{ $self->{sql} };
+    eval {
+        $dbh->begin_work if $dbh->{AutoCommit};
+        for my $sql (@drop) {
             $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
         }
         $dbh->commit;
@@ -132,6 +160,14 @@ Given a connected database handle, runs the SQL commands necessary to create
 the wallet database in an otherwise empty database.  This method will not
 drop any existing tables and will therefore fail if a wallet database has
 already been created.  On any error, this method will throw a database
+exception.
+
+=item drop(DBH)
+
+Given a connected database handle, drop all of the wallet tables from that
+database if any of those tables exist.  This method will only remove tables
+that are part of the current schema or one of the previous known schema and
+won't remove other tables.  On any error, this method will throw a database
 exception.
 
 =item sql()
