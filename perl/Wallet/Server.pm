@@ -61,9 +61,9 @@ sub _open_db {
     if (not defined $dbh) {
         die "cannot connect to database: $DBI::errstr\n";
     }
-    $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
+    $dbh->{AutoCommit} = 0;
     return $dbh;
 }
 

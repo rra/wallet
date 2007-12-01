@@ -36,9 +36,9 @@ $VERSION = '0.02';
 # probably be usable as-is by most object types.
 sub new {
     my ($class, $type, $name, $dbh) = @_;
-    $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
+    $dbh->{AutoCommit} = 0;
     my $sql = 'select ob_name from objects where ob_type = ? and ob_name = ?';
     my $data = $dbh->selectrow_array ($sql, undef, $type, $name);
     $dbh->commit;
@@ -58,9 +58,9 @@ sub new {
 # in the object.  Subclasses may need to override this to do additional setup.
 sub create {
     my ($class, $type, $name, $dbh, $user, $host, $time) = @_;
-    $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
+    $dbh->{AutoCommit} = 0;
     $time ||= time;
     die "invalid object type\n" unless $type;
     die "invalid object name\n" unless $name;

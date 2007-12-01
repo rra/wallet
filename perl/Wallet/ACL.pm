@@ -41,9 +41,9 @@ $VERSION = '0.02';
 # doesn't exist, throws an exception.
 sub new {
     my ($class, $id, $dbh) = @_;
-    $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
+    $dbh->{AutoCommit} = 0;
     my ($sql, $data, $name);
     if ($id =~ /^\d+\z/) {
         $sql = 'select ac_id, ac_name from acls where ac_id = ?';
@@ -77,9 +77,9 @@ sub create {
     if ($name =~ /^\d+\z/) {
         die "ACL name may not be all numbers\n";
     }
-    $dbh->{AutoCommit} = 0;
     $dbh->{RaiseError} = 1;
     $dbh->{PrintError} = 0;
+    $dbh->{AutoCommit} = 0;
     $time ||= time;
     my $id;
     eval {
