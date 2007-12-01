@@ -226,4 +226,6 @@ is ($acl->name, 'example', ' and the right name');
 is ($acl->id, 3, ' and a new ID');
 
 # Clean up.
+my $schema = Wallet::Schema->new;
+$schema->drop ($dbh);
 unlink 'wallet-db';
