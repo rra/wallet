@@ -11,8 +11,7 @@ string, normally of the form:
 replacing <name>, <host>, and <port> with the parameters for your
 database.  The third line should be the username to use, and the fourth
 and last line should be the password.  If this file is present, all tests
-except part of the schema test will be run against this database instead
-of a local SQLite database.
+will be run against this database instead of a local SQLite database.
 
 In order to run the keytab tests, you will need to grant the test
 processes access to create, download, and remove principals in a test KDC.
