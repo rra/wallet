@@ -13,10 +13,8 @@ use Test::More tests => 321;
 use Wallet::Config;
 use Wallet::Server;
 
-# Use a local SQLite database for testing.
-$Wallet::Config::DB_DRIVER = 'SQLite';
-$Wallet::Config::DB_INFO = 'wallet-db';
-unlink 'wallet-db';
+use lib 't/lib';
+use Util;
 
 # Allow creation of base objects for testing purposes.
 $Wallet::Server::MAPPING{base} = 'Wallet::Object::Base';
@@ -29,6 +27,7 @@ my $host = 'localhost';
 my @trace = ($admin, $host);
 
 # Use Wallet::Server to set up the database.
+db_setup;
 my $server = eval { Wallet::Server->initialize ($admin) };
 is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');

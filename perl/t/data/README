@@ -1,5 +1,19 @@
 This directory contains additional data files needed to run some tests.
 
+By default, all the tests are done using a SQLite database.  To test
+against another database, create a file named test.database.  The first
+line of the file should contain the database driver name (mysql, for
+example, for DBD::mysql).  The second line should contain the DBI connect
+string, normally of the form:
+
+    database=<name>;host=<host>;port=<port>
+
+replacing <name>, <host>, and <port> with the parameters for your
+database.  The third line should be the username to use, and the fourth
+and last line should be the password.  If this file is present, all tests
+except part of the schema test will be run against this database instead
+of a local SQLite database.
+
 In order to run the keytab tests, you will need to grant the test
 processes access to create, download, and remove principals in a test KDC.
 This should not be pointed at a production KDC!  Then, create the

@@ -14,12 +14,11 @@ use Wallet::ACL;
 use Wallet::Config;
 use Wallet::Server;
 
-# Use a local SQLite database for testing.
-$Wallet::Config::DB_DRIVER = 'SQLite';
-$Wallet::Config::DB_INFO = 'wallet-db';
-unlink 'wallet-db';
+use lib 't/lib';
+use Util;
 
 # Use Wallet::Server to set up the database.
+db_setup;
 my $server = eval { Wallet::Server->initialize ('admin@EXAMPLE.COM') };
 is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');

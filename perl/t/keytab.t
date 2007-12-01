@@ -15,6 +15,9 @@ use Wallet::Config;
 use Wallet::Object::Keytab;
 use Wallet::Server;
 
+use lib 't/lib';
+use Util;
+
 # Mapping of klist -ke encryption type names to the strings that Kerberos uses
 # internally.  It's very annoying to have to maintain this, and it probably
 # breaks with Heimdal.
@@ -25,11 +28,6 @@ my %enctype =
      'aes-256 cts mode with 96-bit sha-1 hmac' => 'aes256-cts',
      'arcfour with hmac/md5'                   => 'rc4-hmac');
 
-# Use a local SQLite database for testing.
-$Wallet::Config::DB_DRIVER = 'SQLite';
-$Wallet::Config::DB_INFO = 'wallet-db';
-unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
-
 # Some global defaults to use.
 my $user = 'admin@EXAMPLE.COM';
 my $host = 'localhost';
@@ -37,16 +35,6 @@ my @trace = ($user, $host, time);
 
 # Flush all output immediately.
 $| = 1;
-
-# Returns the one-line contents of a file as a string, removing the newline.
-sub contents {
-    my ($file) = @_;
-    open (FILE, '<', $file) or die "cannot open $file: $!\n";
-    my $data = <FILE>;
-    close FILE;
-    chomp $data;
-    return $data;
-}
 
 # Run a command and throw away the output, returning the exit status.
 sub system_quiet {
@@ -200,6 +188,8 @@ sub stop_remctld {
 }
 
 # Use Wallet::Server to set up the database.
+unlink ('krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
+db_setup;
 my $server = eval { Wallet::Server->reinitialize ($user) };
 is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');

@@ -16,10 +16,8 @@ use Wallet::Config;
 use Wallet::Object::Base;
 use Wallet::Server;
 
-# Use a local SQLite database for testing.
-$Wallet::Config::DB_DRIVER = 'SQLite';
-$Wallet::Config::DB_INFO = 'wallet-db';
-unlink 'wallet-db';
+use lib 't/lib';
+use Util;
 
 # Some global defaults to use.
 my $user = 'admin@EXAMPLE.COM';
@@ -28,6 +26,7 @@ my @trace = ($user, $host, time);
 my $princ = 'service/test@EXAMPLE.COM';
 
 # Use Wallet::Server to set up the database.
+db_setup;
 my $server = eval { Wallet::Server->reinitialize ($user) };
 is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');

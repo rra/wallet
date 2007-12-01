@@ -8,10 +8,13 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 8;
+use Test::More tests => 10;
 
 use DBI;
 use Wallet::Schema;
+
+use lib 't/lib';
+use Util;
 
 my $schema = Wallet::Schema->new;
 ok (defined $schema, 'Wallet::Schema creation');
@@ -21,7 +24,6 @@ ok (@sql > 0, 'sql() returns something');
 is (scalar (@sql), 26, ' and returns the right number of statements');
 
 # Create a SQLite database to use for create.
-unlink 'wallet-db';
 my $dbh = DBI->connect ("DBI:SQLite:wallet-db");
 if (not defined $dbh) {
     die "cannot create database wallet-db: $DBI::errstr\n";
@@ -48,3 +50,17 @@ is ($@, '', ' and we can run create again');
 # Clean up.
 eval { $schema->drop ($dbh) };
 unlink 'wallet-db';
+
+# Now repeat the test against the configured database in case it's different.
+db_setup;
+my $connect = "DBI:${Wallet::Config::DB_DRIVER}:${Wallet::Config::DB_INFO}";
+$dbh = DBI->connect ($connect);
+if (not defined $dbh) {
+    die "cannot connect to database $connect: $DBI::errstr\n";
+}
+$dbh->{RaiseError} = 1;
+$dbh->{PrintError} = 0;
+eval { $schema->create ($dbh) };
+is ($@, '', "create() against configured database doesn't die");
+eval { $schema->drop ($dbh) };
+is ($@, '', " and drop() doesn't die");

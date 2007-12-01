@@ -21,6 +21,9 @@ wallet 0.3 (unreleased)
     The keytab backend now supports limiting generated keytabs to
     particular enctypes by setting an attribute on the object.
 
+    The wallet backend test suite now supports using a database other than
+    SQLite for testing.
+
 wallet 0.2 (2007-10-08)
 
     First public alpha release.  Only tested with SQLite 3, no history
