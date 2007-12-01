@@ -4,7 +4,7 @@
 # Further updates by Russ Allbery <rra@debian.org>
 
 # Uncomment this to turn on verbose mode.
-export DH_VERBOSE=1
+#export DH_VERBOSE=1
 
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
@@ -56,7 +56,7 @@ install: build-stamp
 	cd $(CURDIR)/perl && perl Makefile.PL INSTALLDIRS=vendor
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	dh_installdirs
-	dh_install --list-missing
+	DH_OPTIONS= dh_install --fail-missing
 
 binary: binary-arch binary-indep
 
