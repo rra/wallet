@@ -65,7 +65,7 @@ sub kadmin {
         # Don't use die here; it will get trapped as an exception.  Also be
         # careful about our database handles.  (We still lose if there's some
         # other database handle open we don't know about.)
-        $self->{dbh}->{InactiveDestroy} = 0 if ref $self;
+        $self->{dbh}->{InactiveDestroy} = 0;
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
             exit 1;
@@ -617,7 +617,9 @@ sub attr_show {
 # caller.
 sub create {
     my ($class, $type, $name, $dbh, $creator, $host, $time) = @_;
-    $class->kadmin_addprinc ($name);
+    my $self = { dbh => $dbh };
+    bless $self, $class;
+    $self->kadmin_addprinc ($name);
     return $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
 }
 
