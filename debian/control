@@ -18,7 +18,7 @@ Description: Set AFS kaserver keys and generate srvtabs
  AFS kaserver.  It only works with an AFS kaserver KDC.
 
 Package: keytab-backend
-Architecture: any
+Architecture: all
 Depends: krb5-admin-server, perl, remctl-server
 Description: Provide existing Kerberos keytabs via remctl
  keytab-backend is a service that runs under remctld and allows
