@@ -79,8 +79,13 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 	server/keytab-backend.8	server/wallet-backend.8 tools/compile \
 	tools/depcomp tools/install-sh tools/missing
 
-# Take appropriate actions in the Perl directory as well.
-all-local:
+# Take appropriate actions in the Perl directory as well.  We don't want to
+# always build the Perl directory in all-local, since otherwise Automake does
+# this for every target, which overrides some hacks we have to do for Debian
+# packaging.
+all-local: perl/blib/lib/Wallet/Config.pm
+
+perl/blib/lib/Wallet/Config.pm:
 	cd perl && perl Makefile.PL
 	cd perl && $(MAKE)
 
