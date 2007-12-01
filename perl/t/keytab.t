@@ -79,9 +79,9 @@ sub destroy {
 sub getcreds {
     my ($file, $principal) = @_;
     my @commands = (
-        "kinit -k -t $file $principal >/dev/null </dev/null",
-        "kinit -t $file $principal >/dev/null </dev/null",
-        "kinit -k -K $file $principal >/dev/null </dev/null",
+        "kinit -k -t $file $principal 2>&1 >/dev/null </dev/null",
+        "kinit -t $file $principal 2>&1 >/dev/null </dev/null",
+        "kinit -k -K $file $principal 2>&1 >/dev/null </dev/null",
     );
     for my $command (@commands) {
         if (system ($command) == 0) {
