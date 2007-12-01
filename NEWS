@@ -21,6 +21,11 @@ wallet 0.3 (unreleased)
     The keytab backend now supports limiting generated keytabs to
     particular enctypes by setting an attribute on the object.
 
+    Expiration dates are now expressed in YYYY-MM-DD HH:MM:SS instead of
+    seconds since epoch and returned the same way.  Timestamps are now
+    stored in the database as correct date and time types rather than
+    seconds since epoch to work properly with MySQL.
+
     The wallet backend test suite now supports using a database other than
     SQLite for testing.
 

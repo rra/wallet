@@ -9,7 +9,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 1219;
+use Test::More tests => 1222;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -195,7 +195,7 @@ is ($out, "$new\n", ' and nothing ran');
 # Check too few, too many, and bad arguments for every command.
 my %commands = (create  => [2, 2],
                 destroy => [2, 2],
-                expires => [2, 3],
+                expires => [2, 4],
                 get     => [2, 2],
                 getacl  => [3, 3],
                 getattr => [3, 3],

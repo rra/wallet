@@ -920,10 +920,11 @@ isn't set and a failure to retrieve the expiration, the caller should call
 error() after an undef return.  If error() also returns undef, that ACL
 wasn't set; otherwise, error() will return the error message.
 
-If EXPIRES is given, sets the expiration to EXPIRES, which should be in
-seconds since epoch.  To set an expiration, the current user must be
-authorized by the ADMIN ACL.  Returns true for success and false for
-failure.
+If EXPIRES is given, sets the expiration to EXPIRES.  EXPIRES must be in
+the format C<YYYY-MM-DD +HH:MM:SS>, although the time portion may be
+omitted.  Pass in the empty +string for EXPIRES to clear the expiration
+date.  To set an expiration, the current user must be authorized by the
+ADMIN ACL.  Returns true for success and false for failure.
 
 =item flag_clear(TYPE, NAME, FLAG)
 

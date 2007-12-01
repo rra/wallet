@@ -186,7 +186,7 @@ sub command {
         check_args (2, 2, [], @args);
         $server->destroy (@args) or failure ($server->error, @_);
     } elsif ($command eq 'expires') {
-        check_args (2, 3, [], @args);
+        check_args (2, 4, [], @args);
         if (@args > 2) {
             $server->expires (@args) or failure ($server->error, @_);
         } else {
@@ -397,16 +397,16 @@ object will be usable.
 Destroy the object identified by <type> and <name>.  With some backends,
 this will trigger destruction of an object in an external system as well.
 
-=item expires <type> <name> [<expires>]
+=item expires <type> <name> [<date> [<time>]]
 
-If <expires> is not given, displays the current expiration of the object
+If <date> is not given, displays the current expiration of the object
 identified by <type> and <name>, or C<No expiration set> if none is set.
 The expiration will be displayed in seconds since epoch.
 
-If <expires> is given, sets the expiration on the object identified by
-<type> and <name> to <expires>.  <expires> should be given in seconds
-since epoch.  If <expires> is the empty string, clears the expiration of
-the object.
+If <date> is given, sets the expiration on the object identified by <type>
+and <name> to <date> and (if given) <time>.  <date> must be in the format
+C<YYYY-MM-DD> and <time> in the format C<HH:MM:SS>.  If <date> is the empty
+string, clears the expiration of the object.
 
 Currently, the expiration of an object is not used.
 

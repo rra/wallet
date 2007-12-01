@@ -81,7 +81,7 @@ is ($object->owner ('ADMIN', @trace), 1, ' and setting it again works');
 
 # Expires.
 is ($object->expires, undef, 'Expires is not set to start');
-my $now = time;
+my $now = strftime ('%Y-%m-%d %T', localtime time);
 if ($object->expires ($now, @trace)) {
     ok (1, ' and setting it works');
 } else {
@@ -193,6 +193,7 @@ is ($object->error, "cannot store keytab:$princ: object type is immutable",
     ' with the right error');
 
 # Test show.
+my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 my $output = <<"EOO";
            Type: keytab
            Name: $princ
@@ -206,7 +207,7 @@ my $output = <<"EOO";
           Flags: unchanging
      Created by: $user
    Created from: $host
-     Created on: $trace[2]
+     Created on: $date
 
 Members of ACL ADMIN (id: 1) are:
   krb5 $user
@@ -226,7 +227,7 @@ $output = <<"EOO";
           Flags: locked unchanging
      Created by: $user
    Created from: $host
-     Created on: $trace[2]
+     Created on: $date
 
 Members of ACL ADMIN (id: 1) are:
   krb5 $user
@@ -252,7 +253,6 @@ $object = eval {
     Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
   };
 ok (defined ($object), 'Recreating the object succeeds');
-my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 $output = <<"EOO";
 $date  create
     by $user from $host

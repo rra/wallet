@@ -65,12 +65,13 @@ sub create {
     die "invalid object type\n" unless $type;
     die "invalid object name\n" unless $name;
     eval {
+        my $date = strftime ('%Y-%m-%d %T', localtime $time);
         my $sql = 'insert into objects (ob_type, ob_name, ob_created_by,
             ob_created_from, ob_created_on) values (?, ?, ?, ?, ?)';
-        $dbh->do ($sql, undef, $type, $name, $user, $host, $time);
+        $dbh->do ($sql, undef, $type, $name, $user, $host, $date);
         $sql = "insert into object_history (oh_type, oh_name, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, 'create', ?, ?, ?)";
-        $dbh->do ($sql, undef, $type, $name, $user, $host, $time);
+        $dbh->do ($sql, undef, $type, $name, $user, $host, $date);
         $dbh->commit;
     };
     if ($@) {
@@ -131,20 +132,21 @@ sub log_action {
     # the object record itself.  Commit both changes as a transaction.  We
     # assume that AutoCommit is turned off.
     eval {
+        my $date = strftime ('%Y-%m-%d %T', localtime $time);
         my $sql = 'insert into object_history (oh_type, oh_name, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, ?, ?, ?, ?)';
         $self->{dbh}->do ($sql, undef, $self->{type}, $self->{name}, $action,
-                          $user, $host, $time);
+                          $user, $host, $date);
         if ($action eq 'get') {
             $sql = 'update objects set ob_downloaded_by = ?,
                 ob_downloaded_from = ?, ob_downloaded_on = ? where
                 ob_type = ? and ob_name = ?';
-            $self->{dbh}->do ($sql, undef, $user, $host, $time, $self->{type},
+            $self->{dbh}->do ($sql, undef, $user, $host, $date, $self->{type},
                               $self->{name});
         } elsif ($action eq 'store') {
             $sql = 'update objects set ob_stored_by = ?, ob_stored_from = ?,
                 ob_stored_on = ? where ob_type = ? and ob_name = ?';
-            $self->{dbh}->do ($sql, undef, $user, $host, $time, $self->{type},
+            $self->{dbh}->do ($sql, undef, $user, $host, $date, $self->{type},
                               $self->{name});
         }
         $self->{dbh}->commit;
@@ -178,11 +180,12 @@ sub log_set {
     unless ($fields{$field}) {
         die "invalid history field $field";
     }
+    my $date = strftime ('%Y-%m-%d %T', localtime $time);
     my $sql = "insert into object_history (oh_type, oh_name, oh_action,
         oh_field, oh_type_field, oh_old, oh_new, oh_by, oh_from, oh_on)
         values (?, ?, 'set', ?, ?, ?, ?, ?, ?, ?)";
     $self->{dbh}->do ($sql, undef, $self->{type}, $self->{name}, $field,
-                      $type_field, $old, $new, $user, $host, $time);
+                      $type_field, $old, $new, $user, $host, $date);
 }
 
 ##############################################################################
@@ -301,7 +304,7 @@ sub attr_show {
 sub expires {
     my ($self, $expires, $user, $host, $time) = @_;
     if ($expires) {
-        if ($expires !~ /^\d+\z/ || $expires == 0) {
+        if ($expires !~ /^\d{4}-\d\d-\d\d( \d\d:\d\d:\d\d)?\z/) {
             $self->error ("malformed expiration time $expires");
             return;
         }
@@ -465,8 +468,7 @@ sub history {
         $sth->execute ($self->{type}, $self->{name});
         my @data;
         while (@data = $sth->fetchrow_array) {
-            my $time = strftime ('%Y-%m-%d %H:%M:%S', localtime $data[7]);
-            $output .= "$time  ";
+            $output .= "$data[7]  ";
             my ($old, $new) = @data[3..4];
             if ($data[0] eq 'set' and $data[1] eq 'flags') {
                 if (defined ($data[4])) {
@@ -619,13 +621,14 @@ sub destroy {
         return;
     }
     eval {
+        my $date = strftime ('%Y-%m-%d %T', localtime $time);
         my $sql = 'delete from flags where fl_type = ? and fl_name = ?';
         $self->{dbh}->do ($sql, undef, $type, $name);
         $sql = 'delete from objects where ob_type = ? and ob_name = ?';
         $self->{dbh}->do ($sql, undef, $type, $name);
         $sql = "insert into object_history (oh_type, oh_name, oh_action,
             oh_by, oh_from, oh_on) values (?, ?, 'destroy', ?, ?, ?)";
-        $self->{dbh}->do ($sql, undef, $type, $name, $user, $host, $time);
+        $self->{dbh}->do ($sql, undef, $type, $name, $user, $host, $date);
         $self->{dbh}->commit;
     };
     if ($@) {
@@ -779,11 +782,13 @@ string.
 
 Sets or retrieves the expiration date of an object.  If no arguments are
 given, returns the current expiration or undef if no expiration is set.  If
-arguments are given, change the expiration to EXPIRES, which should be in
-seconds since epoch, and return true on success and false on failure.  Pass
-in the empty string for EXPIRES to clear the expiration date.  The other
-arguments are used for logging and history and should indicate the user and
-host from which the change is made and the time of the change.
+arguments are given, change the expiration to EXPIRES and return true on
+success and false on failure.  EXPIRES must be in the format C<YYYY-MM-DD
+HH:MM:SS>, although the time portion may be omitted.  Pass in the empty
+string for EXPIRES to clear the expiration date.
+
+The other arguments are used for logging and history and should indicate the
+user and host from which the change is made and the time of the change.
 
 =item flag_check(FLAG)
 

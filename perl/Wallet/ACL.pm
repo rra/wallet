@@ -87,9 +87,10 @@ sub create {
         $dbh->do ($sql, undef, $name);
         $id = $dbh->last_insert_id (undef, undef, 'acls', 'ac_id');
         die "unable to retrieve new ACL ID" unless defined $id;
+        my $date = strftime ('%Y-%m-%d %T', localtime $time);
         $sql = "insert into acl_history (ah_acl, ah_action, ah_by, ah_from,
             ah_on) values (?, 'create', ?, ?, ?)";
-        $dbh->do ($sql, undef, $id, $user, $host, $time);
+        $dbh->do ($sql, undef, $id, $user, $host, $date);
         $dbh->commit;
     };
     if ($@) {
@@ -143,10 +144,11 @@ sub log_acl {
     unless ($action =~ /^(add|remove)\z/) {
         die "invalid history action $action";
     }
+    my $date = strftime ('%Y-%m-%d %T', localtime $time);
     my $sql = 'insert into acl_history (ah_acl, ah_action, ah_scheme,
         ah_identifier, ah_by, ah_from, ah_on) values (?, ?, ?, ?, ?, ?, ?)';
     $self->{dbh}->do ($sql, undef, $self->{id}, $action, $scheme, $identifier,
-                      $user, $host, $time);
+                      $user, $host, $date);
 }
 
 ##############################################################################
@@ -317,8 +319,7 @@ sub history {
         $sth->execute ($self->{id});
         my @data;
         while (@data = $sth->fetchrow_array) {
-            my $time = strftime ('%Y-%m-%d %H:%M:%S', localtime $data[5]);
-            $output .= "$time  ";
+            $output .= "$data[5]  ";
             if ($data[0] eq 'add' or $data[0] eq 'remove') {
                 $output .= "$data[0] $data[1] $data[2]";
             } else {

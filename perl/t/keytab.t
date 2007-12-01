@@ -278,10 +278,10 @@ SKIP: {
            Name: wallet/one
      Created by: $user
    Created from: $host
-     Created on: $trace[2]
+     Created on: $date
   Downloaded by: $user
 Downloaded from: $host
-  Downloaded on: $trace[2]
+  Downloaded on: $date
 EOO
     is ($object->show, $expected, 'Show output is correct');
 
@@ -518,7 +518,7 @@ SKIP: {
            Name: wallet/one
      Created by: $user
    Created from: $host
-     Created on: $trace[2]
+     Created on: $date
 EOO
     is ($one->show, $expected, 'Show output displays no attributes');
     is ($one->attr ('foo', [ 'bar' ], @trace), undef,
@@ -547,7 +547,7 @@ EOO
     Synced with: kaserver
      Created by: $user
    Created from: $host
-     Created on: $trace[2]
+     Created on: $date
 EOO
     is ($one->show, $expected, ' and show now displays the attribute');
     $history .= <<"EOO";
@@ -731,10 +731,10 @@ EOO
        Enctypes: $eshow
      Created by: $user
    Created from: $host
-     Created on: $trace[2]
+     Created on: $date
   Downloaded by: $user
 Downloaded from: $host
-  Downloaded on: $trace[2]
+  Downloaded on: $date
 EOO
     is ($one->show, $expected, ' and show now displays the enctype list');
     $keytab = $one->get (@trace);

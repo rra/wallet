@@ -10,6 +10,7 @@
 
 use Test::More tests => 321;
 
+use POSIX qw(strftime);
 use Wallet::Config;
 use Wallet::Server;
 
@@ -193,7 +194,7 @@ is ($server->destroy ('base', 'service/test'), undef, ' but not twice');
 is ($server->error, 'cannot find base:service/test', ' with the right error');
 
 # Test manipulating expires.
-my $now = time;
+my $now = strftime ('%Y-%m-%d %T', localtime time);
 is ($server->expires ('base', 'service/test'), undef,
     'Retrieving expires on an unknown object fails');
 is ($server->error, 'cannot find base:service/test', ' with the right error');
@@ -225,7 +226,7 @@ is ($server->show ('base', 'service/test'), undef,
     'Cannot show nonexistent object');
 is ($server->error, 'cannot find base:service/test', ' with the right error');
 my $show = $server->show ('base', 'service/admin');
-$show =~ s/(Created on:) \d+$/$1 0/;
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/;
 my $expected = <<"EOO";
            Type: base
            Name: service/admin
@@ -504,7 +505,7 @@ is ($server->error,
     "cannot store base:service/user1: object type is immutable",
     ' and the method is called');
 $show = $server->show ('base', 'service/user1');
-$show =~ s/(Created on:) \d+$/$1 0/m;
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/user1
@@ -574,7 +575,7 @@ is ($server->flag_set ('base', 'service/both', 'unchanging'), 1,
     ' and set flags on an object we have an ACL');
 is ($server->flag_set ('base', 'service/both', 'locked'), 1, ' both flags');
 $show = $server->show ('base', 'service/both');
-$show =~ s/(Created on:) \d+$/$1 0/m;
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/both
@@ -656,7 +657,7 @@ is ($server->error,
     "cannot store base:service/user2: object type is immutable",
     ' and the method is called');
 $show = $server->show ('base', 'service/user2');
-$show =~ s/(Created on:) \d+$/$1 0/m;
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/user2
@@ -779,7 +780,7 @@ is ($server->error, "$user2 not authorized to create base:service/foo",
     ' with the right error');
 $show = $server->show ('base', 'service/default');
 if (defined $show) {
-    $show =~ s/(Created on:) \d+$/$1 0/m;
+    $show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
     $expected = <<"EOO";
            Type: base
            Name: service/default
@@ -805,7 +806,7 @@ is ($server->error, "ACL both exists and doesn't match default",
 is ($server->create ('base', 'service/default-2'), 1,
     'Creating an object with an existing ACL works');
 $show = $server->show ('base', 'service/default-2');
-$show =~ s/(Created on:) \d+$/$1 0/m;
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/default-2
@@ -824,7 +825,7 @@ $result = eval { $server->get ('base', 'service/default-get') };
 is ($result, undef, 'Auto-creation on get...');
 is ($@, "Do not instantiate Wallet::Object::Base directly\n", ' ...works');
 $show = $server->show ('base', 'service/default-get');
-$show =~ s/(Created on:) \d+$/$1 0/m;
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/default-get
@@ -847,7 +848,7 @@ is ($server->error,
     "cannot store base:service/default-store: object type is immutable",
     ' ...works');
 $show = $server->show ('base', 'service/default-store');
-$show =~ s/(Created on:) \d+$/$1 0/m;
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/default-store

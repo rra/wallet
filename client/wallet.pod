@@ -195,10 +195,10 @@ If <expires> is not given, displays the current expiration of the object
 identified by <type> and <name>, or C<No expiration set> if none is set.
 The expiration will be displayed in seconds since epoch.
 
-If <expires> is given, sets the expiration on the object identified by
-<type> and <name> to <expires>.  <expires> should be given in seconds
-since epoch.  If <expires> is the empty string, clears the expiration of
-the object.
+If <date> is given, sets the expiration on the object identified by <type>
+and <name> to <date> and (if given) <time>.  <date> must be in the format
+C<YYYY-MM-DD> and <time> in the format C<HH:MM:SS>.  If <date> is the empty
+string, clears the expiration of the object.
 
 Currently, the expiration of an object is not used.
 
