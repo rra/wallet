@@ -18,7 +18,7 @@ use vars qw($PATH $VERSION);
 $VERSION = '0.01';
 
 # Path to the config file to load.
-$PATH = '/etc/wallet.conf';
+$PATH = '/etc/wallet/wallet.conf';
 
 =head1 NAME
 
@@ -48,8 +48,9 @@ Wallet::Config - Configuration handling for the wallet server
 Wallet::Config encapsulates all of the site-specific configuration for the
 wallet server.  It is implemented as a Perl class that declares and sets the
 defaults for various configuration variables and then, if it exists, loads
-the file F</etc/wallet.conf>.  That file should contain any site-specific
-overrides to the defaults, and at least some parameters must be set.
+the file F</etc/wallet/wallet.conf>.  That file should contain any
+site-specific overrides to the defaults, and at least some parameters must
+be set.
 
 This file must be valid Perl.  To set a variable, use the syntax:
 

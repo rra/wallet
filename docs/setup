@@ -21,7 +21,7 @@ MySQL Database Setup
     system and gives it access to the wallet database, where it can create
     its own tables.
 
-    Now, create an /etc/wallet.conf file and include settings like:
+    Now, create an /etc/wallet/wallet.conf file and include settings like:
 
         $DB_DRIVER = 'MySQL';
         $DB_NAME = 'wallet';
