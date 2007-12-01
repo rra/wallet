@@ -40,14 +40,31 @@ is ($@, '', "create() doesn't die");
 # Test dropping the database.
 eval { $schema->drop ($dbh) };
 is ($@, '', "drop() doesn't die");
-my $sql = "select name from sqlite_master where type = 'table'";
-my $sth = $dbh->prepare ($sql);
-$sth->execute;
-my ($table, @tables);
-while (defined ($table = $sth->fetchrow_array)) {
-    push (@tables, $table) unless $table =~ /^sqlite_/;
+
+# Make sure all the tables are gone.
+SKIP: {
+    if (lc ($Wallet::Config::DB_DRIVER) eq 'sqlite') {
+        my $sql = "select name from sqlite_master where type = 'table'";
+        my $sth = $dbh->prepare ($sql);
+        $sth->execute;
+        my ($table, @tables);
+        while (defined ($table = $sth->fetchrow_array)) {
+            push (@tables, $table) unless $table =~ /^sqlite_/;
+        }
+        is ("@tables", '', ' and there are no tables in the database');
+    } elsif (lc ($Wallet::Config::DB_DRIVER) eq 'mysql') {
+        my $sql = "show tables";
+        my $sth = $dbh->prepare ($sql);
+        $sth->execute;
+        my ($table, @tables);
+        while (defined ($table = $sth->fetchrow_array)) {
+            push (@tables, $table);
+        }
+        is ("@tables", '', ' and there are no tables in the database');
+    } else {
+        skip 1;
+    }
 }
-is ("@tables", '', ' and there are no tables in the database');
 eval { $schema->create ($dbh) };
 is ($@, '', ' and we can run create again');
 
