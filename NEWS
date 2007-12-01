@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.3 (unreleased)
+wallet 0.3 (2007-11-30)
 
     MySQL is now a supported database backend and the full test suite
     passes with MySQL.
