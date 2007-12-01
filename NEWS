@@ -2,6 +2,9 @@
 
 wallet 0.3 (unreleased)
 
+    MySQL is now a supported database backend and the full test suite
+    passes with MySQL.
+
     Add support for running a user-defined function whenever an object is
     created by a non-ADMIN user and using the default owner ACL returned
     by that function provided that the calling user is authorized by that
