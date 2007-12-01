@@ -27,7 +27,7 @@ my @trace = ($admin, $host, time);
 
 # Use Wallet::Server to set up the database.
 db_setup;
-my $server = eval { Wallet::Server->initialize ($admin) };
+my $server = eval { Wallet::Server->reinitialize ($admin) };
 is ($@, '', 'Database initialization did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
 my $dbh = $server->dbh;
