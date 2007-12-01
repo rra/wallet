@@ -65,7 +65,7 @@ sub kadmin {
         # Don't use die here; it will get trapped as an exception.  Also be
         # careful about our database handles.  (We still lose if there's some
         # other database handle open we don't know about.)
-        $self->{dbh}->{InactiveDestroy} = 0;
+        $self->{dbh}->{InactiveDestroy} = 1;
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
             exit 1;
@@ -229,7 +229,7 @@ sub kaserver_kasetkey {
         # Don't use die here; it will get trapped as an exception.  Also be
         # careful about our database handles.  (We still lose if there's some
         # other database handle open we don't know about.)
-        $self->{dbh}->{InactiveDestroy} = 0;
+        $self->{dbh}->{InactiveDestroy} = 1;
         unless (open (STDERR, '>&STDOUT')) {
             warn "cannot redirect stderr: $!\n";
             exit 1;
