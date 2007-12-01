@@ -39,8 +39,6 @@ build-indep:
 build-stamp: config.status
 	dh_testdir
 	$(MAKE)
-	cd $(CURDIR)/perl && perl Makefile.PL INSTALLDIRS=vendor
-	cd $(CURDIR)/perl && $(MAKE)
 	$(MAKE) check
 	touch build-stamp
 
@@ -55,12 +53,12 @@ install: build-stamp
 	dh_testdir
 	dh_testroot
 	dh_clean
+	cd $(CURDIR)/perl && perl Makefile.PL INSTALLDIRS=vendor
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	dh_installdirs
 	dh_install --fail-missing
 
 binary: binary-arch binary-indep
-binary-indep:
 
 binary-arch: DH_OPTIONS=-a
 binary-arch: install
@@ -72,10 +70,26 @@ binary-arch: install
 	dh_link
 	dh_strip
 	dh_compress
-	dh_perl
 	dh_fixperms
 	dh_installdeb
 	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary-indep: DH_OPTIONS=-i
+binary-indep: install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs NEWS
+	dh_installdocs -A README TODO
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_perl
+	dh_fixperms
+	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
