@@ -54,7 +54,9 @@ unlink 'wallet-db';
 # Now repeat the test against the configured database in case it's different.
 db_setup;
 my $connect = "DBI:${Wallet::Config::DB_DRIVER}:${Wallet::Config::DB_INFO}";
-$dbh = DBI->connect ($connect);
+my $user = $Wallet::Config::DB_USER;
+my $password = $Wallet::Config::DB_PASSWORD;
+$dbh = DBI->connect ($connect, $user, $password);
 if (not defined $dbh) {
     die "cannot connect to database $connect: $DBI::errstr\n";
 }
