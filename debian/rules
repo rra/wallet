@@ -56,7 +56,7 @@ install: build-stamp
 	cd $(CURDIR)/perl && perl Makefile.PL INSTALLDIRS=vendor
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
 	dh_installdirs
-	dh_install --fail-missing
+	dh_install --list-missing
 
 binary: binary-arch binary-indep
 
