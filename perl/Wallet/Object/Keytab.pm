@@ -62,13 +62,17 @@ sub kadmin {
     if (not defined $pid) {
         die "cannot fork: $!\n";
     } elsif ($pid == 0) {
-        # Don't use die here; it will get trapped as an exception.
+        # Don't use die here; it will get trapped as an exception.  Also be
+        # careful about our database handles.  (We still lose if there's some
+        # other database handle open we don't know about.)
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
+            $self->{dbh}->{InactiveDestroy} = 0 if ref $self;
             exit 1;
         }
         unless (exec ($Wallet::Config::KEYTAB_KADMIN, @args)) {
             warn "wallet: cannot run $Wallet::Config::KEYTAB_KADMIN: $!\n";
+            $self->{dbh}->{InactiveDestroy} = 0 if ref $self;
             exit 1;
         }
     }
