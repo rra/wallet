@@ -72,7 +72,8 @@ sub create {
     my $driver = $dbh->{Driver}->{Name};
     eval {
         $dbh->begin_work if $dbh->{AutoCommit};
-        for my $sql (@{ $self->{sql} }) {
+        my @sql = @{ $self->{sql} };
+        for my $sql (@sql) {
             if ($driver eq 'SQLite') {
                 $sql =~ s{auto_increment primary key}
                          {primary key autoincrement};
