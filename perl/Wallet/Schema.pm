@@ -77,6 +77,8 @@ sub create {
             if ($driver eq 'SQLite') {
                 $sql =~ s{auto_increment primary key}
                          {primary key autoincrement};
+            } elsif ($driver eq 'mysql' and $sql =~ /^\s*create\s+table\s/) {
+                $sql =~ s/;$/ engine=InnoDB;/;
             }
             $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
         }
