@@ -65,14 +65,13 @@ sub kadmin {
         # Don't use die here; it will get trapped as an exception.  Also be
         # careful about our database handles.  (We still lose if there's some
         # other database handle open we don't know about.)
+        $self->{dbh}->{InactiveDestroy} = 0 if ref $self;
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
-            $self->{dbh}->{InactiveDestroy} = 0 if ref $self;
             exit 1;
         }
         unless (exec ($Wallet::Config::KEYTAB_KADMIN, @args)) {
             warn "wallet: cannot run $Wallet::Config::KEYTAB_KADMIN: $!\n";
-            $self->{dbh}->{InactiveDestroy} = 0 if ref $self;
             exit 1;
         }
     }
@@ -227,9 +226,18 @@ sub kaserver_kasetkey {
         $self->error ("cannot fork: $!");
         return undef;
     } elsif ($pid == 0) {
-        open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
-        exec ($kasetkey, '-k', $admin_srvtab, '-a', $admin, @args)
-            or die "cannot exec $kasetkey: $!\n";
+        # Don't use die here; it will get trapped as an exception.  Also be
+        # careful about our database handles.  (We still lose if there's some
+        # other database handle open we don't know about.)
+        $self->{dbh}->{InactiveDestroy} = 0;
+        unless (open (STDERR, '>&STDOUT')) {
+            warn "cannot redirect stderr: $!\n";
+            exit 1;
+        }
+        unless (exec ($kasetkey, '-k', $admin_srvtab, '-a', $admin, @args)) {
+            warn "cannot exec $kasetkey: $!\n";
+            exit 1;
+        }
     } else {
         local $/;
         my $output = <KASETKEY>;
