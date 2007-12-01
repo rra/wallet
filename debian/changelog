@@ -1,3 +1,10 @@
+wallet (0.3-1) unstable; urgency=low
+
+  * New upstream release.
+  * Initial packaging of all components of wallet.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 30 Nov 2007 20:30:30 -0800
+
 wallet (0.1-1) unstable; urgency=low
 
   * Initial release building only kasetkey.

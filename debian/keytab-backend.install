@@ -1,0 +1,5 @@
+debian/tmp/usr/sbin/keytab-backend
+debian/tmp/usr/share/man/man8/keytab-backend.8
+
+config/allow-extract            etc/krb5kdc
+config/keytab                   etc/remctl/conf.d

@@ -1,13 +1,13 @@
 Source: wallet
 Section: net
-Priority: optional
+Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 4.0.0), libremctl-dev, libkrb5-dev,
- libopenafs-dev
+Build-Depends: debhelper (>= 4.0.0), libdbi-perl, libdbd-sqlite3-perl,
+ libio-string-perl, libkrb5-dev, libremctl-dev, libtest-pod-perl, perl,
+ libopenafs-dev [i386 powerpc sparc alpha s390 ia64 hppa amd64 ppc64]
 Standards-Version: 3.7.2
 
 Package: kasetkey
-Priority: extra
 Architecture: i386 powerpc sparc alpha s390 ia64 hppa amd64 ppc64
 Depends: ${shlibs:Depends}
 Description: Set AFS kaserver keys and generate srvtabs
@@ -16,3 +16,49 @@ Description: Set AFS kaserver keys and generate srvtabs
  It's intended for automated generation of service srvtabs and for
  synchronization between Kerberos v5 keytabs and Kerberos v4 keys in an
  AFS kaserver.  It only works with an AFS kaserver KDC.
+
+Package: keytab-backend
+Architecture: any
+Depends: krb5-admin-server, perl, remctl-server
+Description: Provide existing Kerberos keytabs via remctl
+ keytab-backend is a service that runs under remctld and allows
+ authenticated clients to download Kerberos keytabs without changing the
+ key stored in the Kerberos KDC.  It must run on the same host as the
+ Kerberos KDC and uses kadmin.local to extract the existing key.  It
+ applies additional ACLs to limit which keys may be extracted in this
+ way.
+
+Package: wallet-client
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Kerberos-authenticated secure data management client
+ The wallet is a system for managing secure data, authorization rules to
+ retrieve or change that data, and audit rules for documenting actions
+ taken on that data.  Objects of various types may be stored in the
+ wallet or generated on request and retrieved by authorized users.  The
+ wallet tracks ACLs, metadata, and trace information.  It uses Kerberos
+ authentication.  One of the object types it supports is Kerberos keytabs,
+ making it suitable as a user-accessible front-end to Kerberos kadmind
+ with richer ACL and metadata operations.
+ .
+ This package contains the wallet client, which talks to a remote wallet
+ server to store, download, and manage objects.
+
+Package: wallet-server
+Architecture: all
+Depends: krb5-user, libdbi-perl, libdbd-sqlite3-perl | libdbd-mysql-perl,
+ remctl-server, ${perl:Depends}
+Suggests: libauthen-krb5-perl, libnet-remctl-perl
+Description: Kerberos-authenticated secure data management server
+ The wallet is a system for managing secure data, authorization rules to
+ retrieve or change that data, and audit rules for documenting actions
+ taken on that data.  Objects of various types may be stored in the
+ wallet or generated on request and retrieved by authorized users.  The
+ wallet tracks ACLs, metadata, and trace information.  It uses Kerberos
+ authentication.  One of the object types it supports is Kerberos keytabs,
+ making it suitable as a user-accessible front-end to Kerberos kadmind
+ with richer ACL and metadata operations.
+ .
+ This package contains the wallet server, which runs under remctl,
+ maintains the database of object metadata and secure objects, and
+ responds to requests from the wallet client.
