@@ -1,11 +1,6 @@
                             wallet To-Do List
 
-Minimum required to replace leland_srvtab:
-
-* Write the remctl configuration and finish Debian packaging of the
-  wallet client and server.
-
-Release 0.3:
+Release 0.4:
 
 * Write the LDAP entitlement ACL verifier.
 
