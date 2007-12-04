@@ -12,10 +12,11 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
 	docs/setup kasetkey/README kasetkey/kasetkey.pod perl/Wallet/ACL.pm \
 	perl/Wallet/ACL/Base.pm perl/Wallet/ACL/Krb5.pm \
-	perl/Wallet/ACL/NetDB.pm perl/Wallet/Config.pm \
-	perl/Wallet/Object/Base.pm perl/Wallet/Object/Keytab.pm \
-	perl/Wallet/Schema.pm perl/Wallet/Server.pm perl/t/acl.t \
-	perl/t/data/README perl/t/data/keytab-fake perl/t/data/keytab.conf \
+	perl/Wallet/ACL/NetDB.pm perl/Wallet/ACL/NetDB/Root.pm \
+	perl/Wallet/Config.pm perl/Wallet/Object/Base.pm \
+	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm \
+	perl/Wallet/Server.pm perl/t/acl.t perl/t/data/README \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf \
 	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/init.t \
 	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t \
 	perl/t/schema.t perl/t/server.t perl/t/verifier.t tests/TESTS \

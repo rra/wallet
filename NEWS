@@ -1,5 +1,11 @@
                        User-Visible wallet Changes
 
+wallet 0.4 (unreleased)
+
+    Add a subclass of the NetDB ACL verifier that requires the principal
+    have an instance of "root" and strips that instance before checking
+    NetDB roles.
+
 wallet 0.3 (2007-12-03)
 
     MySQL is now a supported database backend and the full test suite

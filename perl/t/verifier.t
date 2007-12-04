@@ -8,11 +8,12 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 37;
+use Test::More tests => 47;
 
 use Wallet::ACL::Base;
 use Wallet::ACL::Krb5;
 use Wallet::ACL::NetDB;
+use Wallet::ACL::NetDB::Root;
 use Wallet::Config;
 
 use lib 't/lib';
@@ -87,12 +88,12 @@ is ($verifier->error, 'malformed krb5 ACL', ' and right error');
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
 # can't find remctld.
 SKIP: {
-    skip 'no keytab configuration', 24 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 34 unless -f 't/data/test.keytab';
     my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
     my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-    skip 'remctld not found', 24 unless $remctld;
+    skip 'remctld not found', 34 unless $remctld;
     eval { require Net::Remctl };
-    skip 'Net::Remctl not available', 24 if $@;
+    skip 'Net::Remctl not available', 34 if $@;
 
     # Set up our configuration.
     $Wallet::Config::NETDB_REALM = 'EXAMPLE.COM';
@@ -154,7 +155,29 @@ SKIP: {
     is ($verifier->error,
         'error checking NetDB ACL: Unknown principal unknown',
         ' and correct error');
-    stop_remctld;
 
+    # Test the Wallet::ACL::NetDB::Root subclass.  We don't retest shared code
+    # (kind of grey-box of us), just the changed check behavior.
+    $verifier = eval { Wallet::ACL::NetDB::Root->new };
+    if (defined $verifier) {
+        ok (1, 'Wallet::ACL::NetDB::Root creation succeeds');
+    } else {
+        is ($@, '', 'Wallet::ACL::NetDB::Root creation succeeds');
+    }
+    ok ($verifier->isa ('Wallet::ACL::NetDB::Root'),
+        ' and returns the right class');
+    for my $node (qw/admin team user/) {
+        is ($verifier->check ('test-user', $node), 0,
+            "Verification fails for non-root user for $node");
+    }
+    for my $node (qw/admin team user/) {
+        is ($verifier->check ('test-user/root', $node), 1,
+            "Verification succeeds for root user for $node");
+    }
+    is ($verifier->check (undef, 'all'), undef,
+        'Undefined principal');
+    is ($verifier->error, 'no principal specified', ' and right error');
+
+    stop_remctld;
     unlink ('krb5cc_test', 'test-acl', 'test-pid');
 }

@@ -210,6 +210,10 @@ Holds the supported ACL schemes and their corresponding Perl classes:
       as_class            varchar(64));
   insert into acl_schemes (as_name, as_class)
       values ('krb5', 'Wallet::ACL::Krb5');
+  insert into acl_schemes (as_name, as_class)
+      values ('netdb', 'Wallet::ACL::NetDB');
+  insert into acl_schemes (as_name, as_class)
+      values ('netdb-root', 'Wallet::ACL::NetDB::Root');
 
 If you have extended the wallet to support additional object types or
 additional ACL schemes, you will want to add additional rows to these tables
