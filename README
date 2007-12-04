@@ -7,11 +7,8 @@
   This software is distributed under a BSD-style license.  Please see the
   file LICENSE in the distribution for more information.
 
-  This software is alpha-quality, and this release is intended as a
-  technology preview and API preview.  This code has never been deployed
-  in a production environment and considerable work remains before it will
-  be ready.  See the file TODO in the distribution for the list of work
-  that remains.
+  This software is beta-quality and should be treated with caution.  It is
+  currently being tested for production deployment at Stanford.
 
 BLURB
 
@@ -105,6 +102,10 @@ REQUIREMENTS
   script also requires an MIT Kerberos kadmin.local binary that supports
   the -norandkey option to ktadd.  This option will be included in MIT
   Kerberos 1.7 and later.
+
+  To support the NetDB ACL verifier (only of interest at sites using NetDB
+  to manage DNS), the Net::Remctl Perl  module must be installed on the
+  server.
 
   To support synchronization with an AFS kaserver, the server must have
   the Authen::Krb5 Perl module installed.
