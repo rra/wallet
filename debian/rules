@@ -55,7 +55,7 @@ install: build-stamp
 	dh_clean
 	cd $(CURDIR)/perl && perl Makefile.PL INSTALLDIRS=vendor
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
-	dh_installdirs
+	DH_OPTIONS= dh_installdirs
 	DH_OPTIONS= dh_install --fail-missing
 	install -m 0644 config/keytab.acl \
 	    $(CURDIR)/debian/keytab-backend/etc/remctl/acl/keytab
