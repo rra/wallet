@@ -163,6 +163,15 @@ Future work:
 * The Wallet::Config class is very ugly and could use some better internal
   API to reference the variables in it.
 
+* Consider using Class::Accessor to get rid of the scaffolding code to
+  access object data, and a Wallet::Base class to handle things like the
+  error() method common to many classes.
+
+* Use Class::DBI and Class::Trigger to handle the data access layer rather
+  than writing SQL directly, and implement the logging requirements with
+  triggers rather than explicit SQL.  This may also replace
+  Wallet::Schema.
+
 May or may not be good ideas:
 
 * Remove the hard-coded ADMIN ACL in the server with something more
