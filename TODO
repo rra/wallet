@@ -43,9 +43,6 @@ Release 1.0:
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
 
-* Implement default ACL policy to allow dynamic object creation on first
-  request for keytabs.
-
 * Implement special handling for keytabs in the wallet client.
 
 * Add support to the wallet client for getting Kerberos tickets, using the
@@ -170,9 +167,3 @@ May or may not be good ideas:
 
 * Remove the hard-coded ADMIN ACL in the server with something more
   configurable, perhaps a global ACL table or something.
-
-* The ACL implementation is currently rather inefficient for ACL
-  verifiers that need to maintain state (such as LDAP binds).  Now
-  they're created and destroyed when verifying each ACL.  It may be useful
-  to somehow return global verifiers, probably through a factory
-  implementation.  On the other hand, performance may not be worth it.

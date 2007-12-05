@@ -2,6 +2,10 @@
 
 wallet 0.4 (unreleased)
 
+    Maintain a global cache of ACL verifiers in Wallet::ACL and reuse them
+    over the life of the process if we see another ACL line from the same
+    scheme, rather than only reusing ACL verifiers within a single ACL.
+
     Add a subclass of the NetDB ACL verifier that requires the principal
     have an instance of "root" and strips that instance before checking
     NetDB roles.

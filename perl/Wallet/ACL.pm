@@ -349,15 +349,45 @@ sub history {
     return $output;
 }
 
+# Given a principal, a scheme, and an identifier, check whether that ACL
+# scheme and identifier grant access to that principal.  Return 1 if access
+# was granted, 0 if access was deined, and undef on some error.  On error, the
+# error message is also added to the check_errors variable.  This method is
+# internal to the class.
+#
+# Maintain ACL verifiers for all schemes we've seen in the local %verifier
+# hash so that we can optimize repeated ACL checks.
+{
+    my %verifier;
+    sub check_line {
+        my ($self, $principal, $scheme, $identifier) = @_;
+        unless ($verifier{$scheme}) {
+            my $class = $self->scheme_mapping ($scheme);
+            unless ($class) {
+                push (@{ $self->{check_errors} }, "unknown scheme $scheme");
+                return;
+            }
+            $verifier{$scheme} = $class->new;
+            unless (defined $verifier{$scheme}) {
+                push (@{ $self->{check_errors} }, "cannot verify $scheme");
+                return;
+            }
+        }
+        my $result = ($verifier{$scheme})->check ($principal, $identifier);
+        if (not defined $result) {
+            push (@{ $self->{check_errors} }, ($verifier{$scheme})->error);
+            return;
+        } else {
+            return $result;
+        }
+    }
+}
+
 # Given a principal, check whether it should be granted access according to
 # this ACL.  Returns 1 if access was granted, 0 if access was denied, and
 # undef on some error.  Errors from ACL verifiers do not cause an error
 # return, but are instead accumulated in the check_errors variable returned by
 # the check_errors() method.
-#
-# This routine is currently rather inefficient when it comes to instantiating
-# verifier objects.  They're created anew for each check.  Ideally, we should
-# globally cache verifiers in some way.
 sub check {
     my ($self, $principal) = @_;
     unless ($principal) {
@@ -370,24 +400,8 @@ sub check {
     $self->{check_errors} = [];
     for my $entry (@entries) {
         my ($scheme, $identifier) = @$entry;
-        unless ($verifier{$scheme}) {
-            my $class = $self->scheme_mapping ($scheme);
-            unless ($class) {
-                push (@{ $self->{check_errors} }, "unknown scheme $scheme");
-                next;
-            }
-            $verifier{$scheme} = $class->new;
-            unless (defined $verifier{$scheme}) {
-                push (@{ $self->{check_errors} }, "cannot verify $scheme");
-                next;
-            }
-        }
-        my $result = ($verifier{$scheme})->check ($principal, $identifier);
-        if (not defined $result) {
-            push (@{ $self->{check_errors} }, ($verifier{$scheme})->error);
-        } elsif ($result == 1) {
-            return 1;
-        }
+        my $result = $self->check_line ($principal, $scheme, $identifier);
+        return 1 if $result;
     }
     return 0;
 }
