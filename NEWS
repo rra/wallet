@@ -16,6 +16,10 @@ wallet 0.4 (unreleased)
 
     Add a missing class mapping for the netdb ACL schema verifier.
 
+    Various coding style fixes and cleanup based on a much-appreciated
+    code audit by Simon Cozens.  I didn't take all of his advise, and he
+    shouldn't be blamed for any remaining issues.
+
 wallet 0.3 (2007-12-03)
 
     MySQL is now a supported database backend and the full test suite

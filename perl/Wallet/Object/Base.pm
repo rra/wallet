@@ -125,7 +125,7 @@ sub log_action {
     my ($self, $action, $user, $host, $time) = @_;
     unless ($action =~ /^(get|store)\z/) {
         $self->error ("invalid history action $action");
-        return undef;
+        return;
     }
 
     # We have two traces to record, one in the object_history table and one in
@@ -155,7 +155,7 @@ sub log_action {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot update history for $id: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -268,7 +268,7 @@ sub acl {
         eval { $acl = Wallet::ACL->new ($id, $self->{dbh}) };
         if ($@) {
             $self->error ($@);
-            return undef;
+            return;
         }
         return $self->_set_internal ($attr, $acl->id, $user, $host, $time);
     } elsif (defined $id) {
@@ -325,7 +325,7 @@ sub owner {
         eval { $acl = Wallet::ACL->new ($owner, $self->{dbh}) };
         if ($@) {
             $self->error ($@);
-            return undef;
+            return;
         }
         return $self->_set_internal ('owner', $acl->id, $user, $host, $time);
     } elsif (defined $owner) {
@@ -386,7 +386,7 @@ sub flag_clear {
     if ($@) {
         $self->error ("cannot clear flag $flag on ${type}:${name}: $@");
         $dbh->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -443,7 +443,7 @@ sub flag_set {
     if ($@) {
         $self->error ("cannot set flag $flag on ${type}:${name}: $@");
         $dbh->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -503,7 +503,7 @@ sub history {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot read history for $id: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return $output;
 }
@@ -564,7 +564,7 @@ sub show {
     if ($@) {
         $self->error ("cannot retrieve data for ${type}:${name}: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     my $output = '';
     my @acls;
@@ -575,14 +575,14 @@ sub show {
         if ($attrs[$i][0] eq 'ob_created_by') {
             my @flags = $self->flag_list;
             if (not @flags and $self->error) {
-                return undef;
+                return;
             }
             if (@flags) {
                 $output .= sprintf ("%15s: %s\n", 'Flags', "@flags");
             }
             my $attr_output = $self->attr_show;
             if (not defined $attr_output) {
-                return undef;
+                return;
             }
             $output .= $attr_output;
         }
@@ -632,7 +632,7 @@ sub destroy {
     if ($@) {
         $self->error ("cannot destroy ${type}:${name}: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -654,7 +654,7 @@ Wallet::Object::Base - Generic parent class for wallet objects
     @ISA = qw(Wallet::Object::Base);
     sub get {
         my ($self, $user, $host, $time) = @_;
-        $self->log_action ('get', $user, $host, $time) or return undef;
+        $self->log_action ('get', $user, $host, $time) or return;
         return "Some secure data";
     }
 

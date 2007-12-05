@@ -228,7 +228,7 @@ sub create {
     my $class = $self->type_mapping ($type);
     unless ($class) {
         $self->error ("unknown object type $type");
-        return undef;
+        return;
     }
     my $dbh = $self->{dbh};
     my $user = $self->{user};
@@ -258,12 +258,12 @@ sub retrieve {
     my $class = $self->type_mapping ($type);
     unless ($class) {
         $self->error ("unknown object type $type");
-        return undef;
+        return;
     }
     my $object = eval { $class->new ($type, $name, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     } else {
         return $object;
     }
@@ -294,7 +294,7 @@ sub acl_check {
     my ($self, $object, $action) = @_;
     unless ($action =~ /^(get|store|show|destroy|flags|setattr|getattr)\z/) {
         $self->error ("unknown action $action");
-        return undef;
+        return;
     }
     if ($action ne 'get' and $action ne 'store') {
         return 1 if $self->{admin}->check ($self->{user});
@@ -312,22 +312,22 @@ sub acl_check {
     }
     unless (defined $id) {
         $self->object_error ($object, $action);
-        return undef;
+        return;
     }
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     }
     my $status = $acl->check ($self->{user});
     if ($status == 1) {
         return 1;
     } elsif (not defined $status) {
         $self->error ($acl->error);
-        return undef;
+        return;
     } else {
         $self->object_error ($object, $action);
-        return undef;
+        return;
     }
 }
 
@@ -339,7 +339,7 @@ sub acl {
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'ACL');
-        return undef;
+        return;
     }
     my $result;
     if (defined $id) {
@@ -386,7 +386,7 @@ sub expires {
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'expires');
-        return undef;
+        return;
     }
     my $result;
     if (defined $expires) {
@@ -408,7 +408,7 @@ sub owner {
     return undef unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'owner');
-        return undef;
+        return;
     }
     my $result;
     if (defined $owner) {
@@ -458,7 +458,7 @@ sub store {
     return undef unless $self->acl_check ($object, 'store');
     if (not defined ($data)) {
         $self->{error} = "no data supplied to store";
-        return undef;
+        return;
     }
     my $result = $object->store ($data, $self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
@@ -541,7 +541,7 @@ sub acl_create {
     my ($self, $name) = @_;
     unless ($self->{admin}->check ($self->{user})) {
         $self->error ("$self->{user} not authorized to create ACL");
-        return undef;
+        return;
     }
     my $dbh = $self->{dbh};
     my $user = $self->{user};
@@ -549,7 +549,7 @@ sub acl_create {
     my $acl = eval { Wallet::ACL->create ($name, $dbh, $user, $host) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     } else {
         return 1;
     }
@@ -575,17 +575,17 @@ sub acl_history {
     my ($self, $id) = @_;
     unless ($self->{admin}->check ($self->{user})) {
         $self->acl_error ($id, 'history');
-        return undef;
+        return;
     }
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     }
     my $result = $acl->history;
     if (not defined $result) {
         $self->error ($acl->error);
-        return undef;
+        return;
     }
     return $result;
 }
@@ -595,17 +595,17 @@ sub acl_show {
     my ($self, $id) = @_;
     unless ($self->{admin}->check ($self->{user})) {
         $self->acl_error ($id, 'show');
-        return undef;
+        return;
     }
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     }
     my $result = $acl->show;
     if (not defined $result) {
         $self->error ($acl->error);
-        return undef;
+        return;
     }
     return $result;
 }
@@ -616,20 +616,20 @@ sub acl_rename {
     my ($self, $id, $name) = @_;
     unless ($self->{admin}->check ($self->{user})) {
         $self->acl_error ($id, 'rename');
-        return undef;
+        return;
     }
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     }
     if ($acl->name eq 'ADMIN') {
         $self->error ('cannot rename the ADMIN ACL');
-        return undef;
+        return;
     }
     unless ($acl->rename ($name)) {
         $self->error ($acl->error);
-        return undef;
+        return;
     }
     return 1;
 }
@@ -640,20 +640,20 @@ sub acl_destroy {
     my ($self, $id) = @_;
     unless ($self->{admin}->check ($self->{user})) {
         $self->acl_error ($id, 'destroy');
-        return undef;
+        return;
     }
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     }
     if ($acl->name eq 'ADMIN') {
         $self->error ('cannot destroy the ADMIN ACL');
-        return undef;
+        return;
     }
     unless ($acl->destroy ($self->{user}, $self->{host})) {
         $self->error ($acl->error);
-        return undef;
+        return;
     }
     return 1;
 }
@@ -664,16 +664,16 @@ sub acl_add {
     my ($self, $id, $scheme, $identifier) = @_;
     unless ($self->{admin}->check ($self->{user})) {
         $self->acl_error ($id, 'add');
-        return undef;
+        return;
     }
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     }
     unless ($acl->add ($scheme, $identifier, $self->{user}, $self->{host})) {
         $self->error ($acl->error);
-        return undef;
+        return;
     }
     return 1;
 }
@@ -684,28 +684,28 @@ sub acl_remove {
     my ($self, $id, $scheme, $identifier) = @_;
     unless ($self->{admin}->check ($self->{user})) {
         $self->acl_error ($id, 'remove');
-        return undef;
+        return;
     }
     my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     }
     if ($acl->name eq 'ADMIN') {
         my @e = $acl->list;
         if (not @e and $acl->error) {
             $self->error ($acl->error);
-            return undef;
+            return;
         } elsif (@e == 1 && $e[0][0] eq $scheme && $e[0][1] eq $identifier) {
             $self->error ('cannot remove last ADMIN ACL entry');
-            return undef;
+            return;
         }
     }
     my $user = $self->{user};
     my $host = $self->{host};
     unless ($acl->remove ($scheme, $identifier, $user, $host)) {
         $self->error ($acl->error);
-        return undef;
+        return;
     }
     return 1;
 }

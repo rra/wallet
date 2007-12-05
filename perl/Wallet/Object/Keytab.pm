@@ -95,7 +95,7 @@ sub kadmin_exists {
     }
     my $output = $self->kadmin ("getprinc $principal");
     if ($output =~ /^get_principal: /) {
-        return undef;
+        return;
     } else {
         return 1;
     }
@@ -129,7 +129,7 @@ sub kadmin_ktadd {
     my ($self, $principal, $file, @enctypes) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
-        return undef;
+        return;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
@@ -142,10 +142,10 @@ sub kadmin_ktadd {
     my $output = eval { $self->kadmin ("$command $principal") };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     } elsif ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
         $self->error ("error creating keytab for $principal: $1");
-        return undef;
+        return;
     }
     return 1;
 }
@@ -157,12 +157,12 @@ sub kadmin_delprinc {
     my ($self, $principal) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
-        return undef;
+        return;
     }
     my $exists = eval { $self->kadmin_exists ($principal) };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     } elsif (not $exists) {
         return 1;
     }
@@ -172,10 +172,10 @@ sub kadmin_delprinc {
     my $output = eval { $self->kadmin ("delprinc -force $principal") };
     if ($@) {
         $self->error ($@);
-        return undef;
+        return;
     } elsif ($output =~ /^delete_principal: (.*)/m) {
         $self->error ("error deleting $principal: $1");
-        return undef;
+        return;
     }
     return 1;
 }
@@ -195,7 +195,7 @@ sub kaserver_name {
     $k5 =~ s/\@.*//;
     my @parts = split ('/', $k5);
     if (@parts > 2) {
-        return undef;
+        return;
     } elsif (@parts == 2 and $host{$parts[0]}) {
         $parts[1] =~ s/\..*//;
         $parts[0] = 'rcmd' if $parts[0] eq 'host';
@@ -216,12 +216,12 @@ sub kaserver_kasetkey {
     my $kasetkey = $Wallet::Config::KEYTAB_AFS_KASETKEY;
     unless ($kasetkey and $admin and $admin_srvtab) {
         $self->error ('kaserver synchronization not configured');
-        return undef;
+        return;
     }
     my $pid = open (KASETKEY, '-|');
     if (not defined $pid) {
         $self->error ("cannot fork: $!");
-        return undef;
+        return;
     } elsif ($pid == 0) {
         # Don't use die here; it will get trapped as an exception.  Also be
         # careful about our database handles.  (We still lose if there's some
@@ -244,7 +244,7 @@ sub kaserver_kasetkey {
             $output =~ s/\n/, /g;
             $output = ': ' . $output if $output;
             $self->error ("cannot synchronize key with kaserver$output");
-            return undef;
+            return;
         }
     }
     return 1;
@@ -262,12 +262,12 @@ sub kaserver_srvtab {
     eval { require Authen::Krb5 };
     if ($@) {
         $self->error ("kaserver synchronization support not available: $@");
-        return undef;
+        return;
     }
     eval { Authen::Krb5::init_context() };
     if ($@ and not $@ =~ /^Authen::Krb5 already initialized/) {
         $self->error ('Kerberos initialization failed');
-        return undef;
+        return;
     }
     undef $@;
 
@@ -279,17 +279,17 @@ sub kaserver_srvtab {
     unless (defined $princ) {
         my $error = Authen::Krb5::error();
         $self->error ("cannot parse $k5: $error");
-        return undef;
+        return;
     }
     my $key = Authen::Krb5::kt_read_service_key ($keytab, $princ, 0, 1);
     unless (defined $key) {
         my $error = Authen::Krb5::error();
         $self->error ("cannot find des-cbc-crc key in $keytab: $error");
-        return undef;
+        return;
     }
     unless (open (SRVTAB, '>', $srvtab)) {
         $self->error ("cannot create $srvtab: $!");
-        return undef;
+        return;
     }
 
     # srvtab format is nul-terminated name, nul-terminated instance,
@@ -305,7 +305,7 @@ sub kaserver_srvtab {
     unless (close SRVTAB) {
         unlink $srvtab;
         $self->error ("cannot write to $srvtab: $!");
-        return undef;
+        return;
     }
     return 1;
 }
@@ -321,15 +321,15 @@ sub kaserver_sync {
     my $k4 = $self->kaserver_name ($principal);
     if (not defined $k4) {
         $self->error ("cannot convert $principal to Kerberos v4");
-        return undef;
+        return;
     }
     my $srvtab = $Wallet::Config::KEYTAB_TMP . "/srvtab.$$";
     unless ($self->kaserver_srvtab ($keytab, $principal, $srvtab, $k4)) {
-        return undef;
+        return;
     }
     unless ($self->kaserver_kasetkey ('-c', $srvtab, '-s', $k4)) {
         unlink $srvtab;
-        return undef;
+        return;
     }
     unlink $srvtab;
     return 1;
@@ -343,7 +343,7 @@ sub kaserver_destroy {
     my $k4 = $self->kaserver_name ($principal);
     if (not defined $k4) {
         $self->error ("cannot convert $principal to Kerberos v4");
-        return undef;
+        return;
     }
     return $self->kaserver_kasetkey ('-D', $k4);
 }
@@ -371,7 +371,7 @@ sub kaserver_set {
     if ($@) {
         $self->error ($@);
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -398,7 +398,7 @@ sub kaserver_clear {
     if ($@) {
         $self->error ($@);
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -455,7 +455,7 @@ sub enctypes_set {
     if ($@) {
         $self->error ($@);
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -500,12 +500,12 @@ sub keytab_retrieve {
     my $host = $Wallet::Config::KEYTAB_REMCTL_HOST;
     unless ($host and $Wallet::Config::KEYTAB_REMCTL_CACHE) {
         $self->error ('keytab unchanging support not configured');
-        return undef;
+        return;
     }
     eval { require Net::Remctl };
     if ($@) {
         $self->error ("keytab unchanging support not available: $@");
-        return undef;
+        return;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $keytab .= '@' . $Wallet::Config::KEYTAB_REALM;
@@ -517,13 +517,13 @@ sub keytab_retrieve {
     my $result = Net::Remctl::remctl ($host, $port, $principal, @command);
     if ($result->error) {
         $self->error ("cannot retrieve keytab for $keytab: ", $result->error);
-        return undef;
+        return;
     } elsif ($result->status != 0) {
         my $error = $result->stderr;
         $error =~ s/\s+$//;
         $error =~ s/\n/ /g;
         $self->error ("cannot retrieve keytab for $keytab: $error");
-        return undef;
+        return;
     } else {
         return $result->stdout;
     }
@@ -591,13 +591,13 @@ sub attr_show {
     my $output = '';
     my @targets = $self->attr ('sync');
     if (not @targets and $self->error) {
-        return undef;
+        return;
     } elsif (@targets) {
         $output .= sprintf ("%15s: %s\n", 'Synced with', "@targets");
     }
     my @enctypes = $self->attr ('enctypes');
     if (not @enctypes and $self->error) {
-        return undef;
+        return;
     } elsif (@enctypes) {
         $output .= sprintf ("%15s: %s\n", 'Enctypes', $enctypes[0]);
         shift @enctypes;
@@ -631,7 +631,7 @@ sub destroy {
     my @sync = $self->attr ('sync');
     if (grep { $_ eq 'kaserver' } @sync) {
         unless ($self->kaserver_destroy ($self->{name})) {
-            return undef;
+            return;
         }
     }
     eval {
@@ -644,7 +644,7 @@ sub destroy {
     if ($@) {
         $self->error ($@);
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return undef if not $self->kadmin_delprinc ($self->{name});
     return $self->SUPER::destroy ($user, $host, $time);
@@ -669,7 +669,7 @@ sub get {
     }
     unless (defined ($Wallet::Config::KEYTAB_TMP)) {
         $self->error ('KEYTAB_TMP configuration variable not set');
-        return undef;
+        return;
     }
     my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
     unlink $file;
@@ -679,7 +679,7 @@ sub get {
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
         $self->error ("error opening keytab for principal $princ: $!");
-        return undef;
+        return;
     }
     local $/;
     undef $!;
@@ -688,14 +688,14 @@ sub get {
         my $princ = $self->{name};
         $self->error ("error reading keytab for principal $princ: $!");
         unlink $file;
-        return undef;
+        return;
     }
     close KEYTAB;
     my @sync = $self->attr ('sync');
     if (grep { $_ eq 'kaserver' } @sync) {
         unless ($self->kaserver_sync ($self->{name}, $file)) {
             unlink $file;
-            return undef;
+            return;
         }
     } elsif ($Wallet::Config::KEYTAB_AFS_DESTROY) {
         $self->kaserver_destroy ($self->{name});

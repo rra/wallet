@@ -174,7 +174,7 @@ sub rename {
     my ($self, $name) = @_;
     if ($name =~ /^\d+\z/) {
         $self->error ("ACL name may not be all numbers");
-        return undef;
+        return;
     }
     eval {
         my $sql = 'update acls set ac_name = ? where ac_id = ?';
@@ -184,7 +184,7 @@ sub rename {
     if ($@) {
         $self->error ("cannot rename ACL $self->{id} to $name: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     $self->{name} = $name;
     return 1;
@@ -208,7 +208,7 @@ sub destroy {
     if ($@) {
         $self->error ("cannot destroy ACL $self->{id}: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -223,7 +223,7 @@ sub add {
     $time ||= time;
     unless ($self->scheme_mapping ($scheme)) {
         $self->error ("unknown ACL scheme $scheme");
-        return undef;
+        return;
     }
     eval {
         my $sql = 'insert into acl_entries (ae_id, ae_scheme, ae_identifier)
@@ -235,7 +235,7 @@ sub add {
     if ($@) {
         $self->error ("cannot add $scheme:$identifier to $self->{id}: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -264,7 +264,7 @@ sub remove {
         my $entry = "$scheme:$identifier";
         $self->error ("cannot remove $entry from $self->{id}: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return 1;
 }
@@ -308,7 +308,7 @@ sub show {
     my ($self) = @_;
     my @entries = $self->list;
     if (not @entries and $self->error) {
-        return undef;
+        return;
     }
     my $name = $self->name;
     my $id = $self->id;
@@ -344,7 +344,7 @@ sub history {
     if ($@) {
         $self->error ("cannot read history for $self->{id}: $@");
         $self->{dbh}->rollback;
-        return undef;
+        return;
     }
     return $output;
 }
@@ -392,7 +392,7 @@ sub check {
     my ($self, $principal) = @_;
     unless ($principal) {
         $self->error ('no principal specified');
-        return undef;
+        return;
     }
     my @entries = $self->list;
     return undef if (not @entries and $self->error);

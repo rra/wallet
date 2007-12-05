@@ -35,11 +35,11 @@ sub check {
     my ($self, $principal, $acl) = @_;
     unless ($principal) {
         $self->error ('no principal specified');
-        return undef;
+        return;
     }
     unless ($acl) {
         $self->error ('malformed krb5 ACL');
-        return undef;
+        return;
     }
     return ($principal eq $acl) ? 1 : 0;
 }

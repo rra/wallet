@@ -65,11 +65,11 @@ sub check {
     my ($self, $principal, $acl) = @_;
     unless ($principal) {
         $self->error ('no principal specified');
-        return undef;
+        return;
     }
     unless ($acl) {
         $self->error ('malformed netdb ACL');
-        return undef;
+        return;
     }
     my $remctl = $self->{remctl};
     if ($Wallet::Config::NETDB_REALM) {
@@ -77,7 +77,7 @@ sub check {
     }
     unless ($remctl->command ('netdb', 'node-roles', $principal, $acl)) {
         $self->error ('cannot check NetDB ACL: ' . $remctl->error);
-        return undef;
+        return;
     }
     my ($roles, $output, $status, $error);
     do {
@@ -90,12 +90,12 @@ sub check {
             }
         } elsif ($output->type eq 'error') {
             $self->error ('cannot check NetDB ACL: ' . $output->data);
-            return undef;
+            return;
         } elsif ($output->type eq 'status') {
             $status = $output->status;
         } else {
             $self->error ('malformed NetDB remctl token: ' . $output->type);
-            return undef;
+            return;
         }
     } while ($output->type eq 'output');
     if ($status == 0) {
@@ -115,7 +115,7 @@ sub check {
         } else {
             $self->error ("error checking NetDB ACL");
         }
-        return undef;
+        return;
     }
 }
 

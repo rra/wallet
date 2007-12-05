@@ -37,7 +37,7 @@ sub check {
     my ($self, $principal, $acl) = @_;
     unless ($principal) {
         $self->error ('no principal specified');
-        return undef;
+        return;
     }
     unless ($principal =~ s%^([^/\@]+)/root(\@|\z)%$1$2%) {
         return 0;
