@@ -23,7 +23,7 @@ use Wallet::ACL;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Constructors
@@ -357,10 +357,8 @@ sub flag_check {
         $self->error ("cannot check flag $flag for ${type}:${name}: $@");
         $dbh->rollback;
         return;
-    } elsif ($value) {
-        return 1;
     } else {
-        return 0;
+        return ($value) ? 1 : 0;
     }
 }
 
@@ -573,7 +571,7 @@ sub show {
 
     # Format the results.  We use a hack to insert the flags before the first
     # trace field since they're not a field in the object in their own right.
-    for (my $i = 0; $i < @data; $i++) {
+    for my $i (0 .. $#data) {
         if ($attrs[$i][0] eq 'ob_created_by') {
             my @flags = $self->flag_list;
             if (not @flags and $self->error) {

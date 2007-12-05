@@ -24,7 +24,7 @@ use Wallet::Object::Base;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # kadmin Interaction
@@ -36,10 +36,7 @@ $VERSION = '0.02';
 # realm information here.
 sub valid_principal {
     my ($self, $principal) = @_;
-    if ($principal !~ m,^[\w-]+(/[\w_-]+)?\z,) {
-        return undef;
-    }
-    return 1;
+    return scalar ($principal =~ m,^[\w-]+(/[\w_-]+)?\z,);
 }
 
 # Run a kadmin command and capture the output.  Returns the output, either as
