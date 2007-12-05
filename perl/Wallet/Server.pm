@@ -24,14 +24,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
-
-# This is a mapping of object types to class names, used to determine which
-# object implementation should be instantiated for a given object type.
-# Currently, there's no dynamic way to recognize new object types, so if you
-# extend the wallet system to add new object types, you need to modify this
-# list.
-%MAPPING = (keytab => 'Wallet::Object::Keytab');
+$VERSION = '0.03';
 
 ##############################################################################
 # Utility methods
@@ -145,6 +138,24 @@ sub DESTROY {
 # Object methods
 ##############################################################################
 
+# Given an object type, return the mapping to a class by querying the
+# database, or undef if no mapping exists.
+sub type_mapping {
+    my ($self, $type) = @_;
+    my $class;
+    eval {
+        my $sql = 'select ty_class from types where ty_name = ?';
+        ($class) = $self->{dbh}->selectrow_array ($sql, undef, $type);
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ($@);
+        $self->{dbh}->rollback;
+        return;
+    }
+    return $class;
+}
+
 # Given an object which doesn't currently exist, check whether a default_owner
 # function is defined and, if so, if it returns an ACL for that object.  If
 # so, create the ACL and check if the current user is authorized by that ACL.
@@ -214,11 +225,11 @@ sub create_check {
 # sets the internal error.
 sub create {
     my ($self, $type, $name) = @_;
-    unless ($MAPPING{$type}) {
+    my $class = $self->type_mapping ($type);
+    unless ($class) {
         $self->error ("unknown object type $type");
         return undef;
     }
-    my $class = $MAPPING{$type};
     my $dbh = $self->{dbh};
     my $user = $self->{user};
     my $host = $self->{host};
@@ -244,11 +255,11 @@ sub create {
 # or returns undef and sets the internal error.
 sub retrieve {
     my ($self, $type, $name) = @_;
-    unless ($MAPPING{$type}) {
+    my $class = $self->type_mapping ($type);
+    unless ($class) {
         $self->error ("unknown object type $type");
         return undef;
     }
-    my $class = $MAPPING{$type};
     my $object = eval { $class->new ($type, $name, $self->{dbh}) };
     if ($@) {
         $self->error ($@);

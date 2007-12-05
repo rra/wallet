@@ -6,6 +6,12 @@ wallet 0.4 (unreleased)
     have an instance of "root" and strips that instance before checking
     NetDB roles.
 
+    Determine the class for object and ACL schema implementations from the
+    database rather than a hard-coded list and provide Wallet::Schema
+    methods for adding new class mappings.
+
+    Add a missing class mapping for the netdb ACL schema verifier.
+
 wallet 0.3 (2007-12-03)
 
     MySQL is now a supported database backend and the full test suite

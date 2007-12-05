@@ -6,9 +6,6 @@ Release 0.4:
 
 * Write the PTS ACL verifier.
 
-* Use the class names in the database tables when loading object and
-  ACL verifier implementations.
-
 Release 1.0:
 
 * Add POD testing for the client and server programs.
@@ -67,8 +64,11 @@ Release 1.0:
 * On upgrades, support adding new object types and ACL verifiers to the
   class tables.
 
-* Write a wallet-admin program to provide an interface to things like
-  database initialization and, eventually, upgrades.
+* Write a wallet-admin program and a corresponding Wallet::Admin class to
+  provide an interface to things like database initialization and,
+  eventually, upgrades.  Move the methods to add additional class mappings
+  from Wallet::Schema to Wallet::Admin and the initialize and reinitialize
+  methods from Wallet::Server to Wallet::Admin.
 
 * Implement store support in the wallet client.  Add an option to read the
   data from a file.  The initial implementation, depending on the

@@ -24,7 +24,7 @@ use DBI;
 $VERSION = '0.02';
 
 ##############################################################################
-# Implementation
+# Data manipulation
 ##############################################################################
 
 # Create a new Wallet::Schema object, parse the SQL out of the documentation,
@@ -62,6 +62,10 @@ sub sql {
     my ($self) = @_;
     return @{ $self->{sql} };
 }
+
+##############################################################################
+# Initialization and cleanup
+##############################################################################
 
 # Given a database handle, try to create our database by running the SQL.  Do
 # this in a transaction regardless of the database settings and throw an
@@ -107,6 +111,44 @@ sub drop {
         for my $sql (@drop) {
             $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
         }
+        $dbh->commit;
+    };
+    if ($@) {
+        $dbh->rollback;
+        die "$@\n";
+    }
+}
+
+##############################################################################
+# Administrative actions
+##############################################################################
+
+# Given a database handle, object type, and class name, add a new class
+# mapping to that database for the given object type.  This is used to
+# register new object types.  Throws an exception on failure.
+sub register_object {
+    my ($self, $dbh, $type, $class) = @_;
+    eval {
+        $dbh->begin_work if $dbh->{AutoCommit};
+        my $sql = 'insert into types (ty_name, ty_class) values (?, ?)';
+        $dbh->do ($sql, undef, $type, $class);
+        $dbh->commit;
+    };
+    if ($@) {
+        $dbh->rollback;
+        die "$@\n";
+    }
+}
+
+# Given a database handle, ACL verifier scheme, and class name, add a new
+# class mapping to that database for the given ACL verifier scheme.  This is
+# used to register new ACL schemes.  Throws an exception on failure.
+sub register_verifier {
+    my ($self, $dbh, $scheme, $class) = @_;
+    eval {
+        $dbh->begin_work if $dbh->{AutoCommit};
+        my $sql = 'insert into acl_schemes (as_name, as_class) values (?, ?)';
+        $dbh->do ($sql, undef, $scheme, $class);
         $dbh->commit;
     };
     if ($@) {
@@ -172,6 +214,24 @@ database if any of those tables exist.  This method will only remove tables
 that are part of the current schema or one of the previous known schema and
 won't remove other tables.  On any error, this method will throw a database
 exception.
+
+=item register_object (DBH, TYPE, CLASS)
+
+Given a connected database handle, register in that database a mapping from
+the object type TYPE to the class CLASS.  On any error, including attempting
+to add a mapping for a type that already exists, this method will throw a
+database exception.
+
+This method will eventually move to another class.
+
+=item register_verifier (DBH, SCHEME, CLASS)
+
+Given a connected database handle, register in that database a mapping from
+the ACL scheme SCHEME to the class CLASS.  On any error, including
+attempting to add a mapping for a scheme that already exists, this method
+will throw a database exception.
+
+This method will eventually move to another class.
 
 =item sql()
 

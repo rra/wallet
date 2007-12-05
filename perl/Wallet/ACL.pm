@@ -14,7 +14,7 @@ package Wallet::ACL;
 require 5.006;
 
 use strict;
-use vars qw(%MAPPING $VERSION);
+use vars qw($VERSION);
 
 use DBI;
 use POSIX qw(strftime);
@@ -23,13 +23,7 @@ use Wallet::ACL::Krb5;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
-
-# This is a mapping of schemes to class names, used to determine which ACL
-# verifier should be instantiated for a given ACL scheme.  Currently, there's
-# no dynamic way to recognize new ACL verifiers, so if you extend the wallet
-# system to add new verifiers, you need to modify this list.
-%MAPPING = (krb5 => 'Wallet::ACL::Krb5');
+$VERSION = '0.03';
 
 ##############################################################################
 # Constructors
@@ -134,6 +128,24 @@ sub name {
     return $self->{name};
 }
 
+# Given an ACL scheme, return the mapping to a class by querying the
+# database, or undef if no mapping exists.
+sub scheme_mapping {
+    my ($self, $scheme) = @_;
+    my $class;
+    eval {
+        my $sql = 'select as_class from acl_schemes where as_name = ?';
+        ($class) = $self->{dbh}->selectrow_array ($sql, undef, $scheme);
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ($@);
+        $self->{dbh}->rollback;
+        return;
+    }
+    return $class;
+}
+
 # Record a change to an ACL.  Takes the type of change, the scheme and
 # identifier of the entry, and the trace information (user, host, and time).
 # This function does not commit and does not catch exceptions.  It should
@@ -209,7 +221,7 @@ sub destroy {
 sub add {
     my ($self, $scheme, $identifier, $user, $host, $time) = @_;
     $time ||= time;
-    unless ($MAPPING{$scheme}) {
+    unless ($self->scheme_mapping ($scheme)) {
         $self->error ("unknown ACL scheme $scheme");
         return undef;
     }
@@ -359,11 +371,12 @@ sub check {
     for my $entry (@entries) {
         my ($scheme, $identifier) = @$entry;
         unless ($verifier{$scheme}) {
-            unless ($MAPPING{$scheme}) {
+            my $class = $self->scheme_mapping ($scheme);
+            unless ($class) {
                 push (@{ $self->{check_errors} }, "unknown scheme $scheme");
                 next;
             }
-            $verifier{$scheme} = ($MAPPING{$scheme})->new;
+            $verifier{$scheme} = $class->new;
             unless (defined $verifier{$scheme}) {
                 push (@{ $self->{check_errors} }, "cannot verify $scheme");
                 next;

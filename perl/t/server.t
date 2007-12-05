@@ -12,13 +12,11 @@ use Test::More tests => 321;
 
 use POSIX qw(strftime);
 use Wallet::Config;
+use Wallet::Schema;
 use Wallet::Server;
 
 use lib 't/lib';
 use Util;
-
-# Allow creation of base objects for testing purposes.
-$Wallet::Server::MAPPING{base} = 'Wallet::Object::Base';
 
 # Some global defaults to use.
 my $admin = 'admin@EXAMPLE.COM';
@@ -39,6 +37,10 @@ is ($@, '', 'Reopening with new did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
 my $dbh = $server->dbh;
 ok (defined ($dbh), ' and returns a defined database handle');
+
+# Allow creation of base objects for testing purposes.
+my $schema = Wallet::Schema->new;
+$schema->register_object ($dbh, 'base', 'Wallet::Object::Base');
 
 # We're currently running as the administrator, so everything should succeed.
 # Set up a bunch of data for us to test with, starting with some ACLs.  Test
@@ -867,7 +869,7 @@ is ($server->error, "$user2 not authorized to create base:service/foo",
     ' with the right error');
 
 # Clean up.
-my $schema = Wallet::Schema->new;
+$schema = Wallet::Schema->new;
 $schema->drop ($server->dbh);
 unlink 'wallet-db';
 
