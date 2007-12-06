@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 204;
+use Test::More tests => 217;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -198,6 +198,18 @@ my $dbh = $server->dbh;
 # Use this to accumulate the history traces so that we can check history.
 my $history = '';
 my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
+
+# Do some white-box testing of the principal validation regex.
+for my $bad (qw{service\* = host/foo+bar host/foo/bar /bar bar/
+                rcmd.foo}) {
+    ok (! Wallet::Object::Keytab->valid_principal ($bad),
+        "Invalid principal name $bad");
+}
+for my $good (qw{service service/foo bar foo/bar host/example.org
+                 aservice/foo}) {
+    ok (Wallet::Object::Keytab->valid_principal ($good),
+        "Valid principal name $good");
+}
 
 # Basic keytab creation and manipulation tests.
 SKIP: {

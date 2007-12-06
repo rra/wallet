@@ -36,7 +36,7 @@ $VERSION = '0.03';
 # realm information here.
 sub valid_principal {
     my ($self, $principal) = @_;
-    return scalar ($principal =~ m,^[\w-]+(/[\w_-]+)?\z,);
+    return scalar ($principal =~ m,^[\w-]+(/[\w_.-]+)?\z,);
 }
 
 # Run a kadmin command and capture the output.  Returns the output, either as

@@ -1,5 +1,11 @@
                        User-Visible wallet Changes
 
+wallet 0.5 (unreleased)
+
+    Fix the keytab principal validation regex to allow instances
+    containing periods.  Otherwise, it's hard to manage host keytabs.  Add
+    a missing test suite for that method.
+
 wallet 0.4 (2007-12-05)
 
     Maintain a global cache of ACL verifiers in Wallet::ACL and reuse them
