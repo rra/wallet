@@ -73,7 +73,7 @@ sub check {
     }
     my $remctl = $self->{remctl};
     if ($Wallet::Config::NETDB_REALM) {
-        $principal =~ s/\@\Q$Wallet::Config::NETDB_REALM//;
+        $principal =~ s/\@\Q$Wallet::Config::NETDB_REALM\E\z//;
     }
     unless ($remctl->command ('netdb', 'node-roles', $principal, $acl)) {
         $self->error ('cannot check NetDB ACL: ' . $remctl->error);
