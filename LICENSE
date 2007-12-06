@@ -100,8 +100,9 @@ following copyright and license:
   This configure script is free software; the Free Software Foundation
   gives unlimited permission to copy, distribute and modify it.
 
-The files tools/compile, tools/depcomp, and tools/missing are taken from
-GNU Automake and are covered by the following copyright and license:
+The files build-aux/compile, build-aux/depcomp, and build-aux/missing are
+taken from GNU Automake and are covered by the following copyright and
+license:
 
   Copyright (C) 1996, 1997, 1999, 2000, 2002, 2003, 2004, 2005
     Free Software Foundation, Inc.
@@ -125,7 +126,7 @@ For the wallet distribution, the option described in the last paragraph
 has been accepted and these files are distributed under the same terms as
 the wallet package as a whole, as described at the top of this file.
 
-The file tools/install-sh is covered by the following copyright and
+The file build-aux/install-sh is covered by the following copyright and
 license:
 
   Copyright (C) 1994 X Consortium
