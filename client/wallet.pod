@@ -5,7 +5,7 @@ wallet - Client for retrieving secure data from a central server
 =head1 SYNOPSIS
 
 B<wallet> [B<-hv>] [B<-c> I<command>] [B<-f> I<output>]
-[B<-k> I<principal>] [B<-p> I<port>] [B<-s> I<server>] [B<-S> I<srvtab>]
+[B<-k> I<principal>] [B<-p> I<port>] [S<B<-s> I<server>>] [B<-S> I<srvtab>]
 I<command> [I<arg> ...]
 
 =head1 DESCRIPTION
