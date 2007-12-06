@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.4 (unreleased)
+wallet 0.4 (2007-12-05)
 
     Maintain a global cache of ACL verifiers in Wallet::ACL and reuse them
     over the life of the process if we see another ACL line from the same
