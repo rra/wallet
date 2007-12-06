@@ -85,7 +85,7 @@ commands are ignored.
 =item B<-p> I<port>
 
 The port to connect to on the wallet server.  The default is the default
-remctl port (4444).
+remctl port.
 
 =item B<-S> I<srvtab>
 
