@@ -405,7 +405,7 @@ sub check {
         return;
     }
     my @entries = $self->list;
-    return undef if (not @entries and $self->error);
+    return if (not @entries and $self->error);
     my %verifier;
     $self->{check_errors} = [];
     for my $entry (@entries) {

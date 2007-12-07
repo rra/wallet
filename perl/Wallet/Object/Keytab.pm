@@ -89,7 +89,7 @@ sub kadmin {
 # so, false otherwise.  Throws an exception if kadmin fails.
 sub kadmin_exists {
     my ($self, $principal) = @_;
-    return undef unless $self->valid_principal ($principal);
+    return unless $self->valid_principal ($principal);
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
@@ -646,7 +646,7 @@ sub destroy {
         $self->{dbh}->rollback;
         return;
     }
-    return undef if not $self->kadmin_delprinc ($self->{name});
+    return if not $self->kadmin_delprinc ($self->{name});
     return $self->SUPER::destroy ($user, $host, $time);
 }
 
@@ -674,7 +674,7 @@ sub get {
     my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
     unlink $file;
     my @enctypes = $self->attr ('enctypes');
-    return undef if not $self->kadmin_ktadd ($self->{name}, $file, @enctypes);
+    return if not $self->kadmin_ktadd ($self->{name}, $file, @enctypes);
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
