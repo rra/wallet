@@ -8,7 +8,7 @@ dnl See LICENSE for licensing terms.
 
 AC_REVISION([$Revision$])
 AC_PREREQ([2.61])
-AC_INIT([wallet], [0.4], [rra@stanford.edu])
+AC_INIT([wallet], [0.5], [rra@stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AM_INIT_AUTOMAKE([1.10])

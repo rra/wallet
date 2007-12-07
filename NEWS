@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.5 (unreleased)
+wallet 0.5 (2007-12-06)
 
     Allow the empty string in wallet-backend arguments.
 
