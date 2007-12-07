@@ -18,12 +18,11 @@ use vars qw($VERSION);
 
 use DBI;
 use POSIX qw(strftime);
-use Wallet::ACL::Krb5;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ##############################################################################
 # Constructors
@@ -129,7 +128,7 @@ sub name {
 }
 
 # Given an ACL scheme, return the mapping to a class by querying the
-# database, or undef if no mapping exists.
+# database, or undef if no mapping exists.  Also load the relevant module.
 sub scheme_mapping {
     my ($self, $scheme) = @_;
     my $class;
@@ -142,6 +141,17 @@ sub scheme_mapping {
         $self->error ($@);
         $self->{dbh}->rollback;
         return;
+    }
+    if (defined $class) {
+        if ($class !~ /^Wallet::ACL::(\w+::)*\w+\z/) {
+            $self->error ("invalid class name $class for scheme $scheme");
+            return;
+        }
+        eval "require $class";
+        if ($@) {
+            $self->error ($@);
+            return;
+        }
     }
     return $class;
 }

@@ -2,6 +2,9 @@
 
 wallet 0.5 (unreleased)
 
+    Load the Perl modules for ACL verifiers and object types dynamically
+    now that we're reading the class from the database.
+
     Fix the keytab principal validation regex to allow instances
     containing periods.  Otherwise, it's hard to manage host keytabs.  Add
     a missing test suite for that method.
