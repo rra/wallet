@@ -1,3 +1,15 @@
+wallet (0.5-1) unstable; urgency=low
+
+  * New upstream release.
+    - Allow more valid arguments to wallet-backend.
+    - Load Perl modules for object types and ACL verifiers properly.
+    - Correctly implement clearing attribute values.
+    - Fix keytab principal validation to allow periods.
+    - When writing files from the client, remove old backup files.
+    - Check default creation ACLs before the ADMIN ACL.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 06 Dec 2007 22:26:55 -0800
+
 wallet (0.4-1) unstable; urgency=low
 
   * New upstream release.
