@@ -55,7 +55,7 @@ Wallet::ACL::NetDB::Root - Wallet ACL verifier for NetDB roles (root instances)
 
 =head1 SYNOPSIS
 
-    my $verifier = Wallet::ACL::NetDB->new;
+    my $verifier = Wallet::ACL::NetDB::Root->new;
     my $status = $verifier->check ($principal, $node);
     if (not defined $status) {
         die "Something failed: ", $verifier->error, "\n";
