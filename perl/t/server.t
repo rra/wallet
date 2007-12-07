@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 321;
+use Test::More tests => 325;
 
 use POSIX qw(strftime);
 use Wallet::Config;
@@ -753,7 +753,8 @@ is ($server->error, "$user2 not authorized to create base:service/both",
 # ACL).
 #
 # Also add service/default-get and service/default-store to test auto-creation
-# on get and store.
+# on get and store, and service/default-admin to test auto-creation when one
+# is an admin.
 package Wallet::Config;
 sub default_owner {
     my ($type, $name) = @_;
@@ -767,6 +768,8 @@ sub default_owner {
         return ('user2', [ 'krb5', $user2 ]);
     } elsif ($type eq 'base' and $name eq 'service/default-store') {
         return ('user2', [ 'krb5', $user2 ]);
+    } elsif ($type eq 'base' and $name eq 'service/default-admin') {
+        return ('auto-admin', [ 'krb5', $admin ]);
     } else {
         return;
     }
@@ -800,7 +803,7 @@ EOO
     is ($server->error, undef, ' and the created object and ACL are correct');
 }
 
-# Try the other basic cases in default_acl.
+# Try the other basic cases in default_owner.
 is ($server->create ('base', 'service/default-both'), undef,
     'Creating an object with an ACL mismatch fails');
 is ($server->error, "ACL both exists and doesn't match default",
@@ -867,6 +870,27 @@ is ($server->store ('base', 'service/foo', 'stuff'), undef,
     ' but auto-creation of something else fails');
 is ($server->error, "$user2 not authorized to create base:service/foo",
     ' with the right error');
+
+# Switch back to admin to test auto-creation.
+$server = eval { Wallet::Server->new ($admin, $host) };
+is ($@, '', 'Switching users back to admin works');
+$result = eval { $server->get ('base', 'service/default-admin') };
+is ($result, undef, 'Auto-creation on get...');
+is ($@, "Do not instantiate Wallet::Object::Base directly\n", ' ...works');
+$show = $server->show ('base', 'service/default-admin');
+$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
+$expected = <<"EOO";
+           Type: base
+           Name: service/default-admin
+          Owner: auto-admin
+     Created by: $admin
+   Created from: $host
+     Created on: 0
+
+Members of ACL auto-admin (id: 8) are:
+  krb5 $admin
+EOO
+is ($show, $expected, ' and the created object and ACL are correct');
 
 # Clean up.
 $schema = Wallet::Schema->new;
