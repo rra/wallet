@@ -346,7 +346,7 @@ sub acl {
     my ($self, $type, $name, $acl, $id) = @_;
     undef $self->{error};
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
+    return unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'ACL');
         return;
@@ -368,7 +368,7 @@ sub attr {
     my ($self, $type, $name, $attr, @values) = @_;
     undef $self->{error};
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
+    return unless defined $object;
     my $user = $self->{user};
     my $host = $self->{host};
     if (@values) {
@@ -393,7 +393,7 @@ sub expires {
     my ($self, $type, $name, $expires) = @_;
     undef $self->{error};
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
+    return unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'expires');
         return;
@@ -415,7 +415,7 @@ sub owner {
     my ($self, $type, $name, $owner) = @_;
     undef $self->{error};
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
+    return unless defined $object;
     unless ($self->{admin}->check ($self->{user})) {
         $self->object_error ($object, 'owner');
         return;
@@ -444,8 +444,8 @@ sub get {
             $object = $self->retrieve ($type, $name);
         }
     }
-    return undef unless defined $object;
-    return undef unless $self->acl_check ($object, 'get');
+    return unless defined $object;
+    return unless $self->acl_check ($object, 'get');
     my $result = $object->get ($self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -464,8 +464,8 @@ sub store {
             $object = $self->retrieve ($type, $name);
         }
     }
-    return undef unless defined $object;
-    return undef unless $self->acl_check ($object, 'store');
+    return unless defined $object;
+    return unless $self->acl_check ($object, 'store');
     if (not defined ($data)) {
         $self->{error} = "no data supplied to store";
         return;
@@ -481,8 +481,8 @@ sub store {
 sub show {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
-    return undef unless $self->acl_check ($object, 'show');
+    return unless defined $object;
+    return unless $self->acl_check ($object, 'show');
     my $result = $object->show;
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -494,8 +494,8 @@ sub show {
 sub history {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
-    return undef unless $self->acl_check ($object, 'show');
+    return unless defined $object;
+    return unless $self->acl_check ($object, 'show');
     my $result = $object->history;
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -506,8 +506,8 @@ sub history {
 sub destroy {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
-    return undef unless $self->acl_check ($object, 'destroy');
+    return unless defined $object;
+    return unless $self->acl_check ($object, 'destroy');
     my $result = $object->destroy ($self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -522,8 +522,8 @@ sub destroy {
 sub flag_clear {
     my ($self, $type, $name, $flag) = @_;
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
-    return undef unless $self->acl_check ($object, 'flags');
+    return unless defined $object;
+    return unless $self->acl_check ($object, 'flags');
     my $result = $object->flag_clear ($flag, $self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -534,8 +534,8 @@ sub flag_clear {
 sub flag_set {
     my ($self, $type, $name, $flag) = @_;
     my $object = $self->retrieve ($type, $name);
-    return undef unless defined $object;
-    return undef unless $self->acl_check ($object, 'flags');
+    return unless defined $object;
+    return unless $self->acl_check ($object, 'flags');
     my $result = $object->flag_set ($flag, $self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
