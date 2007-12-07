@@ -243,10 +243,9 @@ sub create {
     my $dbh = $self->{dbh};
     my $user = $self->{user};
     my $host = $self->{host};
-    my $acl;
-    unless ($self->{admin}->check ($user)) {
-        $acl = $self->create_check ($type, $name);
-        return unless $acl;
+    my $acl = $self->create_check ($type, $name);
+    unless ($acl) {
+        return unless $self->{admin}->check ($user);
     }
     my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
     if ($@) {

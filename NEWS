@@ -4,6 +4,9 @@ wallet 0.5 (unreleased)
 
     Allow the empty string in wallet-backend arguments.
 
+    Allow @ in wallet-backend arguments so that principal names can be
+    passed in.
+
     Load the Perl modules for ACL verifiers and object types dynamically
     now that we're reading the class from the database.
 
@@ -17,6 +20,10 @@ wallet 0.5 (unreleased)
     When writing to a file in the wallet client program, remove an old
     backup file before creating a new backup and don't fail if the backup
     already exists.
+
+    Check a default creation ACL first before the ADMIN ACL when deciding
+    whether we can auto-create a non-existent ACL, since creating one with
+    the ADMIN ACL doesn't create a useful object.
 
 wallet 0.4 (2007-12-05)
 
