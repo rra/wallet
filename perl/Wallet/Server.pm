@@ -373,6 +373,9 @@ sub attr {
     my $host = $self->{host};
     if (@values) {
         return unless $self->acl_check ($object, 'setattr');
+        if (@values == 1 and $values[0] eq '') {
+            @values = ();
+        }
         my $result = $object->attr ($attr, [ @values ], $user, $host);
         $self->error ($object->error) unless $result;
         return $result;
