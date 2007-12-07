@@ -40,9 +40,13 @@ write_file(const char *name, const void *data, size_t length)
         die("write to %s truncated", temp);
     if (close(fd) < 0)
         sysdie("close of %s failed (file probably truncated)", temp);
-    if (access(name, F_OK) == 0)
+    if (access(name, F_OK) == 0) {
+        if (access(backup, F_OK) == 0)
+            if (unlink(backup) < 0)
+                sysdie("unlink of old backup %s failed", backup);
         if (link(name, backup) < 0)
             sysdie("link of %s to %s failed", name, backup);
+    }
     if (rename(temp, name) < 0)
         sysdie("rename of %s to %s failed", temp, name);
     free(temp);

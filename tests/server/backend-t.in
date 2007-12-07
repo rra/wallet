@@ -9,7 +9,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 1222;
+use Test::More tests => 1224;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -434,7 +434,12 @@ for my $command (sort keys %flag_commands) {
 }
 
 # Almost done.  All that remains is to test the robustness of the bad
-# character checks against every possible character.
+# character checks against every possible character and test permitting the
+# empty argument.
+($out, $err) = run_backend ('show', 'type', '');
+is ($err, '', 'Allowed the empty argument');
+is ($OUTPUT, "command show type  from admin (1.2.3.4) succeeded\n",
+    ' and success logged');
 my $ok = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_/.-';
 ($out, $err) = run_backend ('show', 'type', $ok);
 is ($err, '', 'Allowed all valid characters');

@@ -120,7 +120,7 @@ sub check_args {
     my %exclude = map { $_ => 1 } @$exclude;
     for (my $i = 1; $i <= @args; $i++) {
         next if $exclude{$i};
-        unless ($args[$i - 1] =~ m,^[\w_/.-]+\z,) {
+        unless ($args[$i - 1] =~ m,^[\w_/.-]*\z,) {
             error "invalid characters in argument: $args[$i - 1]";
         }
     }

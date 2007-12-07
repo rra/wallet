@@ -2,12 +2,18 @@
 
 wallet 0.5 (unreleased)
 
+    Allow the empty string in wallet-backend arguments.
+
     Load the Perl modules for ACL verifiers and object types dynamically
     now that we're reading the class from the database.
 
     Fix the keytab principal validation regex to allow instances
     containing periods.  Otherwise, it's hard to manage host keytabs.  Add
     a missing test suite for that method.
+
+    When writing to a file in the wallet client program, remove an old
+    backup file before creating a new backup and don't fail if the backup
+    already exists.
 
 wallet 0.4 (2007-12-05)
 

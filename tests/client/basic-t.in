@@ -54,7 +54,7 @@ runfailure () {
 }
 
 # Print the number of tests.
-echo 17
+echo 20
 
 # Find the client program.
 if [ -f ../data/test.keytab ] ; then
@@ -65,7 +65,7 @@ else
     fi
 fi
 if [ ! -f data/test.keytab ] || [ -z "@REMCTLD@" ] ; then
-    for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 ; do
+    for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 ; do
         echo ok $n \# skip -- no Kerberos configuration
     done
     exit 0
@@ -132,6 +132,17 @@ else
     printcount "not ok"
 fi
 if [ -f keytab.bak ] || [ -f keytab.new ] ; then
+    printcount "not ok"
+else
+    printcount "ok"
+fi
+runsuccess "" -c fake-wallet get keytab -f keytab service/fake-test
+if cmp keytab data/fake-data >/dev/null 2>&1 ; then
+    printcount "ok"
+else
+    printcount "not ok"
+fi
+if [ -f keytab.new ] || [ ! -f keytab.bak ] ; then
     printcount "not ok"
 else
     printcount "ok"
