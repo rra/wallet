@@ -31,7 +31,8 @@ endif
 config.status: configure
 	dh_testdir
 	CFLAGS="$(CFLAGS)" ./configure $(SYSTEM) --prefix=/usr \
-	    --mandir=\$${prefix}/share/man --with-afs-libs=/usr/lib/afs
+	    --mandir=\$${prefix}/share/man --with-afs-libs=/usr/lib/afs \
+	    --with-wallet-server=lsdb-new.stanford.edu
 
 build: build-arch build-indep
 build-arch: build-stamp

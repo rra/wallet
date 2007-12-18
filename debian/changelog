@@ -1,3 +1,10 @@
+wallet (0.5-2) unstable; urgency=low
+
+  * Hard-code lsdb-new.stanford.edu as the wallet server name for the time
+    being.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 17 Dec 2007 21:17:08 -0800
+
 wallet (0.5-1) unstable; urgency=low
 
   * New upstream release.
