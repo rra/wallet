@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 # See LICENSE for licensing terms.
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
@@ -31,20 +31,24 @@ util_libutil_a_SOURCES = util/concat.c util/messages.c util/util.h \
 	util/xmalloc.c
 
 bin_PROGRAMS = client/wallet
-sbin_PROGRAMS = kasetkey/kasetkey
 dist_sbin_SCRIPTS = server/keytab-backend server/wallet-backend
 client_wallet_SOURCES = client/file.c client/internal.h client/keytab.c \
 	client/remctl.c client/srvtab.c client/wallet.c system.h
-client_wallet_CPPFLAGS = @REMCTL_CPPFLAGS@
-client_wallet_LDFLAGS = @REMCTL_LDFLAGS@
-client_wallet_LDADD = util/libutil.a portable/libportable.a -lremctl -lkrb5
-kasetkey_kasetkey_CPPFLAGS = @AFS_CPPFLAGS@
-kasetkey_kasetkey_LDFLAGS = @AFS_LDFLAGS@
-kasetkey_kasetkey_LDADD = util/libutil.a portable/libportable.a @AFS_LIBS@ \
-	-lkrb4
+client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS)
+client_wallet_LDFLAGS = $(REMCTL_LDFLAGS)
+client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
+	$(KRB5_LIBS)
 
-dist_man_MANS = client/wallet.1 kasetkey/kasetkey.8 server/keytab-backend.8 \
-	server/wallet-backend.8
+dist_man_MANS = client/wallet.1 server/keytab-backend.8 server/wallet-backend.8
+
+if AFS
+sbin_PROGRAMS = kasetkey/kasetkey
+kasetkey_kasetkey_CPPFLAGS = $(AFS_CPPFLAGS) $(KRB4_CPPFLAGS)
+kasetkey_kasetkey_LDFLAGS = $(AFS_LDFLAGS) $(KRB4_LDFLAGS)
+kasetkey_kasetkey_LDADD = util/libutil.a portable/libportable.a $(AFS_LIBS) \
+	$(KRB4_LIBS)
+dist_man_MANS += kasetkey/kasetkey.8
+endif
 
 $(srcdir)/client/wallet.1: $(srcdir)/client/wallet.pod
 	pod2man --release=$(VERSION) --center="Administrative Commands" \

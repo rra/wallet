@@ -4,12 +4,12 @@
 # t/keytab.t -- Tests for the keytab object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 217;
+use Test::More tests => 223;
 
 use Wallet::Config;
 use Wallet::Object::Keytab;
@@ -478,7 +478,7 @@ EOO
 
 # Tests for kaserver synchronization support.
 SKIP: {
-    skip 'no keytab configuration', 100 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 106 unless -f 't/data/test.keytab';
 
     # Test the principal mapping.  We can do this without having a kaserver
     # configuration.  We only need a basic keytab object configuration.  Do
@@ -569,9 +569,22 @@ $date  add kaserver to attribute sync
     by $user from $host
 EOO
     is ($one->history, $history, ' and history is correct for attributes');
+    is ($one->destroy (@trace), undef, 'Destroying wallet/one fails');
+    is ($one->error, 'kaserver synchronization not configured',
+        ' because kaserver support is not configured');
+    is ($one->attr ('sync', [], @trace), 1,
+        ' but removing the kaserver sync attribute works');
+    is ($one->destroy (@trace),1, ' and then destroying wallet/one works');
+    $history .= <<"EOO";
+$date  remove kaserver from attribute sync
+    by $user from $host
+$date  destroy
+    by $user from $host
+EOO
 
     # Set up our configuration.
-    skip 'no AFS kaserver configuration', 32 unless -f 't/data/test.srvtab';
+    skip 'no AFS kaserver configuration', 34 unless -f 't/data/test.srvtab';
+    skip 'no kaserver support', 34 unless -x '../kasetkey/kasetkey';
     $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
@@ -579,6 +592,14 @@ EOO
     $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
     my $realm = $Wallet::Config::KEYTAB_REALM;
     my $k5 = "wallet/one\@$realm";
+
+    # Recreate and reconfigure the object.
+    $one = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    ok (defined ($one), 'Creating wallet/one succeeds');
+    is ($one->attr ('sync', [ 'kaserver' ], @trace), 1,
+        ' and setting the kaserver sync attribute works');
 
     # Finally, we can test.
     is ($one->get (@trace), undef, 'Get without configuration fails');
@@ -661,6 +682,10 @@ EOO
 
     # Check that history is still correct.
     $history .= <<"EOO";
+$date  create
+    by $user from $host
+$date  add kaserver to attribute sync
+    by $user from $host
 $date  get
     by $user from $host
 $date  remove kaserver from attribute sync
@@ -704,7 +729,11 @@ SKIP: {
     my $one = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
-    ok (defined ($one), 'Creating wallet/one succeeds');
+    if (defined ($one)) {
+        ok (1, 'Creating wallet/one succeeds');
+    } else {
+        is ($@, '', 'Creating wallet/one succeeds');
+    }
     my $keytab = $one->get (@trace);
     ok (defined ($keytab), ' and retrieving the keytab works');
     my @enctypes = grep { $_ ne 'UNKNOWN' } enctypes ($keytab);

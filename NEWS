@@ -1,5 +1,16 @@
                        User-Visible wallet Changes
 
+wallet 0.6 (unreleased)
+
+    The build system now probes for GSS-API, Kerberos v5 and v4, and AFS
+    libraries as necessary rather than hard-coding libraries.  Building
+    on systems without strong shared library dependencies and building
+    against static libraries should now work.
+
+    Building kasetkey (for AFS kaserver synchronization) is now optional
+    and not enabled by default.  Pass --with-afs to enable it.  This
+    allows wallet to be easily built in an environment without AFS.
+
 wallet 0.5 (2007-12-06)
 
     Allow the empty string in wallet-backend arguments.
