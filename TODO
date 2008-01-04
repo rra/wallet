@@ -81,9 +81,6 @@ Future work:
 * Write a future design and roadmap document to collect notes about how
   unimplemented features should be handled.
 
-* Support displaying and possibly specifying dates in some format more
-  normal than seconds since epoch.
-
 * Support limiting returned history information by timestamp.
 
 * There is a lot of duplicate code in wallet-backend.  Convert that to
