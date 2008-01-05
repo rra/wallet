@@ -8,10 +8,15 @@ to the key in the keytab on a single line ending with a newline.
 The presence of these two files will enable the tests that actually do
 GSS-API authentication.
 
+If your krb5.conf file is not in /etc or /usr/local/etc, put a copy of
+your krb5.conf file in this directory.  The tests need to generate a
+modified copy in order to test some behavior.
+
 If you are building in a different directory tree than the source tree,
 don't put the files in this directory.  Instead, after running configure,
 you will have an empty tests/data directory in your build tree.  Put the
-test.keytab and test.principal files in that directory instead.
+test.keytab, test.principal, and krb5.conf (if necessary) files in that
+directory instead.
 
 Note that to successfully run much of the test suite, you will need to have
 remctld installed on the system running the tests.

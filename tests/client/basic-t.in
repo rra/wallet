@@ -4,89 +4,38 @@
 # Test suite for the wallet command-line client.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+#
 # See LICENSE for licensing terms.
 
-# The count starts at 1 and is updated each time ok is printed.  printcount
-# takes "ok" or "not ok".
-count=1
-printcount () {
-    echo "$1 $count $2"
-    count=`expr $count + 1`
-}
-
-# Run a program expected to succeed, and print ok if it does and produces
-# the correct output.
-runsuccess () {
-    w_output="$1"
-    shift
-    principal=`cat data/test.principal`
-    output=`$wallet -k "$principal" -p 14444 -s localhost "$@" 2>&1`
-    status=$?
-    if [ $status = 0 ] && [ x"$output" = x"$w_output" ] ; then
-        printcount "ok"
-    else
-        printcount "not ok"
-        echo "  saw: $output"
-        echo "  not: $w_output"
-    fi
-}
-
-# Run a program expected to fail and make sure it fails with the correct
-# exit status and the correct failure message.  Strip the second colon and
-# everything after it off the error message since it's system-specific.
-runfailure () {
-    w_status="$1"
-    shift
-    w_output="$1"
-    shift
-    principal=`cat data/test.principal`
-    output=`$wallet -k "$principal" -p 14444 -s localhost "$@" 2>&1`
-    status=$?
-    output=`echo "$output" | sed 's/\(:[^:]*\):.*/\1/'`
-    if [ $status = $w_status ] && [ x"$output" = x"$w_output" ] ; then
-        printcount "ok"
-    else
-        printcount "not ok"
-        echo "  saw: ($status) $output"
-        echo "  not: ($w_status) $w_output"
-    fi
-}
+# Load the test library.
+. "@abs_top_srcdir@/tests/libtest.sh"
 
 # Print the number of tests.
-echo 20
+total=22
+count=1
+echo "$total"
 
 # Find the client program.
-if [ -f ../data/test.keytab ] ; then
-    cd ..
-else
-    if [ -f tests/data/test.keytab ] ; then
-        cd tests
-    fi
-fi
-if [ ! -f data/test.keytab ] || [ -z "@REMCTLD@" ] ; then
-    for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 ; do
-        echo ok $n \# skip -- no Kerberos configuration
-    done
+chdir_data '../client/wallet'
+if [ ! -f 'data/test.keytab' ] || [ -z '@REMCTLD@' ] ; then
+    skip 1 "$total" 'no Kerberos configuration'
     exit 0
 fi
-wallet=../client/wallet
-if [ ! -x "$wallet" ] ; then
-    echo 'Cannot locate wallet client binary' >&2
-    exit 1
-fi
+wallet='../client/wallet'
 
 # Start the remctld daemon and wait for it to start.
+principal=`cat data/test.principal`
 rm -f data/pid
-( @REMCTLD@ -m -p 14444 -s `cat data/test.principal` -P data/pid \
-    -f data/wallet.conf -S -F -k data/test.keytab &)
+( @REMCTLD@ -m -p 14373 -s "$principal" -P data/pid -f data/wallet.conf \
+  -S -F -k data/test.keytab &)
 KRB5CCNAME=data/test.cache; export KRB5CCNAME
-kinit -k -t data/test.keytab `cat data/test.principal` > /dev/null 2>&1
+kinit -k -t data/test.keytab "$principal" > /dev/null 2>&1
 if [ $? != 0 ] ; then
-    kinit -t data/test.keytab `cat data/test.principal` > /dev/null 2>&1
+    kinit -t data/test.keytab "$principal" > /dev/null 2>&1
 fi
 if [ $? != 0 ] ; then
-    kinit -k -K data/test.keytab `cat data/test.principal` > /dev/null 2>&1
+    kinit -k -K data/test.keytab "$principal" > /dev/null 2>&1
 fi
 if [ $? != 0 ] ; then
     echo 'Unable to obtain Kerberos tickets' >&2
@@ -100,9 +49,10 @@ fi
 
 # We need a modified krb5.conf file for the srvtab test to work, since we need
 # to add a v4_realm setting for the test-k5.stanford.edu realm that the keytab
-# is for.
+# is for.  Despite all the Stanford hard-coding, this test isn't
+# Stanford-specific.  It just matches the data files shipped with the package.
 krb5conf=
-for p in /etc/krb5.conf /usr/local/etc/krb5.conf ; do
+for p in /etc/krb5.conf /usr/local/etc/krb5.conf data/krb5.conf ; do
     if [ -r "$p" ] ; then
         krb5conf="$p"
         sed -e '/^ *test-k5.stanford.edu =/,/}/d' \
@@ -120,12 +70,17 @@ EOF
         break
     fi
 done
+if [ -z "$krb5conf" ] ; then
+    echo 'No krb5.conf found -- put one in tests/data/krb5.conf' >&2
+    exit 1
+fi
 
 # Make sure everything's clean.
 rm -f keytab keytab.bak srvtab srvtab.bak sync-kaserver
 
-# Now, we can finally run our tests.
-runsuccess "" -c fake-wallet get keytab -f keytab service/fake-test
+# Now, we can finally run our tests.  First, basic operations.
+runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
+    get keytab -f keytab service/fake-test
 if cmp keytab data/fake-data >/dev/null 2>&1 ; then
     printcount "ok"
 else
@@ -136,7 +91,8 @@ if [ -f keytab.bak ] || [ -f keytab.new ] ; then
 else
     printcount "ok"
 fi
-runsuccess "" -c fake-wallet get keytab -f keytab service/fake-test
+runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
+    get keytab -f keytab service/fake-test
 if cmp keytab data/fake-data >/dev/null 2>&1 ; then
     printcount "ok"
 else
@@ -147,7 +103,28 @@ if [ -f keytab.new ] || [ ! -f keytab.bak ] ; then
 else
     printcount "ok"
 fi
-runsuccess "" -c fake-wallet get keytab -f keytab -S srvtab service/fake-srvtab
+
+# Now, append configuration to krb5.conf and test getting configuration from
+# there.
+cat >> krb5.conf <<EOF
+
+[appdefaults]
+    wallet_server = localhost
+    wallet = {
+        wallet_port = 14373
+        wallet_type = fake-wallet
+        wallet_principal = $principal
+    }
+EOF
+runsuccess "" "$wallet" get keytab -f keytab service/fake-test
+if cmp keytab data/fake-data >/dev/null 2>&1 ; then
+    printcount "ok"
+else
+    printcount "not ok"
+fi
+
+# Test srvtab support.
+runsuccess "" "$wallet" get keytab -f keytab -S srvtab service/fake-srvtab
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
     rm keytab
@@ -165,7 +142,7 @@ if [ -f sync-kaserver ] ; then
 else
     printcount "not ok"
 fi
-runsuccess "" -c fake-wallet get keytab -f keytab -S srvtab service/fake-srvtab
+runsuccess "" "$wallet" get keytab -f keytab -S srvtab service/fake-srvtab
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
     rm keytab
@@ -178,36 +155,32 @@ if [ -f sync-kaserver ] ; then
 else
     printcount "not ok"
 fi
-if [ -n "$krb5conf" ] ; then
-    if cmp srvtab data/fake-srvtab >/dev/null 2>&1 ; then
-        printcount "ok"
-        rm srvtab
-    else
-        printcount "not ok"
-    fi
-    if cmp srvtab.bak data/fake-srvtab >/dev/null 2>&1 ; then
-        printcount "ok"
-        rm srvtab.bak
-    else
-        printcount "not ok"
-    fi
-    KRB5_CONFIG=
-    rm krb5.conf
+if cmp srvtab data/fake-srvtab >/dev/null 2>&1 ; then
+    printcount "ok"
+    rm srvtab
 else
-    printcount "ok # skip cannot find krb5.conf"
+    printcount "not ok"
+fi
+if cmp srvtab.bak data/fake-srvtab >/dev/null 2>&1 ; then
+    printcount "ok"
+    rm srvtab.bak
+else
+    printcount "not ok"
 fi
 runsuccess "Some stuff about service/fake-test" \
-    -c fake-wallet show keytab service/fake-test
+    "$wallet" show keytab service/fake-test
 runfailure 1 "wallet: Unknown object type srvtab" \
-    -c fake-wallet get srvtab service/fake-test
+    "$wallet" get srvtab service/fake-test
 runfailure 1 "wallet: Unknown keytab service/unknown" \
-    -c fake-wallet show keytab service/unknown
+    "$wallet" show keytab service/unknown
 runfailure 1 "wallet: Unknown keytab service/unknown" \
-    -c fake-wallet get keytab service/unknown
+    "$wallet" get keytab service/unknown
 runsuccess "Expiration date of service/fake-test" \
-    -c fake-wallet expires keytab service/fake-test
+    "$wallet" expires keytab service/fake-test
 
 # Clean up.
+KRB5_CONFIG=
+rm data/krb5.conf
 rm -f data/test.cache
 if [ -f data/pid ] ; then
     kill `cat data/pid`

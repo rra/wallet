@@ -136,14 +136,18 @@ BUILD AND INSTALLATION
 
   You can build and install wallet with the standard commands:
 
-      ./configure --with-wallet-server=<server>
+      ./configure
       make
       make install
 
   The last step will probably have to be done as root.  Currently, this
-  always installs both the client and the server.  You must specify the
-  default wallet server at configure time unless you're at Stanford.  This
-  will be replaced with real client configuration in a later release.
+  always installs both the client and the server.
+
+  You can pass the --with-wallet-server and --with-wallet-port options to
+  configure to compile in a default wallet server and port.  If no port is
+  set, the remctl default port is used.  If no server is set, the server
+  must be specified either in krb5.conf configuration or on the wallet
+  command line or the client will exit with an error.
 
   By default, wallet installs itself under /usr/local except for the
   server Perl modules, which are installed into whatever default site
@@ -250,9 +254,9 @@ CONFIGURATION
   configuration on your KDC if you want unchanging flag support, and set
   up a srvtab if you want AFS kaserver synchronization support.
 
-  The client currently has no configuration options and hard-codes the
-  wallet server and port at compile time.  This will change in a future
-  release.
+  The wallet client supports reading configuration settings from the
+  system krb5.conf file.  For more information, see the CONFIGURATION
+  section of the wallet client man page (man wallet).
 
 THANKS
 

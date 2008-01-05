@@ -62,7 +62,8 @@ protocol to talk to the wallet server.
 The command prefix (remctl type) to use.  Normally this is an internal
 implementation detail and the default (C<wallet>) should be fine.  It may
 sometimes be useful to use a different prefix for testing a different
-version of the wallet code on the server.
+version of the wallet code on the server.  This option can also be set in
+F<krb5.conf>; see L<CONFIGURATION> below.
 
 =item B<-f> I<output>
 
@@ -76,6 +77,7 @@ will be destroyed.
 The service principal of the wallet server.  The default is to use the
 C<host> principal for the wallet server.  The principal chosen must match
 one of the keys in the keytab used by B<remctld> on the wallet server.
+This option can also be set in F<krb5.conf>; see L<CONFIGURATION> below.
 
 =item B<-h>
 
@@ -85,7 +87,8 @@ commands are ignored.
 =item B<-p> I<port>
 
 The port to connect to on the wallet server.  The default is the default
-remctl port.
+remctl port.  This option can also be set in F<krb5.conf>; see
+L<CONFIGURATION> below.
 
 =item B<-S> I<srvtab>
 
@@ -100,8 +103,9 @@ L<ATTRIBUTES>.
 
 =item B<-s> I<server>
 
-The wallet server to connect to.  The default is a hard-coded server value
-determined at configure time when compiling the wallet client.
+The wallet server to connect to.  The default may be set when compiling
+the wallet client.  If it isn't, either B<-s> must be given or the server
+must be set in F<krb5.conf>.  See L<CONFIGURATION> below.
 
 =item B<-v>
 
@@ -349,6 +353,61 @@ change this by setting the v4_realm configuration option in the [realms]
 section of krb5.conf for the local realm.  The keytab must be for a
 principal in the default local realm for the B<-S> option to work
 correctly.
+
+=back
+
+=head1 CONFIGURATION
+
+B<wallet> can optionally be configured in the system F<krb5.conf>.  It
+will read the default F<krb5.conf> file for the Kerberos libraries with
+which it was compiled.  To set an option, put the option in the
+[appdefaults] section.  B<wallet> will look for options either at the top
+level of the [appdefaults] section or in a subsection named C<wallet>,
+inside or outside of a section for the realm.  For example, the following
+fragment of a F<krb5.conf> file would set the default port to 4373 and the
+default server to C<wallet.example.org>.  It would also set the principal
+to C<wallet/example.org@EXAMPLE.NET> only if the local default realm is
+EXAMPLE.NET:
+
+    [appdefaults]
+        wallet_port = 4373
+        wallet = {
+            wallet_server = wallet.example.org
+            EXAMPLE.NET = {
+                wallet_principal = wallet/example.org@EXAMPLE.NET
+            }
+        }
+
+The supported options are:
+
+=over 4
+
+=item wallet_principal
+
+The service principal of the wallet server.  The default is to use the
+C<host> principal for the wallet server.  The principal chosen must match
+one of the keys in the keytab used by B<remctld> on the wallet server.
+The B<-k> command-line option overrides this setting.
+
+=item wallet_port
+
+The port to connect to on the wallet server.  The default is the default
+remctl port.  The B<-p> command-line option overrides this setting.
+
+=item wallet_server
+
+The wallet server to connect to.  The B<-s> command-line option overrides
+this setting.  The default may be set when compiling the wallet client.
+If it isn't, either B<-s> must be given or this parameter must be present
+in in F<krb5.conf>.
+
+=item wallet_type
+
+The command prefix (remctl type) to use.  Normally this is an internal
+implementation detail and the default (C<wallet>) should be fine.  It may
+sometimes be useful to use a different prefix for testing a different
+version of the wallet code on the server.  The B<-c> command-line option
+overrides this setting.
 
 =back
 

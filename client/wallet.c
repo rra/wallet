@@ -3,7 +3,8 @@
 **  The client program for the wallet system.
 **
 **  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
+**  Copyright 2006, 2007, 2008
+**      Board of Trustees, Leland Stanford Jr. University
 **
 **  See LICENSE for licensing terms.
 */
@@ -12,10 +13,30 @@
 #include <system.h>
 
 #include <errno.h>
+#include <krb5.h>
 #include <remctl.h>
 
 #include <client/internal.h>
 #include <util/util.h>
+
+/* Basic wallet behavior options set either on the command line or via
+   krb5.conf.  If set via krb5.conf, we allocate memory for the strings, but
+   we never free them. */
+struct options {
+    char *type;
+    char *server;
+    char *principal;
+    int port;
+};
+
+/* Allow defaults to be set for a particular site with configure options if
+   people don't want to use krb5.conf for some reason. */
+#ifndef WALLET_SERVER
+# define WALLET_SERVER NULL
+#endif
+#ifndef WALLET_PORT
+# define WALLET_PORT 0
+#endif
 
 /* Usage message.  Use as a format and pass the port number. */
 static const char usage_message[] = "\
@@ -45,18 +66,69 @@ usage(int status)
 
 
 /*
+**  Load a string option from Kerberos appdefaults.  This requires an annoying
+**  workaround because one cannot specify a default value of NULL.
+*/
+static void
+default_string(krb5_context ctx, const char *opt, const char *defval,
+               char **result)
+{
+    if (defval == NULL)
+        defval = "";
+    krb5_appdefault_string(ctx, "wallet", NULL, opt, defval, result);
+    if (*result != NULL && (*result)[0] == '\0') {
+        free(*result);
+        *result = NULL;
+    }
+}
+
+
+/*
+**  Load a number option from Kerberos appdefaults.  The native interface
+**  doesn't support numbers, so we actually read a string and then convert.
+*/
+static void
+default_number(krb5_context ctx, const char *opt, int defval, int *result)
+{
+    char *tmp;
+
+    krb5_appdefault_string(ctx, "wallet", NULL, opt, "", &tmp);
+    if (tmp != NULL && tmp[0] != '\0')
+        *result = atoi(tmp);
+    else
+        *result = defval;
+    if (tmp != NULL)
+        free(tmp);
+}
+
+
+/*
+**  Set option defaults and then get krb5.conf configuration, if any, and
+**  override the defaults.  Later, command-line options will override those
+**  defaults.
+*/
+static void
+set_defaults(krb5_context ctx, struct options *options)
+{
+    default_string(ctx, "wallet_type", "wallet", &options->type);
+    default_string(ctx, "wallet_server", WALLET_SERVER, &options->server);
+    default_string(ctx, "wallet_principal", NULL, &options->principal);
+    default_number(ctx, "wallet_port", WALLET_PORT, &options->port);
+}
+
+
+/*
 **  Main routine.  Parse the arguments and then perform the desired
 **  operation.
 */
 int
 main(int argc, char *argv[])
 {
+    krb5_context ctx;
+    krb5_error_code retval;
+    struct options options;
     int option, i, status;
     const char **command;
-    const char *type = "wallet";
-    const char *server = WALLET_SERVER;
-    const char *principal = NULL;
-    unsigned short port = WALLET_PORT;
     const char *file = NULL;
     const char *srvtab = NULL;
     struct remctl *r;
@@ -66,16 +138,22 @@ main(int argc, char *argv[])
     /* Set up logging and identity. */
     message_program_name = "wallet";
 
+    /* Initialize default configuration. */
+    retval = krb5_init_context(&ctx);
+    if (retval != 0)
+        die_krb5(ctx, retval, "cannot initialize Kerberos");
+    set_defaults(ctx, &options);
+
     while ((option = getopt(argc, argv, "c:f:k:hp:S:s:v")) != EOF) {
         switch (option) {
         case 'c':
-            type = optarg;
+            options.type = optarg;
             break;
         case 'f':
             file = optarg;
             break;
         case 'k':
-            principal = optarg;
+            options.principal = optarg;
             break;
         case 'h':
             usage(0);
@@ -85,13 +163,13 @@ main(int argc, char *argv[])
             tmp = strtol(optarg, &end, 10);
             if (tmp <= 0 || tmp > 65535 || *end != '\0')
                 die("invalid port number %s", optarg);
-            port = tmp;
+            options.port = tmp;
             break;
         case 'S':
             srvtab = optarg;
             break;
         case 's':
-            server = optarg;
+            options.server = optarg;
             break;
         case 'v':
             printf("%s\n", PACKAGE_STRING);
@@ -117,11 +195,16 @@ main(int argc, char *argv[])
             die("-S option requires -f also be used");
     }
 
+    /* If no server was set at configure time and none was set on the command
+       line or with krb5.conf settings, we can't continue. */
+    if (options.server == NULL)
+        die("no server specified in krb5.conf or with -s");
+
     /* Open a remctl connection. */
     r = remctl_new();
     if (r == NULL)
         sysdie("cannot allocate memory");
-    if (!remctl_open(r, server, port, principal))
+    if (!remctl_open(r, options.server, options.port, options.principal))
         die("%s", remctl_error(r));
 
     /* Most commands, we handle ourselves, but keytab get commands with -f are
@@ -129,20 +212,16 @@ main(int argc, char *argv[])
     if (strcmp(argv[0], "get") == 0 && strcmp(argv[1], "keytab") == 0) {
         if (argc > 3)
             die("too many arguments");
-        status = get_keytab(r, type, argv[2], file, srvtab);
-        remctl_close(r);
-        exit(status);
+        status = get_keytab(r, ctx, options.type, argv[2], file, srvtab);
     } else {
         command = xmalloc(sizeof(char *) * (argc + 2));
-        command[0] = type;
+        command[0] = options.type;
         for (i = 0; i < argc; i++)
             command[i + 1] = argv[i];
         command[argc + 1] = NULL;
         status = run_command(r, command, NULL, NULL);
-        remctl_close(r);
-        exit(status);
     }
-
-    /* This should never be reached. */
-    die("invalid return from wallet server");
+    remctl_close(r);
+    krb5_free_context(ctx);
+    exit(status);
 }

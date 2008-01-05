@@ -29,18 +29,16 @@ AC_CHECK_FUNCS([setrlimit])
 AC_REPLACE_FUNCS([asprintf])
 
 AC_ARG_WITH([wallet-server],
-    AC_HELP_STRING([--with-wallet-server=HOST], [Default wallet server]),
-    [if test x"$withval" != xno ; then
-        AC_DEFINE_UNQUOTED([WALLET_SERVER], ["$withval"],
-            [Define to the default server host name.])
-     fi])
+    [AC_HELP_STRING([--with-wallet-server=HOST], [Default wallet server])],
+    [AS_IF([test x"$withval" != xno && test x"$withval" != xyes],
+        [AC_DEFINE_UNQUOTED([WALLET_SERVER], ["$withval"],
+            [Define to the default server host name.])])])
 AC_ARG_WITH([wallet-port],
-    AC_HELP_STRING([--with-wallet-port=PORT],
-        [Default wallet server port]),
-    [if test x"$withval" != xno ; then
-        AC_DEFINE_UNQUOTED([WALLET_PORT], [$withval],
-            [Define to the default server port.])
-     fi])
+    [AC_HELP_STRING([--with-wallet-port=PORT],
+        [Default wallet server port])],
+    [AS_IF([test x"$withval" != xno && test x"$withval" != xyes],
+        [AC_DEFINE_UNQUOTED([WALLET_PORT], [$withval],
+            [Define to the default server port.])])])
 
 RRA_LIB_REMCTL
 RRA_LIB_KRB5
@@ -54,10 +52,9 @@ AM_CONDITIONAL([AFS], [test x"$rra_afs" = xtrue])
 
 AC_ARG_VAR([REMCTLD], [Path to the remctld binary])
 AC_PATH_PROG([REMCTLD], [remctld], , [$PATH:/usr/sbin:/usr/local/sbin])
-if test x"$REMCTLD" != x ; then
-    AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
-        [Define to the full path to remctld to run remctl tests.])
-fi
+AS_IF([test x"$REMCTLD" != x],
+    [AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
+        [Define to the full path to remctld to run remctl tests.])])
 
 dnl Needed to get prototypes for functions like asprintf on Linux.
 AC_DEFINE([_GNU_SOURCE], [1], [Define to 1 on Linux to get full prototypes.])

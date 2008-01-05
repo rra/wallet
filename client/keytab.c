@@ -3,7 +3,7 @@
 **  Implementation of keytab handling for the wallet client.
 **
 **  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+**  Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 **
 **  See LICENSE for licensing terms.
 */
@@ -51,13 +51,13 @@ set_sync(struct remctl *r, const char *type, const char *name)
 
 
 /*
-**  Given a remctl object, the name of a keytab object, and a file name, call
-**  the correct wallet commands to download a keytab and write it to that
-**  file.  Returns the setatus or 255 on an internal error.
+**  Given a remctl object, the Kerberos context, the name of a keytab object,
+**  and a file name, call the correct wallet commands to download a keytab and
+**  write it to that file.  Returns the setatus or 255 on an internal error.
 */
 int
-get_keytab(struct remctl *r, const char *type, const char *name,
-           const char *file, const char *srvtab)
+get_keytab(struct remctl *r, krb5_context ctx, const char *type,
+           const char *name, const char *file, const char *srvtab)
 {
     const char *command[5];
     char *data = NULL;
@@ -81,6 +81,6 @@ get_keytab(struct remctl *r, const char *type, const char *name,
     }
     write_file(file, data, length);
     if (srvtab != NULL)
-        write_srvtab(srvtab, name, file);
+        write_srvtab(ctx, srvtab, name, file);
     return 0;
 }
