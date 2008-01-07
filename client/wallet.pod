@@ -362,20 +362,14 @@ B<wallet> can optionally be configured in the system F<krb5.conf>.  It
 will read the default F<krb5.conf> file for the Kerberos libraries with
 which it was compiled.  To set an option, put the option in the
 [appdefaults] section.  B<wallet> will look for options either at the top
-level of the [appdefaults] section or in a subsection named C<wallet>,
-inside or outside of a section for the realm.  For example, the following
-fragment of a F<krb5.conf> file would set the default port to 4373 and the
-default server to C<wallet.example.org>.  It would also set the principal
-to C<wallet/example.org@EXAMPLE.NET> only if the local default realm is
-EXAMPLE.NET:
+level of the [appdefaults] section or in a subsection named C<wallet>.
+For example, the following fragment of a F<krb5.conf> file would set the
+default port to 4373 and the default server to C<wallet.example.org>.
 
     [appdefaults]
         wallet_port = 4373
         wallet = {
             wallet_server = wallet.example.org
-            EXAMPLE.NET = {
-                wallet_principal = wallet/example.org@EXAMPLE.NET
-            }
         }
 
 The supported options are:
