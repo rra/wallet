@@ -6,6 +6,10 @@ wallet 0.6 (unreleased)
     type from krb5.conf as well as from compile-time defaults and
     command-line options.
 
+    When getting a keytab with the client with no -f option, correctly
+    write the keytab to standard output rather than dying with a cryptic
+    error.
+
     The build system now probes for GSS-API, Kerberos v5 and v4, and AFS
     libraries as necessary rather than hard-coding libraries.  Building
     on systems without strong shared library dependencies and building

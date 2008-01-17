@@ -79,7 +79,12 @@ get_keytab(struct remctl *r, krb5_context ctx, const char *type,
         warn("no data returned by wallet server");
         return 255;
     }
-    write_file(file, data, length);
+    if (file != NULL)
+        write_file(file, data, length);
+    else {
+        if (fwrite(data, length, 1, stdout) != 1)
+            sysdie("write to standard output failed");
+    }
     if (srvtab != NULL)
         write_srvtab(ctx, srvtab, name, file);
     return 0;
