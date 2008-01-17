@@ -76,6 +76,10 @@ get)
         cat data/fake-keytab
         exit 0
         ;;
+    service/fake-output)
+        printf 'This is a fake keytab.'
+        exit 0
+        ;;
     *)
         echo "Unknown keytab $1" >&2
         exit 1

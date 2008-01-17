@@ -12,7 +12,7 @@
 . "@abs_top_srcdir@/tests/libtest.sh"
 
 # Print the number of tests.
-total=22
+total=23
 count=1
 echo "$total"
 
@@ -55,8 +55,10 @@ krb5conf=
 for p in /etc/krb5.conf /usr/local/etc/krb5.conf data/krb5.conf ; do
     if [ -r "$p" ] ; then
         krb5conf="$p"
-        sed -e '/^ *test-k5.stanford.edu =/,/}/d' \
+        sed -e '/^[ 	]*test-k5.stanford.edu =/,/}/d' \
             -e 's/\(default_realm.*=\) .*/\1 test-k5.stanford.edu/' \
+            -e 's/^[ 	]*wallet_.*//' \
+            -e '/^[ 	]*wallet[ 	]*=[ 	]*{/,/}/d' \
             "$p" > ./krb5.conf
         cat >> krb5.conf <<EOF
 
@@ -167,6 +169,7 @@ if cmp srvtab.bak data/fake-srvtab >/dev/null 2>&1 ; then
 else
     printcount "not ok"
 fi
+runsuccess "This is a fake keytab." "$wallet" get keytab service/fake-output
 runsuccess "Some stuff about service/fake-test" \
     "$wallet" show keytab service/fake-test
 runfailure 1 "wallet: Unknown object type srvtab" \
@@ -180,7 +183,7 @@ runsuccess "Expiration date of service/fake-test" \
 
 # Clean up.
 KRB5_CONFIG=
-rm data/krb5.conf
+rm krb5.conf
 rm -f data/test.cache
 if [ -f data/pid ] ; then
     kill `cat data/pid`
