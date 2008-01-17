@@ -90,7 +90,7 @@ default_string(krb5_context ctx, const char *opt, const char *defval,
 static void
 default_number(krb5_context ctx, const char *opt, int defval, int *result)
 {
-    char *tmp;
+    char *tmp = NULL;
 
     krb5_appdefault_string(ctx, "wallet", NULL, opt, "", &tmp);
     if (tmp != NULL && tmp[0] != '\0')
