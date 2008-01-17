@@ -128,9 +128,6 @@ Future work:
 * Add details to design-api on how to write one's own ACL verifiers and
   object implementations and register them.
 
-* Add support for enforcing a naming policy through another policy
-  function.
-
 * Add readline support to the wallet client to make it easier to issue
   multiple commands.
 

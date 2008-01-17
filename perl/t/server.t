@@ -4,11 +4,11 @@
 # t/server.t -- Tests for the wallet server API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 325;
+use Test::More tests => 332;
 
 use POSIX qw(strftime);
 use Wallet::Config;
@@ -891,6 +891,47 @@ Members of ACL auto-admin (id: 8) are:
   krb5 $admin
 EOO
 is ($show, $expected, ' and the created object and ACL are correct');
+is ($server->destroy ('base', 'service/default-admin'), 1,
+    ' and we can destroy it');
+
+# Test naming enforcement.  Permit any base service/* name, but only permit
+# base host/* if the host is fully qualified and ends in .example.edu.
+package Wallet::Config;
+sub verify_name {
+    my ($type, $name) = @_;
+    if ($type eq 'base' and $name =~ m,^service/,) {
+        return;
+    } elsif ($type eq 'base' and $name =~ m,^host/(.*),) {
+        my $host = $1;
+        return "host $host must be fully qualified (add .example.edu)"
+            unless $host =~ /\./;
+        return "host $host not in .example.edu domain"
+            unless $host =~ /\.example\.edu$/;
+        return;
+    } else {
+        return;
+    }
+}
+package main;
+
+# Recreate service/default-admin, which should succeed, and then try the
+# various host/* principals.
+is ($server->create ('base', 'service/default-admin'), 1,
+    'Creating default/admin succeeds');
+if ($server->create ('base', 'host/default.example.edu')) {
+    ok (1, ' as does creating host/default.example.edu');
+} else {
+    is ($server->error, '', ' as does creating host/default.example.edu');
+}
+is ($server->create ('base', 'host/default'), undef,
+    ' but an unqualified host fails');
+is ($server->error, 'base:host/default rejected: host default must be fully'
+    . ' qualified (add .example.edu)', ' with the right error');
+is ($server->create ('base', 'host/default.stanford.edu'), undef,
+    ' and a host in the wrong domain fails');
+is ($server->error, 'base:host/default.stanford.edu rejected: host'
+    . ' default.stanford.edu not in .example.edu domain',
+    ' with the right error');
 
 # Clean up.
 $schema = Wallet::Schema->new;

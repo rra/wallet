@@ -23,7 +23,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ##############################################################################
 # Utility methods
@@ -246,6 +246,13 @@ sub create {
     my $acl = $self->create_check ($type, $name);
     unless ($acl) {
         return unless $self->{admin}->check ($user);
+    }
+    if (defined (&Wallet::Config::verify_name)) {
+        my $error = Wallet::Config::verify_name ($type, $name, $user);
+        if ($error) {
+            $self->error ("${type}:${name} rejected: $error");
+            return;
+        }
     }
     my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
     if ($@) {

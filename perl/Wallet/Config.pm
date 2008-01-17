@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -15,7 +15,7 @@ use vars qw($PATH $VERSION);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 # Path to the config file to load.
 $PATH = '/etc/wallet/wallet.conf';
@@ -524,6 +524,41 @@ existing ACL has the same entries as the one returned by default_owner,
 creation continues if the user is authorized by that ACL.  If they don't
 match, creation of the object is rejected, since the presence of an existing
 ACL may indicate that something different is being done with this object.
+
+=head1 NAMING ENFORCEMENT
+
+By default, wallet permits administrators to create objects of any name
+(unless the object backend rejects the name).  However, naming standards
+for objects can be enforced, even for administrators, by defining a Perl
+function in the configuration file named verify_name.  If such a function
+exists, it will be called for any object creation and given the type of
+object, the object name, and the identity of the person doing the
+creation.  If it returns undef or the empty string, object creation will
+be allowed.  If it returns anything else, object creation is rejected and
+the return value is used as the error message.
+
+Please note that this return status is backwards from what one would
+normally expect.  A false value is success; a true value is failure with
+an error message.
+
+For example, the following verify_name function would ensure that any
+keytab objects for particular principals have fully-qualified hostnames:
+
+    sub verify_name {
+        my ($type, $name, $user) = @_;
+        my %host_based = map { $_ => 1 }
+            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
+        return unless $type eq 'keytab';
+        return unless $name =~ m%/%;
+        my ($service, $instance) = split ('/', $name, 2);
+        return unless $host_based{$service};
+        return "host name $instance must be fully qualified"
+            unless $instance =~ /\./;
+        return;
+    }
+
+Objects that aren't of type C<keytab> or which aren't for a host-based key
+have no naming requirements enforced.
 
 =cut
 
