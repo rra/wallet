@@ -69,8 +69,19 @@ F<krb5.conf>; see L<CONFIGURATION> below.
 
 This flag is only used in combination with the C<get> command.  Rather
 than sending the secure data to standard output (the default), store the
-secure data in the file I<output>.  Any existing contents of I<output>
-will be destroyed.
+secure data in the file I<output>.
+
+If the object being retrieved is not a keytab object, any current file
+named I<output> is renamed to F<I<outout>.bak> before the new file is
+created.  F<I<outout>.new> is used as a temporary file and any existing
+file with that name will be deleted.
+
+If the object being retrieved is a keytab object and the file I<output>
+already exists, the downloaded keys will be added to the existing keytab
+file I<output>.  Old keys are not removed; you may wish to run C<kadmin
+ktremove> or an equivalent later to clean up old keys.  F<I<output>.new>
+is still used as a temporary file and any existing file with that name
+will be deleted.
 
 =item B<-k> I<principal>
 

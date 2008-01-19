@@ -26,7 +26,10 @@ overwrite_file(const char *name, const void *data, size_t length)
     int fd;
     ssize_t status;
 
-    fd = open(name, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (access(name, F_OK) == 0)
+        if (unlink(name) < 0)
+            sysdie("unable to delete existing file %s", name);
+    fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0600);
     if (fd < 0)
         sysdie("open of %s failed", name);
     status = write(fd, data, length);
