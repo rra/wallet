@@ -22,6 +22,7 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	perl/t/schema.t perl/t/server.t perl/t/verifier.t tests/TESTS \
 	tests/data/README tests/data/allow-extract tests/data/cmd-fake \
 	tests/data/fake-data tests/data/fake-kadmin tests/data/fake-keytab \
+	tests/data/fake-keytab-2 tests/data/fake-keytab-merge \
 	tests/data/fake-srvtab tests/data/wallet.conf
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
