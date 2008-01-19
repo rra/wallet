@@ -2,6 +2,8 @@
 
 Release 1.0:
 
+* Add a test suite for the wallet -u option.
+
 * Write the LDAP entitlement ACL verifier.
 
 * Write the PTS ACL verifier.
