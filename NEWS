@@ -2,6 +2,11 @@
 
 wallet 0.6 (unreleased)
 
+    SECURITY: If -f is used and the output file name with ".new" appended
+    already exists, unlink it first and then create it safely rather than
+    truncating it.  This is much safer when creating files in a
+    world-writable directory.
+
     The wallet client can now get the server, port, principal, and remctl
     type from krb5.conf as well as from compile-time defaults and
     command-line options.
@@ -13,11 +18,6 @@ wallet 0.6 (unreleased)
     When downloading a keytab to a file that already exists, merge the new
     keytab keys into that file rather than moving aside the old keytab and
     creating a new keytab with only the new keys.
-
-    If -f is used and the output file name with ".new" appended already
-    exists, unlink it first and then create it safely rather than
-    truncating it.  This is much safer when creating files in a
-    world-writable directory.
 
     Support enforcing a naming policy for wallet objects via a Perl
     function in the wallet server configuration file.
