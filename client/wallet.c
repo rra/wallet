@@ -26,6 +26,7 @@ struct options {
     char *type;
     char *server;
     char *principal;
+    char *user;
     int port;
 };
 
@@ -114,6 +115,7 @@ set_defaults(krb5_context ctx, struct options *options)
     default_string(ctx, "wallet_server", WALLET_SERVER, &options->server);
     default_string(ctx, "wallet_principal", NULL, &options->principal);
     default_number(ctx, "wallet_port", WALLET_PORT, &options->port);
+    options->user = NULL;
 }
 
 
@@ -144,7 +146,7 @@ main(int argc, char *argv[])
         die_krb5(ctx, retval, "cannot initialize Kerberos");
     set_defaults(ctx, &options);
 
-    while ((option = getopt(argc, argv, "c:f:k:hp:S:s:v")) != EOF) {
+    while ((option = getopt(argc, argv, "c:f:k:hp:S:s:u:v")) != EOF) {
         switch (option) {
         case 'c':
             options.type = optarg;
@@ -170,6 +172,9 @@ main(int argc, char *argv[])
             break;
         case 's':
             options.server = optarg;
+            break;
+        case 'u':
+            options.user = optarg;
             break;
         case 'v':
             printf("%s\n", PACKAGE_STRING);
@@ -199,6 +204,10 @@ main(int argc, char *argv[])
        line or with krb5.conf settings, we can't continue. */
     if (options.server == NULL)
         die("no server specified in krb5.conf or with -s");
+
+    /* If a user was specified, obtain Kerberos tickets. */
+    if (options.user != NULL)
+        kinit(ctx, options.user);
 
     /* Open a remctl connection. */
     r = remctl_new();

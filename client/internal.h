@@ -29,6 +29,11 @@ struct remctl;
 
 BEGIN_DECLS
 
+/* Given a Kerberos context and a principal name, obtain Kerberos credentials
+   for that principal and store them in a memory cache for use by later
+   operations. */
+void kinit(krb5_context, const char *principal);
+
 /* Given a remctl object, run a remctl command.  If data is non-NULL, saves
    the standard output from the command into data with the length in length.
    Otherwise, prints it to standard output.  Either way, prints standard error

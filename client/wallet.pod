@@ -6,7 +6,7 @@ wallet - Client for retrieving secure data from a central server
 
 B<wallet> [B<-hv>] [B<-c> I<command>] [B<-f> I<output>]
 [B<-k> I<principal>] [B<-p> I<port>] [S<B<-s> I<server>>] [B<-S> I<srvtab>]
-I<command> [I<arg> ...]
+[B<-u> I<principal>] I<command> [I<arg> ...]
 
 =head1 DESCRIPTION
 
@@ -117,6 +117,15 @@ L<ATTRIBUTES>.
 The wallet server to connect to.  The default may be set when compiling
 the wallet client.  If it isn't, either B<-s> must be given or the server
 must be set in F<krb5.conf>.  See L<CONFIGURATION> below.
+
+=item B<-u> I<principal>
+
+Rather than using the user's existing ticket cache for authentication,
+authenticate as I<principal> first and use those credentials for
+authentication to the wallet server.  B<wallet> will prompt for the
+password for I<principal>.  Non-password authentication methods such as
+PKINIT aren't supported; to use those, run B<kinit> first and use an
+existing ticket cache.
 
 =item B<-v>
 
@@ -418,7 +427,7 @@ overrides this setting.
 
 =head1 SEE ALSO
 
-krb5.conf(5), remctl(1), remctld(8)
+kadmin(8), kinit(1), krb5.conf(5), remctl(1), remctld(8)
 
 This program is part of the wallet system.  The current version is available
 from L<http://www.eyrie.org/~eagle/software/wallet/>.

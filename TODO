@@ -35,9 +35,7 @@ Release 1.0:
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
 
-* Add support to the wallet client for getting Kerberos tickets, using the
-  -u option similar to leland_srvtab.  Needs good error messages on
-  Kerberos failures.
+* Improve the error message for Kerberos authentication failures.
 
 * Error messages from ACL operations should refer to the ACLs by name
   instead of by ID.
@@ -165,3 +163,7 @@ May or may not be good ideas:
 
 * Remove the hard-coded ADMIN ACL in the server with something more
   configurable, perhaps a global ACL table or something.
+
+* When obtaining tickets in the wallet client with -u, should we get a TGT
+  as we do now or just directly obtain the service ticket we're going to
+  use for remctl?
