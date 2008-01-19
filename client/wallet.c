@@ -207,12 +207,16 @@ main(int argc, char *argv[])
     if (!remctl_open(r, options.server, options.port, options.principal))
         die("%s", remctl_error(r));
 
-    /* Most commands, we handle ourselves, but keytab get commands with -f are
-       special. */
-    if (strcmp(argv[0], "get") == 0 && strcmp(argv[1], "keytab") == 0) {
+    /* Most commands, we handle ourselves, but get commands are special and
+       keytab get commands with -f are doubly special. */
+    if (strcmp(argv[0], "get") == 0) {
         if (argc > 3)
             die("too many arguments");
-        status = get_keytab(r, ctx, options.type, argv[2], file, srvtab);
+        if (strcmp(argv[1], "keytab") == 0 && file != NULL) {
+            status = get_keytab(r, ctx, options.type, argv[2], file, srvtab);
+        } else {
+            status = get_file(r, options.type, argv[1], argv[2], file);
+        }
     } else {
         command = xmalloc(sizeof(char *) * (argc + 2));
         command[0] = options.type;

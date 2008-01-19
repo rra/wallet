@@ -3,7 +3,7 @@
 **  File handling for the wallet client.
 **
 **  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+**  Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 **
 **  See LICENSE for licensing terms.
 */
@@ -18,28 +18,40 @@
 
 /*
 **  Given a filename, some data, and a length, write that data to the given
+**  file safely, but overwrite any existing file by that name.
+*/
+void
+overwrite_file(const char *name, const void *data, size_t length)
+{
+    int fd;
+    ssize_t status;
+
+    fd = open(name, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (fd < 0)
+        sysdie("open of %s failed", name);
+    status = write(fd, data, length);
+    if (status < 0)
+        sysdie("write to %s failed", name);
+    else if (status != (ssize_t) length)
+        die("write to %s truncated", name);
+    if (close(fd) < 0)
+        sysdie("close of %s failed (file probably truncated)", name);
+}
+
+
+/*
+**  Given a filename, some data, and a length, write that data to the given
 **  file safely and atomically by creating file.new, writing the data, linking
 **  file to file.bak, and then renaming file.new to file.
 */
 void
 write_file(const char *name, const void *data, size_t length)
 {
-    int fd;
-    ssize_t status;
     char *temp, *backup;
 
     temp = concat(name, ".new", (char *) 0);
     backup = concat(name, ".bak", (char *) 0);
-    fd = open(temp, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-    if (fd < 0)
-        sysdie("open of %s failed", temp);
-    status = write(fd, data, length);
-    if (status < 0)
-        sysdie("write to %s failed", temp);
-    else if (status != (ssize_t) length)
-        die("write to %s truncated", temp);
-    if (close(fd) < 0)
-        sysdie("close of %s failed (file probably truncated)", temp);
+    overwrite_file(temp, data, length);
     if (access(name, F_OK) == 0) {
         if (access(backup, F_OK) == 0)
             if (unlink(backup) < 0)
@@ -51,4 +63,42 @@ write_file(const char *name, const void *data, size_t length)
         sysdie("rename of %s to %s failed", temp, name);
     free(temp);
     free(backup);
+}
+
+
+/*
+**  Given a remctl object, the command prefix, object type, and object name,
+**  and a file (which may be NULL), send a wallet get command and write the
+**  results to the provided file.  If the file is NULL, write the results to
+**  standard output instead.  Returns 0 on success and an exit status on
+**  failure.
+*/
+int
+get_file(struct remctl *r, const char *prefix, const char *type,
+         const char *name, const char *file)
+{
+    const char *command[5];
+    char *data = NULL;
+    size_t length = 0;
+    int status;
+
+    command[0] = prefix;
+    command[1] = "get";
+    command[2] = type;
+    command[3] = name;
+    command[4] = NULL;
+    status = run_command(r, command, &data, &length);
+    if (status != 0)
+        return status;
+    if (data == NULL) {
+        warn("no data returned by wallet server");
+        return 255;
+    }
+    if (file != NULL)
+        write_file(file, data, length);
+    else {
+        if (fwrite(data, length, 1, stdout) != 1)
+            sysdie("cannot write to standard output");
+    }
+    return 0;
 }

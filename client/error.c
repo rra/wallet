@@ -85,7 +85,7 @@ free_error(krb5_context ctx, const char *msg)
 **  Report a Kerberos error and exit.
 */
 void
-die_krb5(krb5_context ctx,  krb5_error_code code, const char *format, ...)
+die_krb5(krb5_context ctx, krb5_error_code code, const char *format, ...)
 {
     const char *k5_msg = NULL;
     char *message;
@@ -93,10 +93,10 @@ die_krb5(krb5_context ctx,  krb5_error_code code, const char *format, ...)
 
     k5_msg = get_error(ctx, code);
     va_start(args, format);
-    if (xasprintf(&message, format, args) < 0)
+    if (xvasprintf(&message, format, args) < 0)
         die("internal error: unable to format error message");
     va_end(args);
-    die("%s: %s\n", message, k5_msg);
+    die("%s: %s", message, k5_msg);
 }
 
 
@@ -104,7 +104,7 @@ die_krb5(krb5_context ctx,  krb5_error_code code, const char *format, ...)
 **  Report a Kerberos error.
 */
 void
-warn_krb5(krb5_context ctx,  krb5_error_code code, const char *format, ...)
+warn_krb5(krb5_context ctx, krb5_error_code code, const char *format, ...)
 {
     const char *k5_msg = NULL;
     char *message;
@@ -112,10 +112,10 @@ warn_krb5(krb5_context ctx,  krb5_error_code code, const char *format, ...)
 
     k5_msg = get_error(ctx, code);
     va_start(args, format);
-    if (xasprintf(&message, format, args) < 0)
+    if (xvasprintf(&message, format, args) < 0)
         die("internal error: unable to format error message");
     va_end(args);
-    warn("%s: %s\n", message, k5_msg);
+    warn("%s: %s", message, k5_msg);
     free(message);
     free_error(ctx, k5_msg);
 }

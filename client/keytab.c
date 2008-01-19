@@ -18,6 +18,55 @@
 
 
 /*
+**  Given keytab data as a pointer to memory and a length and the path of a
+**  second keytab, merge the keys in the memory keytab into the file keytab.
+**  Currently, this doesn't do any cleanup of old kvnos and doesn't handle
+**  duplicate kvnos correctly.  Dies on any error.
+*/
+static void
+merge_keytab(krb5_context ctx, const char *name, const char *data,
+             size_t length)
+{
+    char *tempfile, *oldfile;
+    krb5_keytab old = NULL, temp = NULL;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
+    krb5_error_code status;
+
+    tempfile = concat(name, ".new", (char *) 0);
+    oldfile = concat("WRFILE:", name, (char *) 0);
+    overwrite_file(tempfile, data, length);
+    memset(&entry, 0, sizeof(entry));
+    status = krb5_kt_resolve(ctx, oldfile, &old);
+    if (status != 0)
+        die_krb5(ctx, status, "cannot open keytab %s", name);
+    free(oldfile);
+    status = krb5_kt_resolve(ctx, tempfile, &temp);
+    if (status != 0)
+        die_krb5(ctx, status, "cannot open temporary keytab %s", tempfile);
+    status = krb5_kt_start_seq_get(ctx, temp, &cursor);
+    if (status != 0)
+        die_krb5(ctx, status, "cannot read temporary keytab %s", tempfile);
+    while ((status = krb5_kt_next_entry(ctx, temp, &entry, &cursor)) == 0) {
+        status = krb5_kt_add_entry(ctx, old, &entry);
+        if (status != 0)
+            die_krb5(ctx, status, "cannot write to keytab %s", name);
+        krb5_free_keytab_entry_contents(ctx, &entry);
+    }
+    if (status != KRB5_KT_END)
+        die_krb5(ctx, status, "error reading temporary keytab %s", tempfile);
+    krb5_kt_end_seq_get(ctx, temp, &cursor);
+    if (unlink(tempfile) < 0)
+        sysdie("unlink of temporary keytab file %s failed", tempfile);
+    free(tempfile);
+    if (old != NULL)
+        krb5_kt_close(ctx, old);
+    if (temp != NULL)
+        krb5_kt_close(ctx, temp);
+}
+
+
+/*
 **  Configure a given keytab to be synchronized with an AFS kaserver if it
 **  isn't already.  Returns true on success, false on failure.
 */
@@ -79,12 +128,10 @@ get_keytab(struct remctl *r, krb5_context ctx, const char *type,
         warn("no data returned by wallet server");
         return 255;
     }
-    if (file != NULL)
+    if (access(file, F_OK) == 0)
+        merge_keytab(ctx, file, data, length);
+    else
         write_file(file, data, length);
-    else {
-        if (fwrite(data, length, 1, stdout) != 1)
-            sysdie("write to standard output failed");
-    }
     if (srvtab != NULL)
         write_srvtab(ctx, srvtab, name, file);
     return 0;

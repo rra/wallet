@@ -5,14 +5,14 @@
 # the client test suite.  It doesn't test any of the wallet server code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 # See LICENSE for licensing terms.
 
 command="$1"
 shift
 type="$1"
 shift
-if [ "$type" != "keytab" ] ; then
+if [ "$type" != "keytab" ] && [ "$type" != "file" ] ; then
     echo "Unknown object type $type" >&2
     exit 1
 fi
@@ -23,7 +23,7 @@ getattr)
         echo "Too many arguments" >&2
         exit 1
     fi
-    if [ "$2" != sync ] ; then
+    if [ "$type" != "keytab" ] || [ "$2" != sync ] ; then
         echo "Unknown attribute $2" >&2
         exit 1
     fi
@@ -44,7 +44,7 @@ setattr)
         echo "Too many arguments" >&2
         exit 1
     fi
-    if [ "$2" != sync ] ; then
+    if [ "$type" != "keytab" ] || [ "$2" != sync ] ; then
         echo "Unknown attribute $2" >&2
         exit 1
     fi
@@ -67,21 +67,25 @@ get)
         echo "Too many arguments" >&2
         exit 1
     fi
-    case "$1" in
-    service/fake-test)
+    case "${type}:${1}" in
+    file:fake-test)
         cat data/fake-data
         exit 0
         ;;
-    service/fake-srvtab)
+    keytab:service/fake-srvtab)
         cat data/fake-keytab
         exit 0
         ;;
-    service/fake-output)
+    keytab:service/fake-keytab)
+        cat data/fake-keytab-2
+        exit 0
+        ;;
+    keytab:service/fake-output)
         printf 'This is a fake keytab.'
         exit 0
         ;;
     *)
-        echo "Unknown keytab $1" >&2
+        echo "Unknown $type $1" >&2
         exit 1
         ;;
     esac
@@ -91,11 +95,11 @@ show)
         echo "Too many arguments" >&2
         exit 1
     fi
-    if [ "$1" = "service/fake-test" ] ; then
-        echo "Some stuff about $1"
+    if [ "$type" = "file" ] && [ "$1" = "fake-test" ] ; then
+        echo "Some stuff about $type $1"
         exit 0
     else
-        echo "Unknown keytab $1" >&2
+        echo "Unknown $type $1" >&2
         exit 1
     fi
     ;;
@@ -104,7 +108,7 @@ expires)
         echo "Too many arguments" >&2
         exit 1
     fi
-    echo "Expiration date of $1"
+    echo "Expiration date of $type $1"
     exit 0
     ;;
 *)

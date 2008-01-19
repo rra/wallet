@@ -10,6 +10,10 @@ wallet 0.6 (unreleased)
     write the keytab to standard output rather than dying with a cryptic
     error.
 
+    When downloading a keytab to a file that already exists, merge the new
+    keytab keys into that file rather than moving aside the old keytab and
+    creating a new keytab with only the new keys.
+
     Support enforcing a naming policy for wallet objects via a Perl
     function in the wallet server configuration file.
 

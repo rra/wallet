@@ -37,6 +37,14 @@ BEGIN_DECLS
 int run_command(struct remctl *, const char **command, char **data,
                 size_t *length);
 
+/* Given a remctl object, the type for the wallet interface, object type,
+   object name, and a file (which may be NULL), send a wallet get command and
+   write the results to the provided file.  If the file is NULL, write the
+   results to standard output instead.  Returns 0 on success and an exit
+   status on failure. */
+int get_file(struct remctl *, const char *prefix, const char *type,
+             const char *name, const char *file);
+
 /* Given a remctl object, the Kerberos context, the type for the wallet
    interface, the name of a keytab object, and a file name, call the correct
    wallet commands to download a keytab and write it to that file.  If srvtab
@@ -44,6 +52,10 @@ int run_command(struct remctl *, const char **command, char **data,
    download. */
 int get_keytab(struct remctl *, krb5_context, const char *type,
                const char *name, const char *file, const char *srvtab);
+
+/* Given a filename, some data, and a length, write that data to the given
+   file with error checking, overwriting any existing contents. */
+void overwrite_file(const char *name, const void *data, size_t length);
 
 /* Given a filename, some data, and a length, write that data to the given
    file safely and atomically by creating file.new, writing the data, linking
