@@ -25,7 +25,8 @@ Release 1.0:
 * Add a help function to wallet-backend listing the commands.
 
 * The client may not compile against Heimdal due to changes in how the
-  krb5_keyblock structure is laid out.  Check and fix.
+  krb5_keyblock structure is laid out, the freeing of keytab entries,
+  and the use of WRFILE for keytab merging.  Check and fix.
 
 * Rewrite the client test suite to use Perl and to make better use of
   shared code so that it can be broken into function components.
@@ -34,8 +35,6 @@ Release 1.0:
 
 * Log failures in the wallet-backend properly, which also requires
   catching all exceptions.
-
-* Improve the error message for Kerberos authentication failures.
 
 * Error messages from ACL operations should refer to the ACLs by name
   instead of by ID.
@@ -75,6 +74,15 @@ Future work:
   unimplemented features should be handled.
 
 * Support limiting returned history information by timestamp.
+
+* Improve the error message for Kerberos authentication failures.
+
+* Handle duplicate kvnos in a newly returned keytab and an existing keytab
+  (such as when downloading an unchanging keytab and merging it into an
+  existing one) in some reasonable fashion.
+
+* Support removing old kvnos from a merged keytab (similar to kadmin
+  ktremove old).
 
 * There is a lot of duplicate code in wallet-backend.  Convert that to
   use some sort of data-driven model with argument count and flags so
