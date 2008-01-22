@@ -678,10 +678,8 @@ object exits, throws an exception.  Otherwise, returns an object blessed
 into the class used for the new() call (so subclasses can leave this method
 alone and not override it).
 
-Takes a database handle, which is stored in the object and used for any
-further operations.  This database handle is taken over by the wallet system
-and its settings (such as RaiseError and AutoCommit) will be modified by the
-object for its own needs.
+Takes a Wallet::Database object, which is stored in the object and used for
+any further operations.
 
 =item create(TYPE, NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 

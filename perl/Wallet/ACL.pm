@@ -475,9 +475,9 @@ references.
 =item new(ACL, DBH)
 
 Instantiate a new ACL object with the given ACL ID or name.  Takes the
-database handle to use for retrieving metadata from the wallet database.
-Returns a new ACL object if the ACL was found and throws an exception if it
-wasn't or on any other error.
+Wallet::Database object to use for retrieving metadata from the wallet
+database.  Returns a new ACL object if the ACL was found and throws an
+exception if it wasn't or on any other error.
 
 =item create(NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
