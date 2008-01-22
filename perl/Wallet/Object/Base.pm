@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -23,7 +23,7 @@ use Wallet::ACL;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ##############################################################################
 # Constructors
@@ -36,9 +36,6 @@ $VERSION = '0.03';
 # probably be usable as-is by most object types.
 sub new {
     my ($class, $type, $name, $dbh) = @_;
-    $dbh->{RaiseError} = 1;
-    $dbh->{PrintError} = 0;
-    $dbh->{AutoCommit} = 0;
     my $sql = 'select ob_name from objects where ob_type = ? and ob_name = ?';
     my $data = $dbh->selectrow_array ($sql, undef, $type, $name);
     $dbh->commit;
@@ -58,9 +55,6 @@ sub new {
 # in the object.  Subclasses may need to override this to do additional setup.
 sub create {
     my ($class, $type, $name, $dbh, $user, $host, $time) = @_;
-    $dbh->{RaiseError} = 1;
-    $dbh->{PrintError} = 0;
-    $dbh->{AutoCommit} = 0;
     $time ||= time;
     die "invalid object type\n" unless $type;
     die "invalid object name\n" unless $name;

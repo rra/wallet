@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -18,46 +18,17 @@ use vars qw(%MAPPING $VERSION);
 
 use Wallet::ACL;
 use Wallet::Config;
+use Wallet::Database;
 use Wallet::Schema;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 ##############################################################################
 # Utility methods
 ##############################################################################
-
-# Opens a database connection.  This is an internal class method used by both
-# initialize and new.  Throws an exception if anything goes wrong; otherwise,
-# returns the open database handle.
-sub _open_db {
-    my ($class) = @_;
-    unless ($Wallet::Config::DB_DRIVER
-            and (defined ($Wallet::Config::DB_INFO)
-                 or defined ($Wallet::Config::DB_NAME))) {
-        die "database connection information not configured\n";
-    }
-    my $dsn = "DBI:$Wallet::Config::DB_DRIVER:";
-    if (defined $Wallet::Config::DB_INFO) {
-        $dsn .= $Wallet::Config::DB_INFO;
-    } else {
-        $dsn .= "database=$Wallet::Config::DB_NAME";
-        $dsn .= ";host=$Wallet::Config::DB_HOST" if $Wallet::Config::DB_HOST;
-        $dsn .= ";port=$Wallet::Config::DB_PORT" if $Wallet::Config::DB_PORT;
-    }
-    my $user = $Wallet::Config::DB_USER;
-    my $password = $Wallet::Config::DB_PASSWORD;
-    my $dbh = DBI->connect ($dsn, $user, $password, { PrintError => 0 });
-    if (not defined $dbh) {
-        die "cannot connect to database: $DBI::errstr\n";
-    }
-    $dbh->{RaiseError} = 1;
-    $dbh->{PrintError} = 0;
-    $dbh->{AutoCommit} = 0;
-    return $dbh;
-}
 
 # Initializes the database by populating it with our schema and then creates
 # and returns a new wallet server object.  This is used only for initial
@@ -66,7 +37,7 @@ sub _open_db {
 # exception on failure.
 sub initialize {
     my ($class, $user) = @_;
-    my $dbh = $class->_open_db;
+    my $dbh = Wallet::Database->connect;
     my $schema = Wallet::Schema->new;
     $schema->create ($dbh);
     my $acl = Wallet::ACL->create ('ADMIN', $dbh, $user, 'localhost');
@@ -82,7 +53,7 @@ sub initialize {
 # failure.
 sub reinitialize {
     my ($class, $user) = @_;
-    my $dbh = $class->_open_db;
+    my $dbh = Wallet::Database->connect;
     my $schema = Wallet::Schema->new;
     $schema->drop ($dbh);
     $dbh->disconnect;
@@ -97,7 +68,7 @@ sub reinitialize {
 # for various things.  Throw an exception if anything goes wrong.
 sub new {
     my ($class, $user, $host) = @_;
-    my $dbh = $class->_open_db;
+    my $dbh = Wallet::Database->connect;
     my $acl = Wallet::ACL->new ('ADMIN', $dbh);
     my $self = {
         dbh   => $dbh,

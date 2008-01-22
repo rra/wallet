@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -22,7 +22,7 @@ use POSIX qw(strftime);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ##############################################################################
 # Constructors
@@ -34,9 +34,6 @@ $VERSION = '0.04';
 # doesn't exist, throws an exception.
 sub new {
     my ($class, $id, $dbh) = @_;
-    $dbh->{RaiseError} = 1;
-    $dbh->{PrintError} = 0;
-    $dbh->{AutoCommit} = 0;
     my ($sql, $data, $name);
     if ($id =~ /^\d+\z/) {
         $sql = 'select ac_id, ac_name from acls where ac_id = ?';
@@ -70,9 +67,6 @@ sub create {
     if ($name =~ /^\d+\z/) {
         die "ACL name may not be all numbers\n";
     }
-    $dbh->{RaiseError} = 1;
-    $dbh->{PrintError} = 0;
-    $dbh->{AutoCommit} = 0;
     $time ||= time;
     my $id;
     eval {
