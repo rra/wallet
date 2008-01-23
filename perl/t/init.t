@@ -12,7 +12,6 @@ use Test::More tests => 18;
 
 use Wallet::ACL;
 use Wallet::Admin;
-use Wallet::Admin;
 use Wallet::Config;
 
 use lib 't/lib';
