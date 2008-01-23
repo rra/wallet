@@ -13,7 +13,6 @@ our $ID = q$Id$;
 ##############################################################################
 
 use strict;
-use DBI;
 use Sys::Syslog qw(openlog syslog);
 use Wallet::Server;
 
