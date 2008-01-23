@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 22;
+use Test::More tests => 27;
 
 use Wallet::Admin;
 use Wallet::Schema;
@@ -31,7 +31,8 @@ is (scalar (@objects), 0, 'No objects in the database');
 is ($admin->error, undef, ' and no error');
 my @acls = $admin->list_acls;
 is (scalar (@acls), 1, 'One ACL in the database');
-is ($acls[0], 1, ' and that is ACL ID 1');
+is ($acls[0][0], 1, ' and that is ACL ID 1');
+is ($acls[0][1], 'ADMIN', ' with the right name');
 
 # Register a base object so that we can create a simple object.
 my $schema = Wallet::Schema->new;
@@ -53,16 +54,20 @@ is ($objects[0][1], 'service/admin', ' and the right name');
 is ($server->acl_create ('first'), 1, 'ACL creation succeeds');
 @acls = $admin->list_acls;
 is (scalar (@acls), 2, ' and now there are two ACLs');
-is ($acls[0], 1, ' and the first ID is correct');
-is ($acls[1], 2, ' and the second ID is correct');
+is ($acls[0][0], 1, ' and the first ID is correct');
+is ($acls[0][1], 'ADMIN', ' and the first name is correct');
+is ($acls[1][0], 2, ' and the second ID is correct');
+is ($acls[1][1], 'first', ' and the second name is correct');
 
 # Delete that ACL and create another.
 is ($server->acl_create ('second'), 1, 'Second ACL creation succeeds');
 is ($server->acl_destroy ('first'), 1, ' and deletion of the first succeeds');
 @acls = $admin->list_acls;
 is (scalar (@acls), 2, ' and there are still two ACLs');
-is ($acls[0], 1, ' and the first ID is still the same');
-is ($acls[1], 3, ' but the second ID has changed');
+is ($acls[0][0], 1, ' and the first ID is still the same');
+is ($acls[0][1], 'ADMIN', ' and the first name is still the same');
+is ($acls[1][0], 3, ' but the second ID has changed');
+is ($acls[1][1], 'second', ' and the second name is correct');
 
 # Clean up.
 is ($admin->destroy, 1, 'Destruction succeeds');

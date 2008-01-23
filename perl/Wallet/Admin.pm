@@ -143,22 +143,23 @@ sub list_objects {
     }
 }
 
-# Returns a list of all ACLs stored in the wallet database as a list of ACL
-# IDs.  On error and for an empty database, the empty list will be returned;
-# however, this is unlikely since any valid database will have at least an
-# ADMIN ACL.  Still, to distinguish between an empty list and an error, call
-# error(), which will return undef if there was no error.
+# Returns a list of all ACLs stored in the wallet database as a list of pairs
+# of ACL IDs and ACL names.  On error and for an empty database, the empty
+# list will be returned; however, this is unlikely since any valid database
+# will have at least an ADMIN ACL.  Still, to distinguish between an empty
+# list and an error, call error(), which will return undef if there was no
+# error.
 sub list_acls {
     my ($self) = @_;
     undef $self->{error};
     my @acls;
     eval {
-        my $sql = 'select ac_id from acls order by ac_id';
+        my $sql = 'select ac_id, ac_name from acls order by ac_id';
         my $sth = $self->{dbh}->prepare ($sql);
         $sth->execute;
         my $object;
         while (defined ($object = $sth->fetchrow_arrayref)) {
-            push (@acls, $object->[0]);
+            push (@acls, [ @$object ]);
         }
         $self->{dbh}->commit;
     };
@@ -246,11 +247,17 @@ actions on the object it returns.
 
 =item list_acls()
 
-Returns a list of the ACL IDs of all ACLs found in the database or an
-empty list on failure.  Any valid wallet database should have at least one
-ACL, but an error can be distinguished from the odd case of a database
-with no ACLs by calling error().  error() is guaranteed to return the
-error message if there was an error and undef if there was no error.
+Returns a list of all ACLs in the database.  The return value is a list of
+references to pairs of ACL ID and name.  For example, if there are two
+ACLs in the database, one with name "ADMIN" and ID 1 and one with name
+"group/admins" and ID 3, list_acls() would return:
+
+    ([ 1, 'ADMIN' ], [ 3, 'group/admins' ])
+
+Returns the empty list on failure.  Any valid wallet database should have
+at least one ACL, but an error can be distinguished from the odd case of a
+database with no ACLs by calling error().  error() is guaranteed to return
+the error message if there was an error and undef if there was no error.
 
 =item list_objects()
 
