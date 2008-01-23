@@ -4,7 +4,7 @@
 # t/object.t -- Tests for the basic object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -12,9 +12,9 @@ use POSIX qw(strftime);
 use Test::More tests => 131;
 
 use Wallet::ACL;
+use Wallet::Admin;
 use Wallet::Config;
 use Wallet::Object::Base;
-use Wallet::Server;
 
 use lib 't/lib';
 use Util;
@@ -25,12 +25,12 @@ my $host = 'localhost';
 my @trace = ($user, $host, time);
 my $princ = 'service/test@EXAMPLE.COM';
 
-# Use Wallet::Server to set up the database.
+# Use Wallet::Admin to set up the database.
 db_setup;
-my $server = eval { Wallet::Server->reinitialize ($user) };
-is ($@, '', 'Database initialization did not die');
-ok ($server->isa ('Wallet::Server'), ' and returned the right class');
-my $dbh = $server->dbh;
+my $admin = eval { Wallet::Admin->new };
+is ($@, '', 'Database connection succeeded');
+is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
+my $dbh = $admin->dbh;
 
 # Okay, now we have a database.  Test create and new.  We make believe this is
 # a keytab object; it won't matter for what we're doing.

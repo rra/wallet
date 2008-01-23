@@ -30,36 +30,6 @@ $VERSION = '0.06';
 # Utility methods
 ##############################################################################
 
-# Initializes the database by populating it with our schema and then creates
-# and returns a new wallet server object.  This is used only for initial
-# database creation.  Takes the Kerberos principal who will be the default
-# administrator so that we can create an initial administrator ACL.  Throws an
-# exception on failure.
-sub initialize {
-    my ($class, $user) = @_;
-    my $dbh = Wallet::Database->connect;
-    my $schema = Wallet::Schema->new;
-    $schema->create ($dbh);
-    my $acl = Wallet::ACL->create ('ADMIN', $dbh, $user, 'localhost');
-    unless ($acl->add ('krb5', $user, $user, 'localhost')) {
-        die "$@\n";
-    }
-    $dbh->disconnect;
-    return $class->new ($user, 'localhost');
-}
-
-# The same as initialize, but also drops any existing tables first before
-# creating the schema.  Takes the same arguments and throws an exception on
-# failure.
-sub reinitialize {
-    my ($class, $user) = @_;
-    my $dbh = Wallet::Database->connect;
-    my $schema = Wallet::Schema->new;
-    $schema->drop ($dbh);
-    $dbh->disconnect;
-    return $class->initialize ($user);
-}
-
 # Create a new wallet server object.  A new server should be created for each
 # user who is making changes to the wallet.  Takes the principal and host who
 # are sending wallet requests.  Opens a connection to the database that will
@@ -738,22 +708,6 @@ set them, see Wallet::Config(3).
 
 =over 4
 
-=item initialize(PRINCIPAL)
-
-Initializes the database as configured in Wallet::Config and loads the
-wallet database schema.  Then, creates an ACL with the name ADMIN and adds
-an ACL entry of scheme C<krb5> and instance PRINCIPAL to that ACL.  This
-bootstraps the authorization system and lets that Kerberos identity make
-further changes to the ADMIN ACL and the rest of the wallet database.
-Returns a new Wallet::Server object, although that object should only be
-used to do other administrative functions.  Before performing normal
-operations, that object should be destroyed and the database reopened with
-new().  initialize() uses C<localhost> as the hostname and PRINCIPAL as the
-user when logging the history of the ADMIN ACL creation and for any
-subsequent actions on the object it returns.
-
-On any error, this method throws an exception.
-
 =item new(PRINCIPAL, HOSTNAME)
 
 Creates a new wallet server object for actions from the user PRINCIPAL
@@ -762,15 +716,6 @@ history information for all subsequent operations.  new() opens the
 database, using the database configuration as set by Wallet::Config and
 ensures that the C<ADMIN> ACL exists.  That ACL will be used to authorize
 privileged operations.
-
-On any error, this method throws an exception.
-
-=item reinitialize(PRINCIPAL)
-
-Performs the same actions as initialize(), but first drops any existing
-wallet database tables from the database, allowing this function to be
-called on a prior wallet database.  All data stored in the database will be
-deleted and a fresh set of wallet database tables will be created.
 
 On any error, this method throws an exception.
 

@@ -11,6 +11,7 @@
 use Test::More tests => 332;
 
 use POSIX qw(strftime);
+use Wallet::Admin;
 use Wallet::Config;
 use Wallet::Schema;
 use Wallet::Server;
@@ -25,13 +26,14 @@ my $user2 = 'bob@EXAMPLE.COM';
 my $host = 'localhost';
 my @trace = ($admin, $host);
 
-# Use Wallet::Server to set up the database.
+# Use Wallet::Admin to set up the database.
 db_setup;
-my $server = eval { Wallet::Server->initialize ($admin) };
+my $setup = eval { Wallet::Admin->new };
 is ($@, '', 'Database initialization did not die');
-ok ($server->isa ('Wallet::Server'), ' and returned the right class');
+is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
+undef $setup;
 
-# Now test the new method as well.
+# Now test the new method.
 $server = eval { Wallet::Server->new (@trace) };
 is ($@, '', 'Reopening with new did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');

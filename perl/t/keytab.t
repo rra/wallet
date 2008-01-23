@@ -11,9 +11,9 @@
 use POSIX qw(strftime);
 use Test::More tests => 223;
 
+use Wallet::Admin;
 use Wallet::Config;
 use Wallet::Object::Keytab;
-use Wallet::Server;
 
 use lib 't/lib';
 use Util;
@@ -187,13 +187,13 @@ sub stop_remctld {
     kill 15, $pid;
 }
 
-# Use Wallet::Server to set up the database.
+# Use Wallet::Admin to set up the database.
 unlink ('krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
 db_setup;
-my $server = eval { Wallet::Server->reinitialize ($user) };
-is ($@, '', 'Database initialization did not die');
-ok ($server->isa ('Wallet::Server'), ' and returned the right class');
-my $dbh = $server->dbh;
+my $admin = eval { Wallet::Admin->new };
+is ($@, '', 'Database connection succeeded');
+is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
+my $dbh = $admin->dbh;
 
 # Use this to accumulate the history traces so that we can check history.
 my $history = '';

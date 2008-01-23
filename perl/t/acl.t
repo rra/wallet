@@ -4,7 +4,7 @@
 # t/api.t -- Tests for the wallet ACL API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -12,6 +12,7 @@ use POSIX qw(strftime);
 use Test::More tests => 101;
 
 use Wallet::ACL;
+use Wallet::Admin;
 use Wallet::Config;
 use Wallet::Server;
 
@@ -25,12 +26,12 @@ my $user2 = 'bob@EXAMPLE.COM';
 my $host = 'localhost';
 my @trace = ($admin, $host, time);
 
-# Use Wallet::Server to set up the database.
+# Use Wallet::Admin to set up the database.
 db_setup;
-my $server = eval { Wallet::Server->reinitialize ($admin) };
-is ($@, '', 'Database initialization did not die');
-ok ($server->isa ('Wallet::Server'), ' and returned the right class');
-my $dbh = $server->dbh;
+my $setup = eval { Wallet::Admin->new };
+is ($@, '', 'Database connection succeeded');
+is ($setup->reinitialize ($setup), 1, 'Database initialization succeeded');
+my $dbh = $setup->dbh;
 
 # Test create and new.
 my $acl = eval { Wallet::ACL->create ('test', $dbh, @trace) };
