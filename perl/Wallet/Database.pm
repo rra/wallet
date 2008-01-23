@@ -121,6 +121,9 @@ configuration.
 
 DBI(3), Wallet::Config(3)
 
+This module is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
 =head1 AUTHOR
 
 Russ Allbery <rra@stanford.edu>
