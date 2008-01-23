@@ -111,6 +111,66 @@ sub destroy {
     return 1;
 }
 
+##############################################################################
+# Reporting
+##############################################################################
+
+# Returns a list of all objects stored in the wallet database in the form of
+# type and name pairs.  On error and for an empty database, the empty list
+# will be returned.  To distinguish between an empty list and an error, call
+# error(), which will return undef if there was no error.
+sub list_objects {
+    my ($self) = @_;
+    undef $self->{error};
+    my @objects;
+    eval {
+        my $sql = 'select ob_type, ob_name from objects order by ob_type,
+            ob_name';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute;
+        my $object;
+        while (defined ($object = $sth->fetchrow_arrayref)) {
+            push (@objects, [ @$object ]);
+        }
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ("cannot list objects: $@");
+        $self->{dbh}->rollback;
+        return;
+    } else {
+        return @objects;
+    }
+}
+
+# Returns a list of all ACLs stored in the wallet database as a list of ACL
+# IDs.  On error and for an empty database, the empty list will be returned;
+# however, this is unlikely since any valid database will have at least an
+# ADMIN ACL.  Still, to distinguish between an empty list and an error, call
+# error(), which will return undef if there was no error.
+sub list_acls {
+    my ($self) = @_;
+    undef $self->{error};
+    my @acls;
+    eval {
+        my $sql = 'select ac_id from acls order by ac_id';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute;
+        my $object;
+        while (defined ($object = $sth->fetchrow_arrayref)) {
+            push (@acls, $object->[0]);
+        }
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ("cannot list ACLs: $@");
+        $self->{dbh}->rollback;
+        return;
+    } else {
+        return @acls;
+    }
+}
+
 1;
 __DATA__
 
@@ -165,6 +225,12 @@ failure to get the error message.
 Destroys the database, deleting all of its data and all of the tables used
 by the wallet server.  Returns true on success and false on failure.
 
+=item error()
+
+Returns the error of the last failing operation or undef if no operations
+have failed.  Callers should call this function to get the error message
+after an undef return from any other instance method.
+
 =item initialize(PRINCIPAL)
 
 Initializes the database as configured in Wallet::Config and loads the
@@ -178,11 +244,27 @@ initialize() uses C<localhost> as the hostname and PRINCIPAL as the user
 when logging the history of the ADMIN ACL creation and for any subsequent
 actions on the object it returns.
 
-=item error()
+=item list_acls()
 
-Returns the error of the last failing operation or undef if no operations
-have failed.  Callers should call this function to get the error message
-after an undef return from any other instance method.
+Returns a list of the ACL IDs of all ACLs found in the database or an
+empty list on failure.  Any valid wallet database should have at least one
+ACL, but an error can be distinguished from the odd case of a database
+with no ACLs by calling error().  error() is guaranteed to return the
+error message if there was an error and undef if there was no error.
+
+=item list_objects()
+
+Returns a list of all objects in the database.  The return value is a list
+of references to pairs of type and name.  For example, if two objects
+existed in the database, both of type "keytab" and with values
+"host/example.com" and "foo", list_objects() would return:
+
+    ([ 'keytab', 'host/example.com' ], [ 'keytab', 'foo' ])
+
+Returns the empty list on failure.  To distinguish between this and a
+database containing no objects, the caller should call error().  error()
+is guaranteed to return the error message if there was an error and undef
+if there was no error.
 
 =item reinitialize(PRINCIPAL)
 
