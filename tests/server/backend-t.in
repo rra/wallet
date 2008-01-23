@@ -23,7 +23,7 @@ $okay = 0;
 sub error {
     if ($okay) {
         $okay = 0;
-        return undef;
+        return;
     } else {
         $error++;
         return "error count $error";
@@ -69,10 +69,10 @@ sub acl {
     shift;
     print "acl @_\n";
     if ($_[0] eq 'error') {
-        return undef;
+        return;
     } elsif ($_[1] eq 'empty') {
         $okay = 1;
-        return undef;
+        return;
     } else {
         return 'acl';
     }
@@ -97,10 +97,10 @@ sub expires {
     shift;
     print "expires @_\n";
     if ($_[0] eq 'error') {
-        return undef;
+        return;
     } elsif ($_[1] eq 'empty') {
         $okay = 1;
-        return undef;
+        return;
     } else {
         return 'expires';
     }
@@ -124,10 +124,10 @@ sub owner {
     shift;
     print "owner @_\n";
     if ($_[0] eq 'error') {
-        return undef;
+        return;
     } elsif ($_[1] eq 'empty') {
         $okay = 1;
-        return undef;
+        return;
     } else {
         return 'owner';
     }
