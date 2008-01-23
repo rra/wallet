@@ -11,6 +11,7 @@
 use Test::More tests => 8;
 
 use DBI;
+use Wallet::Config;
 use Wallet::Schema;
 
 use lib 't/lib';

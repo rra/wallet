@@ -13,7 +13,6 @@ use Test::More tests => 101;
 
 use Wallet::ACL;
 use Wallet::Admin;
-use Wallet::Config;
 use Wallet::Server;
 
 use lib 't/lib';
