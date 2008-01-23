@@ -71,7 +71,9 @@ sub error {
 # Disconnect the database handle on object destruction to avoid warnings.
 sub DESTROY {
     my ($self) = @_;
-    $self->{dbh}->disconnect unless $self->{dbh}->{InactiveDestroy};
+    if ($self->{dbh} and not $self->{dbh}->{InactiveDestroy}) {
+        $self->{dbh}->disconnect;
+    }
 }
 
 ##############################################################################
