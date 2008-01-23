@@ -31,7 +31,6 @@ db_setup;
 my $setup = eval { Wallet::Admin->new };
 is ($@, '', 'Database initialization did not die');
 is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
-undef $setup;
 
 # Now test the new method.
 $server = eval { Wallet::Server->new (@trace) };
@@ -936,8 +935,7 @@ is ($server->error, 'base:host/default.stanford.edu rejected: host'
     ' with the right error');
 
 # Clean up.
-$schema = Wallet::Schema->new;
-$schema->drop ($server->dbh);
+$setup->destroy;
 unlink 'wallet-db';
 
 # Now test handling of some configuration errors.

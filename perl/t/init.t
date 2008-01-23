@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 16;
+use Test::More tests => 18;
 
 use Wallet::ACL;
 use Wallet::Admin;
@@ -50,7 +50,9 @@ isnt ($entries[0], undef, ' which is a valid entry');
 is ($entries[0][0], 'krb5', ' of krb5 scheme');
 is ($entries[0][1], 'admin@EXAMPLE.ORG', ' with the right user');
 
-# Clean up.
-my $schema = Wallet::Schema->new;
-$schema->drop ($admin->dbh);
+# Test cleanup.
+is ($admin->destroy, 1, 'Destroying the database works');
+$acl = eval { Wallet::ACL->new ('ADMIN', $admin->dbh) };
+like ($@, qr/^cannot search for ACL ADMIN: /,
+      ' and now the database is gone');
 unlink 'wallet-db';

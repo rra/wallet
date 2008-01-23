@@ -892,6 +892,5 @@ EOO
 }
 
 # Clean up.
-my $schema = Wallet::Schema->new;
-$schema->drop ($dbh);
+$admin->destroy;
 unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');

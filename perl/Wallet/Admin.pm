@@ -90,17 +90,25 @@ sub initialize {
 }
 
 # The same as initialize, but also drops any existing tables first before
-# creating the schema.  Takes the same arguments and throws an exception on
-# failure.
+# creating the schema.  Takes the same arguments.  Returns true on success and
+# false on failure.
 sub reinitialize {
     my ($self, $user) = @_;
+    return unless $self->destroy;
+    return $self->initialize ($user);
+}
+
+# Drop the database, including all of its data.  Returns true on success and
+# false on failure.
+sub destroy {
+    my ($self) = @_;
     my $schema = Wallet::Schema->new;
     eval { $schema->drop ($self->{dbh}) };
     if ($@) {
         $self->error ($@);
         return;
     }
-    return $self->initialize ($user);
+    return 1;
 }
 
 1;
@@ -152,6 +160,11 @@ failure to get the error message.
 
 =over 4
 
+=item destroy()
+
+Destroys the database, deleting all of its data and all of the tables used
+by the wallet server.  Returns true on success and false on failure.
+
 =item initialize(PRINCIPAL)
 
 Initializes the database as configured in Wallet::Config and loads the
@@ -159,6 +172,7 @@ wallet database schema.  Then, creates an ACL with the name ADMIN and adds
 an ACL entry of scheme C<krb5> and instance PRINCIPAL to that ACL.  This
 bootstraps the authorization system and lets that Kerberos identity make
 further changes to the ADMIN ACL and the rest of the wallet database.
+Returns true on success and false on failure.
 
 initialize() uses C<localhost> as the hostname and PRINCIPAL as the user
 when logging the history of the ADMIN ACL creation and for any subsequent
@@ -176,6 +190,8 @@ Performs the same actions as initialize(), but first drops any existing
 wallet database tables from the database, allowing this function to be
 called on a prior wallet database.  All data stored in the database will
 be deleted and a fresh set of wallet database tables will be created.
+This method is equivalent to calling destroy() followed by initialize().
+Returns true on success and false on failure.
 
 =back
 

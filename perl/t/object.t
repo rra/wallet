@@ -320,6 +320,5 @@ EOO
 is ($object->history, $output, ' and the history is correct');
 
 # Clean up.
-my $schema = Wallet::Schema->new;
-$schema->drop ($dbh);
+$admin->destroy;
 unlink 'wallet-db';
