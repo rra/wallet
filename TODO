@@ -18,11 +18,10 @@ Release 1.0:
 * Display ACL names rather than index numbers when displaying history of
   owner and acl_* settings.
 
-* Provide an interface to list all objects in the database by type, by
-  owner (including null), or by all uses of an ACL.
+* Provide a way to list all objects by type, by owner (including null), or
+  by all uses of an ACL.
 
-* Provide an interface to list all ACLs in the database.  Most
-  interestingly, an interface to list all empty ACLs.
+* Provide an interface to list all empty ACLs.
 
 * Add a help function to wallet-backend listing the commands.
 
@@ -35,8 +34,8 @@ Release 1.0:
 
 * Add a test suite for kasetkey.
 
-* Log failures in the wallet-backend properly, which also requires
-  catching all exceptions.
+* Catch exceptions on object creation in wallet-backend so that we can log
+  those as well.
 
 * Error messages from ACL operations should refer to the ACLs by name
   instead of by ID.
@@ -47,11 +46,8 @@ Release 1.0:
 * On upgrades, support adding new object types and ACL verifiers to the
   class tables.
 
-* Write a wallet-admin program and a corresponding Wallet::Admin class to
-  provide an interface to things like database initialization and,
-  eventually, upgrades.  Move the methods to add additional class mappings
-  from Wallet::Schema to Wallet::Admin and the initialize and reinitialize
-  methods from Wallet::Server to Wallet::Admin.
+* Move the methods to add additional class mappings from Wallet::Schema to
+  Wallet::Admin.
 
 * Implement store support in the wallet client.  Add an option to read the
   data from a file.  The initial implementation, depending on the
@@ -88,7 +84,8 @@ Future work:
 
 * There is a lot of duplicate code in wallet-backend.  Convert that to
   use some sort of data-driven model with argument count and flags so
-  that the method calls can be written only once.
+  that the method calls can be written only once.  Convert wallet-admin to
+  use the same code.
 
 * There's a lot of code duplication in the dispatch functions in the
   Wallet::Server class.  Find a way to rewrite that so that the dispatch

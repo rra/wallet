@@ -1,0 +1,157 @@
+#!/usr/bin/perl -w
+our $ID = q$Id$;
+#
+# wallet-admin -- Wallet server administrative commands.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+##############################################################################
+# Declarations and site configuration
+##############################################################################
+
+use strict;
+use Wallet::Admin;
+
+##############################################################################
+# Implementation
+##############################################################################
+
+# Parse and execute a command.  We wrap this in a subroutine call for easier
+# testing.
+sub command {
+    die "Usage: wallet-admin <command> [<args> ...]\n" unless @_;
+    my $admin = Wallet::Admin->new;
+
+    # Parse command-line options and dispatch to the appropriate calls.
+    my ($command, @args) = @_;
+    if ($command eq 'destroy') {
+        die "too many arguments to destroy\n" if @args;
+        print 'This will delete all data in the wallet database.  Are you'
+            . ' sure (N/y)? ';
+        my $response = <STDIN>;
+        unless ($response and $response =~ /^y/i) {
+            die "Aborted\n";
+        }
+        $admin->destroy or die $admin->error, "\n";
+    } elsif ($command eq 'initialize') {
+        die "too many arguments to initialize\n" if @args > 1;
+        die "too few arguments to initialize\n" if @args < 1;
+        die "invalid admin principal $args[0]\n"
+            unless $args[0] =~ /^[^\@\s]+\@\S+$/;
+        $admin->initialize (@args) or die $admin->error, "\n";
+    } elsif ($command eq 'list') {
+        die "too many arguments to list\n" if @args > 1;
+        die "too few arguments to list\n" if @args < 1;
+        my ($type) = @args;
+        if ($type eq 'objects') {
+            my @objects = $admin->list_objects;
+            if (!@objects and $admin->error) {
+                die $admin->error, "\n";
+            }
+            for my $object (@objects) {
+                print join (' ', @$object), "\n";
+            }
+        } elsif ($type eq 'acls') {
+            my @acls = $admin->list_acls;
+            if (!@acls and $admin->error) {
+                die $admin->error, "\n";
+            }
+            for my $acl (sort { $$a[1] cmp $$b[1] } @acls) {
+                print "$$acl[1] (ACL ID: $$acl[0])\n";
+            }
+        } else {
+            die "only objects or acls are supported for list\n";
+        }
+    } else {
+        die "unknown command $command\n";
+    }
+}
+command (@ARGV);
+__END__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+wallet-admin - Wallet server administrative commands
+
+=head1 SYNOPSIS
+
+B<wallet-admin> I<command> [I<args> ...]
+
+=head1 DESCRIPTION
+
+B<wallet-admin> provides a command-line interface for performing
+administrative actions for the wallet system, such as setting up a new
+database or running reports.  It is intended to be run on the wallet
+server as a user with access to the wallet database and configuration.
+
+This program is a fairly thin wrapper around Wallet::Admin that translates
+command strings into method calls and returns the results.
+
+=head1 OPTIONS
+
+B<wallet-admin> takes no traditional options.
+
+=head1 COMMANDS
+
+=over 4
+
+=item destroy
+
+Deletes all data in the wallet database and drops all of the
+wallet-created tables, restoring the database to its state prior to an
+C<initialize> command.  Since this command is destructive and cannot be
+easily recovered from, B<wallet-admin> will prompt first to be sure the
+user intends to do this.
+
+=item initialize <principal>
+
+Given an empty database, initializes it for use with the wallet server by
+creating the necessary tables and initial metadata.  Also creates an ACL
+with the name ADMIN, used for administrative privileges to the wallet
+system, and adds an ACL entry to it with a scheme of C<krb5> and an
+instance of <principal>.  This bootstraps the authentication system and
+allows that user to make further changes to the ADMIN ACL and the rest of
+the wallet database.  C<initialize> uses C<localhost> as the hostname and
+<principal> as the user when logging the history of the ADMIN ACL creation
+and for any subsequent actions required to initialize the database.
+
+Before running C<initialize>, the wallet system has to be configured.  See
+Wallet::Config(3) for more details.  Depending on the database backend
+used, the database may also have to be created in advance.
+
+=item list (acls | objects)
+
+Returns a list of all ACLs or objects in the database.  ACLs will be
+listed in the form:
+
+    <name> (ACL ID: <id>)
+
+where <name> is the human-readable name and <id> is the numeric ID.  The
+numeric ID is what's used internally by the wallet system.  Objects will
+be listed in the form:
+
+    <type> <name>
+
+In both cases, there will be one line per ACL or object.
+
+=back
+
+=head1 SEE ALSO
+
+Wallet::Admin(3), Wallet::Config(3), wallet-backend(8)
+
+This program is part of the wallet system.  The current version is available
+from L<http://www.eyrie.org/~eagle/software/wallet/>.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut

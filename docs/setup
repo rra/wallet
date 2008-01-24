@@ -45,19 +45,14 @@ SQLite Database Setup
 Database Initialization
 
     Now, you have to create the necessary tables, indexes, and similar
-    content in the database so that the wallet can start working.  There
-    is not, as yet, any command to do this easily, but you can do it with
-    the following one line of Perl:
+    content in the database so that the wallet can start working.  Run:
 
-        perl -MWallet::Server -e "Wallet::Server->initialize ('USER')"
+        wallet-admin initialize USER
 
     where USER is the fully-qualified Kerberos principal of an
     administrator.  This will create the database, create an ADMIN ACL,
     and put USER in that ACL so that user can add other administrators and
     start creating objects.
-
-    There will eventually be a wallet-admin script to do this and similar
-    tasks.
 
 Wallet Configuration
 

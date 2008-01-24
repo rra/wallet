@@ -23,6 +23,9 @@ wallet 0.6 (unreleased)
     credentials for the given user and use those for authentication rather
     than using an existing ticket cache.
 
+    Add a wallet-admin program which can initialize and destroy the
+    database and list all objects and ACLs in the database.
+
     Support enforcing a naming policy for wallet objects via a Perl
     function in the wallet server configuration file.
 

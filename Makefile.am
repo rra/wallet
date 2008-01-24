@@ -33,7 +33,8 @@ util_libutil_a_SOURCES = util/concat.c util/messages.c util/util.h \
 	util/xmalloc.c
 
 bin_PROGRAMS = client/wallet
-dist_sbin_SCRIPTS = server/keytab-backend server/wallet-backend
+dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
+	server/wallet-backend
 client_wallet_SOURCES = client/error.c client/file.c client/internal.h \
 	client/keytab.c client/krb5.c client/remctl.c client/srvtab.c \
 	client/wallet.c system.h
@@ -42,7 +43,8 @@ client_wallet_LDFLAGS = $(REMCTL_LDFLAGS)
 client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
 	$(KRB5_LIBS)
 
-dist_man_MANS = client/wallet.1 server/keytab-backend.8 server/wallet-backend.8
+dist_man_MANS = client/wallet.1 server/keytab-backend.8 \
+	server/wallet-admin.8 server/wallet-backend.8
 
 if AFS
 sbin_PROGRAMS = kasetkey/kasetkey
@@ -64,6 +66,10 @@ $(srcdir)/kasetkey/kasetkey.8: $(srcdir)/kasetkey/kasetkey.pod
 $(srcdir)/server/keytab-backend.8: $(srcdir)/server/keytab-backend
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
 	    --section=8 $(srcdir)/server/keytab-backend > $@
+
+$(srcdir)/server/wallet-admin.8: $(srcdir)/server/wallet-admin
+	pod2man --release=$(VERSION) --center="Administrative Commands" \
+	    --section=8 $(srcdir)/server/wallet-admin > $@
 
 $(srcdir)/server/wallet-backend.8: $(srcdir)/server/wallet-backend
 	pod2man --release=$(VERSION) --center="Administrative Commands" \

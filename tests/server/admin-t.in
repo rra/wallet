@@ -1,0 +1,181 @@
+#!/usr/bin/perl -w
+# $Id$
+#
+# Tests for the wallet-admin dispatch code.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use IO::String;
+use Test::More tests => 40;
+
+# Create a dummy class for Wallet::Admin that prints what method was called
+# with its arguments and returns data for testing.
+package Wallet::Admin;
+
+use vars qw($empty $error);
+$error = 0;
+$empty = 0;
+
+sub error {
+    if ($error) {
+        return "some error";
+    } else {
+        return;
+    }
+}
+
+sub new {
+    print "new\n";
+    return bless ({}, 'Wallet::Admin');
+}
+
+sub destroy {
+    print "destroy\n";
+    return if $error;
+    return 1;
+}
+
+sub initialize {
+    shift;
+    print "initialize @_\n";
+    return if $error;
+    return 1;
+}
+
+sub list_objects {
+    print "list_objects\n";
+    return if ($error or $empty);
+    return ([ keytab => 'host/windlord.stanford.edu' ],
+            [ file   => 'unix-wallet-password' ]);
+}
+
+sub list_acls {
+    print "list_acls\n";
+    return if ($error or $empty);
+    return ([ 1, 'ADMIN' ], [ 2, 'group/admins' ], [ 4, 'group/users' ]);
+}
+
+# Back to the main package and the actual test suite.  Lie about whether the
+# Wallet::Admin package has already been loaded.
+package main;
+$INC{'Wallet/Admin.pm'} = 'FAKE';
+eval { do '@abs_top_srcdir@/server/wallet-admin' };
+
+# Run the wallet admin client.  This fun hack takes advantage of the fact that
+# the wallet admin client is written in Perl so that we can substitute our own
+# Wallet::Admin class.
+sub run_admin {
+    my (@args) = @_;
+    my $result;
+    my $output = IO::String->new (\$result);
+    $output->autoflush (1);
+    select $output;
+    eval { command (@args) };
+    my $error = $@;
+    select STDOUT;
+    return ($result, $error);
+}
+
+# Now for the actual tests.  First check for unknown commands.
+my ($out, $err) = run_admin ('foo');
+is ($err, "unknown command foo\n", 'Unknown command');
+is ($out, "new\n", ' and nothing ran');
+
+# Check too few and too many arguments for every command.
+my %commands = (destroy    => [0, 0],
+                initialize => [1, 1],
+                list       => [1, 1]);
+for my $command (sort keys %commands) {
+    my ($min, $max) = @{ $commands{$command} };
+    if ($min > 0) {
+        ($out, $err) = run_admin ($command, ('foo') x ($min - 1));
+        is ($err, "too few arguments to $command\n",
+            "Too few arguments for $command");
+        is ($out, "new\n", ' and nothing ran');
+    }
+    ($out, $err) = run_admin ($command, ('foo') x ($max + 1));
+    is ($err, "too many arguments to $command\n",
+        "Too many arguments for $command");
+    is ($out, "new\n", ' and nothing ran');
+}
+
+# Test destroy.
+my $answer = '';
+close STDIN;
+open (STDIN, '<', \$answer) or die "cannot reopen standard input: $!\n";
+($out, $err) = run_admin ('destroy');
+is ($err, "Aborted\n", 'Destroy with no answer aborts');
+is ($out, "new\n" .
+    'This will delete all data in the wallet database.  Are you sure (N/y)? ',
+    ' and prints the right prompt');
+seek (STDIN, 0, 0);
+$answer = 'n';
+($out, $err) = run_admin ('destroy');
+is ($err, "Aborted\n", 'Destroy with negative answer answer aborts');
+is ($out, "new\n" .
+    'This will delete all data in the wallet database.  Are you sure (N/y)? ',
+    ' and prints the right prompt');
+seek (STDIN, 0, 0);
+$answer = 'y';
+($out, $err) = run_admin ('destroy');
+is ($err, '', 'Destroy succeeds with a positive answer');
+is ($out, "new\n"
+    . 'This will delete all data in the wallet database.'
+    . '  Are you sure (N/y)? ' . "destroy\n", ' and destroy was run');
+seek (STDIN, 0, 0);
+
+# Test initialize.
+($out, $err) = run_admin ('initialize', 'rra');
+is ($err, "invalid admin principal rra\n", 'Initialize requires a principal');
+is ($out, "new\n", ' and nothing was run');
+($out, $err) = run_admin ('initialize', 'rra@stanford.edu');
+is ($err, '', 'Initialize succeeds with a principal');
+is ($out, "new\ninitialize rra\@stanford.edu\n", ' and runs the right code');
+
+# Test list.
+($out, $err) = run_admin ('list', 'foo');
+is ($err, "only objects or acls are supported for list\n",
+    'List requires a known object');
+is ($out, "new\n", ' and nothing was run');
+($out, $err) = run_admin ('list', 'objects');
+is ($err, '', 'List succeeds for objects');
+is ($out, "new\nlist_objects\n"
+    . "keytab host/windlord.stanford.edu\nfile unix-wallet-password\n",
+    ' and returns the right output');
+($out, $err) = run_admin ('list', 'acls');
+is ($err, '', 'List succeeds for ACLs');
+is ($out, "new\nlist_acls\n"
+    . "ADMIN (ACL ID: 1)\ngroup/admins (ACL ID: 2)\ngroup/users (ACL ID: 4)\n",
+    ' and returns the right output');
+
+# Test error handling.
+$Wallet::Admin::error = 1;
+($out, $err) = run_admin ('destroy');
+is ($err, "some error\n", 'Error handling succeeds for destroy');
+is ($out, "new\n"
+    . 'This will delete all data in the wallet database.'
+    . '  Are you sure (N/y)? ' . "destroy\n", ' and calls the right methods');
+($out, $err) = run_admin ('initialize', 'rra@stanford.edu');
+is ($err, "some error\n", 'Error handling succeeds for initialize');
+is ($out, "new\ninitialize rra\@stanford.edu\n",
+    ' and calls the right methods');
+($out, $err) = run_admin ('list', 'objects');
+is ($err, "some error\n", 'Error handling succeeds for list objects');
+is ($out, "new\nlist_objects\n", ' and calls the right methods');
+($out, $err) = run_admin ('list', 'acls');
+is ($err, "some error\n", 'Error handling succeeds for list acls');
+is ($out, "new\nlist_acls\n", ' and calls the right methods');
+
+# Test empty lists.
+$Wallet::Admin::error = 0;
+$Wallet::Admin::empty = 1;
+($out, $err) = run_admin ('list', 'objects');
+is ($err, '', 'list objects runs with an empty list with no errors');
+is ($out, "new\nlist_objects\n", ' and calls the right methods');
+($out, $err) = run_admin ('list', 'acls');
+is ($err, '', 'list acls runs with an empty list and no errors');
+is ($out, "new\nlist_acls\n", ' and calls the right methods');

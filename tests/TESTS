@@ -1,6 +1,7 @@
 client/basic
 portable/asprintf
 portable/snprintf
+server/admin
 server/backend
 server/keytab
 util/concat
