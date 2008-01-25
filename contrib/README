@@ -1,0 +1,8 @@
+This directory contains various supporting scripts used with wallet at
+Stanford University.  They embed various paths, assumptions about object
+naming, local site policy, and similar quirks specific to Stanford and
+therefore will require modification for use at other sites.
+
+They may, however, be useful as examples of how to do various things with
+wallet or use the wallet Perl API outside of the provided backend scripts,
+or as a basis for similar local infrastructure.

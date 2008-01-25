@@ -162,6 +162,11 @@ Future work:
   triggers rather than explicit SQL.  This may also replace
   Wallet::Schema.
 
+* Make contrib/wallet-report generic and include it in wallet-admin, with
+  additional configuration in Wallet::Config.  Enhance it to report on any
+  sort of object, not just on keytabs, and to give numbers on downloaded
+  versus not downloaded objects.
+
 May or may not be good ideas:
 
 * Consider using Class::Accessor to get rid of the scaffolding code to

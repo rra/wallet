@@ -9,20 +9,21 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	config/keytab config/keytab.acl config/wallet docs/design \
-	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
-	docs/setup kasetkey/README kasetkey/kasetkey.pod perl/Wallet/ACL.pm \
-	perl/Wallet/ACL/Base.pm perl/Wallet/ACL/Krb5.pm \
-	perl/Wallet/ACL/NetDB.pm perl/Wallet/ACL/NetDB/Root.pm \
-	perl/Wallet/Admin.pm perl/Wallet/Config.pm \
-	perl/Wallet/Database.pm perl/Wallet/Object/Base.pm \
-	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm \
-	perl/Wallet/Server.pm perl/t/acl.t perl/t/admin.t perl/t/data/README \
-	perl/t/data/keytab-fake perl/t/data/keytab.conf \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/init.t \
-	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t \
-	perl/t/schema.t perl/t/server.t perl/t/verifier.t tests/TESTS \
-	tests/data/README tests/data/allow-extract tests/data/cmd-fake \
-	tests/data/fake-data tests/data/fake-kadmin tests/data/fake-keytab \
+	contrib/README contrib/wallet-report docs/design-acl docs/design-api \
+	docs/netdb-role-api docs/notes docs/setup kasetkey/README \
+	kasetkey/kasetkey.pod perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
+	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/NetDB.pm \
+	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm \
+	perl/Wallet/Config.pm perl/Wallet/Database.pm \
+	perl/Wallet/Object/Base.pm perl/Wallet/Object/Keytab.pm \
+	perl/Wallet/Schema.pm perl/Wallet/Server.pm perl/t/acl.t \
+	perl/t/admin.t perl/t/data/README perl/t/data/keytab-fake \
+	perl/t/data/keytab.conf perl/t/data/netdb.conf \
+	perl/t/data/netdb-fake perl/t/init.t perl/t/keytab.t \
+	perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t perl/t/schema.t \
+	perl/t/server.t perl/t/verifier.t tests/TESTS tests/data/README \
+	tests/data/allow-extract tests/data/cmd-fake tests/data/fake-data \
+	tests/data/fake-kadmin tests/data/fake-keytab \
 	tests/data/fake-keytab-2 tests/data/fake-keytab-merge \
 	tests/data/fake-srvtab tests/data/wallet.conf
 
