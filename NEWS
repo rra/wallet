@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.6 (unreleased)
+wallet 0.6 (2008-01-28)
 
     SECURITY: If -f is used and the output file name with ".new" appended
     already exists, unlink it first and then create it safely rather than
