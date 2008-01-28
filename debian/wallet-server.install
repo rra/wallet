@@ -6,4 +6,4 @@ debian/tmp/usr/share/man/man8/wallet-backend.8
 debian/tmp/usr/share/perl5
 
 config/wallet                   etc/remctl/conf.d
-contrib/wallet-report           usr/sbin/wallet-report
+contrib/wallet-report           usr/sbin
