@@ -1,6 +1,9 @@
+debian/tmp/usr/sbin/wallet-admin
 debian/tmp/usr/sbin/wallet-backend
 debian/tmp/usr/share/man/man3/*.3pm
+debian/tmp/usr/share/man/man8/wallet-admin.8
 debian/tmp/usr/share/man/man8/wallet-backend.8
 debian/tmp/usr/share/perl5
 
 config/wallet                   etc/remctl/conf.d
+contrib/wallet-report           usr/sbin/wallet-report

@@ -2,26 +2,26 @@ Packaged for Debian by Russ Allbery <rra@debian.org>            2007-03-08
 
 It was downloaded from:
 
-    <http://www.eyrie.org/~eagle/software/wallet/>
+  <http://www.eyrie.org/~eagle/software/wallet/>
 
 Upstream author:
 
-    Russ Allbery <rra@stanford.edu>
+  Russ Allbery <rra@stanford.edu>
 
 Debian packaging copyright:
 
-    Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr.
-    University.
+  Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr.
+  University.
 
-    All files and modifications related to Debian packaging are covered
-    under the same license terms as the rest of the package.
+  All files and modifications related to Debian packaging are covered
+  under the same license terms as the rest of the package.
 
 Copyright:
 
 The wallet package as a whole is:
 
-  Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University.
-  All rights reserved.
+  Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr.
+  University.  All rights reserved.
 
 and covered under the following license:
 
@@ -47,8 +47,8 @@ files.
 
 Collected copyright notices for the entire package:
 
-  Copyright 1994, 1998, 1999, 2000, 2002, 2003, 2004, 2005, 2006, 2007
-      Board of Trustees, Leland Stanford Jr. University.
+  Copyright 1994, 1998, 1999, 2000, 2002, 2003, 2004, 2005, 2006, 2007,
+      2008 Board of Trustees, Leland Stanford Jr. University
   Copyright 2000, 2001, 2004 Russ Allbery <rra@stanford.edu>
   Copyright 2004, 2005, 2006
       by Internet Systems Consortium, Inc. ("ISC")
@@ -144,9 +144,7 @@ license:
 
 For the wallet distribution, the option described in the last paragraph
 has been accepted and these files are distributed under the same terms as
-the wallet package as a whole, as described at the top of this file.  You
-can find the GPL version 2 in /usr/share/common-licenses/GPL-2 on Debian
-systems.
+the wallet package as a whole, as described at the top of this file.
 
 The file build-aux/install-sh is covered by the following copyright and
 license:

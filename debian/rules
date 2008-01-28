@@ -9,6 +9,10 @@
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
+# Used only for the man page.
+VERSION := $(shell dpkg-parsechangelog | grep ^Version: | cut -d' ' -f2 \
+		| cut -d- -f1)
+
 # Tell Autoconf the correct system types.  We need to know the host
 # architecture to determine whether setpag is available.
 DEB_HOST_ARCH      ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
@@ -60,6 +64,9 @@ install: build-stamp
 	DH_OPTIONS= dh_install --fail-missing
 	install -m 0644 config/keytab.acl \
 	    $(CURDIR)/debian/keytab-backend/etc/remctl/acl/keytab
+	pod2man --section=8 --release=$(VERSION) --center="System Commands" \
+	    contrib/wallet-report \
+	    > $(CURDIR)/debian/wallet-server/usr/share/man/man8/wallet-report.8
 
 binary: binary-arch binary-indep
 
