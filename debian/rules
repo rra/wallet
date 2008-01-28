@@ -65,9 +65,6 @@ install: build-stamp
 	DH_OPTIONS= dh_install --fail-missing
 	install -m 0644 config/keytab.acl \
 	    $(CURDIR)/debian/keytab-backend/etc/remctl/acl/keytab
-	pod2man --section=8 --release=$(VERSION) --center="System Commands" \
-	    contrib/wallet-report \
-	    > $(CURDIR)/debian/wallet-server/usr/share/man/man8/wallet-report.8
 
 binary: binary-arch binary-indep
 

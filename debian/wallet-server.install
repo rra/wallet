@@ -7,3 +7,4 @@ debian/tmp/usr/share/perl5
 
 config/wallet                   etc/remctl/conf.d
 contrib/wallet-report           usr/sbin
+contrib/wallet-report.8         usr/share/man/man8
