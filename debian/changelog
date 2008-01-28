@@ -9,6 +9,7 @@ wallet (0.6-1) unstable; urgency=low
     - New wallet-admin command-line utility for the server.
     - The server supports enforcing a local object naming policy.
     - New wallet-report script (currently Stanford-specific).
+  * Change hard-coded wallet server to wallet.stanford.edu.
 
  --
 
