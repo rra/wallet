@@ -35,8 +35,13 @@ wallet 0.6 (unreleased)
     against static libraries should now work.
 
     Building kasetkey (for AFS kaserver synchronization) is now optional
-    and not enabled by default.  Pass --with-afs to enable it.  This
-    allows wallet to be easily built in an environment without AFS.
+    and not enabled by default.  Pass --with-afs to configure to enable
+    it.  This allows wallet to be easily built in an environment without
+    AFS.
+
+    Add a sample script (contrib/wallet-report) showing one way of
+    reporting on the contents of the wallet database.  This will
+    eventually become more general.
 
 wallet 0.5 (2007-12-06)
 
