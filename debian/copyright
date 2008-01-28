@@ -144,7 +144,9 @@ license:
 
 For the wallet distribution, the option described in the last paragraph
 has been accepted and these files are distributed under the same terms as
-the wallet package as a whole, as described at the top of this file.
+the wallet package as a whole, as described at the top of this file.  You
+can find the GPL version 2 in /usr/share/common-licenses/GPL-2 on Debian
+systems.
 
 The file build-aux/install-sh is covered by the following copyright and
 license:
