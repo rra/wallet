@@ -36,7 +36,8 @@ config.status: configure
 	dh_testdir
 	CFLAGS="$(CFLAGS)" ./configure $(SYSTEM) --prefix=/usr \
 	    --mandir=\$${prefix}/share/man --with-afs \
-	    --with-wallet-server=wallet.stanford.edu
+	    --with-wallet-server=wallet.stanford.edu \
+	    --enable-reduced-depends
 
 build: build-arch build-indep
 build-arch: build-stamp
