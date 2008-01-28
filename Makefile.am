@@ -9,9 +9,10 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	config/keytab config/keytab.acl config/wallet docs/design \
-	contrib/README contrib/wallet-report docs/design-acl docs/design-api \
-	docs/netdb-role-api docs/notes docs/setup kasetkey/README \
-	kasetkey/kasetkey.pod perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
+	contrib/README contrib/wallet-report contrib/wallet-report.8 \
+	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
+	docs/setup kasetkey/README kasetkey/kasetkey.pod \
+	perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
 	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/NetDB.pm \
 	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm \
 	perl/Wallet/Config.pm perl/Wallet/Database.pm \
@@ -25,7 +26,7 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	tests/data/allow-extract tests/data/cmd-fake tests/data/fake-data \
 	tests/data/fake-kadmin tests/data/fake-keytab \
 	tests/data/fake-keytab-2 tests/data/fake-keytab-merge \
-	tests/data/fake-srvtab tests/data/wallet.conf
+	tests/data/fake-srvtab tests/data/wallet.conf tests/libtest.sh
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c
@@ -59,6 +60,10 @@ endif
 $(srcdir)/client/wallet.1: $(srcdir)/client/wallet.pod
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
 	    --section=1 $(srcdir)/client/wallet.pod > $@
+
+$(srcdir)/contrib/wallet-report.8: $(srcdir)/contrib/wallet-report
+	pod2man --release=$(VERSION) --center="Administrative Commands" \
+	    --section=8 $(srcdir)/contrib/wallet-report > $@
 
 $(srcdir)/kasetkey/kasetkey.8: $(srcdir)/kasetkey/kasetkey.pod
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
