@@ -135,7 +135,7 @@ sub download {
 
     # Do the actual work.
     my $filename = "$TMP/keytab$$";
-    my $command = "ktadd -q -norandkey -k $filename $principal";
+    my $command = "ktadd -k $filename -q -norandkey $principal";
     my $output = `$KADMIN -q '$command' 2>&1`;
     if ($? != 0) {
         my $status = ($? >> 8);

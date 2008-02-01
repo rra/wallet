@@ -1,5 +1,10 @@
                        User-Visible wallet Changes
 
+wallet 0.7 (unreleased)
+
+    keytab-backend now passes kadmin.local ktadd its options in a specific
+    order to satisfy the picky option parser.
+
 wallet 0.6 (2008-01-28)
 
     SECURITY: If -f is used and the output file name with ".new" appended
