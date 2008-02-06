@@ -186,16 +186,16 @@ sub create {
     my $dbh = $self->{dbh};
     my $user = $self->{user};
     my $host = $self->{host};
-    my $acl = $self->create_check ($type, $name);
-    unless ($acl) {
-        return unless $self->{admin}->check ($user);
-    }
     if (defined (&Wallet::Config::verify_name)) {
         my $error = Wallet::Config::verify_name ($type, $name, $user);
         if ($error) {
             $self->error ("${type}:${name} rejected: $error");
             return;
         }
+    }
+    my $acl = $self->create_check ($type, $name);
+    unless ($acl) {
+        return unless $self->{admin}->check ($user);
     }
     my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
     if ($@) {

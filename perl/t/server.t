@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 332;
+use Test::More tests => 334;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -771,6 +771,8 @@ sub default_owner {
         return ('user2', [ 'krb5', $user2 ]);
     } elsif ($type eq 'base' and $name eq 'service/default-admin') {
         return ('auto-admin', [ 'krb5', $admin ]);
+    } elsif ($type eq 'base' and $name eq 'host/default') {
+        return ('auto-host', [ 'krb5', $admin ]);
     } else {
         return;
     }
@@ -928,6 +930,8 @@ is ($server->create ('base', 'host/default'), undef,
     ' but an unqualified host fails');
 is ($server->error, 'base:host/default rejected: host default must be fully'
     . ' qualified (add .example.edu)', ' with the right error');
+is ($server->acl_show ('auto-host'), undef, ' and the ACL is not present');
+is ($server->error, 'ACL auto-host not found', ' with the right error');
 is ($server->create ('base', 'host/default.stanford.edu'), undef,
     ' and a host in the wrong domain fails');
 is ($server->error, 'base:host/default.stanford.edu rejected: host'

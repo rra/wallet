@@ -5,6 +5,10 @@ wallet 0.7 (unreleased)
     keytab-backend now passes kadmin.local ktadd its options in a specific
     order to satisfy the picky option parser.
 
+    Check naming policy on wallet object creation before checking the
+    default ACLs to avoid creating and stranding an ACL when the naming
+    policy check fails.
+
     Fix the example remctl configuration for keytab-backend to use the
     correct script name.
 
