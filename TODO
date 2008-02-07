@@ -8,8 +8,6 @@ Release 1.0:
 
 * Write the PTS ACL verifier.
 
-* Add POD testing for the client and server programs.
-
 * Add POD coverage testing using Test::POD::Coverage for the server
   modules.
 

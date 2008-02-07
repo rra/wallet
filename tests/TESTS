@@ -1,9 +1,11 @@
 client/basic
+client/pod
 portable/asprintf
 portable/snprintf
 server/admin
 server/backend
 server/keytab
+server/pod
 util/concat
 util/messages
 util/xmalloc
