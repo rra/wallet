@@ -26,23 +26,22 @@ our $ID = q$Id$;
 # Declarations and site configuration
 ##############################################################################
 
-# Do not use our here to permit overrides when testing.
 use strict;
-use vars qw($CONFIG $KADMIN $SYSLOG $TMP);
 
 use Sys::Syslog qw(openlog syslog);
 
 # Path to configuration file listing principals that may be extracted.
-$CONFIG = '/etc/krb5kdc/allow-extract';
+our $CONFIG = '/etc/krb5kdc/allow-extract';
 
 # The full path to a kadmin.local that supports -norandkey.
-$KADMIN = '/usr/sbin/kadmin.local';
+our $KADMIN = '/usr/sbin/kadmin.local';
 
 # A temporary area into which keytabs should be written.
-$TMP = '/var/lib/keytabs';
+our $TMP = '/var/lib/keytabs';
 
 # Set to zero to suppress syslog logging, which is used only for testing.  Set
 # to a reference to a string to append messages to that string instead.
+our $SYSLOG;
 $SYSLOG = 1 unless defined $SYSLOG;
 
 ##############################################################################
