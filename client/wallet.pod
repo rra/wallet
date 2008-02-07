@@ -200,6 +200,11 @@ caution when removing entries from the C<ADMIN> ACL.
 
 Display the name, numeric ID, and entries of the ACL <id>.
 
+=item check <type> <name>
+
+Check whether an object of type <type> and name <name> already exists.  If
+it does, prints C<yes>; if not, prints C<no>.
+
 =item create <type> <name>
 
 Create a new object of type <type> with name <name>.  With some backends,

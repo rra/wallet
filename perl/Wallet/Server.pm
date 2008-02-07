@@ -24,7 +24,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 ##############################################################################
 # Utility methods
@@ -382,6 +382,22 @@ sub owner {
         $self->error ($object->error);
     }
     return $result;
+}
+
+# Checks for the existence of an object.  Returns 1 if it does, 0 if it
+# doesn't, and undef if there was an error in checking the existence of the
+# object.
+sub check {
+    my ($self, $type, $name) = @_;
+    my $object = $self->retrieve ($type, $name);
+    if (not defined $object) {
+        if ($self->error =~ /^cannot find/) {
+            return 0;
+        } else {
+            return;
+        }
+    }
+    return 1;
 }
 
 # Retrieve the information associated with an object, or returns undef and
@@ -825,6 +841,12 @@ more attribute values.  Pass the empty string as the only VALUE to clear the
 attribute values.  Returns true on success and false on failure.  To set an
 attribute value, the user must be authorized by the ADMIN ACL, the store ACL
 if set, or the owner ACL if the store ACL is not set.
+
+=item check(TYPE, NAME)
+
+Check whether an object of type TYPE and name NAME exists.  Returns 1 if
+it does, 0 if it doesn't, and undef if some error occurred while checking
+for the existence of the object.
 
 =item create(TYPE, NAME)
 

@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 334;
+use Test::More tests => 338;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -172,8 +172,11 @@ is ($server->create ('base', 'service/admin'), 1,
 is ($server->create ('base', 'service/admin'), undef, ' but not twice');
 like ($server->error, qr{^cannot create object base:service/admin: },
       ' and returns the right error');
+is ($server->check ('base', 'service/admin'), 1, ' and check works');
 is ($server->create ('srvtab', 'service.admin'), undef,
     'Creating an unknown object fails');
+is ($server->error, 'unknown object type srvtab', ' with the right error');
+is ($server->check ('srvtab', 'service.admin'), undef, ' and check fails');
 is ($server->error, 'unknown object type srvtab', ' with the right error');
 is ($server->create ('', 'service.admin'), undef,
     ' and likewise with an empty type');
@@ -193,6 +196,8 @@ is ($server->destroy ('srvtab', 'service/test'), undef,
 is ($server->error, 'unknown object type srvtab', ' with a different error');
 is ($server->destroy ('base', 'service/test'), 1,
     ' but destroying a good object works');
+is ($server->check ('base', 'service/test'), 0,
+    ' and now check says it is not there');
 is ($server->destroy ('base', 'service/test'), undef, ' but not twice');
 is ($server->error, 'cannot find base:service/test', ' with the right error');
 

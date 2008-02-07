@@ -4,13 +4,13 @@
 # Tests for the wallet-backend dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 use strict;
 use IO::String;
-use Test::More tests => 1224;
+use Test::More tests => 1245;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -90,6 +90,18 @@ sub attr {
         return ('attr1', 'attr2');
     } else {
         return 'attr';
+    }
+}
+
+sub check {
+    shift;
+    print "check @_\n";
+    if ($_[0] eq 'error') {
+        return;
+    } elsif ($_[1] eq 'empty') {
+        return 0;
+    } else {
+        return 1;
     }
 }
 
@@ -194,7 +206,8 @@ is ($OUTPUT, "error for admin (1.2.3.4): unknown command flag foo\n",
 is ($out, "$new\n", ' and nothing ran');
 
 # Check too few, too many, and bad arguments for every command.
-my %commands = (create  => [2, 2],
+my %commands = (check   => [2, 2],
+                create  => [2, 2],
                 destroy => [2, 2],
                 expires => [2, 4],
                 get     => [2, 2],
@@ -323,26 +336,24 @@ for my $command (qw/create destroy setacl setattr store/) {
         ' and ran the right method');
     $error++;
 }
-for my $command (qw/expires get getacl getattr history owner show/) {
+for my $command (qw/check expires get getacl getattr history owner show/) {
     my $method = { getacl => 'acl', getattr => 'attr' }->{$command};
     $method ||= $command;
     my @extra = ('foo') x ($commands{$command}[0] - 2);
     my $extra = @extra ? join (' ', '', @extra) : '';
+    ($out, $err) = run_backend ($command, 'type', 'name', @extra);
+    my $ran = "$command type name" . (@extra ? " @extra" : '');
+    is ($err, '', "Command $command ran with no errors");
+    is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+        ' and success logged');
     if ($command eq 'getattr') {
-        ($out, $err) = run_backend ($command, 'type', 'name', @extra);
-        my $ran = "$command type name" . (@extra ? " @extra" : '');
-        is ($err, '', "Command $command ran with no errors");
-        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
-            ' and success logged');
         is ($out, "$new\n$method type name$extra\nattr1\nattr2\n",
+            ' and ran the right method with output');
+    } elsif ($command eq 'check') {
+        is ($out, "$new\n$method type name$extra\nyes\n",
             ' and ran the right method with output');
     } else {
         my $newline = ($command =~ /^(get|history|show)\z/) ? '' : "\n";
-        ($out, $err) = run_backend ($command, 'type', 'name', @extra);
-        my $ran = "$command type name" . (@extra ? " @extra" : '');
-        is ($err, '', "Command $command ran with no errors");
-        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
-            ' and success logged');
         is ($out, "$new\n$method type name$extra\n$method$newline",
             ' and ran the right method with output');
     }
@@ -377,6 +388,14 @@ for my $command (qw/expires get getacl getattr history owner show/) {
         is ($out, "$new\n$method type empty$extra\n",
             ' and ran the right method with output');
         $error++;
+    } elsif ($command eq 'check') {
+        ($out, $err) = run_backend ($command, 'type', 'empty', @extra);
+        my $ran = "$command type empty" . (@extra ? " @extra" : '');
+        is ($err, '', "Command $command ran with no errors (empty)");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
+        is ($out, "$new\n$method type empty$extra\nno\n",
+            ' and ran the right method with output');
     }
     ($out, $err) = run_backend ($command, 'error', 'name', @extra);
     my $ran = "$command error name" . (@extra ? " @extra" : '');
