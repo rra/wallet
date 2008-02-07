@@ -167,6 +167,20 @@ Future work:
   sort of object, not just on keytabs, and to give numbers on downloaded
   versus not downloaded objects.
 
+* Support setting flags and attributes on autocreate.  In general, work out
+  a Wallet::Object::Template Perl object that I can return that specifies
+  things other than just the ACL.
+
+* Pass a reference to the object for which the ACL is interpreted to the
+  ACL API so that ACL APIs can make more complex decisions.
+
+* Support for pattern matching in ACLs.
+
+* A group-in-groups ACL schema.
+
+* Modify Authen::Krb5 to export krb5_524_conv_principal so that I can use
+  it to determine the K4 equivalent of a K5 principal name.
+
 May or may not be good ideas:
 
 * Consider using Class::Accessor to get rid of the scaffolding code to
