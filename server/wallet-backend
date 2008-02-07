@@ -19,7 +19,7 @@ use Wallet::Server;
 # Set to zero to suppress syslog logging, which is used only for testing.  Set
 # to a reference to a string to append messages to that string instead.
 our $SYSLOG;
-$SYSLOG = 0 unless defined $SYSLOG;
+$SYSLOG = 1 unless defined $SYSLOG;
 
 ##############################################################################
 # Logging

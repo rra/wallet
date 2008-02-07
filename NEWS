@@ -20,6 +20,8 @@ wallet 0.7 (unreleased)
     principal argument if no principal was set.  This workaround can be
     removed once we depend on a later version of Net::Remctl.
 
+    Correctly enable syslog logging in wallet-backend.
+
     Fix the example remctl configuration for keytab-backend to use the
     correct script name.
 
