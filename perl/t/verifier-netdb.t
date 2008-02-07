@@ -4,7 +4,7 @@
 # t/verifier-netdb.t -- Tests for the NetDB wallet ACL verifiers.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 #
