@@ -18,7 +18,7 @@ our $ID = q$Id$;
 # The keytab for the extracted principal will be printed to standard output.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
