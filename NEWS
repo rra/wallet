@@ -2,6 +2,12 @@
 
 wallet 0.7 (unreleased)
 
+    When creating a srvtab based on a just-downloaded keytab, extract the
+    srvtab key before merging the keytab into an existing file.
+    Otherwise, if the new keys had a lower kvno than the old keys
+    (possible after deleting and recreating the object), the wrong key
+    would be extracted for the srvtab.
+
     keytab-backend now passes kadmin.local ktadd its options in a specific
     order to satisfy the picky option parser.
 

@@ -50,11 +50,16 @@ setattr)
     fi
     case "$1" in
     service/fake-srvtab)
-        if [ "$3" != "kaserver" ] ; then
-            echo "Invalid attribute value $3" >&2
-            exit 1
+        if [ "$3" = "kaserver" ] ; then
+            touch sync-kaserver
+        else
+            if [ "$3" = "" ] ; then
+                rm sync-kaserver
+            else
+                echo "Invalid attribute value $3" >&2
+                exit 1
+            fi
         fi
-        touch sync-kaserver
         ;;
     *)
         echo "Looking at sync attribute of wrong keytab" >&2

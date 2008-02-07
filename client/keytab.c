@@ -24,41 +24,35 @@
 **  duplicate kvnos correctly.  Dies on any error.
 */
 static void
-merge_keytab(krb5_context ctx, const char *name, const char *data,
-             size_t length)
+merge_keytab(krb5_context ctx, const char *newfile, const char *file)
 {
-    char *tempfile, *oldfile;
+    char *oldfile;
     krb5_keytab old = NULL, temp = NULL;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
     krb5_error_code status;
 
-    tempfile = concat(name, ".new", (char *) 0);
-    oldfile = concat("WRFILE:", name, (char *) 0);
-    overwrite_file(tempfile, data, length);
     memset(&entry, 0, sizeof(entry));
+    oldfile = concat("WRFILE:", file, (char *) 0);
     status = krb5_kt_resolve(ctx, oldfile, &old);
     if (status != 0)
-        die_krb5(ctx, status, "cannot open keytab %s", name);
+        die_krb5(ctx, status, "cannot open keytab %s", file);
     free(oldfile);
-    status = krb5_kt_resolve(ctx, tempfile, &temp);
+    status = krb5_kt_resolve(ctx, newfile, &temp);
     if (status != 0)
-        die_krb5(ctx, status, "cannot open temporary keytab %s", tempfile);
+        die_krb5(ctx, status, "cannot open temporary keytab %s", newfile);
     status = krb5_kt_start_seq_get(ctx, temp, &cursor);
     if (status != 0)
-        die_krb5(ctx, status, "cannot read temporary keytab %s", tempfile);
+        die_krb5(ctx, status, "cannot read temporary keytab %s", newfile);
     while ((status = krb5_kt_next_entry(ctx, temp, &entry, &cursor)) == 0) {
         status = krb5_kt_add_entry(ctx, old, &entry);
         if (status != 0)
-            die_krb5(ctx, status, "cannot write to keytab %s", name);
+            die_krb5(ctx, status, "cannot write to keytab %s", file);
         krb5_free_keytab_entry_contents(ctx, &entry);
     }
     if (status != KRB5_KT_END)
-        die_krb5(ctx, status, "error reading temporary keytab %s", tempfile);
+        die_krb5(ctx, status, "error reading temporary keytab %s", newfile);
     krb5_kt_end_seq_get(ctx, temp, &cursor);
-    if (unlink(tempfile) < 0)
-        sysdie("unlink of temporary keytab file %s failed", tempfile);
-    free(tempfile);
     if (old != NULL)
         krb5_kt_close(ctx, old);
     if (temp != NULL)
@@ -109,6 +103,7 @@ get_keytab(struct remctl *r, krb5_context ctx, const char *type,
            const char *name, const char *file, const char *srvtab)
 {
     const char *command[5];
+    char *tempfile;
     char *data = NULL;
     size_t length = 0;
     int status;
@@ -128,11 +123,19 @@ get_keytab(struct remctl *r, krb5_context ctx, const char *type,
         warn("no data returned by wallet server");
         return 255;
     }
-    if (access(file, F_OK) == 0)
-        merge_keytab(ctx, file, data, length);
-    else
+    if (access(file, F_OK) == 0) {
+        tempfile = concat(file, ".new", (char *) 0);
+        overwrite_file(tempfile, data, length);
+        if (srvtab != NULL)
+            write_srvtab(ctx, srvtab, name, tempfile);
+        merge_keytab(ctx, tempfile, file);
+        if (unlink(tempfile) < 0)
+            sysdie("unlink of temporary keytab file %s failed", tempfile);
+        free(tempfile);
+    } else {
         write_file(file, data, length);
-    if (srvtab != NULL)
-        write_srvtab(ctx, srvtab, name, file);
+        if (srvtab != NULL)
+            write_srvtab(ctx, srvtab, name, file);
+    }
     return 0;
 }

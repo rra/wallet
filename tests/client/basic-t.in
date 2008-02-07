@@ -12,7 +12,7 @@
 . "@abs_top_srcdir@/tests/libtest.sh"
 
 # Print the number of tests.
-total=27
+total=30
 count=1
 echo "$total"
 
@@ -82,7 +82,7 @@ rm -f output output.bak keytab keytab.bak srvtab srvtab.bak sync-kaserver
 
 # Now, we can finally run our tests.  First, basic operations.
 runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
-    get file -f output fake-test
+    -f output get file fake-test
 if cmp output data/fake-data >/dev/null 2>&1 ; then
     printcount "ok"
 else
@@ -94,7 +94,7 @@ else
     printcount "ok"
 fi
 runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
-    get file -f output fake-test
+    -f output get file fake-test
 if cmp output data/fake-data >/dev/null 2>&1 ; then
     printcount "ok"
 else
@@ -127,7 +127,7 @@ fi
 rm -f output output.bak
 
 # Test keytab support.
-runsuccess "" "$wallet" get -f keytab keytab service/fake-srvtab
+runsuccess "" "$wallet" -f keytab get keytab service/fake-srvtab
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
     rm keytab
@@ -141,7 +141,7 @@ else
 fi
 
 # Test srvtab support.
-runsuccess "" "$wallet" get keytab -f keytab -S srvtab service/fake-srvtab
+runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
 else
@@ -153,7 +153,7 @@ if [ -f sync-kaserver ] ; then
 else
     printcount "not ok"
 fi
-runsuccess "" "$wallet" get keytab -f keytab -S srvtab service/fake-srvtab
+runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
 else
@@ -187,6 +187,22 @@ if cmp klist-seen klist-good >/dev/null 2>&1 ; then
 else
     printcount "not ok"
 fi
+
+# Test srvtab download into a merged keytab with an older version.
+cp data/fake-keytab-old keytab
+runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
+if [ -f sync-kaserver ] ; then
+    printcount "ok"
+    rm sync-kaserver
+else
+    printcount "not ok"
+fi
+if cmp srvtab data/fake-srvtab >/dev/null 2>&1 ; then
+    printcount "ok"
+else
+    printcount "not ok"
+fi
+rm -f keytab srvtab
 
 # Test various other client functions and errors.
 runsuccess "This is a fake keytab." "$wallet" get keytab service/fake-output
