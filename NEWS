@@ -15,6 +15,11 @@ wallet 0.7 (unreleased)
     default ACLs to avoid creating and stranding an ACL when the naming
     policy check fails.
 
+    The current version of Net::Remctl can't handle explicit undef or the
+    empty string as a principal argument.  Be careful not to provide a
+    principal argument if no principal was set.  This workaround can be
+    removed once we depend on a later version of Net::Remctl.
+
     Fix the example remctl configuration for keytab-backend to use the
     correct script name.
 

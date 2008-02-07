@@ -24,7 +24,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Interface
@@ -46,10 +46,20 @@ sub new {
         die "NetDB ACL support not available: $error\n";
     }
     local $ENV{KRB5CCNAME} = $Wallet::Config::NETDB_REMCTL_CACHE;
-    my $port = $Wallet::Config::NETDB_REMCTL_PORT;
-    my $principal = $Wallet::Config::NETDB_REMCTL_PRINCIPAL;
     my $remctl = Net::Remctl->new;
-    unless ($remctl->open ($host, $port, $principal)) {
+
+    # Net::Remctl 2.12 and later will support passing in an empty string for
+    # the principal.  Until then, be careful not to pass principal unless it
+    # was specified.
+    my $port = $Wallet::Config::NETDB_REMCTL_PORT || 0;
+    my $principal = $Wallet::Config::NETDB_REMCTL_PRINCIPAL;
+    my $status;
+    if (defined $principal) {
+        $status = $remctl->open ($host, $port, $principal);
+    } else {
+        $status = $remctl->open ($host, $port);
+    }
+    unless ($status) {
         die "cannot connect to NetDB remctl interface: ", $remctl->error, "\n";
     }
     my $self = { remctl => $remctl };

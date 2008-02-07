@@ -511,8 +511,8 @@ sub keytab_retrieve {
         $keytab .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     local $ENV{KRB5CCNAME} = $Wallet::Config::KEYTAB_REMCTL_CACHE;
-    my $port = $Wallet::Config::KEYTAB_REMCTL_PORT;
-    my $principal = $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL;
+    my $port = $Wallet::Config::KEYTAB_REMCTL_PORT || 0;
+    my $principal = $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL || '';
     my @command = ('keytab', 'retrieve', $keytab);
     my $result = Net::Remctl::remctl ($host, $port, $principal, @command);
     if ($result->error) {
