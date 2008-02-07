@@ -2,6 +2,16 @@
 
 wallet 0.7 (unreleased)
 
+    Add new exists and autocreate wallet server interfaces.  The first
+    states whether a given object exists and the second attempts to create
+    the object using the default owner rules.  Remove default owner
+    handling from the create interface, which is now for administrators
+    only.  Remove server-side auto-creation of objects on get or store and
+    instead have the client check for object existence and call autocreate
+    if necessary.  This removes confusion between default ACLs and
+    administrative object creation for users who are also on the ADMIN
+    ACL.
+
     When creating a srvtab based on a just-downloaded keytab, extract the
     srvtab key before merging the keytab into an existing file.
     Otherwise, if the new keys had a lower kvno than the old keys
