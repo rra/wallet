@@ -200,6 +200,16 @@ caution when removing entries from the C<ADMIN> ACL.
 
 Display the name, numeric ID, and entries of the ACL <id>.
 
+=item autocreate <type> <name>
+
+Create a new object of type <type> with name <name>.  The user must be
+listed in the default ACL for an object with that type and name, and the
+object will be created with that default ACL set as the object owner.
+
+Normally, there's no need to run this command directly.  It's
+automatically run when trying to get or store an object that doesn't
+already exist.
+
 =item check <type> <name>
 
 Check whether an object of type <type> and name <name> already exists.  If

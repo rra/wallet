@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 338;
+use Test::More tests => 341;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -742,12 +742,10 @@ is ($server->attr ('base', 'service/both', 'foo', 'foo'), undef,
 is ($server->error, 'unknown attribute foo', ' but calls the method');
 is ($server->destroy ('base', 'service/both'), 1, ' and we can destroy it');
 is ($server->get ('base', 'service/both'), undef, ' and now cannot get it');
-is ($server->error, "$user2 not authorized to create base:service/both",
-    ' because it is gone');
+is ($server->error, 'cannot find base:service/both', ' because it is gone');
 is ($server->store ('base', 'service/both', 'stuff'), undef,
     ' or store it');
-is ($server->error, "$user2 not authorized to create base:service/both",
-    ' because it is gone');
+is ($server->error, 'cannot find base:service/both', ' because it is gone');
 
 # Test default ACLs on object creation.
 #
@@ -786,9 +784,14 @@ package main;
 
 # We're still user2, so we should now be able to create service/default.  Make
 # sure we can and that the ACLs all look good.
-is ($server->create ('base', 'service/default'), 1,
-    'Creating an object with the default ACL works');
-is ($server->create ('base', 'service/foo'), undef, ' but not any object');
+is ($server->create ('base', 'service/default'), undef,
+    'Creating an object with the default ACL fails');
+is ($server->error, "$user2 not authorized to create base:service/default",
+    ' due to lack of authorization');
+is ($server->autocreate ('base', 'service/default'), 1,
+    ' but autocreation succeeds');
+is ($server->autocreate ('base', 'service/foo'), undef,
+    ' but not any object');
 is ($server->error, "$user2 not authorized to create base:service/foo",
     ' with the right error');
 $show = $server->show ('base', 'service/default');
@@ -812,11 +815,11 @@ EOO
 }
 
 # Try the other basic cases in default_owner.
-is ($server->create ('base', 'service/default-both'), undef,
+is ($server->autocreate ('base', 'service/default-both'), undef,
     'Creating an object with an ACL mismatch fails');
 is ($server->error, "ACL both exists and doesn't match default",
     ' with the right error');
-is ($server->create ('base', 'service/default-2'), 1,
+is ($server->autocreate ('base', 'service/default-2'), 1,
     'Creating an object with an existing ACL works');
 $show = $server->show ('base', 'service/default-2');
 $show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
@@ -833,58 +836,22 @@ Members of ACL user2 (id: 3) are:
 EOO
 is ($show, $expected, ' and the created object and ACL are correct');
 
-# Test auto-creation on get and store.
+# Auto-creation does not work on get or store; this is done by the client.
 $result = eval { $server->get ('base', 'service/default-get') };
-is ($result, undef, 'Auto-creation on get...');
-is ($@, "Do not instantiate Wallet::Object::Base directly\n", ' ...works');
-$show = $server->show ('base', 'service/default-get');
-$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
-$expected = <<"EOO";
-           Type: base
-           Name: service/default-get
-          Owner: user2
-     Created by: $user2
-   Created from: $host
-     Created on: 0
-
-Members of ACL user2 (id: 3) are:
-  krb5 $user2
-EOO
-is ($show, $expected, ' and the created object and ACL are correct');
-is ($server->get ('base', 'service/foo'), undef,
-    ' but auto-creation of something else fails');
-is ($server->error, "$user2 not authorized to create base:service/foo",
-    ' with the right error');
+is ($result, undef, 'Auto-creation on get fails');
+is ($@, '', ' does not die');
+is ($server->error, 'cannot find base:service/default-get',
+    ' and fails with the right error');
 is ($server->store ('base', 'service/default-store', 'stuff'), undef,
-    'Auto-creation on store...');
-is ($server->error,
-    "cannot store base:service/default-store: object type is immutable",
-    ' ...works');
-$show = $server->show ('base', 'service/default-store');
-$show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
-$expected = <<"EOO";
-           Type: base
-           Name: service/default-store
-          Owner: user2
-     Created by: $user2
-   Created from: $host
-     Created on: 0
-
-Members of ACL user2 (id: 3) are:
-  krb5 $user2
-EOO
-is ($show, $expected, ' and the created object and ACL are correct');
-is ($server->store ('base', 'service/foo', 'stuff'), undef,
-    ' but auto-creation of something else fails');
-is ($server->error, "$user2 not authorized to create base:service/foo",
+    'Auto-creation on store fails');
+is ($server->error, 'cannot find base:service/default-store',
     ' with the right error');
 
 # Switch back to admin to test auto-creation.
 $server = eval { Wallet::Server->new ($admin, $host) };
 is ($@, '', 'Switching users back to admin works');
-$result = eval { $server->get ('base', 'service/default-admin') };
-is ($result, undef, 'Auto-creation on get...');
-is ($@, "Do not instantiate Wallet::Object::Base directly\n", ' ...works');
+is ($server->autocreate ('base', 'service/default-admin'), 1,
+    'Autocreation works for admin');
 $show = $server->show ('base', 'service/default-admin');
 $show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
@@ -931,13 +898,28 @@ if ($server->create ('base', 'host/default.example.edu')) {
 } else {
     is ($server->error, '', ' as does creating host/default.example.edu');
 }
+is ($server->destroy ('base', 'service/default-admin'), 1,
+    ' and destroying default-admin works');
+is ($server->destroy ('base', 'host/default.example.edu'), 1,
+    ' and destroying host/default.example.edu works');
 is ($server->create ('base', 'host/default'), undef,
+    ' but an unqualified host fails');
+is ($server->error, 'base:host/default rejected: host default must be fully'
+    . ' qualified (add .example.edu)', ' with the right error');
+is ($server->create ('base', 'host/default.stanford.edu'), undef,
+    ' and a host in the wrong domain fails');
+is ($server->error, 'base:host/default.stanford.edu rejected: host'
+    . ' default.stanford.edu not in .example.edu domain',
+    ' with the right error');
+is ($server->autocreate ('base', 'service/default-admin'), 1,
+    'Creating default/admin succeeds');
+is ($server->autocreate ('base', 'host/default'), undef,
     ' but an unqualified host fails');
 is ($server->error, 'base:host/default rejected: host default must be fully'
     . ' qualified (add .example.edu)', ' with the right error');
 is ($server->acl_show ('auto-host'), undef, ' and the ACL is not present');
 is ($server->error, 'ACL auto-host not found', ' with the right error');
-is ($server->create ('base', 'host/default.stanford.edu'), undef,
+is ($server->autocreate ('base', 'host/default.stanford.edu'), undef,
     ' and a host in the wrong domain fails');
 is ($server->error, 'base:host/default.stanford.edu rejected: host'
     . ' default.stanford.edu not in .example.edu domain',

@@ -10,7 +10,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 1245;
+use Test::More tests => 1263;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -91,6 +91,12 @@ sub attr {
     } else {
         return 'attr';
     }
+}
+
+sub autocreate {
+    shift;
+    print "autocreate @_\n";
+    return ($_[0] eq 'error') ? undef : 1
 }
 
 sub check {
@@ -206,19 +212,20 @@ is ($OUTPUT, "error for admin (1.2.3.4): unknown command flag foo\n",
 is ($out, "$new\n", ' and nothing ran');
 
 # Check too few, too many, and bad arguments for every command.
-my %commands = (check   => [2, 2],
-                create  => [2, 2],
-                destroy => [2, 2],
-                expires => [2, 4],
-                get     => [2, 2],
-                getacl  => [3, 3],
-                getattr => [3, 3],
-                history => [2, 2],
-                owner   => [2, 3],
-                setacl  => [4, 4],
-                setattr => [4, 9],
-                show    => [2, 2],
-                store   => [3, 3]);
+my %commands = (autocreate => [2, 2],
+                check      => [2, 2],
+                create     => [2, 2],
+                destroy    => [2, 2],
+                expires    => [2, 4],
+                get        => [2, 2],
+                getacl     => [3, 3],
+                getattr    => [3, 3],
+                history    => [2, 2],
+                owner      => [2, 3],
+                setacl     => [4, 4],
+                setattr    => [4, 9],
+                show       => [2, 2],
+                store      => [3, 3]);
 my %acl_commands = (add     => [3, 3],
                     create  => [1, 1],
                     destroy => [1, 1],
@@ -315,7 +322,7 @@ for my $command (sort keys %flag_commands) {
 
 # Now, test that we ran the right functions and passed the correct arguments.
 my $error = 1;
-for my $command (qw/create destroy setacl setattr store/) {
+for my $command (qw/autocreate create destroy setacl setattr store/) {
     my $method = { setacl => 'acl', setattr => 'attr' }->{$command};
     $method ||= $command;
     my @extra = ('foo') x ($commands{$command}[0] - 2);

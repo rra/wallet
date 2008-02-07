@@ -174,9 +174,10 @@ sub create_check {
     }
 }
 
-# Create a new object and returns that object.  On error, returns undef and
-# sets the internal error.
-sub create {
+# Create an object and returns it.  This function is called by both create and
+# autocreate and assumes that permissions and names have already been checked.
+# On error, returns undef and sets the internal error.
+sub create_object {
     my ($self, $type, $name) = @_;
     my $class = $self->type_mapping ($type);
     unless ($class) {
@@ -186,28 +187,57 @@ sub create {
     my $dbh = $self->{dbh};
     my $user = $self->{user};
     my $host = $self->{host};
+    my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+    return $object;
+}
+
+# Create a new object and returns that object.  This method can only be called
+# by wallet administrators.  autocreate should be used by regular users who
+# may benefit from default ACLs.  On error, returns undef and sets the
+# internal error.
+sub create {
+    my ($self, $type, $name) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        my $id = $type . ':' . $name;
+        $self->error ("$self->{user} not authorized to create $id");
+        return;
+    }
     if (defined (&Wallet::Config::verify_name)) {
-        my $error = Wallet::Config::verify_name ($type, $name, $user);
+        my $error = Wallet::Config::verify_name ($type, $name, $self->{user});
+        if ($error) {
+            $self->error ("${type}:${name} rejected: $error");
+            return;
+        }
+    }
+    return unless $self->create_object ($type, $name);
+    return 1;
+}
+
+# Attempt to auto-create an object based on default ACLs.  This method is
+# called by the wallet client when trying to get an object that doesn't
+# already exist.  On error, returns undef and sets the internal error.
+sub autocreate {
+    my ($self, $type, $name) = @_;
+    if (defined (&Wallet::Config::verify_name)) {
+        my $error = Wallet::Config::verify_name ($type, $name, $self->{user});
         if ($error) {
             $self->error ("${type}:${name} rejected: $error");
             return;
         }
     }
     my $acl = $self->create_check ($type, $name);
-    unless ($acl) {
-        return unless $self->{admin}->check ($user);
-    }
-    my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
-    if ($@) {
-        $self->error ($@);
+    return unless $acl;
+    my $object = $self->create_object ($type, $name);
+    return unless $object;
+    unless ($object->owner ($acl, $self->{user}, $self->{host})) {
+        $self->error ($object->error);
         return;
-    } else {
-        if ($acl and not $object->owner ($acl, $user, $host)) {
-            $self->error ($object->error);
-            return;
-        }
-        return 1;
     }
+    return 1;
 }
 
 # Given the name and type of an object, returns a Perl object representing it
@@ -407,11 +437,6 @@ sub check {
 sub get {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
-    if (not defined $object and $self->error =~ /^cannot find/) {
-        if ($self->create ($type, $name)) {
-            $object = $self->retrieve ($type, $name);
-        }
-    }
     return unless defined $object;
     return unless $self->acl_check ($object, 'get');
     my $result = $object->get ($self->{user}, $self->{host});
@@ -427,11 +452,6 @@ sub get {
 sub store {
     my ($self, $type, $name, $data) = @_;
     my $object = $self->retrieve ($type, $name);
-    if (not defined $object and $self->error =~ /^cannot find/) {
-        if ($self->create ($type, $name)) {
-            $object = $self->retrieve ($type, $name);
-        }
-    }
     return unless defined $object;
     return unless $self->acl_check ($object, 'store');
     if (not defined ($data)) {
@@ -842,6 +862,18 @@ attribute values.  Returns true on success and false on failure.  To set an
 attribute value, the user must be authorized by the ADMIN ACL, the store ACL
 if set, or the owner ACL if the store ACL is not set.
 
+=item autocreate(TYPE, NAME)
+
+Creates a new object of type TYPE and name NAME.  TYPE must be a
+recognized type for which the wallet system has a backend implementation.
+Returns true on success and false on failure.
+
+To create an object using this method, the current user must be authorized
+by the default owner as determined by the wallet configuration.  For more
+information on how to map new objects to default owners, see
+Wallet::Config(3).  Wallet administrators should use the create() method
+to create objects.
+
 =item check(TYPE, NAME)
 
 Check whether an object of type TYPE and name NAME exists.  Returns 1 if
@@ -854,10 +886,9 @@ Creates a new object of type TYPE and name NAME.  TYPE must be a recognized
 type for which the wallet system has a backend implementation.  Returns true
 on success and false on failure.
 
-To create an object, the current user must either be authorized by the ADMIN
-ACL or authorized by the default owner as determined by the wallet
-configuration.  For more information on how to map new objects to default
-owners, see Wallet::Config(3).
+To create an object using this method, the current user must be authorized
+by the ADMIN ACL.  Use autocreate() to create objects based on the default
+owner as determined by the wallet configuration.
 
 =item destroy(TYPE, NAME)
 

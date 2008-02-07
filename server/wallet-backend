@@ -178,6 +178,9 @@ sub command {
         } else {
             error "unknown command acl $action";
         }
+    } elsif ($command eq 'autocreate') {
+        check_args (2, 2, [], @args);
+        $server->autocreate (@args) or failure ($server->error, @_);
     } elsif ($command eq 'check') {
         check_args (2, 2, [], @args);
         my $status = $server->check (@args);
@@ -328,14 +331,16 @@ B<wallet-backend> takes no traditional options.
 =head1 COMMANDS
 
 Most commands are only available to wallet administrators (users on the
-C<ADMIN> ACL).  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
-C<flag clear>, C<flag set>, C<getattr>, C<setattr>, and C<history>.  All
-of those commands have their own ACLs except C<getattr> and C<history>,
-which use the C<show> ACL, and C<setattr>, which uses the C<store> ACL.
-If the appropriate ACL is set, it alone is checked to see if the user has
-access.  Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, and
-C<history> access is permitted if the user is authorized by the owner ACL
-of the object.
+C<ADMIN> ACL).  The exceptions are C<autocreate>, C<get>, C<store>,
+C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>, C<setattr>,
+and C<history>.  All of those commands have their own ACLs except
+C<getattr> and C<history>, which use the C<show> ACL, and C<setattr>,
+which uses the C<store> ACL.  If the appropriate ACL is set, it alone is
+checked to see if the user has access.  Otherwise, C<get>, C<store>,
+C<show>, C<getattr>, C<setattr>, and C<history> access is permitted if the
+user is authorized by the owner ACL of the object.  C<autocreate> is
+permitted if the user is listed in the default ACL for an object for that
+name.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<store>, they must still be authorized by
@@ -390,6 +395,12 @@ caution when removing entries from the C<ADMIN> ACL.
 =item acl show <id>
 
 Display the name, numeric ID, and entries of the ACL <id>.
+
+=item autocreate <type> <name>
+
+Create a new object of type <type> with name <name>.  The user must be
+listed in the default ACL for an object with that type and name, and the
+object will be created with that default ACL set as the object owner.
 
 =item check <type> <name>
 
