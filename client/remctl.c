@@ -72,3 +72,48 @@ run_command(struct remctl *r, const char **command, char **data,
     } while (output->type != REMCTL_OUT_DONE);
     return status;
 }
+
+
+/*
+**  Check whether an object exists using the exists wallet interface.  Returns
+**  true if it does, false if it doesn't, and dies on remctl errors.
+*/
+int
+object_exists(struct remctl *r, const char *prefix, const char *type,
+              const char *name)
+{
+    const char *command[5];
+    char *data = NULL;
+    size_t length;
+
+    command[0] = prefix;
+    command[1] = "exists";
+    command[2] = type;
+    command[3] = name;
+    command[4] = NULL;
+    if (run_command(r, command, &data, &length) != 0)
+        exit(1);
+    if (length == 4 && strncmp(data, "yes\n", 4) == 0)
+        return 1;
+    else
+        return 0;
+}
+
+
+/*
+**  Attempt autocreation of an object.  Dies if autocreation fails.
+*/
+void
+object_autocreate(struct remctl *r, const char *prefix, const char *type,
+                  const char *name)
+{
+    const char *command[5];
+
+    command[0] = prefix;
+    command[1] = "autocreate";
+    command[2] = type;
+    command[3] = name;
+    command[4] = NULL;
+    if (run_command(r, command, NULL, NULL) != 0)
+        exit(1);
+}

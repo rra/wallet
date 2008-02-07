@@ -261,6 +261,10 @@ by <type> and <name>, or stores it in a file if the B<-f> option was
 given.  This may trigger generation of new data and invalidate old data
 for that object depending on the object type.
 
+If an object with type <type> and name <name> does not already exist when
+this command is issued (as checked with the exists interface), B<wallet>
+will attempt to automatically create it (using autocreate).
+
 =item getacl <type> <name> <acl>
 
 Prints the ACL <acl>, which must be one of C<get>, C<store>, C<show>,
@@ -328,6 +332,10 @@ Currently, <data> is limited to not containing nul characters and may
 therefore not be binary data, and is limited by the maximum command line
 length of the operating system of the wallet server.  These restrictions
 will be lifted in the future.
+
+If an object with type <type> and name <name> does not already exist when
+this command is issued (as checked with the exists interface), B<wallet>
+will attempt to automatically create it (using autocreate).
 
 =back
 

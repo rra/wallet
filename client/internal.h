@@ -42,6 +42,15 @@ void kinit(krb5_context, const char *principal);
 int run_command(struct remctl *, const char **command, char **data,
                 size_t *length);
 
+/* Check whether an object exists using the exists wallet interface.  Returns
+   true if it does, false if it doesn't, and dies on remctl errors. */
+int object_exists(struct remctl *, const char *prefix, const char *type,
+                  const char *name);
+
+/* Attempt autocreation of an object.  Dies if autocreation fails. */
+void object_autocreate(struct remctl *, const char *prefix, const char *type,
+                       const char *name);
+
 /* Given a remctl object, the type for the wallet interface, object type,
    object name, and a file (which may be NULL), send a wallet get command and
    write the results to the provided file.  If the file is NULL, write the

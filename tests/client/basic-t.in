@@ -12,7 +12,7 @@
 . "@abs_top_srcdir@/tests/libtest.sh"
 
 # Print the number of tests.
-total=30
+total=31
 count=1
 echo "$total"
 
@@ -78,7 +78,8 @@ if [ -z "$krb5conf" ] ; then
 fi
 
 # Make sure everything's clean.
-rm -f output output.bak keytab keytab.bak srvtab srvtab.bak sync-kaserver
+rm -f output output.bak keytab keytab.bak srvtab srvtab.bak sync-kaserver \
+    autocreated
 
 # Now, we can finally run our tests.  First, basic operations.
 runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
@@ -92,6 +93,11 @@ if [ -f output.bak ] || [ -f output.new ] ; then
     printcount "not ok"
 else
     printcount "ok"
+fi
+if [ -f autocreated ] ; then
+    printcount "ok"
+else
+    printcount "not ok"
 fi
 runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
     -f output get file fake-test
@@ -220,7 +226,7 @@ runsuccess "Expiration date of keytab service/fake-test" \
 # Clean up.
 KRB5_CONFIG=
 rm krb5.conf
-rm -f data/test.cache
+rm -f autocreated data/test.cache
 if [ -f data/pid ] ; then
     kill `cat data/pid`
     rm -f data/pid

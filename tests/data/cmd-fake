@@ -67,6 +67,41 @@ setattr)
         ;;
     esac
     ;;
+exists)
+    if [ -n "$2" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
+    case "${type}:${1}" in
+    file:fake-test)
+        if [ -f autocreated ] ; then
+            echo 'yes'
+        else
+            echo 'no'
+        fi
+        ;;
+    *)
+        echo 'yes'
+        ;;
+    esac
+    exit 0
+    ;;
+autocreate)
+    if [ -n "$2" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
+    case "${type}:${1}" in
+    file:fake-test)
+        touch autocreated
+        exit 0
+        ;;
+    *)
+        echo "Autocreate called for existing object" >&2
+        exit 1
+        ;;
+    esac
+    ;;
 get)
     if [ -n "$2" ] ; then
         echo "Too many arguments" >&2

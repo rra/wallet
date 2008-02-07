@@ -216,8 +216,12 @@ main(int argc, char *argv[])
     if (!remctl_open(r, options.server, options.port, options.principal))
         die("%s", remctl_error(r));
 
-    /* Most commands, we handle ourselves, but get commands are special and
-       keytab get commands with -f are doubly special. */
+    /* Most commands, we handle ourselves, but get and store commands are
+       special and keytab get commands with -f are doubly special. */
+    if (strcmp(argv[0], "get") == 0 || strcmp(argv[0], "store") == 0) {
+        if (!object_exists(r, options.type, argv[1], argv[2]))
+            object_autocreate(r, options.type, argv[1], argv[2]);
+    }
     if (strcmp(argv[0], "get") == 0) {
         if (argc > 3)
             die("too many arguments");
