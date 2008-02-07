@@ -45,7 +45,7 @@ static const char error_unknown[] = "unknown error";
 **  fixed message.
 */
 static const char *
-get_error(krb5_context ctx, krb5_error_code code)
+get_error(krb5_context ctx UNUSED, krb5_error_code code)
 {
     const char *msg = NULL;
 
@@ -69,7 +69,7 @@ get_error(krb5_context ctx, krb5_error_code code)
 ** Free an error string if necessary.
 */
 static void
-free_error(krb5_context ctx, const char *msg)
+free_error(krb5_context ctx UNUSED, const char *msg)
 {
     if (msg == error_unknown)
         return;
