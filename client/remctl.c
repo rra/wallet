@@ -87,7 +87,7 @@ object_exists(struct remctl *r, const char *prefix, const char *type,
     size_t length;
 
     command[0] = prefix;
-    command[1] = "exists";
+    command[1] = "check";
     command[2] = type;
     command[3] = name;
     command[4] = NULL;

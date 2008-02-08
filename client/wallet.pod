@@ -262,7 +262,7 @@ given.  This may trigger generation of new data and invalidate old data
 for that object depending on the object type.
 
 If an object with type <type> and name <name> does not already exist when
-this command is issued (as checked with the exists interface), B<wallet>
+this command is issued (as checked with the check interface), B<wallet>
 will attempt to automatically create it (using autocreate).
 
 =item getacl <type> <name> <acl>
@@ -334,7 +334,7 @@ length of the operating system of the wallet server.  These restrictions
 will be lifted in the future.
 
 If an object with type <type> and name <name> does not already exist when
-this command is issued (as checked with the exists interface), B<wallet>
+this command is issued (as checked with the check interface), B<wallet>
 will attempt to automatically create it (using autocreate).
 
 =back

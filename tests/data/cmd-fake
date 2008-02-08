@@ -67,7 +67,7 @@ setattr)
         ;;
     esac
     ;;
-exists)
+check)
     if [ -n "$2" ] ; then
         echo "Too many arguments" >&2
         exit 1
