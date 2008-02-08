@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.7 (unreleased)
+wallet 0.7 (2008-02-08)
 
     Add new exists and autocreate wallet server interfaces.  The first
     states whether a given object exists and the second attempts to create
