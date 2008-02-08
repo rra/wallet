@@ -24,10 +24,10 @@ my $host  = 'windlord.stanford.edu';
 my $user  = 'rra@stanford.edu';
 
 # Determine the local principal.
-my $klist = `klist 2>&1`;
+my $klist = `klist 2>&1` || '';
 SKIP: {
     skip "tests useful only with Stanford Kerberos tickets", 4
-        unless $klist =~ /^Default principal: \S+\@stanford\.edu$/m;
+        unless ($klist =~ /^Default principal: \S+\@stanford\.edu$/m);
 
     # Set up our configuration.
     $Wallet::Config::NETDB_REALM = 'stanford.edu';
