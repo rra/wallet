@@ -15,10 +15,10 @@ use vars qw($PATH $VERSION);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 # Path to the config file to load.
-$PATH = '/etc/wallet/wallet.conf';
+$PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
 
 =head1 NAME
 
@@ -46,11 +46,12 @@ Wallet::Config - Configuration handling for the wallet server
 =head1 DESCRIPTION
 
 Wallet::Config encapsulates all of the site-specific configuration for the
-wallet server.  It is implemented as a Perl class that declares and sets the
-defaults for various configuration variables and then, if it exists, loads
-the file F</etc/wallet/wallet.conf>.  That file should contain any
-site-specific overrides to the defaults, and at least some parameters must
-be set.
+wallet server.  It is implemented as a Perl class that declares and sets
+the defaults for various configuration variables and then, if it exists,
+loads the file specified by the WALLET_CONFIG environment variable or
+F</etc/wallet/wallet.conf> if that environment variable isn't set.  That
+file should contain any site-specific overrides to the defaults, and at
+least some parameters must be set.
 
 This file must be valid Perl.  To set a variable, use the syntax:
 
@@ -560,6 +561,17 @@ keytab objects for particular principals have fully-qualified hostnames:
 Objects that aren't of type C<keytab> or which aren't for a host-based key
 have no naming requirements enforced.
 
+=head1 ENVIRONMENT
+
+=over 4
+
+=item WALLET_CONFIG
+
+If this environment variable is set, it is taken to be the path to the
+wallet configuration file to load instead of F</etc/wallet/wallet.conf>.
+
+=back
+
 =cut
 
 # Now, load the configuration file so that it can override the defaults.
@@ -574,8 +586,8 @@ __END__
 
 DBI(3), Wallet::Object::Keytab(3), Wallet::Server(3), wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

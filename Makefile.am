@@ -18,16 +18,17 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	perl/Wallet/Config.pm perl/Wallet/Database.pm \
 	perl/Wallet/Object/Base.pm perl/Wallet/Object/Keytab.pm \
 	perl/Wallet/Schema.pm perl/Wallet/Server.pm perl/t/acl.t \
-	perl/t/admin.t perl/t/data/README perl/t/data/keytab-fake \
-	perl/t/data/keytab.conf perl/t/data/netdb.conf \
-	perl/t/data/netdb-fake perl/t/init.t perl/t/keytab.t \
-	perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t perl/t/schema.t \
-	perl/t/server.t perl/t/verifier-netdb.t perl/t/verifier.t \
-	tests/TESTS tests/data/README tests/data/allow-extract \
-	tests/data/cmd-fake tests/data/fake-data tests/data/fake-kadmin \
-	tests/data/fake-keytab tests/data/fake-keytab-2 \
-	tests/data/fake-keytab-merge tests/data/fake-keytab-old \
-	tests/data/fake-srvtab tests/data/wallet.conf tests/libtest.sh
+	perl/t/admin.t perl/t/config.t perl/t/data/README \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf \
+	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/init.t \
+	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t \
+	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t \
+	perl/t/verifier.t tests/TESTS tests/data/README \
+	tests/data/allow-extract tests/data/cmd-fake tests/data/fake-data \
+	tests/data/fake-kadmin tests/data/fake-keytab \
+	tests/data/fake-keytab-2 tests/data/fake-keytab-merge \
+	tests/data/fake-keytab-old tests/data/fake-srvtab \
+	tests/data/wallet.conf tests/libtest.sh
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c

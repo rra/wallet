@@ -4,6 +4,10 @@ wallet 0.8 (unreleased)
 
     Fix the wallet client to use check instead of exists.
 
+    Wallet::Config and hence the wallet server now checks for the
+    environment variable WALLET_CONFIG and loads configuration from the
+    file specified there instead of /etc/wallet/wallet.conf if it is set.
+
 wallet 0.7 (2008-02-08)
 
     Add new exists and autocreate wallet server interfaces.  The first
