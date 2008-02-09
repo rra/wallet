@@ -84,6 +84,10 @@ REQUIREMENTS
   translates the actions in that protocol into calls to the Wallet::Server
   Perl object.
 
+  The file object support in the wallet server requires the Digest::MD5
+  Perl module, which comes with recent versions of Perl and is available
+  on CPAN for older versions.
+
   The keytab support in the wallet server requires the kadmin client
   program be installed and currently assumes that it follows the syntax of
   the MIT Kerberos kadmin client.  It also requires that the wallet server

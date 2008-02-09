@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -21,7 +21,7 @@ use DBI;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ##############################################################################
 # Data manipulation
@@ -260,6 +260,8 @@ Holds the supported object types and their corresponding Perl classes:
   create table types
      (ty_name             varchar(16) primary key,
       ty_class            varchar(64));
+  insert into types (ty_name, ty_class)
+      values ('file', 'Wallet::Object::File');
   insert into types (ty_name, ty_class)
       values ('keytab', 'Wallet::Object::Keytab');
 

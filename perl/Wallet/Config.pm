@@ -163,12 +163,43 @@ our $DB_PASSWORD;
 
 =back
 
+=head1 FILE OBJECT CONFIGURATION
+
+These configuration variables only need to be set if you intend to use the
+C<file> object type (the Wallet::Object::File class).
+
+=over 4
+
+=item FILE_BUCKET
+
+The directory into which to store file objects.  File objects will be
+stored in subdirectories of this directory.  See Wallet::Object::File(3)
+for the full details of the naming scheme.  This directory must be
+writable by the wallet server and the wallet server must be able to create
+subdirectories of it.
+
+FILE_BUCKET must be set to use file objects.
+
+=cut
+
+our $FILE_BUCKET;
+
+=item FILE_MAX_SIZE
+
+The maximum size of data that can be stored in a file object in bytes.  If
+this configuration variable is set, an attempt to store data larger than
+this limit will be rejected.
+
+=cut
+
+our $FILE_MAX_SIZE;
+
+=back
+
 =head1 KEYTAB OBJECT CONFIGURATION
 
 These configuration variables only need to be set if you intend to use the
-C<keytab> object type (the Wallet::Object::Keytab class).  They point the
-keytab object implementation at the right Kerberos server and B<kadmin>
-client.
+C<keytab> object type (the Wallet::Object::Keytab class).
 
 =over 4
 
