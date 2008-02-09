@@ -104,6 +104,13 @@ sub store {
         $self->error ("cannot store $id: object is locked");
         return;
     }
+    if ($Wallet::Config::FILE_MAX_SIZE) {
+        my $max = $Wallet::Config::FILE_MAX_SIZE;
+        if (length ($data) > $max) {
+            $self->error ("data exceeds maximum of $max bytes");
+            return;
+        }
+    }
     my $path = $self->file_path;
     return unless $path;
     unless (open (FILE, '>', $path)) {

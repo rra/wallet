@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 50;
+use Test::More tests => 56;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -83,6 +83,22 @@ is ($object->store ("bar\n\0baz\n", @trace), 1, ' but storing again works');
 ok (-f 'test-files/09/test', ' and the file exists');
 is (contents ('test-files/09/test'), 'bar', ' with the right contents');
 is ($object->get (@trace), "bar\n\0baz\n", ' and get returns correctly');
+
+# Try exceeding the store size.
+$Wallet::Config::FILE_MAX_SIZE = 1024;
+is ($object->store ('x' x 1024, @trace), 1,
+    ' and storing exactly 1024 characters works');
+is ($object->get (@trace), 'x' x 1024, ' and get returns the right thing');
+is ($object->store ('x' x 1025, @trace), undef,
+    ' but storing 1025 characters fails');
+is ($object->error, 'data exceeds maximum of 1024 bytes',
+    ' with the right error');
+
+# Try storing the empty data object.
+is ($object->store ('', @trace), 1, 'Storing the empty object works');
+is ($object->get (@trace), '', ' and get returns the right thing');
+
+# Test destruction.
 is ($object->destroy (@trace), 1, 'Destroying the object works');
 ok (! -f 'test-files/09/test', ' and the file is gone');
 
