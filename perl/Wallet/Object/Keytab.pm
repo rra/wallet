@@ -727,7 +727,7 @@ Wallet::Object::Keytab - Keytab object implementation for wallet
 =head1 DESCRIPTION
 
 Wallet::Object::Keytab is a representation of Kerberos keytab objects in the
-wallet.  It implements then wallet object API and provides the necessary
+wallet.  It implements the wallet object API and provides the necessary
 glue to create principals in a Kerberos KDC, create and return keytabs for
 those principals, and delete them out of Kerberos when the wallet object is
 destroyed.
@@ -836,25 +836,24 @@ If create() fails, it throws an exception.
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
-Destroys a keytab object by removing all record of it from the database and
-deleting the principal out of Kerberos.  If deleting the principal fails,
-destroy() fails, but destroy() succeeds if the principal didn't exist when
-it was called (so that it can be used to clean up stranded entries).
-Returns true on success and false on failure.  The caller should call
-error() to get the error message after a failure.  PRINCIPAL, HOSTNAME, and
-DATETIME are stored as history information.  PRINCIPAL should be the user
-who is destroying the object.  If DATETIME isn't given, the current time is
-used.
+Destroys a keytab object by removing it from the database and deleting the
+principal out of Kerberos.  If deleting the principal fails, destroy()
+fails, but destroy() succeeds if the principal didn't exist when it was
+called (so that it can be used to clean up stranded entries).  Returns
+true on success and false on failure.  The caller should call error() to
+get the error message after a failure.  PRINCIPAL, HOSTNAME, and DATETIME
+are stored as history information.  PRINCIPAL should be the user who is
+destroying the object.  If DATETIME isn't given, the current time is used.
 
 =item get(PRINCIPAL, HOSTNAME [, DATETIME])
 
-Retrieves a keytab for this object and returns the keytab data or undef on
-error.  The caller should call error() to get the error message if get()
-returns undef.  The keytab is created with C<ktadd>, invalidating any
-existing keytabs for that principal.  PRINCIPAL, HOSTNAME, and DATETIME
-are stored as history information.  PRINCIPAL should be the user who is
-downloading the keytab.  If DATETIME isn't given, the current time is
-used.
+Retrieves a keytab for this object and returns the keytab data or undef
+on error.  The caller should call error() to get the error message if
+get() returns undef.  The keytab is created with C<ktadd>, invalidating
+any existing keytabs for that principal, unless the unchanging flag is set
+on the object.  PRINCIPAL, HOSTNAME, and DATETIME are stored as history
+information.  PRINCIPAL should be the user who is downloading the keytab.
+If DATETIME isn't given, the current time is used.
 
 If the configuration variable $KEYTAB_AFS_DESTROY is set and the C<sync>
 attribute is not set to C<kaserver>, calling get() on a keytab object will
@@ -889,7 +888,7 @@ database do not have realm information.
 
 =head1 SEE ALSO
 
-Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8)
+kadmin(8), Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is available
 from L<http://www.eyrie.org/~eagle/software/wallet/>.
