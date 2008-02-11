@@ -158,35 +158,6 @@ sub valid_srvtab {
     return ($? == 0) ? 1 : 0;
 }
 
-# Start remctld with the appropriate options to run our fake keytab backend.
-sub spawn_remctld {
-    my ($path, $principal, $keytab) = @_;
-    unlink 'test-pid';
-    my $pid = fork;
-    if (not defined $pid) {
-        die "cannot fork: $!\n";
-    } elsif ($pid == 0) {
-        open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
-        exec ($path, '-m', '-p', 14373, '-s', $principal, '-P', 'test-pid',
-              '-f', 't/data/keytab.conf', '-S', '-F', '-k', $keytab) == 0
-            or die "cannot exec $path: $!\n";
-    } else {
-        my $tries = 0;
-        while ($tries < 10 && ! -f 'test-pid') {
-            select (undef, undef, undef, 0.25);
-        }
-    }
-}
-
-# Stop the running remctld process.
-sub stop_remctld {
-    open (PID, '<', 'test-pid') or return;
-    my $pid = <PID>;
-    close PID;
-    chomp $pid;
-    kill 15, $pid;
-}
-
 # Use Wallet::Admin to set up the database.
 unlink ('krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
 db_setup;
@@ -428,7 +399,8 @@ SKIP: {
     is ($two->flag_set ('unchanging', @trace), 1, ' and setting unchanging');
 
     # Now spawn our remctld server and get a ticket cache.
-    spawn_remctld ($remctld, $principal, 't/data/test.keytab');
+    remctld_spawn ($remctld, $principal, 't/data/test.keytab',
+                   't/data/keytab.conf');
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     getcreds ('t/data/test.keytab', $principal);
     $ENV{KRB5CCNAME} = 'krb5cc_good';
@@ -460,7 +432,7 @@ SKIP: {
         ' with the right error');
     is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
     is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
-    stop_remctld;
+    remctld_stop;
 
     # Check that history has been updated correctly.
     $history .= <<"EOO";

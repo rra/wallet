@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -17,11 +17,11 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 use Exporter ();
 @ISA    = qw(Exporter);
-@EXPORT = qw(contents db_setup);
+@EXPORT = qw(contents db_setup remctld_spawn remctld_stop);
 
 ##############################################################################
 # General utility functions
@@ -64,4 +64,40 @@ sub db_setup {
         $Wallet::Config::DB_INFO = 'wallet-db';
         unlink 'wallet-db';
     }
+}
+
+##############################################################################
+# remctld handling
+##############################################################################
+
+# Start remctld with the appropriate options to run our fake keytab backend.
+# Takes the path to remctld, the principal it uses as its server principal,
+# the keytab it uses for authentication, and the configuration file it should
+# load.
+sub remctld_spawn {
+    my ($path, $principal, $keytab, $config) = @_;
+    unlink 'test-pid';
+    my $pid = fork;
+    if (not defined $pid) {
+        die "cannot fork: $!\n";
+    } elsif ($pid == 0) {
+        open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
+        exec ($path, '-m', '-p', 14373, '-s', $principal, '-P', 'test-pid',
+              '-f', $config, '-S', '-F', '-k', $keytab) == 0
+            or die "cannot exec $path: $!\n";
+    } else {
+        my $tries = 0;
+        while ($tries < 10 && ! -f 'test-pid') {
+            select (undef, undef, undef, 0.25);
+        }
+    }
+}
+
+# Stop the running remctld process.
+sub remctld_stop {
+    open (PID, '<', 'test-pid') or return;
+    my $pid = <PID>;
+    close PID;
+    chomp $pid;
+    kill 15, $pid;
 }

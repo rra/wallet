@@ -4,7 +4,7 @@
 # t/verifier.t -- Tests for the basic wallet ACL verifiers.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -33,35 +33,6 @@ sub getcreds {
         }
     }
     return 0;
-}
-
-# Start remctld with the appropriate options to run our fake keytab backend.
-sub spawn_remctld {
-    my ($path, $principal, $keytab) = @_;
-    unlink 'test-pid';
-    my $pid = fork;
-    if (not defined $pid) {
-        die "cannot fork: $!\n";
-    } elsif ($pid == 0) {
-        open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
-        exec ($path, '-m', '-p', 14373, '-s', $principal, '-P', 'test-pid',
-              '-f', 't/data/netdb.conf', '-S', '-F', '-k', $keytab) == 0
-            or die "cannot exec $path: $!\n";
-    } else {
-        my $tries = 0;
-        while ($tries < 10 && ! -f 'test-pid') {
-            select (undef, undef, undef, 0.25);
-        }
-    }
-}
-
-# Stop the running remctld process.
-sub stop_remctld {
-    open (PID, '<', 'test-pid') or return;
-    my $pid = <PID>;
-    close PID;
-    chomp $pid;
-    kill 15, $pid;
 }
 
 my $verifier = Wallet::ACL::Base->new;
@@ -101,7 +72,8 @@ SKIP: {
 
     # Now spawn our remctld server and get a ticket cache.
     unlink ('krb5cc_test', 'test-acl', 'test-pid');
-    spawn_remctld ($remctld, $principal, 't/data/test.keytab');
+    remctld_spawn ($remctld, $principal, 't/data/test.keytab',
+                   't/data/netdb.conf');
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     getcreds ('t/data/test.keytab', $principal);
 
@@ -178,6 +150,6 @@ SKIP: {
         'Undefined principal');
     is ($verifier->error, 'no principal specified', ' and right error');
 
-    stop_remctld;
+    remctld_stop;
     unlink ('krb5cc_test', 'test-acl', 'test-pid');
 }
