@@ -60,9 +60,11 @@ dnl Needed to get prototypes for functions like asprintf on Linux.
 AC_DEFINE([_GNU_SOURCE], [1], [Define to 1 on Linux to get full prototypes.])
 
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile perl/Makefile.PL])
+AC_CONFIG_FILES([Makefile perl/Makefile.PL tests/data/full.conf])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
+AC_CONFIG_FILES([tests/client/full-t], [chmod +x tests/client/full-t])
 AC_CONFIG_FILES([tests/client/pod-t], [chmod +x tests/client/pod-t])
+AC_CONFIG_FILES([tests/data/cmd-wrapper], [chmod +x tests/data/cmd-wrapper])
 AC_CONFIG_FILES([tests/server/admin-t], [chmod +x tests/server/admin-t])
 AC_CONFIG_FILES([tests/server/backend-t], [chmod +x tests/server/backend-t])
 AC_CONFIG_FILES([tests/server/keytab-t], [chmod +x tests/server/keytab-t])
