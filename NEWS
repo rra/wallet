@@ -13,6 +13,8 @@ wallet 0.8 (unreleased)
     environment variable WALLET_CONFIG and loads configuration from the
     file specified there instead of /etc/wallet/wallet.conf if it is set.
 
+    wallet-backend now supports a -q flag, which disables syslog logging.
+
     Add a full end-to-end test suite to catch protocol mismatches between
     the client and server, such as the one fixed in this release.
 

@@ -13,11 +13,14 @@ our $ID = q$Id$;
 ##############################################################################
 
 use strict;
+
+use Getopt::Long qw(GetOptions);
 use Sys::Syslog qw(openlog syslog);
 use Wallet::Server;
 
-# Set to zero to suppress syslog logging, which is used only for testing.  Set
-# to a reference to a string to append messages to that string instead.
+# Set to zero to suppress syslog logging, which is used for testing and for
+# the -q option.  Set to a reference to a string to append messages to that
+# string instead.
 our $SYSLOG;
 $SYSLOG = 1 unless defined $SYSLOG;
 
@@ -289,7 +292,15 @@ sub command {
     }
     success (@_);
 }
+
+# Parse command-line options.
+my ($quiet);
+GetOptions ('q|quiet' => \$quiet) or exit 1;
+$SYSLOG = 0 if $quiet;
+
+# Run the command.
 command (@ARGV);
+
 __END__
 
 ##############################################################################
@@ -305,7 +316,7 @@ wallet-backend - Wallet server for storing and retrieving secure data
 
 =head1 SYNOPSIS
 
-B<wallet-backend> I<command> [I<args> ...]
+B<wallet-backend> [B<-q>] I<command> [I<args> ...]
 
 =head1 DESCRIPTION
 
@@ -326,7 +337,14 @@ over and above the checking already done by the rest of the wallet code.
 
 =head1 OPTIONS
 
-B<wallet-backend> takes no traditional options.
+=over 4
+
+=item B<--quiet>, B<-q>
+
+If this option is given, B<wallet-backend> will not log its actions to
+syslog.
+
+=back
 
 =head1 COMMANDS
 
