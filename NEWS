@@ -6,9 +6,15 @@ wallet 0.8 (unreleased)
 
     Add file object support to the wallet server.
 
+    Correctly handle get of an empty object in the wallet client.  The
+    empty string is valid object content.
+
     Wallet::Config and hence the wallet server now checks for the
     environment variable WALLET_CONFIG and loads configuration from the
     file specified there instead of /etc/wallet/wallet.conf if it is set.
+
+    Add a full end-to-end test suite to catch protocol mismatches between
+    the client and server, such as the one fixed in this release.
 
 wallet 0.7 (2008-02-08)
 

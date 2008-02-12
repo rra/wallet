@@ -27,7 +27,7 @@ wallet='../client/wallet'
 # Start the remctld daemon and wait for it to start.
 principal=`cat data/test.principal`
 rm -f data/pid
-( @REMCTLD@ -m -p 14373 -s "$principal" -P data/pid -f data/wallet.conf \
+( @REMCTLD@ -m -p 14373 -s "$principal" -P data/pid -f data/basic.conf \
   -S -F -k data/test.keytab &)
 KRB5CCNAME=data/test.cache; export KRB5CCNAME
 kinit -k -t data/test.keytab "$principal" > /dev/null 2>&1

@@ -6,4 +6,5 @@
 
 WALLET_CONFIG='@abs_top_srcdir@/tests/data/wallet.conf'
 export WALLET_CONFIG
-exec perl -I'@abs_top_srcdir@/perl' '@abs_top_srcdir@/server/wallet-backend'
+exec perl -I'@abs_top_srcdir@/perl' '@abs_top_srcdir@/server/wallet-backend' \
+    "$@"

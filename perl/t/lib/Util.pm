@@ -97,14 +97,15 @@ sub getcreds {
 sub remctld_spawn {
     my ($path, $principal, $keytab, $config) = @_;
     unlink 'test-pid';
+    my @command = ($path, '-m', '-p', 14373, '-s', $principal, '-P',
+                   'test-pid', '-f', $config, '-S', '-F', '-k', $keytab);
+    print "Starting remctld: @command\n";
     my $pid = fork;
     if (not defined $pid) {
         die "cannot fork: $!\n";
     } elsif ($pid == 0) {
         open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
-        exec ($path, '-m', '-p', 14373, '-s', $principal, '-P', 'test-pid',
-              '-f', $config, '-S', '-F', '-k', $keytab) == 0
-            or die "cannot exec $path: $!\n";
+        exec (@command) or die "cannot exec $path: $!\n";
     } else {
         my $tries = 0;
         while ($tries < 10 && ! -f 'test-pid') {

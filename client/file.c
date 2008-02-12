@@ -32,11 +32,13 @@ overwrite_file(const char *name, const void *data, size_t length)
     fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0600);
     if (fd < 0)
         sysdie("open of %s failed", name);
-    status = write(fd, data, length);
-    if (status < 0)
-        sysdie("write to %s failed", name);
-    else if (status != (ssize_t) length)
-        die("write to %s truncated", name);
+    if (length > 0) {
+        status = write(fd, data, length);
+        if (status < 0)
+            sysdie("write to %s failed", name);
+        else if (status != (ssize_t) length)
+            die("write to %s truncated", name);
+    }
     if (close(fd) < 0)
         sysdie("close of %s failed (file probably truncated)", name);
 }
@@ -93,15 +95,17 @@ get_file(struct remctl *r, const char *prefix, const char *type,
     status = run_command(r, command, &data, &length);
     if (status != 0)
         return status;
-    if (data == NULL) {
-        warn("no data returned by wallet server");
-        return 255;
-    }
+
+    /* The empty string is valid data. */
+    if (data == NULL)
+        length = 0;
     if (file != NULL)
         write_file(file, data, length);
-    else {
+    else if (length > 0) {
         if (fwrite(data, length, 1, stdout) != 1)
             sysdie("cannot write to standard output");
     }
+    if (data != NULL)
+        free(data);
     return 0;
 }

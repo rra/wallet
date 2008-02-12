@@ -1,4 +1,5 @@
 client/basic
+client/full
 client/pod
 portable/asprintf
 portable/snprintf

@@ -12,7 +12,7 @@
 # is loaded, and it's pulled in as a prerequisite for Wallet::Admin.
 BEGIN { $ENV{WALLET_CONFIG} = '@abs_top_srcdir@/tests/data/wallet.conf' }
 
-BEGIN { our $total = 1 }
+BEGIN { our $total = 47 }
 use Test::More tests => $total;
 
 use lib '@abs_top_srcdir@/perl';
@@ -52,10 +52,6 @@ sub wallet {
     return ($output, $error, $status);
 }
 
-# Use this to accumulate the history traces so that we can check history.
-my $history = '';
-my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
-
 SKIP: {
     skip 'no keytab configuration', $total
         unless -f '@abs_top_builddir@/tests/data/test.keytab';
@@ -68,7 +64,7 @@ SKIP: {
     my $principal = contents ('@abs_top_builddir@/tests/data/test.principal');
     remctld_spawn ($remctld, $principal,
                    '@abs_top_builddir@/tests/data/test.keytab',
-                   '@abs_top_builddir@/tests/data/full.conf.in');
+                   '@abs_top_builddir@/tests/data/full.conf');
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     getcreds ('@abs_top_builddir@/tests/data/test.keytab', $principal);
 
@@ -81,74 +77,80 @@ SKIP: {
     my $dbh = $admin->dbh;
 
     # Create the file bucket.
-    system ('rm', '-r', 'test-files');
+    if (-d 'test-files') {
+        system ('rm', '-r', 'test-files');
+    }
     mkdir ('test-files', 0777) or die "cannot create file-bucket: $!\n";
 
     # Now, start testing.  First, create an object, create an ACL, assign an
     # owner, store the contents, and then get the contents and make sure all
     # of that works as expected.
-    my ($out, $err, $status) = wallet ('create', 'file', 'test');
+    my ($out, $err, $status) = wallet ($principal, 'create', 'file', 'test');
     is ($status, 0, 'Object creation succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('acl', 'create', 'user/test');
+    ($out, $err, $status) = wallet ($principal, 'acl', 'create', 'user/test');
     is ($status, 0, 'ACL creation succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('acl', 'add', 'user/test', 'krb5',
-                                    $principal);
+    ($out, $err, $status) = wallet ($principal, 'acl', 'add', 'user/test',
+                                    'krb5', $principal);
     is ($status, 0, 'ACL population succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('acl', 'show', 'user/test');
+    ($out, $err, $status) = wallet ($principal, 'acl', 'show', 'user/test');
     is ($status, 0, 'ACL show succeeds');
-    is ($out, "Members of ACL user/test (id: 2) are:\n  krb5 $principal",
+    is ($out, "Members of ACL user/test (id: 2) are:\n  krb5 $principal\n",
         ' with the right output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('owner', 'file', 'test', 'user/test');
+    ($out, $err, $status) = wallet ($principal, 'owner', 'file', 'test',
+                                    'user/test');
     is ($status, 0, 'Object owner succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('store', 'file', 'test', "foo\nbar\n");
+    ($out, $err, $status) = wallet ($principal, 'store', 'file', 'test',
+                                    "foo\nbar\n");
     is ($status, 0, 'Object store succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('get', 'file', 'test');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'test');
     is ($status, 0, 'Object get succeeds');
     is ($out, "foo\nbar\n", ' and returns the right data');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('store', 'file', 'test', '');
+    ($out, $err, $status) = wallet ($principal, 'store', 'file', 'test', '');
     is ($status, 0, 'Store of empty object succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('get', 'file', 'test');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'test');
     is ($status, 0, 'Get of empty object succeeds');
     is ($out, '', ' and returns an empty object');
     is ($err, '', ' with no error');
-    ($out, $err, $status) = wallet ('destroy', 'file', 'test');
+    ($out, $err, $status) = wallet ($principal, 'destroy', 'file', 'test');
     is ($status, 0, 'Object destroy succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('get', 'file', 'test');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'test');
     isnt ($status, 0, 'Object get now fails');
     is ($out, '', ' with no output');
-    is ($err, "wallet: cannot find file:test\n", ' and the right error');
+    is ($err, "wallet: $principal not authorized to create file:test\n",
+        ' and the right error');
 
     # Try auto-creation.
-    ($out, $err, $status) = wallet ('get', 'file', 'auto');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
     isnt ($status, 0, 'Object autocreation get fails');
     is ($out, '', ' with no output');
     is ($err, "wallet: cannot get file:auto: object has not been stored\n",
         ' and the right error');
-    ($out, $err, $status) = wallet ('destroy', 'file', 'auto');
+    ($out, $err, $status) = wallet ($principal, 'destroy', 'file', 'auto');
     is ($status, 0, 'Object destroy succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('store', 'file', 'auto', "baz\nboo\n");
+    ($out, $err, $status) = wallet ($principal, 'store', 'file', 'auto',
+                                    "baz\nboo\n");
     is ($status, 0, 'Object autocreation store succeeds');
     is ($out, '', ' with no output');
     is ($err, '', ' and no error');
-    ($out, $err, $status) = wallet ('get', 'file', 'auto');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
     is ($status, 0, 'Object get now succeeds');
     is ($out, "baz\nboo\n", ' with the right output');
     is ($err, '', ' and no error');
@@ -157,5 +159,7 @@ SKIP: {
     remctld_stop;
     $admin->destroy;
     unlink ('wallet-db', 'krb5cc_test', 'test-pid');
-    system ('rm', '-r', 'test-files');
+    if (-d 'test-files') {
+        system ('rm', '-r', 'test-files');
+    }
 }
