@@ -21,7 +21,7 @@ $VERSION = '0.02';
 
 use Exporter ();
 @ISA    = qw(Exporter);
-@EXPORT = qw(contents db_setup remctld_spawn remctld_stop);
+@EXPORT = qw(contents db_setup getcreds remctld_spawn remctld_stop);
 
 ##############################################################################
 # General utility functions
@@ -64,6 +64,26 @@ sub db_setup {
         $Wallet::Config::DB_INFO = 'wallet-db';
         unlink 'wallet-db';
     }
+}
+
+##############################################################################
+# Local ticket cache
+##############################################################################
+
+# Given a keytab file and a principal, try authenticating with kinit.
+sub getcreds {
+    my ($file, $principal) = @_;
+    my @commands = (
+        "kinit -k -t $file $principal >/dev/null 2>&1 </dev/null",
+        "kinit -t $file $principal >/dev/null 2>&1 </dev/null",
+        "kinit -k -K $file $principal >/dev/null 2>&1 </dev/null",
+    );
+    for my $command (@commands) {
+        if (system ($command) == 0) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 ##############################################################################

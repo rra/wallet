@@ -19,22 +19,6 @@ use Wallet::Config;
 use lib 't/lib';
 use Util;
 
-# Given a keytab file, try authenticating with kinit.
-sub getcreds {
-    my ($file, $principal) = @_;
-    my @commands = (
-        "kinit -k -t $file $principal 2>&1 >/dev/null </dev/null",
-        "kinit -t $file $principal 2>&1 >/dev/null </dev/null",
-        "kinit -k -K $file $principal 2>&1 >/dev/null </dev/null",
-    );
-    for my $command (@commands) {
-        if (system ($command) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 my $verifier = Wallet::ACL::Base->new;
 ok (defined $verifier, 'Wallet::ACL::Base creation');
 ok ($verifier->isa ('Wallet::ACL::Base'), ' and class verification');
