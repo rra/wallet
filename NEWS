@@ -21,6 +21,9 @@ wallet 0.8 (unreleased)
     Add a full end-to-end test suite to catch protocol mismatches between
     the client and server, such as the one fixed in this release.
 
+    Update the design documentation to reflect the current protocol and
+    implementation.
+
 wallet 0.7 (2008-02-08)
 
     Add new exists and autocreate wallet server interfaces.  The first

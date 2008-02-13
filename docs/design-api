@@ -154,3 +154,16 @@ ACL Verifier API
     granted, 0 if access is declined, and undef on error.  On error, the
     method should pass the error to error() to store it in the object for
     retrieval by the caller.
+
+Registering New Implementations
+
+    If you have developed a new object or ACL verifier implementation, you
+    must register that implementation in the database before objects of
+    that type or ACL lines of that scheme can be created.  To do this, use
+    the wallet-admin command-line client:
+
+        wallet-admin register object <type> <class>
+        wallet-admin register verifier <scheme> <class>
+
+    where <type> or <scheme> is the object type or ACL scheme and <class>
+    is the Perl class which implements that object type or ACL verifier.

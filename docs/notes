@@ -10,7 +10,8 @@ Introduction
     This is now mostly of historical interest.  For information about how
     the wallet now works, see the documentation for each of the server
     classes, the other design documents, and the man pages for the
-    programs.
+    programs.  Some portions of this document may be inaccurate or not
+    reflect how the wallet system is currently implemented.
 
 Server Issues
 

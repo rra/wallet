@@ -55,19 +55,27 @@ ACL Schemes
     The <identifier> is a fully-qualified Kerberos principal.  Access is
     granted if the principal of the client matches <identifier>.
 
-  ldap-entitlement
-
-    <identifier> is an entitlement.  If the entitlement attribute of the
-    LDAP entry corresponding to the given principal contains the
-    entitlement specified in <identifier>, access is granted.
-
   netdb
 
     <identifier> is the name of a system.  Access is granted if the user
     is listed as an administrator, user, or admin team member of the host
     in NetDB (Stanford's system management database).
 
+  netdb-root
+
+    This is almost identical to netdb except that the user must be in the
+    form of a root instance (<user>/root) and the "/root" portion is
+    stripped before checking the NetDB roles.
+
+  ldap-entitlement
+
+    (Not yet implemented.)  <identifier> is an entitlement.  If the
+    entitlement attribute of the LDAP entry corresponding to the given
+    principal contains the entitlement specified in <identifier>, access
+    is granted.
+
   pts
 
-    <identifier> is the name of an AFS PTS group.  Access is granted if
-    the principal of the user is a member of that AFS PTS group.
+    (Not yet implemented.)  <identifier> is the name of an AFS PTS group.
+    Access is granted if the principal of the user is a member of that AFS
+    PTS group.
