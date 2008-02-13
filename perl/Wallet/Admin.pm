@@ -321,7 +321,7 @@ Register in the database a mapping from the object type TYPE to the class
 CLASS.  Returns true on success and false on failure (including when the
 verifier is already registered).
 
-=item register_verifier (DBH, SCHEME, CLASS)
+=item register_verifier (SCHEME, CLASS)
 
 Register in the database a mapping from the ACL scheme SCHEME to the class
 CLASS.  Returns true on success and false on failure (including when the
