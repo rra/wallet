@@ -1,3 +1,15 @@
+wallet (0.8-1) unstable; urgency=low
+
+  * New upstream version.
+    - Fix protocol mismatch between client and server.
+    - Add file object support to the wallet server.
+    - Correctly handle empty objects in the wallet client.
+    - Add -q flag to wallet-backend to suppress syslog logging.
+    - Add class registration to the wallet-admin utility.
+    - Updated design documentation.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 13 Feb 2008 13:59:06 -0800
+
 wallet (0.7-1) unstable; urgency=low
 
   * New upstream version.
