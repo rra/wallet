@@ -96,10 +96,6 @@ sub type_mapping {
         return;
     }
     if (defined $class) {
-        if ($class !~ /^Wallet::Object::(\w+::)*\w+\z/) {
-            $self->error ("invalid class name $class for type $type");
-            return;
-        }
         eval "require $class";
         if ($@) {
             $self->error ($@);

@@ -18,6 +18,10 @@ wallet 0.8 (unreleased)
     wallet-admin now supports registering new object or ACL verifier
     implementations in the database.
 
+    Remove the restriction that all object implementations must have class
+    names of Wallet::Object::* and all ACL verifier implementations must
+    have class names of Wallet::ACL::*.
+
     Add a full end-to-end test suite to catch protocol mismatches between
     the client and server, such as the one fixed in this release.
 

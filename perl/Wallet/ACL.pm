@@ -137,10 +137,6 @@ sub scheme_mapping {
         return;
     }
     if (defined $class) {
-        if ($class !~ /^Wallet::ACL::(\w+::)*\w+\z/) {
-            $self->error ("invalid class name $class for scheme $scheme");
-            return;
-        }
         eval "require $class";
         if ($@) {
             $self->error ($@);
