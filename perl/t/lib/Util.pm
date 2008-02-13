@@ -76,7 +76,7 @@ sub getcreds {
     my @commands = (
         "kinit -k -t $file $principal >/dev/null 2>&1 </dev/null",
         "kinit -t $file $principal >/dev/null 2>&1 </dev/null",
-        "kinit -k -K $file $principal >/dev/null 2>&1 </dev/null",
+        "kinit -T /bin/true -k -K $file $principal >/dev/null 2>&1 </dev/null",
     );
     for my $command (@commands) {
         if (system ($command) == 0) {

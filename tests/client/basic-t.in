@@ -35,7 +35,7 @@ if [ $? != 0 ] ; then
     kinit -t data/test.keytab "$principal" > /dev/null 2>&1
 fi
 if [ $? != 0 ] ; then
-    kinit -k -K data/test.keytab "$principal" > /dev/null 2>&1
+    kinit -T /bin/true -k -K data/test.keytab "$principal" > /dev/null 2>&1
 fi
 if [ $? != 0 ] ; then
     echo 'Unable to obtain Kerberos tickets' >&2
