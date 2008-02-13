@@ -23,7 +23,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -172,6 +172,48 @@ sub list_acls {
     }
 }
 
+##############################################################################
+# Object registration
+##############################################################################
+
+# Given an object type and class name, add a new class mapping to that
+# database for the given object type.  This is used to register new object
+# types.  Returns true on success, false on failure, and sets the internal
+# error on failure.
+sub register_object {
+    my ($self, $type, $class) = @_;
+    eval {
+        my $sql = 'insert into types (ty_name, ty_class) values (?, ?)';
+        $self->{dbh}->do ($sql, undef, $type, $class);
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ("cannot register $class for $type: $@");
+        $self->{dbh}->rollback;
+        return;
+    }
+    return 1;
+}
+
+# Given an ACL verifier scheme and class name, add a new class mapping to that
+# database for the given ACL verifier scheme.  This is used to register new
+# ACL schemes.  Returns true on success, false on failure, and sets the
+# internal error on failure.
+sub register_verifier {
+    my ($self, $scheme, $class) = @_;
+    eval {
+        my $sql = 'insert into acl_schemes (as_name, as_class) values (?, ?)';
+        $self->{dbh}->do ($sql, undef, $scheme, $class);
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ("cannot registery $class for $scheme: $@");
+        $self->{dbh}->rollback;
+        return;
+    }
+    return 1;
+}
+
 1;
 __DATA__
 
@@ -272,6 +314,18 @@ Returns the empty list on failure.  To distinguish between this and a
 database containing no objects, the caller should call error().  error()
 is guaranteed to return the error message if there was an error and undef
 if there was no error.
+
+=item register_object (TYPE, CLASS)
+
+Register in the database a mapping from the object type TYPE to the class
+CLASS.  Returns true on success and false on failure (including when the
+verifier is already registered).
+
+=item register_verifier (DBH, SCHEME, CLASS)
+
+Register in the database a mapping from the ACL scheme SCHEME to the class
+CLASS.  Returns true on success and false on failure (including when the
+verifier is already registered).
 
 =item reinitialize(PRINCIPAL)
 

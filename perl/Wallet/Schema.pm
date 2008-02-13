@@ -21,7 +21,7 @@ use DBI;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ##############################################################################
 # Data manipulation
@@ -120,44 +120,6 @@ sub drop {
 }
 
 ##############################################################################
-# Administrative actions
-##############################################################################
-
-# Given a database handle, object type, and class name, add a new class
-# mapping to that database for the given object type.  This is used to
-# register new object types.  Throws an exception on failure.
-sub register_object {
-    my ($self, $dbh, $type, $class) = @_;
-    eval {
-        $dbh->begin_work if $dbh->{AutoCommit};
-        my $sql = 'insert into types (ty_name, ty_class) values (?, ?)';
-        $dbh->do ($sql, undef, $type, $class);
-        $dbh->commit;
-    };
-    if ($@) {
-        $dbh->rollback;
-        die "$@\n";
-    }
-}
-
-# Given a database handle, ACL verifier scheme, and class name, add a new
-# class mapping to that database for the given ACL verifier scheme.  This is
-# used to register new ACL schemes.  Throws an exception on failure.
-sub register_verifier {
-    my ($self, $dbh, $scheme, $class) = @_;
-    eval {
-        $dbh->begin_work if $dbh->{AutoCommit};
-        my $sql = 'insert into acl_schemes (as_name, as_class) values (?, ?)';
-        $dbh->do ($sql, undef, $scheme, $class);
-        $dbh->commit;
-    };
-    if ($@) {
-        $dbh->rollback;
-        die "$@\n";
-    }
-}
-
-##############################################################################
 # Schema
 ##############################################################################
 
@@ -214,24 +176,6 @@ database if any of those tables exist.  This method will only remove tables
 that are part of the current schema or one of the previous known schema and
 won't remove other tables.  On any error, this method will throw a database
 exception.
-
-=item register_object (DBH, TYPE, CLASS)
-
-Given a connected database handle, register in that database a mapping from
-the object type TYPE to the class CLASS.  On any error, including attempting
-to add a mapping for a type that already exists, this method will throw a
-database exception.
-
-This method will eventually move to another class.
-
-=item register_verifier (DBH, SCHEME, CLASS)
-
-Given a connected database handle, register in that database a mapping from
-the ACL scheme SCHEME to the class CLASS.  On any error, including
-attempting to add a mapping for a scheme that already exists, this method
-will throw a database exception.
-
-This method will eventually move to another class.
 
 =item sql()
 

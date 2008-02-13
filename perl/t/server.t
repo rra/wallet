@@ -40,8 +40,7 @@ my $dbh = $server->dbh;
 ok (defined ($dbh), ' and returns a defined database handle');
 
 # Allow creation of base objects for testing purposes.
-my $schema = Wallet::Schema->new;
-$schema->register_object ($dbh, 'base', 'Wallet::Object::Base');
+$setup->register_object ('base', 'Wallet::Object::Base');
 
 # We're currently running as the administrator, so everything should succeed.
 # Set up a bunch of data for us to test with, starting with some ACLs.  Test

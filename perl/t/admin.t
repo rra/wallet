@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 27;
+use Test::More tests => 29;
 
 use Wallet::Admin;
 use Wallet::Schema;
@@ -35,8 +35,8 @@ is ($acls[0][0], 1, ' and that is ACL ID 1');
 is ($acls[0][1], 'ADMIN', ' with the right name');
 
 # Register a base object so that we can create a simple object.
-my $schema = Wallet::Schema->new;
-$schema->register_object ($admin->dbh, 'base', 'Wallet::Object::Base');
+is ($admin->register_object ('base', 'Wallet::Object::Base'), 1,
+    'Registering Wallet::Object::Base works');
 
 # Create an object.
 $server = eval { Wallet::Server->new ('admin@EXAMPLE.COM', 'localhost') };
@@ -49,6 +49,11 @@ is ($server->create ('base', 'service/admin'), 1,
 is (scalar (@objects), 1, ' and now there is one object');
 is ($objects[0][0], 'base', ' with the right type');
 is ($objects[0][1], 'service/admin', ' and the right name');
+
+# Test registering a new ACL type.  We don't have a good way of really using
+# this right now.
+is ($admin->register_verifier ('base', 'Wallet::ACL::Base'), 1,
+    'Registering Wallet::ACL::Base works');
 
 # Create another ACL.
 is ($server->acl_create ('first'), 1, 'ACL creation succeeds');
