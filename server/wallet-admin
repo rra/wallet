@@ -65,6 +65,21 @@ sub command {
         } else {
             die "only objects or acls are supported for list\n";
         }
+    } elsif ($command eq 'register') {
+        die "too many arguments to register\n" if @args > 3;
+        die "too few arguments to register\n" if @args < 3;
+        my ($object, $type, $class) = @args;
+        if ($object eq 'object') {
+            unless ($admin->register_object ($type, $class)) {
+                die $admin->error, "\n";
+            }
+        } elsif ($object eq 'verifier') {
+            unless ($admin->register_verifier ($type, $class)) {
+                die $admin->error, "\n";
+            }
+        } else {
+            die "only object or verifier is supported for register\n";
+        }
     } else {
         die "unknown command $command\n";
     }
@@ -140,6 +155,19 @@ be listed in the form:
     <type> <name>
 
 In both cases, there will be one line per ACL or object.
+
+=item register (object | verifier) <type> <class>
+
+Registers an implementation of a wallet object or ACL verifier in the
+wallet database.  The Perl class <class> is registered as the
+implementation of an object of type <type> or an ACL verifier of scheme
+<type>, allowing creation of objects with that type or ACL lines with that
+scheme.
+
+All object and ACL implementations that come with wallet are registered by
+default as part of database initialization, so this command is used
+primarily to register local implementations of additional object types or
+ACL schemes.
 
 =back
 

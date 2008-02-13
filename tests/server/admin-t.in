@@ -10,7 +10,7 @@
 
 use strict;
 use IO::String;
-use Test::More tests => 40;
+use Test::More tests => 54;
 
 # Create a dummy class for Wallet::Admin that prints what method was called
 # with its arguments and returns data for testing.
@@ -59,6 +59,20 @@ sub list_acls {
     return ([ 1, 'ADMIN' ], [ 2, 'group/admins' ], [ 4, 'group/users' ]);
 }
 
+sub register_object {
+    shift;
+    print "register_object @_\n";
+    return if $error;
+    return 1;
+}
+
+sub register_verifier {
+    shift;
+    print "register_verifier @_\n";
+    return if $error;
+    return 1;
+}
+
 # Back to the main package and the actual test suite.  Lie about whether the
 # Wallet::Admin package has already been loaded.
 package main;
@@ -88,7 +102,8 @@ is ($out, "new\n", ' and nothing ran');
 # Check too few and too many arguments for every command.
 my %commands = (destroy    => [0, 0],
                 initialize => [1, 1],
-                list       => [1, 1]);
+                list       => [1, 1],
+                register   => [3, 3]);
 for my $command (sort keys %commands) {
     my ($min, $max) = @{ $commands{$command} };
     if ($min > 0) {
@@ -152,6 +167,20 @@ is ($out, "new\nlist_acls\n"
     . "ADMIN (ACL ID: 1)\ngroup/admins (ACL ID: 2)\ngroup/users (ACL ID: 4)\n",
     ' and returns the right output');
 
+# Test register.
+($out, $err) = run_admin ('register', 'foo', 'foo', 'Foo::Bar');
+is ($err, "only object or verifier is supported for register\n",
+    'Register requires object or verifier');
+is ($out, "new\n", ' and nothing was run');
+($out, $err) = run_admin ('register', 'object', 'foo', 'Foo::Object');
+is ($err, '', 'Register succeeds for object');
+is ($out, "new\nregister_object foo Foo::Object\n",
+    ' and returns the right outout');
+($out, $err) = run_admin ('register', 'verifier', 'foo', 'Foo::Verifier');
+is ($err, '', 'Register succeeds for verifier');
+is ($out, "new\nregister_verifier foo Foo::Verifier\n",
+    ' and returns the right outout');
+
 # Test error handling.
 $Wallet::Admin::error = 1;
 ($out, $err) = run_admin ('destroy');
@@ -169,6 +198,14 @@ is ($out, "new\nlist_objects\n", ' and calls the right methods');
 ($out, $err) = run_admin ('list', 'acls');
 is ($err, "some error\n", 'Error handling succeeds for list acls');
 is ($out, "new\nlist_acls\n", ' and calls the right methods');
+($out, $err) = run_admin ('register', 'object', 'foo', 'Foo::Object');
+is ($err, "some error\n", 'Error handling succeeds for register object');
+is ($out, "new\nregister_object foo Foo::Object\n",
+    ' and calls the right methods');
+($out, $err) = run_admin ('register', 'verifier', 'foo', 'Foo::Verifier');
+is ($err, "some error\n", 'Error handling succeeds for register verifier');
+is ($out, "new\nregister_verifier foo Foo::Verifier\n",
+    ' and calls the right methods');
 
 # Test empty lists.
 $Wallet::Admin::error = 0;

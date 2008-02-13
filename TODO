@@ -42,9 +42,6 @@ Release 1.0:
 * On upgrades, support adding new object types and ACL verifiers to the
   class tables.
 
-* Move the methods to add additional class mappings from Wallet::Schema to
-  Wallet::Admin.
-
 * Add an option to the wallet client to read the data from a file for
   object store.  The initial implementation, depending on the underlying
   remctl support, may have to ban nul characters in the uploaded data.

@@ -15,6 +15,9 @@ wallet 0.8 (unreleased)
 
     wallet-backend now supports a -q flag, which disables syslog logging.
 
+    wallet-admin now supports registering new object or ACL verifier
+    implementations in the database.
+
     Add a full end-to-end test suite to catch protocol mismatches between
     the client and server, such as the one fixed in this release.
 
