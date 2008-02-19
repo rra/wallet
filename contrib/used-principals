@@ -23,10 +23,10 @@ our %HOST_BASED = map { $_ => 1 }
 # Parse command-line options.
 my ($count, $help, $k4, $principals);
 Getopt::Long::config ('no_ignore_case', 'bundling');
-GetOptions ('4|k4|kerberos4=s' => \$k4,
-            'c|count'          => $count,
+GetOptions ('c|count'          => \$count,
             'h|help'           => \$help,
-            'p|principals'     => \$principals) or exit 1;
+            'k|k4|kerberos4=s' => \$k4,
+            'p|principals=s'   => \$principals) or exit 1;
 if ($help) {
     print "Feeding myself to perldoc, please wait....\n";
     exec ('perldoc', '-t', $0);
@@ -113,7 +113,7 @@ used-principals - Report which Kerberos v5 principals are in use
 
 =head1 SYNOPSIS
 
-B<used-principals> [B<-ch>] [B<-p> I<list> [B<-4> I<domain>]] [I<log> ...]
+B<used-principals> [B<-ch>] [B<-p> I<list> [B<-k> I<domain>]] [I<log> ...]
 
 =head1 DESCRIPTION
 
@@ -137,16 +137,6 @@ given set are active.
 
 =over 4
 
-=item B<-4> I<domain>, B<--k4>=I<domain>, B<--kerberos4>=I<domain>
-
-Meaningful only when used with the B<-p> option, this option says to
-interpret the principals listed in that file as Kerberos v4 principal
-names instead of Kerberos v5 principal names.  They will be converted to
-the corresponding Kerberos v5 principals before scanning the logs.
-I<domain> is the local domain to append to host-based Kerberos v4
-principals (such as C<rcmd.system>, which becomes
-C<host/system.I<domain>>).
-
 =item B<-c>, B<--count>
 
 Instead of printing only an active principal, print the principal, a
@@ -157,6 +147,16 @@ either obtaining a ticket or having a ticket obtained for it).
 
 Print out this documentation (which is done simply by feeding the script
 to C<perldoc -t>).
+
+=item B<-k> I<domain>, B<--k4>=I<domain>, B<--kerberos4>=I<domain>
+
+Meaningful only when used with the B<-p> option, this option says to
+interpret the principals listed in that file as Kerberos v4 principal
+names instead of Kerberos v5 principal names.  They will be converted to
+the corresponding Kerberos v5 principals before scanning the logs.
+I<domain> is the local domain to append to host-based Kerberos v4
+principals (such as C<rcmd.system>, which becomes
+C<host/system.I<domain>>).
 
 =item B<-p> I<list>, B<--principals>=I<list>
 
