@@ -128,7 +128,7 @@ EOM
 ##############################################################################
 
 # Read in command-line options.
-my ($help, $mail, $version);
+my ($help, $mail);
 Getopt::Long::config ('no_ignore_case', 'bundling');
 GetOptions ('help|h' => \$help,
             'mail|m' => \$mail) or exit 1;
