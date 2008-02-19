@@ -1,0 +1,180 @@
+#!/usr/bin/perl -w
+our $ID = q$Id$;
+#
+# used-principals -- Report which Kerberos v5 principals are in use.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+require 5.006;
+use strict;
+
+use Getopt::Long qw(GetOptions);
+
+# When converting from Kerberos v4 principal names to Kerberos v5, the
+# following types will be taken as host-based and will have the domain name
+# appended.
+our %HOST_BASED = map { $_ => 1 }
+    qw(HTTP afpserver cifs ftp host ident imap ldap nfs pop sieve smtp
+       uniengd webauth);
+
+# Parse command-line options.
+my ($count, $help, $k4, $principals);
+Getopt::Long::config ('no_ignore_case', 'bundling');
+GetOptions ('4|k4|kerberos4=s' => \$k4,
+            'c|count'          => $count,
+            'h|help'           => \$help,
+            'p|principals'     => \$principals) or exit 1;
+if ($help) {
+    print "Feeding myself to perldoc, please wait....\n";
+    exec ('perldoc', '-t', $0);
+}
+my @logs = @ARGV;
+
+# Clean up $0 for error reporting.
+$0 =~ s%.*/%%;
+
+# If we were told to read a list of interesting principals from a file, do
+# that now.  Transform them into Kerberos v5 principals if -4 was given.
+my %wanted;
+if ($principals) {
+    open (PRINCS, '<', $principals)
+        or die "$0: cannot open $principals: $!\n";
+    while (<PRINCS>) {
+        s/^\s+//;
+        next if /^\s+$/;
+        s/\s+$//;
+        next if /^\#/;
+        if ($k4) {
+            my ($type, $instance) = split (/\./, $_, 2);
+            $type = 'host' if $type eq 'rcmd';
+            if ($HOST_BASED{$type}) {
+                $instance .= '.' . $k4;
+            }
+            $_ = "$type/$instance";
+        }
+        $wanted{$_} = 1;
+    }
+    close PRINCS;
+}
+
+# Now, scan the logs looking for successful ticket requests.  Count both the
+# client principal and the service principal as used.  Logs may either be
+# regular file names, files ending in .gz, or files ending in .bz2.
+my %seen;
+if (!@logs) {
+    push (@logs, '-');
+}
+for my $log (@logs) {
+    if ($log =~ /\.gz\z/) {
+        open (LOG, '-|', 'gzip', '-dc', $log)
+            or die "$0: cannot run gzip for $log: $!\n";
+    } elsif ($log =~ /\.bz2\z/) {
+        open (LOG, '-|', 'bzip2', '-dc', $log)
+            or die "$0: cannot run bzip2 for $log: $!\n";
+    } elsif ($log eq '-') {
+        open (LOG, '<&', \*STDIN)
+            or die "$0: cannot dup standard input: $!\n";
+    } else {
+        open (LOG, '<', $log) or die "$0: cannot open $log: $!\n";
+    }
+    while (<LOG>) {
+        if (/\b(?:AS|TGS)_REQ .* ISSUE: .* (\S+)\@\S+ for (\S+)\@\S+$/) {
+            my ($client, $server) = ($1, $2);
+            $seen{$client}++ if (!$principals || $wanted{$client});
+            $seen{$server}++ if (!$principals || $wanted{$server});
+        }
+    }
+    close LOG;
+}
+
+# Print out all the principals that we've seen and, if -c was given, the
+# number of times we saw that principal.
+for my $principal (sort keys %seen) {
+    if ($count) {
+        print "$principal $seen{$principal}\n";
+    } else {
+        print "$principal\n";
+    }
+}
+exit 0;
+
+__END__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+used-principals - Report which Kerberos v5 principals are in use
+
+=head1 SYNOPSIS
+
+B<used-principals> [B<-ch>] [B<-p> I<list> [B<-4> I<domain>]] [I<log> ...]
+
+=head1 DESCRIPTION
+
+B<used-principals> scans an MIT Kerberos KDC log and reports on which
+principals were used successfully.  "Used" for this program means that the
+principal either successfully requested a ticket or a service ticket was
+successfully requested for that principal.  The provided log files may be
+regular files, files ending in C<.gz> or C<.bz2> (which will be
+uncompressed with B<gzip> or B<bzip2>), or C<-> (indicating standard
+input).  If no log files are given on the command line, log entries will
+be read from standard input.
+
+All principals seen as active in the logs will be printed to standard
+output, one per line, unless the B<-p> option was given.  If B<-p> was
+given, the logs will be scanned only for the principals listed in the file
+given as an argument to B<-p>, and only principals from that file seen in
+the logs will be printed.  This can be used to find which principals in a
+given set are active.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-4> I<domain>, B<--k4>=I<domain>, B<--kerberos4>=I<domain>
+
+Meaningful only when used with the B<-p> option, this option says to
+interpret the principals listed in that file as Kerberos v4 principal
+names instead of Kerberos v5 principal names.  They will be converted to
+the corresponding Kerberos v5 principals before scanning the logs.
+I<domain> is the local domain to append to host-based Kerberos v4
+principals (such as C<rcmd.system>, which becomes
+C<host/system.I<domain>>).
+
+=item B<-c>, B<--count>
+
+Instead of printing only an active principal, print the principal, a
+space, and the number of times that principal was seen in the logs (as
+either obtaining a ticket or having a ticket obtained for it).
+
+=item B<-h>, B<--help>
+
+Print out this documentation (which is done simply by feeding the script
+to C<perldoc -t>).
+
+=item B<-p> I<list>, B<--principals>=I<list>
+
+Scan only for the principals listed in the file I<list> and only report on
+principals found in that set.
+
+=back
+
+=head1 CAVEATS
+
+The B<-4> option was implement for reporting around a specific transition
+at Stanford University and uses a hard-coded list of Kerberos v4
+principals that should be considered host-based.  It also makes other
+assumptions that could be specific for that one use.  Using it for other
+purposes may require some tweaking.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut
