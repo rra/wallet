@@ -1,5 +1,10 @@
                        User-Visible wallet Changes
 
+wallet 0.9 (unreleased)
+
+    Report the correct error message when addprinc fails while creating a
+    keytab object.
+
 wallet 0.8 (2008-02-13)
 
     Fix the wallet client to use check instead of exists.

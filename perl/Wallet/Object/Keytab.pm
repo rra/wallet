@@ -2,7 +2,7 @@
 # $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -24,7 +24,7 @@ use Wallet::Object::Base;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 ##############################################################################
 # kadmin Interaction
@@ -116,7 +116,7 @@ sub kadmin_addprinc {
     my $flags = $Wallet::Config::KEYTAB_FLAGS || '';
     my $output = $self->kadmin ("addprinc -randkey $flags $principal");
     if ($output =~ /^add_principal: (.*)/m) {
-        die "error adding principal $principal: $!\n";
+        die "error adding principal $principal: $1\n";
     }
     return 1;
 }
