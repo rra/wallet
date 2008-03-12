@@ -1,0 +1,355 @@
+#!/usr/bin/perl -w
+our $ID = q$Id$;
+#
+# convert-srvtab-db -- Converts a leland_srvtab database to wallet
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+##############################################################################
+# Modules and site configuration
+##############################################################################
+
+require 5.006;
+use strict;
+
+use Getopt::Long qw(GetOptions);
+use Wallet::ACL;
+use Wallet::Server;
+
+# The identity of the user who will be creating the wallet database entries,
+# for logging purposes.
+our $IDENTITY = 'rra/root@stanford.edu';
+
+# The path to the mappings from CGI principals to home directories, used for
+# identifying user- and group-based CGI principals that are no longer being
+# used.
+our $CGI = '/afs/ir/service/etc/passwd.cgi.lsdb';
+our %CGI;
+
+# The path to the allow-extract file for the Kerberos KDCs, listing what
+# principals can be cached.  This is used to check for principals marked
+# cached in the srvtab database that aren't configured to be cachable on the
+# KDC side.
+our $CACHED = '/home/eagle/work/puppet/services/s_kdc/files/prod'
+    . '/etc/krb5kdc/allow-extract';
+our @CACHED;
+
+# The list of principal types that should be treated as host-based.
+our %HOST_BASED = map { $_ => 1 }
+    qw(HTTP afpserver cifs ftp ident imap ldap lpr nfs pop rcmd sieve smtp
+       uniengd webauth);
+
+# Additional allowable principal types.  Anything not on this list, not in
+# %HOST_BASED, and not a CGI principal will not be converted.
+our %ALLOWED = map { $_ => 1 } qw(service);
+
+# The domain to add to form host-based Kerberos v5 principals from Kerberos v4
+# principals.
+our $DOMAIN = 'stanford.edu';
+
+# The realm to add when checking against the KDC whitelist.
+our $REALM = 'stanford.edu';
+
+# ACL mappings.  By default, ACL groups in the srvtab database are mapped to
+# ACL groups in the wallet with the same name, but the following groups are
+# exceptions.
+our %ACL_MAPPING =
+    ('group/cgi'            => 'service/www',
+     'group/leland'         => 'ADMIN',
+     'group/netstaff-sysad' => 'ADMIN',
+     'group/oss'            => 'ADMIN',
+     'group/ti-ops'         => 'ADMIN',
+     'group/tss-cs'         => 'ADMIN');
+
+# Whether to write the output into the wallet database.  Set to 1 if -w was
+# given on the command line.
+our $WRITE = 0;
+
+##############################################################################
+# Load data files
+##############################################################################
+
+# Load the CGI password file into the %CGI hash.  The keys are CGI principals
+# and the values are home directory paths.
+sub load_cgi {
+    open (CGI, '<', $CGI) or die "$0: cannot open $CGI: $!\n";
+    local $_;
+    while (<CGI>) {
+        my ($user, $home) = (split ':')[0,5];
+        $CGI{$user} = $home;
+    }
+    close CGI;
+}
+
+# Load the regexes permitting extraction of existing keys, used to check
+# cached keytabs.
+sub load_cached {
+    open (CACHED, '<', $CACHED) or die "$0: cannot open $CACHED: $!";
+    local $_;
+    while (<CACHED>) {
+        next if /^\s*\#/;
+        next if /^\s*$/;
+        s/^\s+//;
+        s/\s+$//;
+        s/\s*\#.*//;
+        push (@CACHED, qr/$_/);
+    }
+    close CACHED;
+}
+
+##############################################################################
+# Principal and ACL conversion
+##############################################################################
+
+# Convert a Kerberos v4 principal to the corresponding Kerberos v5 principal
+# name.  This is somewhat special-cased for the types of principals that we
+# had in the srvtab database at Stanford.
+sub convert_principal {
+    my ($principal) = @_;
+    my ($type, $instance) = split (/\./, $principal, 2);
+    $type = 'host' if $type eq 'rcmd';
+    if (!$instance) {
+        $principal = $type;
+    } elsif ($HOST_BASED{$type}) {
+        $principal = "$type/$instance.$DOMAIN";
+    } else {
+        $principal = "$type/$instance";
+    }
+    return $principal;
+}
+
+##############################################################################
+# Database dump parsing
+##############################################################################
+
+# Given a reference to a hash and the file name of a srvtab database dump,
+# load that dump into the hash.  The keys will be Kerberos v4 principal names
+# and the values will be hashes of key/value pairs from the database.
+sub load_dump {
+    my ($db, $dump) = @_;
+    open (DUMP, '<', $dump) or die "$0: cannot open $dump: $!\n";
+    local $_;
+    my $last = '';
+    while (<DUMP>) {
+        if (/^(\S+)$/) {
+            $last = $1;
+        } elsif (/^\s*(\S+): (\S+)$/) {
+            $db->{$last}{$1} = $2;
+        }
+    }
+    close DUMP;
+}
+
+# Given the hash containing the srvtab database, delete all entries that have
+# never been downloaded and were created more than a week ago.  These can be
+# re-requested if they're really needed.  Also delete all entries that are
+# hopelessly misnamed and cannot be moved to Kerberos v5, and all entries for
+# host-based principals, since we're letting the wallet autocreation handle
+# those.
+sub clean_database {
+    my ($db) = @_;
+    my @delete;
+    for my $principal (keys %$db) {
+        my $entry = $db->{$principal};
+
+        # We were only caching the mail-related keytabs and LDAP keytabs so
+        # that users didn't see Kerberos problems when the kvno changed.
+        # wallet now deals correctly with those, so don't treat any of those
+        # as cached.
+        my ($type, $instance) = split (/\./, $principal, 2);
+        if ($type =~ /^(imap|ldap|pop|sieve|smtp)$/) {
+            delete $entry->{cached};
+        }
+
+        # Now check for principals we don't care about.
+        unless (   exists $entry->{'srvkeytab-generated-by'}
+                or exists $entry->{'srvtab-generated-by'}
+                or exists $entry->{'cached'}
+                or ($entry->{'created-on'} > time - (7 * 24 * 3600))) {
+            push (@delete, $principal);
+            next;
+        }
+        next if ($instance eq 'cgi' and $type ne 'rcmd');
+        if (!$instance) {
+            push (@delete, $principal);
+        } elsif ($HOST_BASED{$type} and not exists $entry->{'cached'}) {
+            push (@delete, $principal);
+        } elsif (not $HOST_BASED{$type} and not $ALLOWED{$type}) {
+            push (@delete, $principal);
+        }
+    }
+    delete @$db{@delete};
+}
+
+##############################################################################
+# Consistency checking
+##############################################################################
+
+# Scan the provided database for anomolies.  Report all of the srvtab database
+# objects with anomolies to standard output.
+sub check_database {
+    my ($db) = @_;
+    load_cgi;
+    load_cached;
+    for my $principal (sort keys %$db) {
+        my ($type, $instance) = split (/\./, $principal, 2);
+        if ($instance eq 'cgi' and $type ne 'rcmd') {
+            if (not $CGI{$type}) {
+                print "$principal does not have CGI service\n";
+            }
+        }
+        my $entry = $db->{$principal};
+        my @user_keys  = grep { /^srvtab-user-/ } keys %$entry;
+        my @group_keys = grep { /^srvtab-acl-/  } keys %$entry;
+        my @users  = map { $entry->{$_} } @user_keys;
+        my @groups = map { $entry->{$_} } @group_keys;
+        if (@users and @groups) {
+            print "$principal has both users and groups\n";
+        }
+        if (@groups > 1) {
+            print "$principal has multiple groups\n";
+        }
+        if ($instance eq 'cgi' and (@users || "@groups" ne 'group/cgi')) {
+            print "$principal is CGI principal with weird ACLs\n";
+        }
+        if ($entry->{cached}) {
+            my $k5 = convert_principal ($principal) . '@' . $REALM;
+            my $okay;
+            for my $regex (@CACHED) {
+                if ($k5 =~ /$regex/) {
+                    $okay = 1;
+                    last;
+                }
+            }
+            print "$principal is cached but not in the KDC config\n"
+                unless $okay;
+        }
+    }
+}
+
+##############################################################################
+# Database conversion
+##############################################################################
+
+# Iterate through the database and convert every entry that doesn't already
+# exist in the wallet.
+sub convert_database {
+    my ($db) = @_;
+    my %acls;
+    my $server = Wallet::Server->new ($IDENTITY, 'localhost');
+    for my $principal (sort keys %$db) {
+        my $entry = $db->{$principal};
+        my $k5 = convert_principal ($principal);
+        if ($server->check ('keytab', $k5)) {
+            print "skipping already created principal $k5\n";
+            next;
+        }
+        my @user_keys  = grep { /^srvtab-user-/ } keys %$entry;
+        my @group_keys = grep { /^srvtab-acl-/  } keys %$entry;
+        my @users  = sort map { $entry->{$_} } @user_keys;
+        my @groups = sort map { $entry->{$_} } @group_keys;
+        for my $user (@users) {
+            $user =~ s/\.?\@.*//;
+            $user =~ s,\.,/,;
+        }
+        my ($owner, $group);
+        if (@groups) {
+            $owner = $ACL_MAPPING{$groups[0]} || $groups[0];
+        } elsif (@users) {
+            if ($acls{"@users"}) {
+                $owner = $acls{"@users"};
+            } elsif (@users == 1) {
+                $group = $users[0];
+                $group =~ s,/.*,,;
+                $group = "user/$group";
+            } else {
+                $group = $principal;
+                $group =~ s/^[^.]+\.//;
+                $group = "group/$group";
+            }
+        }
+        if ($group) {
+            my $create = 1;
+            my $acl = eval { Wallet::ACL->new ($group, $server->dbh) };
+            if (defined $acl) {
+                my @entries = $acl->list;
+                if (grep { $_->[0] ne 'krb5' } @entries) {
+                    die "ACL $group exists with unknown types\n";
+                }
+                @entries = map { $_->[1] } @entries;
+                for (@entries) { s/\@\Q$DOMAIN// }
+                unless ("@entries" eq "@users") {
+                    die "ACL $group exists with different entries\n";
+                }
+                $create = 0;
+            } elsif ($@ !~ /^ACL \S+ not found/) {
+                die "unknown ACL error on $group: $@\n";
+            }
+            $owner = $group;
+            $acls{"@users"} = $group;
+            if ($WRITE && $create) {
+                $server->acl_create ($group) or die $server->error, "\n";
+                for my $user (@users) {
+                    $server->acl_add ($group, 'krb5', "$user\@$REALM")
+                        or die $server->error, "\n";
+                }
+            } elsif ($create) {
+                print "wallet create acl $group\n";
+                for my $user (@users) {
+                    print "wallet add acl $group krb5 $user\@$REALM\n";
+                }
+            }
+        }
+        if ($WRITE) {
+            $server->create ('keytab', $k5) or die $server->error, "\n";
+            $server->owner ('keytab', $k5, $owner)
+                or die $server->error, "\n";
+            if ($entry->{cached}) {
+                $server->flag_set ('keytab', $k5, 'unchanging')
+                    or die $server->error, "\n";
+            }
+        } else {
+            print "wallet create keytab $k5\n";
+            print "wallet owner keytab $k5 $owner\n";
+            print "wallet flag set keytab $k5 unchanging\n"
+                if $entry->{cached};
+        }
+    }
+}
+
+##############################################################################
+# Main routine
+##############################################################################
+
+# Read in command-line options.
+my ($audit, $help);
+Getopt::Long::config ('no_ignore_case', 'bundling');
+GetOptions ('a|audit' => \$audit,
+            'h|help'  => \$help,
+            'w|write' => \$WRITE) or exit 1;
+if ($help) {
+    print "Feeding myself to perldoc, please wait....\n";
+    exec ('perldoc', '-t', $0);
+}
+
+# Clean up $0 for error reporting.
+$0 =~ s%.*/%%;
+
+# Get the dump file.
+die "$0: no srvtab database dump file specified" unless @ARGV;
+die "$0: too many arguments" if @ARGV > 1;
+my ($dump) = @ARGV;
+my %db;
+load_dump (\%db, $dump);
+clean_database (\%db);
+print 'Saw ', scalar (keys %db), " total principals\n";
+
+# Perform the requested operation.
+if ($audit) {
+    check_database (\%db);
+} else {
+    convert_database (\%db);
+}
