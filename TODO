@@ -187,6 +187,9 @@ Future work:
 * Modify Authen::Krb5 to export krb5_524_conv_principal so that I can use
   it to determine the K4 equivalent of a K5 principal name.
 
+* Provide an API for verifiers to syntax-check the values before an
+  ACL is set and implement syntax checking for the Krb5 verifier.
+
 May or may not be good ideas:
 
 * Consider using Class::Accessor to get rid of the scaffolding code to
