@@ -39,6 +39,9 @@ Release 1.0:
 * Error messages from ACL operations should refer to the ACLs by name
   instead of by ID.
 
+* History records should list both ACL ID and ACL name if the name is
+  still found in the database.
+
 * Add the database schema version to a global table so that we can use it
   to support schema upgrades in the future.
 
