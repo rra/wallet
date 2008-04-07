@@ -12,6 +12,12 @@ If your krb5.conf file is not in /etc or /usr/local/etc, put a copy of
 your krb5.conf file in this directory.  The tests need to generate a
 modified copy in order to test some behavior.
 
+To enable tests of kasetkey (assuming that you've configured wallet with
+--with-afs), create a K4 srvtab with ADMIN access to an AFS kaserver and
+put it in test.srvtab.  Then, put the fully-qualified K4 principal name
+corresponding to that keytab in test.admin.  The realm used for AFS
+kaserver testing will be derived from the realm of that principal name.
+
 If you are building in a different directory tree than the source tree,
 don't put the files in this directory.  Instead, after running configure,
 you will have an empty tests/data directory in your build tree.  Put the

@@ -1,0 +1,128 @@
+#!/usr/bin/perl -w
+# $Id$
+#
+# Tests for basic kasetkey functionality.
+#
+# We only test creation (with a random key), deletion, enable, disable, and
+# examine.  That's enough to verify that kasetkey is basically working, and
+# since AFS kaservers are becoming scarce, it's probably not worth the effort
+# to do anything more comprehensive.
+#
+# We do test creation of a principal with a known key given a srvtab from
+# inside the wallet server test suite already.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+BEGIN { our $total = 27 }
+use Test::More tests => $total;
+
+use lib '@abs_top_srcdir@/perl/blib/lib';
+use lib '@abs_top_srcdir@/perl/t/lib';
+use Util;
+
+# Global variables used for the kasetkey configuration.
+our $ADMIN;
+our $SRVTAB;
+
+# Make a call to the kasetkey client and returns the standard output, the
+# standard error, and the exit status as a list.
+sub kasetkey {
+    my @command = @_;
+    my $pid = fork;
+    if (not defined $pid) {
+        die "cannot fork: $!\n";
+    } elsif ($pid == 0) {
+        open (STDOUT, '>', 'kasetkey.out')
+            or die "cannot create kasetkey.out: $!\n";
+        open (STDERR, '>', 'kasetkey.err')
+            or die "cannot create kasetkey.err: $!\n";
+        exec ('@abs_top_builddir@/kasetkey/kasetkey', '-a', $ADMIN,
+              '-k', $SRVTAB, @command)
+            or die "cannot run @abs_top_builddir@/kasetkey/kasetky: $!\n";
+    } else {
+        waitpid ($pid, 0);
+    }
+    my $status = ($? >> 8);
+    local $/;
+    open (OUT, '<', 'kasetkey.out') or die "cannot open kasetkey.out: $!\n";
+    my $output = <OUT>;
+    close OUT;
+    open (ERR, '<', 'kasetkey.err') or die "cannot open kasetkey.err: $!\n";
+    my $error = <ERR>;
+    close ERR;
+    unlink ('kasetkey.out', 'kasetkey.err');
+    return ($output, $error, $status);
+}
+
+SKIP: {
+    skip 'no AFS kaserver configuration', $total
+        unless -f '@abs_top_builddir@/tests/data/test.srvtab';
+    skip 'no AFS kaserver support', $total,
+        unless -x '@abs_top_builddir@/kasetkey/kasetkey';
+
+    # Set up the configuration.
+    $ADMIN  = contents ('@abs_top_builddir@/tests/data/test.admin');
+    $SRVTAB = '@abs_top_builddir@/tests/data/test.srvtab';
+    my $realm = $ADMIN;
+    $realm =~ s/^[^\@]+\@//;
+    my $principal = "wallet.one\@$realm";
+
+    # Now we can start manipulating principals.  Test examine and create.
+    my ($out, $err, $status) = kasetkey ('-e', $principal);
+    is ($status, 1, 'Examining a non-existent principal fails');
+    is ($out, '', ' with no output');
+    is ($err, "no such entry in the database\n", ' and the right error');
+    ($out, $err, $status) = kasetkey ('-s', $principal, '-r');
+    is ($status, 0, 'Creating a principal succeeds');
+    is ($out, '', ' with no output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = kasetkey ('-e', $principal);
+    is ($status, 0, 'Examining a principal succeeds');
+    $out =~ s/: (Sun|Mon|Tue|Wed|Thu|Fri|Sat).*/: DATE/g;
+    my $shortadmin = $ADMIN;
+    $shortadmin =~ s/\@.*//;
+    my $enabled = <<"EOE";
+status: enabled
+account expiration: never
+password last changed: DATE
+modification time: DATE
+modified by: $shortadmin
+EOE
+    is ($out, $enabled, ' with the right output');
+    is ($err, '', ' and no error');
+
+    # Test enable and disable.
+    ($out, $err, $status) = kasetkey ('-s', $principal, '-n');
+    is ($status, 0, 'Disabling a principal succeeds');
+    is ($out, '', ' with no output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = kasetkey ('-e', $principal);
+    is ($status, 0, ' and examining it still succeeds');
+    $out =~ s/: (Sun|Mon|Tue|Wed|Thu|Fri|Sat).*/: DATE/g;
+    my $disabled = $enabled;
+    $disabled =~ s/enabled/disabled/;
+    is ($out, $disabled, ' with the right output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = kasetkey ('-s', $principal, '-t');
+    is ($status, 0, 'Enabling a principal succeeds');
+    is ($out, '', ' with no output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = kasetkey ('-e', $principal);
+    is ($status, 0, ' and examining it still succeeds');
+    $out =~ s/: (Sun|Mon|Tue|Wed|Thu|Fri|Sat).*/: DATE/g;
+    is ($out, $enabled, ' with the right output');
+    is ($err, '', ' and no error');
+
+    # Test deletion.
+    ($out, $err, $status) = kasetkey ('-D', $principal);
+    is ($status, 0, 'Deleting the principal succeeds');
+    is ($out, '', ' with no output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = kasetkey ('-e', $principal);
+    is ($status, 1, ' and now examining it fails');
+    is ($out, '', ' with no output');
+    is ($err, "no such entry in the database\n", ' and the right error');
+}
