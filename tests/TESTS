@@ -3,6 +3,8 @@ client/full
 client/pod
 portable/asprintf
 portable/snprintf
+portable/strlcat
+portable/strlcpy
 server/admin
 server/backend
 server/keytab

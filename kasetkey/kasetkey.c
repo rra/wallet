@@ -1,19 +1,19 @@
-/*  $Id$
-**
-**  Create or change a principal and/or generate a srvtab.
-**
-**  Written by Roland Schemers <schemers@stanford.edu>
-**  Updated by Russ Allbery <rra@stanford.edu>
-**  Updated again by AAU, Anton Ushakov  <antonu@stanford.edu>
-**  Copyright 1994, 1998, 1999, 2000, 2006, 2007
-**      Board of Trustees, Leland Stanford Jr. University
-**
-**  See LICENSE for licensing terms.
-**
-**  Sets the key of a principal in the AFS kaserver given a srvtab.  This
-**  program is now used for synchronization of K5 and K4 and nothing else.
-**  It will no longer be used once K4 is retired.
-*/
+/* $Id$
+ *
+ * Create or change a principal and/or generate a srvtab.
+ *
+ * Sets the key of a principal in the AFS kaserver given a srvtab, enables or
+ * disables a principal, or displays information about a principal in an AFS
+ * kaserver.
+ *
+ * Written by Roland Schemers <schemers@stanford.edu>
+ * Updated by Russ Allbery <rra@stanford.edu>
+ * Updated again by Anton Ushakov  <antonu@stanford.edu>
+ * Copyright 1994, 1998, 1999, 2000, 2006, 2007, 2008
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
 
@@ -37,6 +37,8 @@
 #include <afs/cellconfig.h>
 #include <ubik.h>
 
+#include <util/util.h>
+
 /* Normally set by the AFS libraries. */
 #ifndef SNAME_SZ
 # define SNAME_SZ       40
@@ -44,9 +46,11 @@
 # define REALM_SZ       40
 #endif
 
-/* AFS currently doesn't prototype this function.  Cheat on the first argument
-   since it actually takes a function with a completely variable argument
-   list. */
+/*
+ * AFS currently doesn't prototype this function.  Cheat on the first argument
+ * since it actually takes a function with a completely variable argument
+ * list.
+ */
 #if !HAVE_DECL_UBIK_CALL
 afs_int32 ubik_Call(void *, struct ubik_client *, afs_int32, ...);
 #endif
@@ -60,12 +64,15 @@ struct config {
     int debug;                  /* Whether to enable debugging. */
     int init;                   /* Keyfile initialization. */
     int random;                 /* Randomize the key. */
+    int tgs;                    /* Enable the principal. */
+    int notgs;                  /* Disable the princial. */
     char *keyfile;              /* Name of srvtab to use. */
     char *admin;                /* Name of ADMIN user to use. */
     char *password;             /* Password to use. */
     char *srvtab;               /* srvtab file to generate. */
-    char *service;              /* Service principal to create. */
-    char *delete;               /* Service principal to delete. */
+    char *service;              /* Principal to create/enable. */
+    char *delete;               /* Principal to delete. */
+    char *examine;              /* Principal to examine. */
     char *k5srvtab;             /* K5 converted srvtab to read for key. */
 };
 
@@ -75,14 +82,17 @@ Usage: %s [options]\n\
   -a adminuser     Admin user\n\
   -c k5srvtab      Use the key from the given srvtab (for sync w/ K5)\n\
   -D service       Name of service to delete\n\
-  -d               turn on debugging\n\
+  -d               Turn on debugging\n\
+  -e principal     Examine the given principal\n\
   -f srvtab        Name of srvtab file to create\n\
   -h               This help\n\
   -i               Initialize DES key file\n\
   -k keyfile       File containing srvtab for admin user\n\
+  -n               Set the principal NOTGS\n\
   -p password      Use given password to create key\n\
   -r               Use random key\n\
   -s service       Name of service to create\n\
+  -t               Set the principal TGS\n\
   -v               Print version\n\
 \n\
 To create a srvtab for rcmd.slapshot and be prompted for the admin\n\
@@ -99,40 +109,6 @@ and then create a srvtab for rcmd.slapshot with:\n\
 \n\
     %s -k /.adminkey -a admin -r -f srvtab -s rcmd.slapshot\n\
 \n";
-
-
-/* Report a fatal error. */
-static void
-die(const char *format, ...)
-{
-    va_list args;
-
-    if (program != NULL)
-        fprintf(stderr, "%s: ", program);
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fprintf(stderr, "\n");
-    exit(1);
-}
-
-
-/* Report a fatal error, including strerror information. */
-static void
-sysdie(const char *format, ...)
-{
-    int oerrno;
-    va_list args;
-
-    oerrno = errno;
-    if (program != NULL)
-        fprintf(stderr, "%s: ", program);
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fprintf(stderr, ": %s\n", strerror(oerrno));
-    exit(1);
-}
 
 
 /*
@@ -282,7 +258,9 @@ authenticate(struct config *config, struct ktc_token *token)
 }
 
 
-/* Delete a principal out of the AFS kaserver. */
+/*
+ * Delete a principal out of the AFS kaserver.
+ */
 static void
 delete_principal(struct config *config)
 {
@@ -308,6 +286,122 @@ delete_principal(struct config *config)
         printf("ubik_Call KAM_DeleteUser %ld\n", code);
     if (code != 0 && code != KANOENT)
         die("can't delete existing instance");
+    code = ubik_ClientDestroy(conn);
+    exit(0);
+}
+
+
+/*
+ * Format a date.  The output format expects ctime-style date formatting, so
+ * we use that.  Takes a buffer into which to put the date.  There will be a
+ * trailing newline.
+ */
+static void
+format_date(char *buffer, size_t size, time_t date)
+{
+    if (date == (time_t) NEVERDATE)
+        strlcpy(buffer, "never\n", size);
+    else
+        strlcpy(buffer, ctime(&date), size);
+}
+
+
+/*
+ * Enable or disable a principal in the AFS kaserver (by setting or clearing
+ * the NOTGS flag).  The second argument says to enable if it's true, disable
+ * otherwise.
+ */
+static void
+enable_principal(struct config *config, int enable)
+{
+    struct ktc_token token;
+    struct ubik_client *conn;
+    struct kaentryinfo entry;
+    char name[MAXKTCNAMELEN];
+    char inst[MAXKTCNAMELEN];
+    char cell[MAXKTCNAMELEN];
+    long code;
+
+    /* Make connection to AuthServer. */
+    authenticate(config, &token);
+    parse_principal(config, config->delete, name, inst, cell);
+    code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
+    if (config->debug)
+        printf("ka_AuthServerConn %s %ld\n", cell, code);
+    if (code != 0)
+        die("can't make connection to auth server");
+
+    /* Retrieve the principal information. */
+    code = ubik_Call(KAM_GetEntry, conn, 0, name, inst, KAMAJORVERSION,
+                     &entry);
+    if (config->debug)
+        printf("ubik_Call KAM_GetEntry %ld\n", code);
+    if (code != 0) {
+        if (code == KANOENT)
+            die("no such entry in the database");
+        else
+            die("can't retrieve principal information");
+    }
+
+    /* Set the flags. */
+    if (enable)
+        entry.flags &= ~KAFNOTGS;
+    else
+        entry.flags |= KAFNOTGS;
+    code = ubik_Call(KAM_SetFields, conn, 0, name, inst, entry.flags, 0, 0,
+                     -1, 0, 0);
+    if (config->debug)
+        printf("ubik_Call KAM_SetFields %ld\n", code);
+    if (code != 0)
+        die("can't %s principal", enable ? "enable" : "disable");
+    code = ubik_ClientDestroy(conn);
+    exit(0);
+}
+
+
+/*
+ * Examine a principal.  The output format is compatible with the old Stanford
+ * Kerberos v4 kadmin, which may be compatible with Kerberos v4 kadmin in
+ * general (I haven't checked).
+ */
+static void
+examine_principal(struct config *config)
+{
+    struct ktc_token token;
+    struct ubik_client *conn;
+    struct kaentryinfo entry;
+    char name[MAXKTCNAMELEN];
+    char inst[MAXKTCNAMELEN];
+    char cell[MAXKTCNAMELEN];
+    long code;
+    char edate[64], cdate[64], mdate[64];
+
+    /* Make connection to AuthServer. */
+    authenticate(config, &token);
+    parse_principal(config, config->delete, name, inst, cell);
+    code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
+    if (config->debug)
+        printf("ka_AuthServerConn %s %ld\n", cell, code);
+    if (code != 0)
+        die("can't make connection to auth server");
+
+    /* Retrieve and format the entry. */
+    code = ubik_Call(KAM_GetEntry, conn, 0, name, inst, KAMAJORVERSION,
+                     &entry);
+    if (config->debug)
+        printf("ubik_Call KAM_GetEntry %ld\n", code);
+    if (code != 0)
+        die("can't retrieve current flags");
+    format_date(edate, sizeof(edate), entry.user_expiration);
+    format_date(mdate, sizeof(cdate), entry.modification_time);
+    format_date(cdate, sizeof(mdate), entry.change_password_time);
+    printf("status: %s\n", (entry.flags & KAFNOTGS) ? "disabled" : "enabled");
+    printf("account expiration: %s", edate);
+    printf("password last changed: %s", cdate);
+    printf("modification time: %s", mdate);
+    printf("modified by: %s%s%s\n", entry.modification_user.name,
+           (entry.modification_user.instance[0] != '\0') ? "." : "",
+           entry.modification_user.instance);
     code = ubik_ClientDestroy(conn);
     exit(0);
 }
@@ -447,12 +541,15 @@ main(int argc, char *argv[])
         case 'c': config.k5srvtab = optarg;     break;
         case 'D': config.delete = optarg;       break;
         case 'd': config.debug = 1;             break;
+        case 'e': config.examine = optarg;      break;
         case 'f': config.srvtab = optarg;       break;
         case 'i': config.init = 1;              break;
         case 'k': config.keyfile = optarg;      break;
+        case 'n': config.notgs = 1;             break;
         case 'p': config.password = optarg;     break;
         case 'r': config.random = 1;            break;
         case 's': config.service = optarg;      break;
+        case 't': config.tgs = 1;               break;
 
         /* Usage doesn't return. */
         case 'h':
@@ -468,10 +565,18 @@ main(int argc, char *argv[])
     /* Take the right action. */
     if (config.random && config.k5srvtab)
         usage(1);
+    if (config.notgs && config.tgs)
+        die("cannot set principal both TGS and NOTGS at the same time");
+    if ((config.notgs || config.tgs) && config.service == NULL)
+        die("must specify a principal with -s");
     if (config.debug)
-        fprintf(stdout,"cell: %s\n", config.local_cell);
+        fprintf(stdout, "cell: %s\n", config.local_cell);
     if (config.init)
         initialize_admin_srvtab(&config);
+    else if (config.tgs || config.notgs)
+        enable_principal(&config, config.tgs);
+    else if (config.examine != NULL)
+        examine_principal(&config);
     else if (config.service != NULL)
         generate_srvtab(&config);
     else if (config.delete != NULL)

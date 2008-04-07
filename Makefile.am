@@ -121,7 +121,8 @@ clean-local:
 
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/portable/asprintf-t \
-	tests/portable/snprintf-t tests/util/concat-t tests/util/messages-t \
+	tests/portable/snprintf-t tests/portable/strlcat-t \
+	tests/portable/strlcpy-t tests/util/concat-t tests/util/messages-t \
 	tests/util/xmalloc
 check_LIBRARIES = tests/libtest.a
 tests_libtest_a_SOURCES = tests/libtest.c tests/libtest.h
@@ -134,6 +135,14 @@ tests_portable_asprintf_t_LDADD = tests/libtest.a util/libutil.a \
 tests_portable_snprintf_t_SOURCES = tests/portable/snprintf-t.c \
         tests/portable/snprintf.c
 tests_portable_snprintf_t_LDADD = tests/libtest.a util/libutil.a \
+	portable/libportable.a
+tests_portable_strlcat_t_SOURCES = tests/portable/strlcat-t.c \
+        tests/portable/strlcat.c
+tests_portable_strlcat_t_LDADD = tests/libtest.a util/libutil.a \
+	portable/libportable.a
+tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
+        tests/portable/strlcpy.c
+tests_portable_strlcpy_t_LDADD = tests/libtest.a util/libutil.a \
 	portable/libportable.a
 tests_util_concat_t_LDADD = tests/libtest.a util/libutil.a \
 	portable/libportable.a

@@ -2,6 +2,11 @@
 
 wallet 0.9 (unreleased)
 
+    Add support for enabling and disabling principals (clearing or setting
+    the NOTGS flag) and examining principals to kasetkey.  This
+    functionality isn't used by wallet (and probably won't be) but is
+    convenient for other users of kasetkey such as kadmin-remctl.
+
     Report the correct error message when addprinc fails while creating a
     keytab object.
 
