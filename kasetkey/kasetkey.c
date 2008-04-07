@@ -528,7 +528,6 @@ main(int argc, char *argv[])
  
     /* Initialize, get our local cell, etc. */
     memset(&config, 0, sizeof(config));
-    program = argv[0];
     code = ka_Init(0);
     config.local_cell = ka_LocalCell();
     if (config.local_cell == NULL || code != 0)
@@ -555,7 +554,7 @@ main(int argc, char *argv[])
         case 'h':
             usage(0);
         case 'v':
-            printf("%s: version %s\n", program, PACKAGE_VERSION);
+            printf("kasetkey %s\n", PACKAGE_VERSION);
             exit(0);
         default:
             usage(1);
