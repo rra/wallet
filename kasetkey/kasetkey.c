@@ -324,7 +324,7 @@ enable_principal(struct config *config, int enable)
 
     /* Make connection to AuthServer. */
     authenticate(config, &token);
-    parse_principal(config, config->delete, name, inst, cell);
+    parse_principal(config, config->service, name, inst, cell);
     code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
     if (config->debug)
         printf("ka_AuthServerConn %s %ld\n", cell, code);
@@ -336,12 +336,8 @@ enable_principal(struct config *config, int enable)
                      &entry);
     if (config->debug)
         printf("ubik_Call KAM_GetEntry %ld\n", code);
-    if (code != 0) {
-        if (code == KANOENT)
-            die("no such entry in the database");
-        else
-            die("can't retrieve principal information");
-    }
+    if (code != 0)
+        die("can't retrieve current flags");
 
     /* Set the flags. */
     if (enable)
@@ -378,7 +374,7 @@ examine_principal(struct config *config)
 
     /* Make connection to AuthServer. */
     authenticate(config, &token);
-    parse_principal(config, config->delete, name, inst, cell);
+    parse_principal(config, config->examine, name, inst, cell);
     code = ka_AuthServerConn(cell, KA_MAINTENANCE_SERVICE, &token, &conn);
     if (config->debug)
         printf("ka_AuthServerConn %s %ld\n", cell, code);
@@ -390,8 +386,12 @@ examine_principal(struct config *config)
                      &entry);
     if (config->debug)
         printf("ubik_Call KAM_GetEntry %ld\n", code);
-    if (code != 0)
-        die("can't retrieve current flags");
+    if (code != 0) {
+        if (code == KANOENT)
+            die("no such entry in the database");
+        else
+            die("can't retrieve principal information");
+    }
     format_date(edate, sizeof(edate), entry.user_expiration);
     format_date(mdate, sizeof(cdate), entry.modification_time);
     format_date(cdate, sizeof(mdate), entry.change_password_time);
@@ -535,7 +535,7 @@ main(int argc, char *argv[])
         die("can't initialize");
 
     /* Parse options. */
-    while ((opt = getopt(argc, argv, "a:c:D:df:hik:p:rs:v")) != EOF) {
+    while ((opt = getopt(argc, argv, "a:c:D:de:f:hik:np:rs:tv")) != EOF) {
         switch (opt) {
         case 'a': config.admin = optarg;        break;
         case 'c': config.k5srvtab = optarg;     break;
