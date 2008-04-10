@@ -54,6 +54,10 @@ Release 1.0:
 
 * Write the PTS ACL verifier.
 
+* Write a WebAuth keyring object store.  It should support attributes
+  saying how long to keep old keys and how far in advance to create new
+  keys and update the keyring as needed on object download.
+
 * Rename Wallet::ACL::* to Wallet::Verifier::*.  Add Wallet::ACL as a
   generic interface with Wallet::ACL::Database and Wallet::ACL::List
   implementations (or some similar name) so that we can create and check
