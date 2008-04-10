@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # $Id$
 #
-# tests/server/pod-t -- Test POD formatting for client documentation.
+# Test POD formatting for client documentation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008 Board of Trustees, Leland Stanford Jr. University
