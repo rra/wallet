@@ -17,6 +17,7 @@ dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
 dnl Copyright 2005, 2006, 2007, 2008
 dnl     Board of Trustees, Leland Stanford Jr. University
+dnl
 dnl See LICENSE for licensing terms.
 
 dnl Set CPPFLAGS, LDFLAGS, and LIBS to values including the Kerberos v4
@@ -87,7 +88,7 @@ AC_DEFUN([_RRA_LIB_KRB4_MANUAL],
             [AC_CHECK_LIB([pthread], [pthread_setspecific],
                 [rra_krb4_pthread="-lpthread"])])
          AC_CHECK_LIB([krb5support], [krb5int_setspecific],
-            [rra_krb4_extra="-lkrb5support $rra_krb4_pthread"],
+            [rra_krb4_extra="-lkrb5support $rra_krb4_pthread"], ,
             [$rra_krb4_pthread])])
      AC_CHECK_LIB([krb4], [krb_get_svc_in_tkt],
         [KRB4_LIBS="-lkrb4 $rra_krb4_extra"],

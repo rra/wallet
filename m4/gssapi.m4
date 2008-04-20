@@ -17,6 +17,7 @@ dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
 dnl Copyright 2005, 2006, 2007, 2008
 dnl     Board of Trustees, Leland Stanford Jr. University
+dnl
 dnl See LICENSE for licensing terms.
 
 dnl Set CPPFLAGS, LDFLAGS, and LIBS to values including the GSS-API settings.
@@ -82,7 +83,7 @@ AC_DEFUN([_RRA_LIB_GSSAPI_MANUAL],
                 [rra_gssapi_pthread="-lpthread"])])
          AC_CHECK_LIB([krb5support], [krb5int_setspecific],
             [rra_gssapi_extra="-lkrb5support $rra_gssapi_extra"
-             rra_gssapi_extra="$rra_gssapi_extra $rra_gssapi_pthread"],
+             rra_gssapi_extra="$rra_gssapi_extra $rra_gssapi_pthread"], ,
             [$rra_gssapi_pthread])])
      AC_CHECK_LIB([com_err], [error_message],
         [rra_gssapi_extra="-lcom_err $rra_gssapi_extra"])
@@ -99,19 +100,19 @@ AC_DEFUN([_RRA_LIB_GSSAPI_MANUAL],
 dnl The main macro.
 AC_DEFUN([RRA_LIB_GSSAPI],
 [AC_REQUIRE([RRA_ENABLE_REDUCED_DEPENDS])
-rra_gssapi_root=
-GSSAPI_CPPFLAGS=
-GSSAPI_LDFLAGS=
-GSSAPI_LIBS=
-AC_SUBST([GSSAPI_CPPFLAGS])
-AC_SUBST([GSSAPI_LDFLAGS])
-AC_SUBST([GSSAPI_LIBS])
-AC_ARG_WITH([gssapi],
+ rra_gssapi_root=
+ GSSAPI_CPPFLAGS=
+ GSSAPI_LDFLAGS=
+ GSSAPI_LIBS=
+ AC_SUBST([GSSAPI_CPPFLAGS])
+ AC_SUBST([GSSAPI_LDFLAGS])
+ AC_SUBST([GSSAPI_LIBS])
+ AC_ARG_WITH([gssapi],
     [AC_HELP_STRING([--with-gssapi=DIR],
         [Location of GSS-API headers and libraries])],
     [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_gssapi_root="$withval"])])
-AS_IF([test x"$rra_reduced_depends" = xtrue],
+ AS_IF([test x"$rra_reduced_depends" = xtrue],
     [_RRA_LIB_GSSAPI_PATHS
      _RRA_LIB_GSSAPI_REDUCED],
     [AC_ARG_VAR([KRB5_CONFIG], [Path to krb5-config])
