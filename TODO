@@ -76,6 +76,8 @@ Release 1.0:
 
 Future work:
 
+* Provide a way to list all objects for which the connecting user has ACLs.
+
 * Write a conventions document for ACL naming, object naming, and similar
   issues.
 
