@@ -2,7 +2,7 @@ Source: wallet
 Section: net
 Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 4.0.0), libdbi-perl, libdbd-sqlite3-perl,
+Build-Depends: debhelper (>= 5), libdbi-perl, libdbd-sqlite3-perl,
  libkrb5-dev, libremctl-dev, libtest-pod-perl, perl,
  libopenafs-dev [i386 powerpc sparc alpha s390 ia64 hppa amd64 ppc64]
 Standards-Version: 3.7.3
