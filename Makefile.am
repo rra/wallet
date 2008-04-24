@@ -139,6 +139,12 @@ clean-local:
 	[ ! -f perl/Makefile ] || ( set -e; cd perl && $(MAKE) clean )
 	cd perl && ( [ ! -f Makefile.old ] || mv Makefile.old Makefile )
 
+# Remove the files that we copy over if and only if builddir != srcdir.
+distclean-local:
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
+	    rm -f $(PERL_FILES) $(TEST_FILES) ; \
+	fi
+
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/portable/asprintf-t \
 	tests/portable/snprintf-t tests/portable/strlcat-t \
