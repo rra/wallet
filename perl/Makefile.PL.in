@@ -7,9 +7,9 @@ my $version = '@PACKAGE_VERSION@';
 $version =~ s/\.(\d)$/.0$1/;
 
 # Set a prefix for ExtUtils::MakeMaker if we were given one for configure.
-my $prefix      = '@prefix@';
-my $datarootdir = '@datarootdir@';
-my $datadir     = '@datadir@';
+my $prefix      = "@prefix@";
+my $datarootdir = "@datarootdir@";
+my $datadir     = "@datadir@";
 
 WriteMakefile(
     NAME     => 'Wallet',
@@ -17,5 +17,5 @@ WriteMakefile(
     ABSTRACT => 'Wallet: a secure credential management system',
     AUTHOR   => 'Russ Allbery (rra@stanford.edu)',
     (($prefix ne '/usr' && $prefix ne '/usr/local') ?
-     (PREFIX => '@datadir@') : ())
+     (PREFIX => $datadir) : ())
 );
