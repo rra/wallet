@@ -36,8 +36,7 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	CFLAGS="$(CFLAGS)" ./configure $(SYSTEM) --prefix=/usr \
-	    --mandir=\$${prefix}/share/man --with-afs \
-	    --with-wallet-server=wallet.stanford.edu \
+	    --mandir=\$${prefix}/share/man --with-kaserver \
 	    --enable-reduced-depends
 	touch $@
 
