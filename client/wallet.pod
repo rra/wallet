@@ -4,9 +4,9 @@ wallet - Client for retrieving secure data from a central server
 
 =head1 SYNOPSIS
 
-B<wallet> [B<-hv>] [B<-c> I<command>] [B<-f> I<output>]
-[B<-k> I<principal>] [B<-p> I<port>] [S<B<-s> I<server>>] [B<-S> I<srvtab>]
-[B<-u> I<principal>] I<command> [I<arg> ...]
+B<wallet> [B<-hv>] [B<-c> I<command>] [B<-f> I<file>]
+    [B<-k> I<principal>] [B<-p> I<port>] [S<B<-s> I<server>>]
+    [B<-S> I<srvtab>] [B<-u> I<principal>] I<command> [I<arg> ...]
 
 =head1 DESCRIPTION
 
@@ -65,16 +65,17 @@ sometimes be useful to use a different prefix for testing a different
 version of the wallet code on the server.  This option can also be set in
 F<krb5.conf>; see L<CONFIGURATION> below.
 
-=item B<-f> I<output>
+=item B<-f> I<file>
 
-This flag is only used in combination with the C<get> command.  Rather
-than sending the secure data to standard output (the default), store the
-secure data in the file I<output>.
+This flag is only used in combination with the C<get> and C<store>
+commands.  For C<get>, rather than sending the secure data to standard
+output (the default), the secure data will be stored in I<file>.  For
+C<store>, the data to be stored will be read from I<file>.
 
-If the object being retrieved is not a keytab object, any current file
-named I<output> is renamed to F<I<outout>.bak> before the new file is
-created.  F<I<outout>.new> is used as a temporary file and any existing
-file with that name will be deleted.
+With C<get>, if the object being retrieved is not a keytab object, any
+current file named I<output> is renamed to F<I<outout>.bak> before the new
+file is created.  F<I<outout>.new> is used as a temporary file and any
+existing file with that name will be deleted.
 
 If the object being retrieved is a keytab object and the file I<output>
 already exists, the downloaded keys will be added to the existing keytab
@@ -82,6 +83,11 @@ file I<output>.  Old keys are not removed; you may wish to run C<kadmin
 ktremove> or an equivalent later to clean up old keys.  F<I<output>.new>
 is still used as a temporary file and any existing file with that name
 will be deleted.
+
+C<store> does not yet support nul bytes in I<file> (or in any other way of
+specifying the data to be stored).  To store binary files in the wallet,
+you will need to encode them with uuencode, base64, or some similar scheme
+and then decode them after retrieval.
 
 =item B<-k> I<principal>
 
@@ -323,15 +329,17 @@ name, the owner, any specific ACLs set on the object, the expiration if
 any, and the user, remote host, and time when the object was created, last
 stored, and last downloaded.
 
-=item store <type> <name> <data>
+=item store <type> <name> [<data>]
 
 Stores <data> for the object identified by <type> and <name> for later
-retrieval with C<get>.  Not all object types support this.
+retrieval with C<get>.  Not all object types support this.  If <data> is
+not specified on the command line, it will be read from the file specified
+with B<-f> (if given) or from standard input.
 
-Currently, <data> is limited to not containing nul characters and may
-therefore not be binary data, and is limited by the maximum command line
-length of the operating system of the wallet server.  These restrictions
-will be lifted in the future.
+Currently, the stored data must not contain nul characters and may
+therefore not be binary data.  Its length is also limited by the maximum
+command line length of the operating system of the wallet server.  These
+restrictions will be lifted in the future.
 
 If an object with type <type> and name <name> does not already exist when
 this command is issued (as checked with the check interface), B<wallet>

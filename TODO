@@ -41,10 +41,6 @@ Release 1.0:
 * On upgrades, support adding new object types and ACL verifiers to the
   class tables.
 
-* Add an option to the wallet client to read the data from a file for
-  object store.  The initial implementation, depending on the underlying
-  remctl support, may have to ban nul characters in the uploaded data.
-
 * Write the LDAP entitlement ACL verifier.
 
 * Write the PTS ACL verifier.
@@ -193,6 +189,9 @@ Future work:
   ACL is set and implement syntax checking for the Krb5 verifier.
 
 * Support authenticating with a keytab.
+
+* Allow store data to contain nuls.  Requires rewriting the command
+  processing for store to use iovecs.
 
 May or may not be good ideas:
 

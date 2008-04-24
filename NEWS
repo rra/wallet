@@ -2,6 +2,11 @@
 
 wallet 0.9 (unreleased)
 
+    The wallet command-line client now reads the data for store from a
+    file (using -f) or from standard input (if -f wasn't given) when the
+    data isn't specified on the command line.  The data still must not
+    contain nul characters.
+
     Add support for enabling and disabling principals (clearing or setting
     the NOTGS flag) and examining principals to kasetkey.  This
     functionality isn't used by wallet (and probably won't be) but is

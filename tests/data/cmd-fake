@@ -130,6 +130,13 @@ get)
         ;;
     esac
     ;;
+store)
+    if [ -n "$3" ] ; then
+        echo "Too many arguments" >&2
+        exit 1
+    fi
+    printf "$type $1\n$2" > store-output
+    ;;
 show)
     if [ -n "$2" ] ; then
         echo "Too many arguments" >&2

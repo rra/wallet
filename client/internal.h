@@ -90,6 +90,14 @@ void write_file(const char *name, const void *data, size_t length);
 void write_srvtab(krb5_context, const char *srvtab, const char *principal,
                   const char *keytab);
 
+/*
+ * Read all of a file into memory and return the contents as a newly allocated
+ * string.  Handles a file name of "-" to mean standard input.  Dies on any
+ * failure.  This will need modification later when we want to handle nul
+ * characters.
+ */
+char *read_file(const char *);
+
 END_DECLS
 
 #endif /* !CLIENT_INTERNAL_H */

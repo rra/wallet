@@ -194,9 +194,10 @@ main(int argc, char *argv[])
     if (argc < 3)
         usage(1);
 
-    /* -f is only supported for get and -S with get keytab. */
-    if (file != NULL && strcmp(argv[0], "get") != 0)
-        die("-f only supported for get");
+    /* -f is only supported for get and store and -S with get keytab. */
+    if (file != NULL)
+        if (strcmp(argv[0], "get") != 0 && strcmp(argv[0], "store") != 0)
+            die("-f only supported for get and store");
     if (srvtab != NULL) {
         if (strcmp(argv[0], "get") != 0 || strcmp(argv[1], "keytab") != 0)
             die("-S only supported for get keytab");
@@ -239,11 +240,23 @@ main(int argc, char *argv[])
             status = get_file(r, options.type, argv[1], argv[2], file);
         }
     } else {
-        command = xmalloc(sizeof(char *) * (argc + 2));
+        if (strcmp(argv[0], "store") == 0) {
+            if (argc > 4)
+                die("too many arguments");
+            else if (argc == 4)
+                command = xmalloc(sizeof(char *) * (argc + 2));
+            else
+                command = xmalloc(sizeof(char *) * (argc + 3));
+        } else
+            command = xmalloc(sizeof(char *) * (argc + 2));
         command[0] = options.type;
         for (i = 0; i < argc; i++)
             command[i + 1] = argv[i];
-        command[argc + 1] = NULL;
+        if (strcmp(argv[0], "store") == 0 && argc < 4) {
+            command[argc + 1] = read_file(file == NULL ? "-" : file);
+            command[argc + 2] = NULL;
+        } else
+            command[argc + 1] = NULL;
         status = run_command(r, command, NULL, NULL);
     }
     remctl_close(r);

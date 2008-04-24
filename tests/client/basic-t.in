@@ -12,7 +12,7 @@
 . "@abs_top_srcdir@/tests/libtest.sh"
 
 # Print the number of tests.
-total=31
+total=35
 count=1
 echo "$total"
 
@@ -209,6 +209,34 @@ else
     printcount "not ok"
 fi
 rm -f keytab srvtab
+
+# Test store from standard input.
+echo "This is a test of store" | runsuccess "" "$wallet" store file fake-test
+count=`expr $count + 1`
+echo "file fake-test" > store-correct
+echo "This is a test of store" >> store-correct
+if cmp store-output store-correct >/dev/null 2>&1 ; then
+    printcount "ok"
+else
+    printcount "not ok"
+    echo == store-output ==
+    cat store-output
+    echo == store-correct ==
+    cat store-correct
+fi
+rm -f store-output store-correct
+
+# Test store with -f.
+echo "This is more store input" > store-input
+echo "file fake-test" > store-correct
+cat store-input >> store-correct
+runsuccess "" "$wallet" -f store-input store file fake-test
+if cmp store-output store-correct >/dev/null 2>&1 ; then
+    printcount "ok"
+else
+    printcount "not ok"
+fi
+rm -f store-input store-output store-correct
 
 # Test various other client functions and errors.
 runsuccess "This is a fake keytab." "$wallet" get keytab service/fake-output

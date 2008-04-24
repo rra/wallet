@@ -11,7 +11,9 @@
 #include <config.h>
 #include <portable/system.h>
 
+#include <errno.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include <client/internal.h>
 #include <util/util.h>
@@ -108,4 +110,54 @@ get_file(struct remctl *r, const char *prefix, const char *type,
     if (data != NULL)
         free(data);
     return 0;
+}
+
+
+/*
+ * Read all of a file into memory and return the contents as a newly allocated
+ * string.  Handles a file name of "-" to mean standard input.  Dies on any
+ * failure.
+ *
+ * This will need modification later when we want to handle nul characters.
+ */
+char *
+read_file(const char *name)
+{
+    char *contents;
+    size_t size, offset;
+    int fd;
+    struct stat st;
+    ssize_t status;
+
+    if (strcmp(name, "-") == 0) {
+        fd = fileno(stdin);
+        size = BUFSIZ;
+        contents = xmalloc(size);
+    } else {
+        fd = open(name, O_RDONLY);
+        if (fd < 0)
+            sysdie("cannot open file %s", name);
+        if (fstat(fd, &st) < 0)
+            sysdie("cannot stat file %s", name);
+        size = st.st_size + 1;
+        contents = xmalloc(size);
+    }
+    offset = 0;
+    do {
+        if (offset >= size - 1) {
+            size += BUFSIZ;
+            contents = xrealloc(contents, size);
+        }
+        do {
+            status = read(fd, contents + offset, size - offset - 1);
+        } while (status == -1 && errno == EINTR);
+        if (status < 0)
+            sysdie("cannot read from file");
+        offset += status;
+    } while (status > 0);
+    close(fd);
+    contents[offset] = '\0';
+    if (memchr(contents, '\0', offset) != NULL)
+        die("cannot yet handle file data containing nul characters");
+    return contents;
 }
