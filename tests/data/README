@@ -12,6 +12,11 @@ If your krb5.conf file is not in /etc or /usr/local/etc, put a copy of
 your krb5.conf file in this directory.  The tests need to generate a
 modified copy in order to test some behavior.
 
+To enable tests of password prompting, create a file named test.password
+that contains two lines.  The first line should be a test principal and
+the second line should be the password for that principal.  The newline is
+not taken to be part of the password.
+
 To enable tests of kasetkey (assuming that you've configured wallet with
 --with-afs), create a K4 srvtab with ADMIN access to an AFS kaserver and
 put it in test.srvtab.  Then, put the fully-qualified K4 principal name

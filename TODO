@@ -2,8 +2,6 @@
 
 Release 1.0:
 
-* Add a test suite for the wallet -u option.
-
 * Rewrite the server checks to avoid using IO::String, since one of the
   tests already requires Perl 5.8's internal string handling.
 

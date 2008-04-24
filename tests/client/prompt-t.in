@@ -1,0 +1,79 @@
+#!/usr/bin/perl -w
+# $Id$
+#
+# tests/client/prompt-t -- Password prompting tests for the wallet client.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+BEGIN { our $total = 5 }
+use Test::More tests => $total;
+
+use lib '@abs_top_srcdir@/perl';
+use Wallet::Admin;
+
+use lib '@abs_top_srcdir@/perl/t/lib';
+use Util;
+
+# cd to the correct directory.
+chdir '@abs_top_srcdir@/tests'
+    or die "Cannot chdir to @abs_top_srcdir@/tests: $!\n";
+
+SKIP: {
+    skip 'no password configuration', $total
+        unless -f '@abs_top_builddir@/tests/data/test.password';
+    my $remctld = '@REMCTLD@';
+    skip 'remctld not found', $total unless $remctld;
+    eval { require Expect };
+    skip 'Exepct module not found', $total if $@;
+
+    # Disable sending of wallet's output to our standard output.  Do this
+    # twice to avoid Perl warnings.
+    $Expect::Log_Stdout = 0;
+    $Expect::Log_Stdout = 0;
+
+    # Spawn remctld and set up with a different ticket cache.
+    unlink ('krb5cc_test', 'test-pid');
+    my $principal = contents ('@abs_top_builddir@/tests/data/test.principal');
+    remctld_spawn ($remctld, $principal,
+                   '@abs_top_builddir@/tests/data/test.keytab',
+                   '@abs_top_builddir@/tests/data/basic.conf');
+    $ENV{KRB5CCNAME} = 'krb5cc_test';
+
+    # Read in the principal and password.
+    open (PASS, '<', '@abs_top_builddir@/tests/data/test.password')
+        or die "Cannot open @abs_top_builddir@/tests/data/test.password: $!\n";
+    my $user = <PASS>;
+    my $password = <PASS>;
+    close PASS;
+    chomp ($user, $password);
+
+    # Spawn wallet and check an invalid password.
+    my $wallet = Expect->spawn ('@abs_top_builddir@/client/wallet', '-k',
+                                $principal, '-p', 14373, '-s', 'localhost',
+                                '-c', 'fake-wallet', '-u', $user, 'get',
+                                'keytab', 'service/fake-output');
+    is ($wallet->expect (2, '-re', 'Password.*: '), 1, 'Saw password prompt');
+    $wallet->send ("invalid-$password\n");
+    is ($wallet->expect (2, 'wallet: authentication failed: '), 1,
+        ' and saw error message from an invalid password');
+    $wallet->soft_close;
+
+    # Now check a valid password.
+    $wallet = Expect->spawn ('@abs_top_builddir@/client/wallet', '-k',
+                             $principal, '-p', 14373, '-s', 'localhost',
+                             '-c', 'fake-wallet', '-u', $user, 'get',
+                             'keytab', 'service/fake-output');
+    is ($wallet->expect (2, '-re', 'Password.*: '), 1, 'Saw password prompt');
+    $wallet->send ("$password\n");
+    is ($wallet->expect (2, 'This is a fake keytab'), 1,
+        ' and saw the right output');
+    $wallet->soft_close;
+    ok (!-f 'krb5cc_test', ' and no ticket cache is left behind');
+
+    # All done.
+    remctld_stop;
+    unlink 'test-pid';
+}

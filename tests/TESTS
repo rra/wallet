@@ -1,6 +1,7 @@
 client/basic
 client/full
 client/pod
+client/prompt
 portable/asprintf
 portable/snprintf
 portable/strlcat
