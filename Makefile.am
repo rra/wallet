@@ -5,14 +5,11 @@
 # Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
 # See LICENSE for licensing terms.
 
-AUTOMAKE_OPTIONS = foreign subdir-objects
-ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
-	config/keytab config/keytab.acl config/wallet docs/design \
-	contrib/README contrib/wallet-report contrib/wallet-report.8 \
-	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
-	docs/setup kasetkey/README kasetkey/kasetkey.pod \
-	perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
+# These two lists of files are needed for Perl builds and for the test suite
+# and are not generated or touched by configure.  They're listed here to be
+# added to EXTRA_DIST and so that they can be copied over properly for
+# builddir != srcdir builds.
+PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
 	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/NetDB.pm \
 	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm \
 	perl/Wallet/Config.pm perl/Wallet/Database.pm \
@@ -23,15 +20,26 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/init.t \
 	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t \
 	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t \
-	perl/t/verifier.t tests/TESTS tests/data/README \
-	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake \
-	tests/data/fake-data tests/data/fake-kadmin tests/data/fake-keytab \
+	perl/t/verifier.t
+TEST_FILES = tests/TESTS tests/data/README tests/data/allow-extract \
+	tests/data/basic.conf tests/data/cmd-fake tests/data/fake-data \
+	tests/data/fake-kadmin tests/data/fake-keytab \
 	tests/data/fake-keytab-2 tests/data/fake-keytab-merge \
 	tests/data/fake-keytab-old tests/data/fake-srvtab \
 	tests/data/wallet.conf tests/libtest.sh
 
+AUTOMAKE_OPTIONS = foreign subdir-objects
+ACLOCAL_AMFLAGS = -I m4
+EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
+	config/keytab config/keytab.acl config/wallet docs/design \
+	contrib/README contrib/wallet-report contrib/wallet-report.8 \
+	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
+	docs/setup kasetkey/README kasetkey/kasetkey.pod $(PERL_FILES) \
+	$(TEST_FILES)
+
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
-portable_libportable_a_SOURCES = portable/dummy.c
+portable_libportable_a_SOURCES = portable/dummy.c portable/macros.h \
+	portable/stdbool.h portable/system.h
 portable_libportable_a_LIBADD = $(LIBOBJS)
 util_libutil_a_SOURCES = util/concat.c util/messages.c util/messages-krb5.c \
 	util/util.h util/xmalloc.c
@@ -41,7 +49,7 @@ bin_PROGRAMS = client/wallet
 dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
 	server/wallet-backend
 client_wallet_SOURCES = client/file.c client/internal.h client/keytab.c \
-	client/krb5.c client/remctl.c client/srvtab.c client/wallet.c system.h
+	client/krb5.c client/remctl.c client/srvtab.c client/wallet.c
 client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
 client_wallet_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
 client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
@@ -108,6 +116,13 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
 all-local: perl/blib/lib/Wallet/Config.pm
 
 perl/blib/lib/Wallet/Config.pm:
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
+	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/Object \
+		perl/t perl/t/data perl/t/util 2>/dev/null || true ; \
+	    for f in $(PERL_FILES) ; do \
+		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
+	    done \
+	fi
 	cd perl && perl Makefile.PL
 	cd perl && $(MAKE)
 
@@ -151,6 +166,12 @@ tests_util_messages_t_LDADD = tests/libtest.a util/libutil.a \
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.a
 
 check-local: $(check_PROGRAMS)
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
+	    mkdir tests/data/acls 2>/dev/null || true ; \
+	    for f in $(TEST_FILES) ; do \
+		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
+	    done \
+	fi
 	cd tests && ./runtests TESTS
 	@echo ''
 	@echo ''

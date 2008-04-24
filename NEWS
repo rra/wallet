@@ -30,6 +30,9 @@ wallet 0.9 (2008-04-24)
     Fix Autoconf syntax error when probing for libkrb5support.  Thanks,
     Mike Garrison.
 
+    wallet can now be built in a different directory than the source
+    directory.
+
     Stop setting Stanford-specific compile-time defaults for the wallet
     server and port.
 

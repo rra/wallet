@@ -212,10 +212,6 @@ BUILD AND INSTALLATION
   shared library migrations more difficult.  If none of the above made any
   sense to you, don't bother with this flag.
 
-  Currently, building in a different directory from the source directory
-  is not supported due to the complexity of integration with the Perl
-  build process.  This will be corrected in a later release.
-
 TESTING
 
   The wallet system comes with an extensive test suite which you can run
