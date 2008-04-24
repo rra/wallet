@@ -195,6 +195,8 @@ Future work:
 * Provide an API for verifiers to syntax-check the values before an
   ACL is set and implement syntax checking for the Krb5 verifier.
 
+* Support authenticating with a keytab.
+
 May or may not be good ideas:
 
 * Consider using Class::Accessor to get rid of the scaffolding code to
