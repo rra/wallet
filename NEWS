@@ -10,8 +10,23 @@ wallet 0.9 (unreleased)
     Report the correct error message when addprinc fails while creating a
     keytab object.
 
+    The configure option requesting AFS kaserver support (and thus
+    building kasetkey) is now --with-kaserver instead of --with-afs.
+
+    If KRB5_CONFIG was explicitly set in the environment, don't use a
+    different krb5-config based on --with-krb4 or --with-krb5.  If
+    krb5-config isn't executable, don't use it.  This allows one to
+    force library probing by setting KRB5_CONFIG to point to a
+    nonexistent file.
+
+    Sanity-check the results of krb5-config before proceeding and error
+    out in configure if they don't work.
+
     Fix Autoconf syntax error when probing for libkrb5support.  Thanks,
     Mike Garrison.
+
+    Stop setting Stanford-specific compile-time defaults for the wallet
+    server and port.
 
 wallet 0.8 (2008-02-13)
 
