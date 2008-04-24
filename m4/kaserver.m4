@@ -1,13 +1,13 @@
-dnl afs.m4 -- Find the compiler and linker flags for OpenAFS.
+dnl kaserver.m4 -- Find the compiler and linker flags for OpenAFS kaserver.
 dnl $Id$
 dnl
-dnl If --with-afs is given, finds the compiler and linker flags for building
-dnl with OpenAFS libraries; sets AFS_CPPFLAGS, AFS_LDFLAGS, and AFS_LIBS as
-dnl appropriate; and defines HAVE_AFS.  Provides the macro RRA_LIB_AFS, which
-dnl takes no arguments.
+dnl If --with-kaserver is given, finds the compiler and linker flags for
+dnl building with OpenAFS libraries; sets AFS_CPPFLAGS, AFS_LDFLAGS, and
+dnl AFS_LIBS as appropriate; and defines HAVE_AFS.  Provides the macro
+dnl RRA_LIB_AFS, which takes no arguments.
 dnl
-dnl This function also sets rra_afs to true if AFS was requested, which can be
-dnl checked to determine if further checks should be done.
+dnl This function also sets rra_kaserver to true if AFS was requested, which
+dnl can be checked to determine if further checks should be done.
 dnl
 dnl Also provides RRA_LIB_AFS_SET to set CPPFLAGS, LDFLAGS, and LIBS to
 dnl include the AFS libraries; RRA_LIB_AFS_SWITCH to do the same but save the
@@ -19,6 +19,7 @@ dnl Based on code developed by Derrick Brashear and Ken Hornstein of Sine
 dnl Nomine Associates, on behalf of Stanford University.
 dnl Copyright 2006, 2007, 2008
 dnl     Board of Trustees, Leland Stanford Jr. University
+dnl
 dnl See LICENSE for licensing terms.
 
 dnl Set CPPFLAGS, LDFLAGS, and LIBS to values including the AFS settings.
@@ -81,8 +82,8 @@ AC_DEFUN([RRA_LIB_AFS],
  AC_SUBST([AFS_CPPFLAGS])
  AC_SUBST([AFS_LDFLAGS])
  AC_SUBST([AFS_LIBS])
- AC_ARG_WITH([afs],
-    [AC_HELP_STRING([--with-afs@<:@=DIR@:>@],
+ AC_ARG_WITH([kaserver],
+    [AC_HELP_STRING([--with-kaserver@<:@=DIR@:>@],
         [Compile with AFS kaserver sync support])],
     [AS_IF([test x"$withval" != xno],
         [rra_afs=true

@@ -1,82 +1,95 @@
-/*  $Id$
-**
-**  Message and error reporting (possibly fatal).
-**
-**  Usage:
-**
-**      extern int cleanup(void);
-**      extern void log(int, const char *, va_list, int);
-**
-**      message_fatal_cleanup = cleanup;
-**      message_program_name = argv[0];
-**
-**      warn("Something horrible happened at %lu", time);
-**      syswarn("Couldn't unlink temporary file %s", tmpfile);
-**
-**      die("Something fatal happened at %lu", time);
-**      sysdie("open of %s failed", filename);
-**
-**      debug("Some debugging message about %s", string);
-**      notice("Informational notices");
-**
-**      message_handlers_warn(1, log);
-**      warn("This now goes through our log function");
-**
-**  These functions implement message reporting through user-configurable
-**  handler functions.  debug() only does something if DEBUG is defined, and
-**  notice() and warn() just output messages as configured.  die() similarly
-**  outputs a message but then exits, normally with a status of 1.
-**
-**  The sys* versions do the same, but append a colon, a space, and the
-**  results of strerror(errno) to the end of the message.  All functions
-**  accept printf-style formatting strings and arguments.
-**
-**  If message_fatal_cleanup is non-NULL, it is called before exit by die and
-**  sysdie and its return value is used as the argument to exit.  It is a
-**  pointer to a function taking no arguments and returning an int, and can be
-**  used to call cleanup functions or to exit in some alternate fashion (such
-**  as by calling _exit).
-**
-**  If message_program_name is non-NULL, the string it points to, followed by
-**  a colon and a space, is prepended to all error messages logged through the
-**  message_log_stdout and message_log_stderr message handlers (the former is
-**  the default for notice, and the latter is the default for warn and die).
-**
-**  Honoring error_program_name and printing to stderr is just the default
-**  handler; with message_handlers_* the handlers for any message function can
-**  be changed.  By default, notice prints to stdout, warn and die print to
-**  stderr, and the others don't do anything at all.  These functions take a
-**  count of handlers and then that many function pointers, each one to a
-**  function that takes a message length (the number of characters snprintf
-**  generates given the format and arguments), a format, an argument list as a
-**  va_list, and the applicable errno value (if any).
-**
-**  Copyright (c) 2004, 2005, 2006
-**      by Internet Systems Consortium, Inc. ("ISC")
-**  Copyright (c) 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-**      2002, 2003 by The Internet Software Consortium and Rich Salz
-**
-**  This code is derived from software contributed to the Internet Software
-**  Consortium by Rich Salz.
-**
-**  Permission to use, copy, modify, and distribute this software for any
-**  purpose with or without fee is hereby granted, provided that the above
-**  copyright notice and this permission notice appear in all copies.
-**
-**  THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES WITH
-**  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-**  MERCHANTABILITY AND FITNESS.  IN NO EVENT SHALL ISC BE LIABLE FOR ANY
-**  SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-**  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-**  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-**  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+/* $Id$
+ *
+ * Message and error reporting (possibly fatal).
+ *
+ * Usage:
+ *
+ *     extern int cleanup(void);
+ *     extern void log(int, const char *, va_list, int);
+ *
+ *     message_fatal_cleanup = cleanup;
+ *     message_program_name = argv[0];
+ *
+ *     warn("Something horrible happened at %lu", time);
+ *     syswarn("Couldn't unlink temporary file %s", tmpfile);
+ *
+ *     die("Something fatal happened at %lu", time);
+ *     sysdie("open of %s failed", filename);
+ *
+ *     debug("Some debugging message about %s", string);
+ *     notice("Informational notices");
+ *
+ *     message_handlers_warn(1, log);
+ *     warn("This now goes through our log function");
+ *
+ * These functions implement message reporting through user-configurable
+ * handler functions.  debug() only does something if DEBUG is defined, and
+ * notice() and warn() just output messages as configured.  die() similarly
+ * outputs a message but then exits, normally with a status of 1.
+ *
+ * The sys* versions do the same, but append a colon, a space, and the results
+ * of strerror(errno) to the end of the message.  All functions accept
+ * printf-style formatting strings and arguments.
+ *
+ * If message_fatal_cleanup is non-NULL, it is called before exit by die and
+ * sysdie and its return value is used as the argument to exit.  It is a
+ * pointer to a function taking no arguments and returning an int, and can be
+ * used to call cleanup functions or to exit in some alternate fashion (such
+ * as by calling _exit).
+ *
+ * If message_program_name is non-NULL, the string it points to, followed by a
+ * colon and a space, is prepended to all error messages logged through the
+ * message_log_stdout and message_log_stderr message handlers (the former is
+ * the default for notice, and the latter is the default for warn and die).
+ *
+ * Honoring error_program_name and printing to stderr is just the default
+ * handler; with message_handlers_* the handlers for any message function can
+ * be changed.  By default, notice prints to stdout, warn and die print to
+ * stderr, and the others don't do anything at all.  These functions take a
+ * count of handlers and then that many function pointers, each one to a
+ * function that takes a message length (the number of characters snprintf
+ * generates given the format and arguments), a format, an argument list as a
+ * va_list, and the applicable errno value (if any).
+ *
+ * Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2004, 2005, 2006
+ *     by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+ *     2003 by The Internet Software Consortium and Rich Salz
+ *
+ * This code is derived from software contributed to the Internet Software
+ * Consortium by Rich Salz.
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS.  IN NO EVENT SHALL ISC BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+ * OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
 */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <errno.h>
-#include <syslog.h>
+#ifdef HAVE_SYSLOG_H
+# include <syslog.h>
+#endif
+
+#ifdef _WIN32
+# include <windows.h>
+# define LOG_DEBUG      EVENTLOG_SUCCESS
+# define LOG_INFO       EVENTLOG_INFORMATION_TYPE
+# define LOG_NOTICE     EVENTLOG_INFORMATION_TYPE
+# define LOG_WARNING    EVENTLOG_WARNING_TYPE
+# define LOG_ERR        EVENTLOG_ERROR_TYPE
+# define LOG_CRIT       EVENTLOG_ERROR_TYPE
+#endif
 
 #include <util/util.h>
 
@@ -102,9 +115,9 @@ const char *message_program_name = NULL;
 
 
 /*
-**  Set the handlers for a particular message function.  Takes a pointer to
-**  the handler list, the count of handlers, and the argument list.
-*/
+ * Set the handlers for a particular message function.  Takes a pointer to the
+ * handler list, the count of handlers, and the argument list.
+ */
 static void
 message_handlers(message_handler_func **list, int count, va_list args)
 {
@@ -120,10 +133,10 @@ message_handlers(message_handler_func **list, int count, va_list args)
 
 
 /*
-**  There's no good way of writing these handlers without a bunch of code
-**  duplication since we can't assume variadic macros, but I can at least make
-**  it easier to write and keep them consistent.
-*/
+ * There's no good way of writing these handlers without a bunch of code
+ * duplication since we can't assume variadic macros, but I can at least make
+ * it easier to write and keep them consistent.
+ */
 #define HANDLER_FUNCTION(type)                                  \
     void                                                        \
     message_handlers_ ## type(int count, ...)                   \
@@ -141,8 +154,8 @@ HANDLER_FUNCTION(die)
 
 
 /*
-**  Print a message to stdout, supporting message_program_name.
-*/
+ * Print a message to stdout, supporting message_program_name.
+ */
 void
 message_log_stdout(int len UNUSED, const char *fmt, va_list args, int err)
 {
@@ -152,13 +165,14 @@ message_log_stdout(int len UNUSED, const char *fmt, va_list args, int err)
     if (err)
         fprintf(stdout, ": %s", strerror(err));
     fprintf(stdout, "\n");
+    fflush(stdout);
 }
 
 
 /*
-**  Print a message to stderr, supporting message_program_name.  Also flush
-**  stdout so that errors and regular output occur in the right order.
-*/
+ * Print a message to stderr, supporting message_program_name.  Also flush
+ * stdout so that errors and regular output occur in the right order.
+ */
 void
 message_log_stderr(int len UNUSED, const char *fmt, va_list args, int err)
 {
@@ -173,11 +187,13 @@ message_log_stderr(int len UNUSED, const char *fmt, va_list args, int err)
 
 
 /*
-**  Log a message to syslog.  This is a helper function used to implement all
-**  of the syslog message log handlers.  It takes the same arguments as a
-**  regular message handler function but with an additional priority
-**  argument.
-*/
+ * Log a message to syslog.  This is a helper function used to implement all
+ * of the syslog message log handlers.  It takes the same arguments as a
+ * regular message handler function but with an additional priority argument.
+ *
+ * This needs further attention on Windows.  For example, it currently doesn't
+ * log the errno information.
+ */
 static void
 message_log_syslog(int pri, int len, const char *fmt, va_list args, int err)
 {
@@ -190,18 +206,30 @@ message_log_syslog(int pri, int len, const char *fmt, va_list args, int err)
         exit(message_fatal_cleanup ? (*message_fatal_cleanup)() : 1);
     }
     vsnprintf(buffer, len + 1, fmt, args);
+#ifdef _WIN32
+    {
+        HANDLE eventlog;
+
+        eventlog = RegisterEventSource(NULL, message_program_name);
+        if (eventlog != NULL) {
+            ReportEvent(eventlog, pri, 0, 0, NULL, 1, 0, &buffer, NULL);
+            CloseEventLog(eventlog);
+        }
+    }
+#else /* !_WIN32 */
     if (err == 0)
         syslog(pri, "%s", buffer);
     else
         syslog(pri, "%s: %s", buffer, strerror(err));
+#endif /* !_WIN32 */
     free(buffer);
 }
 
 
 /*
-**  Do the same sort of wrapper to generate all of the separate syslog logging
-**  functions.
-*/
+ * Do the same sort of wrapper to generate all of the separate syslog logging
+ * functions.
+ */
 #define SYSLOG_FUNCTION(name, type)                                     \
     void                                                                \
     message_log_syslog_ ## name(int l, const char *f, va_list a, int e) \
@@ -217,10 +245,10 @@ SYSLOG_FUNCTION(crit,    CRIT)
 
 
 /*
-**  All of the message handlers.  There's a lot of code duplication here too,
-**  but each one is still *slightly* different and va_start has to be called
-**  multiple times, so it's hard to get rid of the duplication.
-*/
+ * All of the message handlers.  There's a lot of code duplication here too,
+ * but each one is still *slightly* different and va_start has to be called
+ * multiple times, so it's hard to get rid of the duplication.
+ */
 
 void
 debug(const char *format, ...)

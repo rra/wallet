@@ -24,7 +24,7 @@
  */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <tests/libtest.h>
 

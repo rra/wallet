@@ -184,11 +184,16 @@ BUILD AND INSTALLATION
 
       ./configure KRB5_CONFIG=/path/to/krb5-config
 
-  To build with AFS kaserver synchronization support, pass --with-afs to
-  configure.  You may need to include the path to the AFS include files
+  To not use krb5-config and force library probing even if there is a
+  krb5-config script on your path, set KRB5_CONFIG to a nonexistent path:
+
+      ./configure KRB5_CONFIG=/nonexistent
+
+  To build with AFS kaserver synchronization support, pass --with-kaserver
+  to configure.  You may need to include the path to the AFS include files
   and libraries, such as:
 
-      ./configure --with-afs=/usr/afsws
+      ./configure --with-kaserver=/usr/afsws
 
   The AFS kaserver support also requires Kerberos v4 libraries and tries
   to use krb5-config to find such libraries.  If your Kerberos v4

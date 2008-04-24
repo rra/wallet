@@ -1,15 +1,15 @@
-/*  $Id$
-**
-**  remctl interface for the wallet client.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2007 Board of Trustees, Leland Stanford Jr. University
-**
-**  See LICENSE for licensing terms.
-*/
+/* $Id$
+ *
+ * remctl interface for the wallet client.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <remctl.h>
 
@@ -18,13 +18,12 @@
 
 
 /*
-**  Given a remctl connection and a command, run the command.
-**
-**  If data is non-NULL, save the output in it and return the length in
-**  length.  Otherwise, send any output to stdout.  Either way, send error
-**  output to stderr, and return the exit status (or 255 if there is an
-**  error).
-*/
+ * Given a remctl connection and a command, run the command.
+ *
+ * If data is non-NULL, save the output in it and return the length in length.
+ * Otherwise, send any output to stdout.  Either way, send error output to
+ * stderr, and return the exit status (or 255 if there is an error).
+ */
 int
 run_command(struct remctl *r, const char **command, char **data,
             size_t *length)
@@ -75,9 +74,9 @@ run_command(struct remctl *r, const char **command, char **data,
 
 
 /*
-**  Check whether an object exists using the exists wallet interface.  Returns
-**  true if it does, false if it doesn't, and dies on remctl errors.
-*/
+ * Check whether an object exists using the exists wallet interface.  Returns
+ * true if it does, false if it doesn't, and dies on remctl errors.
+ */
 int
 object_exists(struct remctl *r, const char *prefix, const char *type,
               const char *name)
@@ -101,8 +100,8 @@ object_exists(struct remctl *r, const char *prefix, const char *type,
 
 
 /*
-**  Attempt autocreation of an object.  Dies if autocreation fails.
-*/
+ * Attempt autocreation of an object.  Dies if autocreation fails.
+ */
 void
 object_autocreate(struct remctl *r, const char *prefix, const char *type,
                   const char *name)

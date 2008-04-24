@@ -104,6 +104,14 @@ AC_DEFUN([_RRA_LIB_KRB4_EXTRA],
  AC_CHECK_HEADERS([kerberosIV/krb.h])
  RRA_LIB_KRB4_RESTORE])
 
+dnl Sanity-check the results of krb5-config and be sure we can really link a
+dnl Kerberos program.
+AC_DEFUN([_RRA_LIB_KRB4_CHECK],
+[RRA_LIB_KRB4_SWITCH
+ AC_CHECK_FUNC([krb_get_svc_in_tkt], ,
+    [AC_MSG_FAILURE([krb5-config results fail for Kerberos v4])])
+ RRA_LIB_KRB4_RESTORE])
+
 dnl The main macro.
 AC_DEFUN([RRA_LIB_KRB4],
 [AC_REQUIRE([RRA_ENABLE_REDUCED_DEPENDS])
@@ -123,11 +131,11 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
     [_RRA_LIB_KRB4_PATHS
      _RRA_LIB_KRB4_REDUCED],
     [AC_ARG_VAR([KRB5_CONFIG], [Path to krb5-config])
-     AS_IF([test x"$rra_krb4_root" != x],
+     AS_IF([test x"$rra_krb4_root" != x && test -z "$KRB5_CONFIG"],
          [AS_IF([test -x "${rra_krb4_root}/bin/krb5-config"],
              [KRB5_CONFIG="${rra_krb4_root}/bin/krb5-config"])],
          [AC_PATH_PROG([KRB5_CONFIG], [krb5-config])])
-     AS_IF([test x"$KRB5_CONFIG" != x],
+     AS_IF([test x"$KRB5_CONFIG" != x && test -x "$KRB5_CONFIG"],
          [AC_CACHE_CHECK([for krb4 support in krb5-config],
              [rra_cv_lib_krb4_config],
              [AS_IF(["$KRB5_CONFIG" | grep krb4 > /dev/null 2>&1],
@@ -138,7 +146,8 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
                KRB4_LIBS=`"$KRB5_CONFIG" --libs krb4`],
               [_RRA_LIB_KRB4_PATHS
                _RRA_LIB_KRB4_MANUAL])
-          KRB4_CPPFLAGS=`echo "$KRB5_CPPFLAGS" | sed 's%-I/usr/include ?%%'`],
+          KRB4_CPPFLAGS=`echo "$KRB5_CPPFLAGS" | sed 's%-I/usr/include ?%%'`
+          _RRA_LIB_KRB4_CHECK],
          [_RRA_LIB_KRB4_PATHS
           _RRA_LIB_KRB4_MANUAL])])
  _RRA_LIB_KRB4_EXTRA])

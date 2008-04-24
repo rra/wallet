@@ -14,7 +14,7 @@
  */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 /*
  * If we're running the test suite, rename strlcpy to avoid conflicts with

@@ -1,15 +1,15 @@
-/*  $Id$
-**
-**  File handling for the wallet client.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
-**
-**  See LICENSE for licensing terms.
-*/
+/* $Id$
+ *
+ * File handling for the wallet client.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <fcntl.h>
 
@@ -17,9 +17,9 @@
 #include <util/util.h>
 
 /*
-**  Given a filename, some data, and a length, write that data to the given
-**  file safely, but overwrite any existing file by that name.
-*/
+ * Given a filename, some data, and a length, write that data to the given
+ * file safely, but overwrite any existing file by that name.
+ */
 void
 overwrite_file(const char *name, const void *data, size_t length)
 {
@@ -45,10 +45,10 @@ overwrite_file(const char *name, const void *data, size_t length)
 
 
 /*
-**  Given a filename, some data, and a length, write that data to the given
-**  file safely and atomically by creating file.new, writing the data, linking
-**  file to file.bak, and then renaming file.new to file.
-*/
+ * Given a filename, some data, and a length, write that data to the given
+ * file safely and atomically by creating file.new, writing the data, linking
+ * file to file.bak, and then renaming file.new to file.
+ */
 void
 write_file(const char *name, const void *data, size_t length)
 {
@@ -72,12 +72,12 @@ write_file(const char *name, const void *data, size_t length)
 
 
 /*
-**  Given a remctl object, the command prefix, object type, and object name,
-**  and a file (which may be NULL), send a wallet get command and write the
-**  results to the provided file.  If the file is NULL, write the results to
-**  standard output instead.  Returns 0 on success and an exit status on
-**  failure.
-*/
+ * Given a remctl object, the command prefix, object type, and object name,
+ * and a file (which may be NULL), send a wallet get command and write the
+ * results to the provided file.  If the file is NULL, write the results to
+ * standard output instead.  Returns 0 on success and an exit status on
+ * failure.
+ */
 int
 get_file(struct remctl *r, const char *prefix, const char *type,
          const char *name, const char *file)

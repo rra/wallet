@@ -1,17 +1,17 @@
-/*  $Id$
-**
-**  Kerberos support functions for the wallet client.
-**
-**  Currently, the only function here is one to obtain a ticket cache for a
-**  given principal and store it in memory for use by the rest of the wallet
-**  client.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
-*/
+/* $Id$
+ *
+ * Kerberos support functions for the wallet client.
+ *
+ * Currently, the only function here is one to obtain a ticket cache for a
+ * given principal and store it in memory for use by the rest of the wallet
+ * client.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <krb5.h>
 
@@ -23,10 +23,10 @@
 
 
 /*
-**  Given a Kerberos context and a principal name, authenticate as that user
-**  and store the TGT in a memory ticket cache for later use by remctl.  Dies
-**  on failure.
-*/
+ * Given a Kerberos context and a principal name, authenticate as that user
+ * and store the TGT in a memory ticket cache for later use by remctl.  Dies
+ * on failure.
+ */
 void
 kinit(krb5_context ctx, const char *principal)
 {

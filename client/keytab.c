@@ -1,15 +1,15 @@
-/*  $Id$
-**
-**  Implementation of keytab handling for the wallet client.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
-**
-**  See LICENSE for licensing terms.
-*/
+/* $Id$
+ *
+ * Implementation of keytab handling for the wallet client.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <remctl.h>
 
@@ -18,11 +18,11 @@
 
 
 /*
-**  Given keytab data as a pointer to memory and a length and the path of a
-**  second keytab, merge the keys in the memory keytab into the file keytab.
-**  Currently, this doesn't do any cleanup of old kvnos and doesn't handle
-**  duplicate kvnos correctly.  Dies on any error.
-*/
+ * Given keytab data as a pointer to memory and a length and the path of a
+ * second keytab, merge the keys in the memory keytab into the file keytab.
+ * Currently, this doesn't do any cleanup of old kvnos and doesn't handle
+ * duplicate kvnos correctly.  Dies on any error.
+ */
 static void
 merge_keytab(krb5_context ctx, const char *newfile, const char *file)
 {
@@ -61,9 +61,9 @@ merge_keytab(krb5_context ctx, const char *newfile, const char *file)
 
 
 /*
-**  Configure a given keytab to be synchronized with an AFS kaserver if it
-**  isn't already.  Returns true on success, false on failure.
-*/
+ * Configure a given keytab to be synchronized with an AFS kaserver if it
+ * isn't already.  Returns true on success, false on failure.
+ */
 static int
 set_sync(struct remctl *r, const char *type, const char *name)
 {
@@ -94,10 +94,10 @@ set_sync(struct remctl *r, const char *type, const char *name)
 
 
 /*
-**  Given a remctl object, the Kerberos context, the name of a keytab object,
-**  and a file name, call the correct wallet commands to download a keytab and
-**  write it to that file.  Returns the setatus or 255 on an internal error.
-*/
+ * Given a remctl object, the Kerberos context, the name of a keytab object,
+ * and a file name, call the correct wallet commands to download a keytab and
+ * write it to that file.  Returns the setatus or 255 on an internal error.
+ */
 int
 get_keytab(struct remctl *r, krb5_context ctx, const char *type,
            const char *name, const char *file, const char *srvtab)

@@ -1,14 +1,20 @@
-/* $Id$ */
-/* asprintf and vasprintf test suite. */
-
-/* Written by Russ Allbery <rra@stanford.edu>
-   Copyright 2006 Board of Trustees, Leland Stanford Jr. University
-   See LICENSE for licensing terms. */
+/* $Id$
+ *
+ * asprintf and vasprintf test suite.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2006, 2008 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <tests/libtest.h>
+
+int test_asprintf(char **, const char *, ...);
+int test_vasprintf(char **, const char *, va_list);
 
 static int
 vatest(char **result, const char *format, ...)
@@ -17,7 +23,7 @@ vatest(char **result, const char *format, ...)
     int status;
 
     va_start(args, format);
-    status = vasprintf(result, format, args);
+    status = test_vasprintf(result, format, args);
     va_end(args);
     return status;
 }
@@ -29,11 +35,11 @@ main(void)
 
     test_init(12);
 
-    ok_int(1, 7, asprintf(&result, "%s", "testing"));
+    ok_int(1, 7, test_asprintf(&result, "%s", "testing"));
     ok_string(2, "testing", result);
     free(result);
     ok(3, 1);
-    ok_int(4, 0, asprintf(&result, "%s", ""));
+    ok_int(4, 0, test_asprintf(&result, "%s", ""));
     ok_string(5, "", result);
     free(result);
     ok(6, 1);

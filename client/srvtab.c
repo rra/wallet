@@ -1,15 +1,15 @@
-/*  $Id$
-**
-**  Implementation of srvtab handling for the wallet client.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
-**
-**  See LICENSE for licensing terms.
-*/
+/* $Id$
+ *
+ * Implementation of srvtab handling for the wallet client.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <krb5.h>
 
@@ -24,16 +24,17 @@
 
 
 /*
-**  Given the Kerberos context, srvtab file name, a Kerberos principal (as a
-**  string), and a keytab file name, extract the des-cbc-crc key from that
-**  keytab and write it to the newly created srvtab file as a srvtab.  Convert
-**  the principal from Kerberos v5 form to Kerberos v4 form.
-**
-**  We always force the kvno to 0 for the srvtab.  This works with how the
-**  wallet synchronizes keys, even though it's not particularly correct.
-**
-**  On any failure, print an error message to standard error and then exit.
-*/
+ * Given the Kerberos context, srvtab file name, a Kerberos principal (as a
+ * string), and a keytab file name, extract the des-cbc-crc key from that
+ * keytab and write it to the newly created srvtab file as a srvtab.  Convert
+ * the principal from Kerberos v5 form to Kerberos v4 form.
+ *
+ * We always force the kvno to 0 for the srvtab.  This works with how the
+ * wallet synchronizes keys with kasetkey, even though it's not particularly
+ * correct.
+ *
+ * On any failure, print an error message to standard error and then exit.
+ */
 void
 write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
              const char *keytab)

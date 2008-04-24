@@ -13,6 +13,7 @@ dnl This macro depends on RRA_ENABLE_REDUCED_DEPENDS and RRA_LIB_GSSAPI.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
 dnl Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+dnl
 dnl See LICENSE for licensing terms.
 
 dnl Set CPPFLAGS, LDFLAGS, and LIBS to values including the Kerberos v5
@@ -48,20 +49,20 @@ AC_DEFUN([_RRA_LIB_REMCTL_PATHS],
 dnl The main macro.
 AC_DEFUN([RRA_LIB_REMCTL],
 [AC_REQUIRE([RRA_ENABLE_REDUCED_DEPENDS])
-rra_remctl_root=
-REMCTL_CPPFLAGS=
-REMCTL_LDFLAGS=
-REMCTL_LIBS=
-AC_SUBST([REMCTL_CPPFLAGS])
-AC_SUBST([REMCTL_LDFLAGS])
-AC_SUBST([REMCTL_LIBS])
-AC_ARG_WITH([remctl],
+ rra_remctl_root=
+ REMCTL_CPPFLAGS=
+ REMCTL_LDFLAGS=
+ REMCTL_LIBS=
+ AC_SUBST([REMCTL_CPPFLAGS])
+ AC_SUBST([REMCTL_LDFLAGS])
+ AC_SUBST([REMCTL_LIBS])
+ AC_ARG_WITH([remctl],
     [AC_HELP_STRING([--with-remctl=DIR],
         [Location of remctl headers and libraries])],
     [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_remctl_root="$withval"])])
-_RRA_LIB_REMCTL_PATHS
-AS_IF([test x"$rra_reduced_depends" = xtrue],
+ _RRA_LIB_REMCTL_PATHS
+ AS_IF([test x"$rra_reduced_depends" = xtrue],
     [REMCTL_LIBS="-lremctl"],
     [RRA_LIB_GSSAPI
      REMCTL_CPPFLAGS="$REMCTL_CPPFLAGS $GSSAPI_CPPFLAGS"

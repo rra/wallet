@@ -19,7 +19,11 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_PROG_RANLIB
+AC_AIX
+AC_GNU_SOURCE
 
+AC_HEADER_STDBOOL
+AC_CHECK_HEADERS([sys/bitypes.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 RRA_C_C99_VAMACROS
 RRA_C_GNU_VAMACROS
@@ -55,9 +59,6 @@ AC_PATH_PROG([REMCTLD], [remctld], , [$PATH:/usr/sbin:/usr/local/sbin])
 AS_IF([test x"$REMCTLD" != x],
     [AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
         [Define to the full path to remctld to run remctl tests.])])
-
-dnl Needed to get prototypes for functions like asprintf on Linux.
-AC_DEFINE([_GNU_SOURCE], [1], [Define to 1 on Linux to get full prototypes.])
 
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile perl/Makefile.PL tests/data/full.conf])

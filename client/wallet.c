@@ -1,16 +1,16 @@
-/*  $Id$
-**
-**  The client program for the wallet system.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2006, 2007, 2008
-**      Board of Trustees, Leland Stanford Jr. University
-**
-**  See LICENSE for licensing terms.
-*/
+/* $Id$
+ *
+ * The client program for the wallet system.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2006, 2007, 2008
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
-#include <system.h>
+#include <portable/system.h>
 
 #include <errno.h>
 #include <krb5.h>
@@ -19,9 +19,11 @@
 #include <client/internal.h>
 #include <util/util.h>
 
-/* Basic wallet behavior options set either on the command line or via
-   krb5.conf.  If set via krb5.conf, we allocate memory for the strings, but
-   we never free them. */
+/*
+ * Basic wallet behavior options set either on the command line or via
+ * krb5.conf.  If set via krb5.conf, we allocate memory for the strings, but
+ * we never free them.
+ */
 struct options {
     char *type;
     char *server;
@@ -30,8 +32,10 @@ struct options {
     int port;
 };
 
-/* Allow defaults to be set for a particular site with configure options if
-   people don't want to use krb5.conf for some reason. */
+/*
+ * Allow defaults to be set for a particular site with configure options if
+ * people don't want to use krb5.conf for some reason.
+ */
 #ifndef WALLET_SERVER
 # define WALLET_SERVER NULL
 #endif
@@ -51,25 +55,26 @@ Options:\n\
     -h              Display this help\n\
     -p <port>       Port of server (default: %d, if zero, remctl default)\n\
     -S <srvtab>     For the get keytab command, srvtab output file\n\
-    -s <server>     Server hostname (default: " WALLET_SERVER ")\n\
+    -s <server>     Server hostname (default: %s)\n\
     -v              Display the version of wallet\n";
 
 
 /*
-**  Display the usage message for remctl.
-*/
+ * Display the usage message for remctl.
+ */
 static void
 usage(int status)
 {
-    fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT);
+    fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT,
+            (WALLET_SERVER == NULL) ? "<none>" : WALLET_SERVER);
     exit(status);
 }
 
 
 /*
-**  Load a string option from Kerberos appdefaults.  This requires an annoying
-**  workaround because one cannot specify a default value of NULL.
-*/
+ * Load a string option from Kerberos appdefaults.  This requires an annoying
+ * workaround because one cannot specify a default value of NULL.
+ */
 static void
 default_string(krb5_context ctx, const char *opt, const char *defval,
                char **result)
@@ -85,9 +90,9 @@ default_string(krb5_context ctx, const char *opt, const char *defval,
 
 
 /*
-**  Load a number option from Kerberos appdefaults.  The native interface
-**  doesn't support numbers, so we actually read a string and then convert.
-*/
+ * Load a number option from Kerberos appdefaults.  The native interface
+ * doesn't support numbers, so we actually read a string and then convert.
+ */
 static void
 default_number(krb5_context ctx, const char *opt, int defval, int *result)
 {
@@ -104,10 +109,10 @@ default_number(krb5_context ctx, const char *opt, int defval, int *result)
 
 
 /*
-**  Set option defaults and then get krb5.conf configuration, if any, and
-**  override the defaults.  Later, command-line options will override those
-**  defaults.
-*/
+ * Set option defaults and then get krb5.conf configuration, if any, and
+ * override the defaults.  Later, command-line options will override those
+ * defaults.
+ */
 static void
 set_defaults(krb5_context ctx, struct options *options)
 {
@@ -120,9 +125,8 @@ set_defaults(krb5_context ctx, struct options *options)
 
 
 /*
-**  Main routine.  Parse the arguments and then perform the desired
-**  operation.
-*/
+ * Main routine.  Parse the arguments and then perform the desired operation.
+ */
 int
 main(int argc, char *argv[])
 {
@@ -200,8 +204,10 @@ main(int argc, char *argv[])
             die("-S option requires -f also be used");
     }
 
-    /* If no server was set at configure time and none was set on the command
-       line or with krb5.conf settings, we can't continue. */
+    /*
+     * If no server was set at configure time and none was set on the command
+     * line or with krb5.conf settings, we can't continue.
+     */
     if (options.server == NULL)
         die("no server specified in krb5.conf or with -s");
 
@@ -216,8 +222,10 @@ main(int argc, char *argv[])
     if (!remctl_open(r, options.server, options.port, options.principal))
         die("%s", remctl_error(r));
 
-    /* Most commands, we handle ourselves, but get and store commands are
-       special and keytab get commands with -f are doubly special. */
+    /*
+     * Most commands, we handle ourselves, but get and store commands are
+     * special and keytab get commands with -f are doubly special.
+     */
     if (strcmp(argv[0], "get") == 0 || strcmp(argv[0], "store") == 0) {
         if (!object_exists(r, options.type, argv[1], argv[2]))
             object_autocreate(r, options.type, argv[1], argv[2]);
