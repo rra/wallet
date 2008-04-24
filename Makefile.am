@@ -181,3 +181,8 @@ check-local: $(check_PROGRAMS)
 	@echo ''
 	@echo ''
 	cd perl && $(MAKE) test
+
+# Alas, we have to disable this check because there's no way to do an
+# uninstall from Perl.
+distuninstallcheck:
+	@:
