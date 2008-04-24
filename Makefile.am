@@ -118,7 +118,7 @@ all-local: perl/blib/lib/Wallet/Config.pm
 perl/blib/lib/Wallet/Config.pm:
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
 	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/NetDB \
-		perl/Wallet/Object perl/t perl/t/data perl/t/util \
+		perl/Wallet/Object perl/t perl/t/data perl/t/lib \
 		2>/dev/null || true ; \
 	    for f in $(PERL_FILES) ; do \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
