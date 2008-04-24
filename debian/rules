@@ -32,30 +32,33 @@ else
     CFLAGS += -O2
 endif
 
-config.status: configure
+configure: configure-stamp
+configure-stamp:
 	dh_testdir
 	CFLAGS="$(CFLAGS)" ./configure $(SYSTEM) --prefix=/usr \
 	    --mandir=\$${prefix}/share/man --with-afs \
 	    --with-wallet-server=wallet.stanford.edu \
 	    --enable-reduced-depends
+	touch $@
 
 build: build-arch build-indep
 build-arch: build-stamp
 build-indep:
-build-stamp: config.status
+build-stamp: configure-stamp
 	dh_testdir
 	$(MAKE)
 	$(MAKE) check
-	touch build-stamp
+	touch $@
 
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp
+	rm -f configure-stamp build-stamp install-stamp
 	[ ! -f Makefile ] || $(MAKE) distclean
 	dh_clean
 
-install: build-stamp
+install: install-stamp
+install-stamp: build-stamp
 	dh_testdir
 	dh_testroot
 	dh_clean
@@ -65,11 +68,12 @@ install: build-stamp
 	DH_OPTIONS= dh_install --fail-missing
 	install -m 0644 config/keytab.acl \
 	    $(CURDIR)/debian/keytab-backend/etc/remctl/acl/keytab
+	touch $@
 
 binary: binary-arch binary-indep
 
 binary-arch: DH_OPTIONS=-a
-binary-arch: install
+binary-arch: install-stamp
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs NEWS
@@ -86,7 +90,7 @@ binary-arch: install
 	dh_builddeb
 
 binary-indep: DH_OPTIONS=-i
-binary-indep: install
+binary-indep: install-stamp
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs NEWS
