@@ -9,7 +9,6 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use IO::String;
 use Test::More tests => 1263;
 
 # Create a dummy class for Wallet::Server that prints what method was called
@@ -171,10 +170,10 @@ eval { do '@abs_top_srcdir@/server/wallet-backend' };
 # Wallet::Server class.
 sub run_backend {
     my (@args) = @_;
-    my $result;
-    my $output = IO::String->new (\$result);
-    $output->autoflush (1);
-    select $output;
+    my $result = '';
+    open (OUTPUT, '>', \$result) or die "cannot create output string: $!\n";
+    select OUTPUT;
+    local $| = 1;
     eval { command (@args) };
     my $error = $@;
     select STDOUT;

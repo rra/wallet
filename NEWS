@@ -28,6 +28,8 @@ wallet 0.9 (unreleased)
     Stop setting Stanford-specific compile-time defaults for the wallet
     server and port.
 
+    Perl 5.8 is required to run the test suite, but IO::String is not.
+
 wallet 0.8 (2008-02-13)
 
     Fix the wallet client to use check instead of exists.

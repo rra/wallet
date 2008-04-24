@@ -11,7 +11,6 @@
 use strict;
 use vars qw($CONFIG $KADMIN $SYSLOG $TMP);
 
-use IO::String;
 use Test::More tests => 63;
 
 # Load the keytab-backend code and override various settings.
@@ -25,10 +24,10 @@ $TMP = '.';
 # Run the keytab backend.
 sub run_backend {
     my (@args) = @_;
-    my $result;
-    my $output = IO::String->new (\$result);
-    $output->autoflush (1);
-    select $output;
+    my $result = '';
+    open (OUTPUT, '>', \$result) or die "cannot create output string: $!\n";
+    select OUTPUT;
+    local $| = 1;
     eval { download (@args) };
     my $error = $@;
     select STDOUT;
