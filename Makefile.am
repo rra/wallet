@@ -128,7 +128,11 @@ perl/blib/lib/Wallet/Config.pm:
 	cd perl && $(MAKE)
 
 install-data-local:
-	cd perl && $(MAKE) install
+	if [ x"$(DESTDIR)" != x ] ; then \
+	    cd perl && $(MAKE) install DESTDIR=$(DESTDIR) ; \
+	else \
+	    cd perl && $(MAKE) install ; \
+	fi
 
 # ExtUtils::MakeMaker really likes moving the Makefile aside.
 clean-local:
