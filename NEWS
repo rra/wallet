@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.9 (unreleased)
+wallet 0.9 (2008-04-24)
 
     The wallet command-line client now reads the data for store from a
     file (using -f) or from standard input (if -f wasn't given) when the
