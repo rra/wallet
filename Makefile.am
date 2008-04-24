@@ -34,8 +34,8 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	config/keytab config/keytab.acl config/wallet docs/design \
 	contrib/README contrib/wallet-report contrib/wallet-report.8 \
 	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
-	docs/setup kasetkey/README kasetkey/kasetkey.pod $(PERL_FILES) \
-	$(TEST_FILES)
+	docs/setup examples/stanford.conf kasetkey/README \
+	kasetkey/kasetkey.pod $(PERL_FILES) $(TEST_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c portable/macros.h \
@@ -117,8 +117,9 @@ all-local: perl/blib/lib/Wallet/Config.pm
 
 perl/blib/lib/Wallet/Config.pm:
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/Object \
-		perl/t perl/t/data perl/t/util 2>/dev/null || true ; \
+	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/NetDB \
+		perl/Wallet/Object perl/t perl/t/data perl/t/util \
+		2>/dev/null || true ; \
 	    for f in $(PERL_FILES) ; do \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
 	    done \
