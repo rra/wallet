@@ -129,7 +129,7 @@ perl/blib/lib/Wallet/Config.pm:
 
 install-data-local:
 	if [ x"$(DESTDIR)" != x ] ; then \
-	    cd perl && $(MAKE) install DESTDIR=$(DESTDIR) ; \
+	    cd perl && $(MAKE) install DESTDIR=$(DESTDIR)/ ; \
 	else \
 	    cd perl && $(MAKE) install ; \
 	fi
