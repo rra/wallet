@@ -1,23 +1,20 @@
-/*  $Id$
-**
-**  Error handling for the wallet client.
-**
-**  Provides versions of die and warn that take a Kerberos context and a
-**  Kerberos error code and append the Kerberos error message to the provided
-**  formatted message.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2006, 2007, 2008
-**      Board of Trustees, Leland Stanford Jr. University
-**
-**  See LICENSE for licensing terms.
-*/
+/* $Id$
+ *
+ * Error handling for Kerberos v5.
+ *
+ * Provides versions of die and warn that take a Kerberos context and a
+ * Kerberos error code and append the Kerberos error message to the provided
+ * formatted message.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2006, 2007, 2008
+ *     Board of Trustees, Leland Stanford Jr. University
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #include <config.h>
-
-#include <krb5.h>
-#include <stdio.h>
-#include <sys/types.h>
+#include <system.h>
 
 #include <krb5.h>
 #if !defined(HAVE_KRB5_GET_ERROR_MESSAGE) && !defined(HAVE_KRB5_GET_ERR_TEXT)
@@ -30,20 +27,21 @@
 # endif
 #endif
 
-#include <client/internal.h>
 #include <util/util.h>
 
-/* This string is returned for unknown error messages.  We use a static
-   variable so that we can be sure not to free it. */
+/*
+ * This string is returned for unknown error messages.  We use a static
+ * variable so that we can be sure not to free it.
+ */
 static const char error_unknown[] = "unknown error";
 
 
 /*
-**  Given a Kerberos error code, return the corresponding error.  Prefer the
-**  Kerberos interface if available since it will provide context-specific
-**  error information, whereas the error_message() call will only provide a
-**  fixed message.
-*/
+ * Given a Kerberos error code, return the corresponding error.  Prefer the
+ * Kerberos interface if available since it will provide context-specific
+ * error information, whereas the error_message() call will only provide a
+ * fixed message.
+ */
 static const char *
 get_error(krb5_context ctx UNUSED, krb5_error_code code)
 {
@@ -66,8 +64,8 @@ get_error(krb5_context ctx UNUSED, krb5_error_code code)
 
 
 /*
-** Free an error string if necessary.
-*/
+ * Free an error string if necessary.
+ */
 static void
 free_error(krb5_context ctx UNUSED, const char *msg)
 {
@@ -82,8 +80,8 @@ free_error(krb5_context ctx UNUSED, const char *msg)
 
 
 /*
-**  Report a Kerberos error and exit.
-*/
+ * Report a Kerberos error and exit.
+ */
 void
 die_krb5(krb5_context ctx, krb5_error_code code, const char *format, ...)
 {
@@ -101,8 +99,8 @@ die_krb5(krb5_context ctx, krb5_error_code code, const char *format, ...)
 
 
 /*
-**  Report a Kerberos error.
-*/
+ * Report a Kerberos error.
+ */
 void
 warn_krb5(krb5_context ctx, krb5_error_code code, const char *format, ...)
 {

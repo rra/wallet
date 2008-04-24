@@ -33,17 +33,17 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c
 portable_libportable_a_LIBADD = $(LIBOBJS)
-util_libutil_a_SOURCES = util/concat.c util/messages.c util/util.h \
-	util/xmalloc.c
+util_libutil_a_SOURCES = util/concat.c util/messages.c util/messages-krb5.c \
+	util/util.h util/xmalloc.c
+util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
 bin_PROGRAMS = client/wallet
 dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
 	server/wallet-backend
-client_wallet_SOURCES = client/error.c client/file.c client/internal.h \
-	client/keytab.c client/krb5.c client/remctl.c client/srvtab.c \
-	client/wallet.c system.h
-client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS)
-client_wallet_LDFLAGS = $(REMCTL_LDFLAGS)
+client_wallet_SOURCES = client/file.c client/internal.h client/keytab.c \
+	client/krb5.c client/remctl.c client/srvtab.c client/wallet.c system.h
+client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
+client_wallet_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
 client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
 	$(KRB5_LIBS)
 

@@ -82,12 +82,6 @@ void write_file(const char *name, const void *data, size_t length);
 void write_srvtab(krb5_context, const char *srvtab, const char *principal,
                   const char *keytab);
 
-/* Versions of die and warn that report Kerberos errors. */
-void die_krb5(krb5_context, krb5_error_code, const char *, ...)
-    __attribute__((__noreturn__, __format__(printf, 3, 4)));
-void warn_krb5(krb5_context, krb5_error_code, const char *, ...)
-    __attribute__((__format__(printf, 3, 4)));
-
 END_DECLS
 
 #endif /* !CLIENT_INTERNAL_H */

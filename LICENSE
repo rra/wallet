@@ -50,9 +50,9 @@ The file portable/snprintf.c is released under the following license:
   It may be used for any purpose as long as this notice remains intact
   on all source code distributions
 
-The files portable/asprintf.c, portable/dummy.c, portable/strlcat.c,
-portable/strlcpy.c, and util/concat.c have been placed in the public
-domain by their author.
+The files portable/asprintf.c, portable/dummy.c, portable/macros.h,
+portable/strlcat.c, portable/strlcpy.c, and util/concat.c have been placed
+in the public domain by their author.
 
 The files tests/libtest.c, tests/libtest.h, tests/portable/snprintf-t.c,
 tests/portable/strlcat-t.c, tests/portable/strlcpy-t.c,

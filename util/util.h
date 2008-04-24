@@ -1,61 +1,51 @@
-/*  $Id$
-**
-**  Utility functions.
-**
-**  This is a variety of utility functions that are used internally by the
-**  wallet client.  Many of them came originally from INN.
-**
-**  Written by Russ Allbery <rra@stanford.edu>
-**  Copyright 2002, 2003, 2004, 2005, 2006, 2007
-**      Board of Trustees, Leland Stanford Jr. University
-**  Copyright (c) 2004, 2005, 2006, 2007
-**      by Internet Systems Consortium, Inc. ("ISC")
-**  Copyright (c) 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-**      2002, 2003 by The Internet Software Consortium and Rich Salz
-**
-**  This code is derived from software contributed to the Internet Software
-**  Consortium by Rich Salz.
-**
-**  Permission to use, copy, modify, and distribute this software for any
-**  purpose with or without fee is hereby granted, provided that the above
-**  copyright notice and this permission notice appear in all copies.
-**
-**  THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES WITH
-**  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-**  MERCHANTABILITY AND FITNESS.  IN NO EVENT SHALL ISC BE LIABLE FOR ANY
-**  SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-**  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-**  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-**  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+/* $Id$
+ *
+ * Utility functions.
+ *
+ * This is a variety of utility functions that are used internally by pieces
+ * of remctl.  Many of them came originally from INN.
+ *
+ * Written by Russ Allbery <rra@stanford.edu>
+ * Copyright 2005, 2006, 2007, 2008
+ *     Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2004, 2005, 2006, 2007
+ *     by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+ *     2003 by The Internet Software Consortium and Rich Salz
+ *
+ * See LICENSE for licensing terms.
+ */
 
 #ifndef UTIL_UTIL_H
 #define UTIL_UTIL_H 1
 
 #include <config.h>
-#include <system.h>
+#include <portable/macros.h>
+
+#include <krb5.h>
+#include <stdarg.h>
+#include <sys/types.h>
 
 /* Used for unused parameters to silence gcc warnings. */
 #define UNUSED  __attribute__((__unused__))
 
 BEGIN_DECLS
 
-/* Forward declarations to avoid includes. */
-struct addrinfo;
-struct iovec;
-struct sockaddr;
-
 /* Concatenate NULL-terminated strings into a newly allocated string. */
 extern char *concat(const char *first, ...);
 
-/* Given a base path and a file name, create a newly allocated path string.
-   The name will be appended to base with a / between them.  Exceptionally, if
-   name begins with a slash, it will be strdup'd and returned as-is. */
+/*
+ * Given a base path and a file name, create a newly allocated path string.
+ * The name will be appended to base with a / between them.  Exceptionally, if
+ * name begins with a slash, it will be strdup'd and returned as-is.
+ */
 extern char *concatpath(const char *base, const char *name);
 
-/* The reporting functions.  The ones prefaced by "sys" add a colon, a space,
-   and the results of strerror(errno) to the output and are intended for
-   reporting failures of system calls. */
+/*
+ * The reporting functions.  The ones prefaced by "sys" add a colon, a space,
+ * and the results of strerror(errno) to the output and are intended for
+ * reporting failures of system calls.
+ */
 extern void debug(const char *, ...)
     __attribute__((__format__(printf, 1, 2)));
 extern void notice(const char *, ...)
@@ -71,18 +61,31 @@ extern void die(const char *, ...)
 extern void sysdie(const char *, ...)
     __attribute__((__noreturn__, __format__(printf, 1, 2)));
 
-/* Set the handlers for various message functions.  All of these functions
-   take a count of the number of handlers and then function pointers for each
-   of those handlers.  These functions are not thread-safe; they set global
-   variables. */
+/*
+ * The Kerberos versions of the reporting functions.  These take a context and
+ * an error code to get the Kerberos error.
+ */
+void die_krb5(krb5_context, krb5_error_code, const char *, ...)
+    __attribute__((__noreturn__, __format__(printf, 3, 4)));
+void warn_krb5(krb5_context, krb5_error_code, const char *, ...)
+    __attribute__((__format__(printf, 3, 4)));
+
+/*
+ * Set the handlers for various message functions.  All of these functions
+ * take a count of the number of handlers and then function pointers for each
+ * of those handlers.  These functions are not thread-safe; they set global
+ * variables.
+ */
 extern void message_handlers_debug(int count, ...);
 extern void message_handlers_notice(int count, ...);
 extern void message_handlers_warn(int count, ...);
 extern void message_handlers_die(int count, ...);
 
-/* Some useful handlers, intended to be passed to message_handlers_*.  All
-   handlers take the length of the formatted message, the format, a variadic
-   argument list, and the errno setting if any. */
+/*
+ * Some useful handlers, intended to be passed to message_handlers_*.  All
+ * handlers take the length of the formatted message, the format, a variadic
+ * argument list, and the errno setting if any.
+ */
 extern void message_log_stdout(int, const char *, va_list, int);
 extern void message_log_stderr(int, const char *, va_list, int);
 extern void message_log_syslog_debug(int, const char *, va_list, int);
@@ -98,13 +101,17 @@ typedef void (*message_handler_func)(int, const char *, va_list, int);
 /* If non-NULL, called before exit and its return value passed to exit. */
 extern int (*message_fatal_cleanup)(void);
 
-/* If non-NULL, prepended (followed by ": ") to all messages printed by either
-   message_log_stdout or message_log_stderr. */
+/*
+ * If non-NULL, prepended (followed by ": ") to all messages printed by either
+ * message_log_stdout or message_log_stderr.
+ */
 extern const char *message_program_name;
 
-/* The functions are actually macros so that we can pick up the file and line
-   number information for debugging error messages without the user having to
-   pass those in every time. */
+/*
+ * The functions are actually macros so that we can pick up the file and line
+ * number information for debugging error messages without the user having to
+ * pass those in every time.
+ */
 #define xcalloc(n, size)        x_calloc((n), (size), __FILE__, __LINE__)
 #define xmalloc(size)           x_malloc((size), __FILE__, __LINE__)
 #define xrealloc(p, size)       x_realloc((p), (size), __FILE__, __LINE__)
@@ -112,12 +119,14 @@ extern const char *message_program_name;
 #define xstrndup(p, size)       x_strndup((p), (size), __FILE__, __LINE__)
 #define xvasprintf(p, f, a)     x_vasprintf((p), (f), (a), __FILE__, __LINE__)
 
-/* asprintf is a special case since it takes variable arguments.  If we have
-   support for variadic macros, we can still pass in the file and line and
-   just need to put them somewhere else in the argument list than last.
-   Otherwise, just call x_asprintf directly.  This means that the number of
-   arguments x_asprintf takes must vary depending on whether variadic macros
-   are supported. */
+/*
+ * asprintf is a special case since it takes variable arguments.  If we have
+ * support for variadic macros, we can still pass in the file and line and
+ * just need to put them somewhere else in the argument list than last.
+ * Otherwise, just call x_asprintf directly.  This means that the number of
+ * arguments x_asprintf takes must vary depending on whether variadic macros
+ * are supported.
+ */
 #ifdef HAVE_C99_VAMACROS
 # define xasprintf(p, f, ...) \
     x_asprintf((p), __FILE__, __LINE__, (f), __VA_ARGS__)
@@ -128,12 +137,10 @@ extern const char *message_program_name;
 # define xasprintf x_asprintf
 #endif
 
-/* Last two arguments are always file and line number.  These are internal
-   implementations that should not be called directly.  ISO C99 says that
-   identifiers beginning with _ and a lowercase letter are reserved for
-   identifiers of file scope, so while the position of libraries in the
-   standard isn't clear, it's probably not entirely kosher to use _xmalloc
-   here.  Use x_malloc instead. */
+/*
+ * Last two arguments are always file and line number.  These are internal
+ * implementations that should not be called directly.
+ */
 extern void *x_calloc(size_t, size_t, const char *, int);
 extern void *x_malloc(size_t, const char *, int);
 extern void *x_realloc(void *, size_t, const char *, int);
@@ -154,8 +161,10 @@ typedef void (*xmalloc_handler_type)(const char *, size_t, const char *, int);
 /* The default error handler. */
 void xmalloc_fail(const char *, size_t, const char *, int);
 
-/* Assign to this variable to choose a handler other than the default, which
-   just calls sysdie. */
+/*
+ * Assign to this variable to choose a handler other than the default, which
+ * just calls sysdie.
+ */
 extern xmalloc_handler_type xmalloc_error_handler;
 
 END_DECLS
