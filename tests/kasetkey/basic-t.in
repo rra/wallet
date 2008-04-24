@@ -19,7 +19,7 @@
 BEGIN { our $total = 27 }
 use Test::More tests => $total;
 
-use lib '@abs_top_srcdir@/perl/blib/lib';
+use lib '@abs_top_builddir@/perl/blib/lib';
 use lib '@abs_top_srcdir@/perl/t/lib';
 use Util;
 
