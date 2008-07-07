@@ -65,6 +65,8 @@ Release 1.0:
   using Heimdal or MIT to serve both K4 and K5 from the same KDC.  Rethink
   once Stanford's kaserver migration is over.
 
+* Add a hook to enforce ACL naming standards.
+
 Future work:
 
 * Provide a way to list all objects for which the connecting user has ACLs.
