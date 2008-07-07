@@ -1,0 +1,146 @@
+              Stanford University Wallet Naming Conventions
+
+Introduction
+
+    These are the naming conventions used at Stanford University for
+    wallet objects.  They may not be appropriate for every site using
+    wallet, but they can serve as a starting point for your site-local
+    conventions.  They are the conventions enforced by
+    examples/stanford.conf (to the extent it's possible to enforce them).
+
+Object Naming
+
+  Keytab
+
+    Keytab object names correspond to the principal names in your Kerberos
+    database, so there's no need for a wallet-specific set of naming
+    conventions.  Apply whatever conventions you apply to the names of
+    service principals in your KDC.
+
+    If you do not already have naming standards for service principals,
+    you may want to develop some as part of your wallet deployment.  We
+    use the following:
+
+    * Per user principals for doing automated things related to an
+      individual user account are named as instances of the corresponding
+      user principal.  For example, we manage CGI instances for users with
+      CGI service in the wallet and run CGI scripts with Kerberos tickets
+      and AFS tokens for that principal.  If my account is rra, the CGI
+      instance is rra/cgi.
+
+    * Service principals for campus departments and groups are handled
+      similarly but start with dept- or group- prefixes respectively.  If
+      there is a campus department named ITS, its CGI instance is
+      dept-its/cgi.
+
+    * Class principals start with class-, then the class code, the section
+      if relevant, and then the PeopleSoft quarter.  So the class aa100,
+      section 01, in fall quarter of 2008 has a CGI principal named
+      class-aa100-01-1082/cgi.
+
+    * Host-based principals follow the standard naming convention in
+      Kerberos: service, followed by a slash, followed by the
+      fully-qualified hostname in all lowercase.  For example, the webauth
+      service on windlord.stanford.edu is webauth/windlord.stanford.edu.
+      It's very useful to have wallet enforce fully-qualifying the
+      hostname and giving the hostname in all lowercase, since both are
+      common errors.
+
+    * Other, non-host-based principals that aren't tied to a particular
+      account and aren't CGI principals for a group, department, or class
+      have names like service/<service-name> where <service-name> is a
+      relatively short description of the service that ideally includes
+      some indication of the responsible department where appropriate.  We
+      use - rather than _ as a separator between components of
+      <service-name>.
+
+  File
+
+    File objects pose the most significant challenge to naming since they
+    can contain just about anything.  We require some discussion before
+    putting a new type of data into a wallet file object, both to see if
+    it should get its own object type first and to agree on a naming
+    convention for that type of thing.
+
+    All file object names start with a short indicator of the responsible
+    group, a dash, and then either the short, unqualified hostname (if
+    they're only used on a single host) or the service name for which that
+    object is used.
+
+    Then, we use the following naming conventions for different types of
+    objects:
+
+    <group>-<service>-db-<name>
+
+        Stores the database password for the database named <name>.
+
+    <group>-<server>-ssl-key
+
+        Stores the SSL X.509 certificate private key for <server>.  Use
+        unix-star-ssl-key for the key for the *.stanford.edu certificate.
+        The public certificate we manage external to wallet since it
+        doesn't need to be protected or encrypted.
+
+    <group>-<service>-gpg-key
+
+        Stores the GnuPG private key for a service that needs to do GnuPG
+        signing or encryption.
+
+ACL Naming
+
+    Currently, there is no naming enforcement for ACLs, so ACL naming has
+    to be done purely by policy.  In a later version of wallet, there will
+    be support for enforcing ACL naming conventions.
+
+    We use the following conventions:
+
+    host/<host>
+
+        Any object that should be downloadable by either any administrator
+        of <host> or by the host key itself.  An ACL named like this
+        should have as its contents either:
+
+            netdb example.stanford.edu
+            krb5 host/example.stanford.edu@stanford.edu
+
+        or:
+
+            netdb-root example.stanford.edu
+            krb5 host/example.stanford.edu@stanford.edu
+
+        Don't use this ACL name for ACLs with other content.  Instead, use
+        one of the other ones below.
+
+    group/*
+
+        Groups of users.  Each ACL line should probably have a scheme of
+        krb5 and an identifier of a Kerberos principal (which must include
+        the @stanford.edu portion).  Eventually, wallet will support using
+        PTS groups and Workgroup Manager groups, but for right now this is
+        how groups are supported.
+
+    user/<username>
+
+        A keytab that's only downloadable by one particular person.
+        Double-check that a host/<host> ACL or a group/* ACL wouldn't be
+        more correct.  If this is what's desired, it would have a single
+        line of scheme krb5 and identifier equal to the user's full
+        Kerberos principal.
+
+    service/<service>
+
+        Used for keytabs that should be downloadable by a service, as
+        opposed to a group of people.  Usually this ACL will have lines
+        like krb5 service/<service>@stanford.edu to let the service
+        principal download other associated keytabs, but it may contain
+        other things as well, including administrators for that service so
+        that they can bootstrap or test.  This naming convention should
+        also be used for ACLs that allow multiple hosts to download the
+        same object, such as:
+
+            netdb-root example.stanford.edu
+            krb5 host/example.stanford.edu@stanford.edu
+            netdb-root example-dev.stanford.edu
+            krb5 host/example-dev.stanford.edu@stanford.edu
+
+        Such an ACL would normally be named service/example.
