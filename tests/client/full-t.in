@@ -12,7 +12,7 @@
 # is loaded, and it's pulled in as a prerequisite for Wallet::Admin.
 BEGIN { $ENV{WALLET_CONFIG} = '@abs_top_srcdir@/tests/data/wallet.conf' }
 
-BEGIN { our $total = 47 }
+BEGIN { our $total = 53 }
 use Test::More tests => $total;
 
 use lib '@abs_top_srcdir@/perl';
@@ -153,6 +153,17 @@ SKIP: {
     ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
     is ($status, 0, 'Object get now succeeds');
     is ($out, "baz\nboo\n", ' with the right output');
+    is ($err, '', ' and no error');
+
+    # Store data beginning with a dash.
+    ($out, $err, $status) = wallet ($principal, 'store', 'file', 'auto', '--',
+                                    '-q');
+    is ($status, 0, 'Storing data that looks like an option succeeds');
+    is ($out, '', ' with no output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
+    is ($status, 0, 'Object get succeeds');
+    is ($out, '-q', ' with the right output');
     is ($err, '', ' and no error');
 
     # All done.

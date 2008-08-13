@@ -295,6 +295,7 @@ sub command {
 
 # Parse command-line options.
 my ($quiet);
+Getopt::Long::config ('require_order');
 GetOptions ('q|quiet' => \$quiet) or exit 1;
 $SYSLOG = 0 if $quiet;
 
