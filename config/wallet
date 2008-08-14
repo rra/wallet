@@ -3,4 +3,5 @@
 # This is a remctld configuration fragment to run wallet-backend, which
 # implements the server side of the wallet system.
 
+wallet store /usr/sbin/wallet-backend logmask=4 ANYUSER
 wallet ALL /usr/sbin/wallet-backend ANYUSER

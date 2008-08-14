@@ -5,6 +5,9 @@ wallet 0.10 (unreleased)
     Correctly handle storing of data that begins with a dash and don't
     parse it as an argument to wallet-backend.
 
+    Fix logging in wallet-backend and the remctl configuration to not log
+    the data passed to store.
+
 wallet 0.9 (2008-04-24)
 
     The wallet command-line client now reads the data for store from a
