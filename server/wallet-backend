@@ -286,8 +286,8 @@ sub command {
         }
     } elsif ($command eq 'store') {
         check_args (3, 3, [3], @args);
-        $server->store (@args) or failure ($server->error, @_);
         splice (@_, 3);
+        $server->store (@args) or failure ($server->error, @_);
     } else {
         error "unknown command $command";
     }
