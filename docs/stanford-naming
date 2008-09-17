@@ -72,7 +72,17 @@ Object Naming
 
     <group>-<service>-db-<name>
 
-        Stores the database password for the database named <name>.
+        Stores the database password for the database named <name>.  This
+        may be a file containing only the database password or a Perl
+        AppConfig configuration file with the database connection
+        information including the password.
+
+    <group>-<server>-pam-<app>
+
+        A PAM configuration for <app> that requires secure information,
+        such as a password for pam_msyql.  <server> may be either a
+        specific server name or a general class of servers (production and
+        test) that uses that PAM configuration.
 
     <group>-<server>-ssl-key
 
