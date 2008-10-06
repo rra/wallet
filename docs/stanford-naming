@@ -84,6 +84,12 @@ Object Naming
         specific server name or a general class of servers (production and
         test) that uses that PAM configuration.
 
+    <group>-<server>-password-<account>
+
+        A password for some account that isn't covered by one of the more
+        specific naming conventions, such as a password used to connect to
+        a remote ssh service.
+
     <group>-<server>-ssl-key
 
         Stores the SSL X.509 certificate private key for <server>.  Use
@@ -95,6 +101,25 @@ Object Naming
 
         Stores the GnuPG private key for a service that needs to do GnuPG
         signing or encryption.
+
+    <group>-<service>-properties
+
+        The properties file for a Java application that contains some
+        secure data (such as SSL key passwords or database passwords).
+        Ideally the secure data should be stored in separate files, but
+        sometimes it's too hard to separate out chunks of a properties
+        file.
+
+    <group>-<service>-ssl-pkcs12
+
+        The PKCS#12 file (containing both public and private key) used by
+        a service for authentication to other services.  If a given
+        service uses more than one, include the purpose in the <service>
+        part of the name.
+
+    In all cases, <server> is the server (or group of servers) on which
+    the file will be stored, not the server expecting that key material
+    for authentication.
 
 ACL Naming
 
