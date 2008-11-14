@@ -17,6 +17,8 @@ Release 1.0:
 
 * Provide an interface to find all ACLs with a particular line.
 
+* Provide an interface to mass-change all instances of one ACL to another.
+
 * Add a help function to wallet-backend listing the commands.
 
 * The client may not compile against Heimdal due to changes in how the
