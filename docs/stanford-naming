@@ -90,6 +90,13 @@ Object Naming
         specific naming conventions, such as a password used to connect to
         a remote ssh service.
 
+    <group>-<server>-ssh-<type>
+
+        Stores the SSH private key for <server>.  For shared private keys
+        across a pool, <server> should be the name of the pool, or
+        possibly some unambiguous name for the set of systems.  <type> is
+        the type of SSH key (RSA or DSA).
+
     <group>-<server>-ssl-key
 
         Stores the SSL X.509 certificate private key for <server>.  Use
