@@ -77,6 +77,11 @@ Object Naming
         AppConfig configuration file with the database connection
         information including the password.
 
+    <group>-<server>-htpasswd-<app>
+
+        An .htpasswd file for HTTP Basic Authentication for special-case
+        web configurations that require such a thing.
+
     <group>-<server>-pam-<app>
 
         A PAM configuration for <app> that requires secure information,
