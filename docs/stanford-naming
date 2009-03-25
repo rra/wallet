@@ -122,6 +122,14 @@ Object Naming
         sometimes it's too hard to separate out chunks of a properties
         file.
 
+    <group>-<service>-shibboleth
+
+        The shibboleth.xml configuration file for a service, when it
+        contains some secure data (such as database passwords for shared
+        sessions).  Ideally, the secure data should be stored in separate
+        files and assembled into a shibboleth.xml file, but that isn't
+        always the path of least resistance.
+
     <group>-<service>-ssl-pkcs12
 
         The PKCS#12 file (containing both public and private key) used by
