@@ -116,6 +116,10 @@ Future work:
   that handles the kadmin operations that can be subclassed and that
   dynamically chooses its implementation based on run-time configuration.
 
+* Use the Perl Authen::Krb5::Admin module instead of rolling our own
+  kadmin code with Expect now that MIT Kerberos has made the kadmin API
+  public.
+
 * When reading configuration from krb5.conf, we should first try to
   determine our principal from any existing K5 ticket cache (after
   obtaining tickets if -u was given) and extract the realm from that
