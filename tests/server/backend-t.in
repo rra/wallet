@@ -3,7 +3,8 @@
 # Tests for the wallet-backend dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008, 2009
+#     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -338,7 +339,11 @@ for my $command (qw/autocreate create destroy setacl setattr store/) {
     is ($out, "$new\n$method type name$extra\n",
         ' and ran the right method');
     ($out, $err) = run_backend ($command, 'error', 'name', @extra);
-    $ran = "$command error name" . (@extra ? " @extra" : '');
+    if ($command eq 'store') {
+        $ran = "$command error name";
+    } else {
+        $ran = "$command error name" . (@extra ? " @extra" : '');
+    }
     is ($err, "error count $error\n", "Command $command ran with errors");
     is ($OUTPUT, "command $ran from admin (1.2.3.4) failed: error count"
         . " $error\n", ' and syslog correct');
