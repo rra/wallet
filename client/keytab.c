@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Implementation of keytab handling for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>

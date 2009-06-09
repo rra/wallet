@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # tests/client/prompt-t -- Password prompting tests for the wallet client.
 #

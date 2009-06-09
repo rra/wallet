@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/server.t -- Tests for the wallet server API.
 #

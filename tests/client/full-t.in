@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # tests/client/full-t -- End-to-end tests for the wallet client.
 #

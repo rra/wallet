@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-$ID = q$Id$;
 #
 # wallet-report -- Report on keytabs in the wallet database.
 #
@@ -41,7 +40,7 @@ $ADDRESS = 'nobody@example.com';
 require 5.005;
 
 use strict;
-use vars qw($ADDRESS $DUMPFILE $ID @PATTERNS $REPORTS);
+use vars qw($ADDRESS $DUMPFILE @PATTERNS $REPORTS);
 
 use Getopt::Long qw(GetOptions);
 use File::Path qw(mkpath);

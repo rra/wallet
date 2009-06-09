@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Create or change a principal and/or generate a srvtab.
  *
  * Sets the key of a principal in the AFS kaserver given a srvtab, enables or

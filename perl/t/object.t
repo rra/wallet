@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/object.t -- Tests for the basic object implementation.
 #

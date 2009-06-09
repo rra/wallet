@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Kerberos support functions for the wallet client.
  *
  * Currently, the only function here is one to obtain a ticket cache for a

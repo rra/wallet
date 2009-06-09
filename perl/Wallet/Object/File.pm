@@ -1,5 +1,4 @@
 # Wallet::Object::File -- File object implementation for the wallet.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008 Board of Trustees, Leland Stanford Jr. University

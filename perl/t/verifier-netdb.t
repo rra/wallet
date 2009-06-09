@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/verifier-netdb.t -- Tests for the NetDB wallet ACL verifiers.
 #

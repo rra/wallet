@@ -1,5 +1,4 @@
 # Wallet::Database -- Wallet system database connection management.
-# $Id$
 #
 # This module is a thin wrapper around DBI to handle determination of the
 # database driver and configuration settings automatically on connect.  The

@@ -1,5 +1,4 @@
 # Wallet::Admin -- Wallet system administrative interface.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008 Board of Trustees, Leland Stanford Jr. University

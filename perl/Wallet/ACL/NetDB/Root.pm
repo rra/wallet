@@ -1,5 +1,4 @@
 # Wallet::ACL::NetDB::Root -- Wallet NetDB role ACL verifier (root instances).
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007 Board of Trustees, Leland Stanford Jr. University

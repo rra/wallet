@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/admin.t -- Tests for wallet administrative interface.
 #

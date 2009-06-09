@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/file.t -- Tests for the file object implementation.
 #

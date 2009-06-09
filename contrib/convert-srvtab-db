@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-our $ID = q$Id$;
 #
 # convert-srvtab-db -- Converts a leland_srvtab database to wallet
 #

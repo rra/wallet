@@ -1,5 +1,3 @@
-$Id$
-
 This program used to be called gen_srvtab and was the backend used by the
 old sysctl-based srvtab distribution system.  It can either load a key
 from a srvtab and push it into the AFS kaserver or generate a random key,

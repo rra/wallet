@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-our $ID = q$Id$;
 #
 # wallet-backend -- Wallet server for storing and retrieving secure data.
 #

@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/schema.t -- Tests for the wallet schema class.
 #

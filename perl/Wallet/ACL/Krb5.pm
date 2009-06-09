@@ -1,5 +1,4 @@
 # Wallet::ACL::Krb5 -- Wallet Kerberos v5 principal ACL verifier.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007 Board of Trustees, Leland Stanford Jr. University

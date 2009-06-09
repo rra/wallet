@@ -1,5 +1,4 @@
 dnl remctl.m4 -- Find the compiler and linker flags for remctl.
-dnl $Id$
 dnl
 dnl This file provides RRA_LIB_REMCTL, which finds the compiler and linker
 dnl flags for linking with remctl libraries and sets the substitution

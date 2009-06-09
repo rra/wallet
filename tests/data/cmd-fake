@@ -1,5 +1,4 @@
 #!/bin/sh
-# $Id$
 #
 # This is a fake wallet backend that returns bogus data for verification by
 # the client test suite.  It doesn't test any of the wallet server code.

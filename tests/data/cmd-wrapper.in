@@ -1,5 +1,4 @@
 #!/bin/sh
-# $Id$
 #
 # Wrapper around the standard wallet-backend script that sets the Perl INC
 # path and the WALLET_CONFIG environment variable appropriately.

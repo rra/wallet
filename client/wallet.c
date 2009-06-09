@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * The client program for the wallet system.
  *
  * Written by Russ Allbery <rra@stanford.edu>

@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * remctl interface for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>

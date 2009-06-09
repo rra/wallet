@@ -1,5 +1,4 @@
 # Util -- Utility class for wallet tests.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University

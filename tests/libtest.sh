@@ -1,5 +1,3 @@
-# $Id$
-#
 # Shell function library for test cases.
 #
 # Written by Russ Allbery <rra@stanford.edu>

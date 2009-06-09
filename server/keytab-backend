@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-our $ID = q$Id$;
 #
 # keytab-backend -- Extract keytabs from the KDC without changing the key.
 #

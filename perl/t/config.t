@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/config.t -- Tests for the wallet server configuration.
 #

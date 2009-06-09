@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 #

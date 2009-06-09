@@ -1,5 +1,4 @@
 # Wallet::Object::Base -- Parent class for any object stored in the wallet.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University

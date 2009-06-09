@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Id$
 #
 # tests/server/pod-t -- Test POD formatting for client documentation.
 #

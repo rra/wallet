@@ -1,5 +1,4 @@
 dnl kaserver.m4 -- Find the compiler and linker flags for OpenAFS kaserver.
-dnl $Id$
 dnl
 dnl If --with-kaserver is given, finds the compiler and linker flags for
 dnl building with OpenAFS libraries; sets AFS_CPPFLAGS, AFS_LDFLAGS, and

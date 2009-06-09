@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Id$
 #
 # t/pod.t -- Test POD formatting for the wallet Perl modules.
 #
