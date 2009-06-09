@@ -1,7 +1,7 @@
 # Wallet::Admin -- Wallet system administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -22,7 +22,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -168,6 +168,38 @@ sub list_acls {
         return;
     } else {
         return @acls;
+    }
+}
+
+# Returns a report of all ACL lines contained in owner ACLs for matching
+# objects.  Objects are specified by type and name, which may be SQL wildcard
+# expressions.  Each list member will be a pair of ACL scheme and ACL
+# identifier, with duplicates removed.  On error and for no matching entries,
+# the empty list will be returned.  To distinguish between an empty return and
+# an error, call error(), which will return undef if there was no error.
+sub report_owners {
+    my ($self, $type, $name) = @_;
+    undef $self->{error};
+    my @lines;
+    eval {
+        my $sql = 'select distinct ae_scheme, ae_identifier from acl_entries,
+            acls, objects where ae_id = ac_id and ac_id = ob_owner and
+            ob_type like ? and ob_name like ? order by ae_scheme,
+            ae_identifier';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($type, $name);
+        my $object;
+        while (defined ($object = $sth->fetchrow_arrayref)) {
+            push (@lines, [ @$object ]);
+        }
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ("cannot report on owners: $@");
+        $self->{dbh}->rollback;
+        return;
+    } else {
+        return @lines;
     }
 }
 
@@ -334,6 +366,17 @@ called on a prior wallet database.  All data stored in the database will
 be deleted and a fresh set of wallet database tables will be created.
 This method is equivalent to calling destroy() followed by initialize().
 Returns true on success and false on failure.
+
+=item report_owners(TYPE, NAME)
+
+Returns a list of all ACL lines contained in owner ACLs for objects
+matching TYPE and NAME, which are interpreted as SQL patterns using C<%>
+as a wildcard.  The return value is a list of references to pairs of
+schema and identifier, with duplicates removed.
+
+Returns the empty list on failure.  To distinguish between this and no
+matches, the caller should call error().  error() is guaranteed to return
+the error message if there was an error and undef if there was no error.
 
 =back
 

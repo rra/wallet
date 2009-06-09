@@ -8,6 +8,10 @@ wallet 0.10 (unreleased)
     Fix logging in wallet-backend and the remctl configuration to not log
     the data passed to store.
 
+    Add a new report owners command to wallet-admin and corresponding
+    report_owners() method to Wallet::Admin, which returns all ACL lines
+    on owner ACLs for matching objects.
+
 wallet 0.9 (2008-04-24)
 
     The wallet command-line client now reads the data for store from a

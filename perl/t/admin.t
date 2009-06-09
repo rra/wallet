@@ -3,11 +3,11 @@
 # t/admin.t -- Tests for wallet administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 29;
+use Test::More tests => 57;
 
 use Wallet::Admin;
 use Wallet::Schema;
@@ -72,6 +72,57 @@ is ($acls[0][0], 1, ' and the first ID is still the same');
 is ($acls[0][1], 'ADMIN', ' and the first name is still the same');
 is ($acls[1][0], 3, ' but the second ID has changed');
 is ($acls[1][1], 'second', ' and the second name is correct');
+
+# Currently, we have no owners, so we should get an empty owner report.
+my @lines = $admin->report_owners ('%', '%');
+is (scalar (@lines), 0, 'Owner report is currently empty');
+is ($admin->error, undef, ' and there is no error');
+
+# Set an owner and make sure we now see something in the report.
+is ($server->owner ('base', 'service/admin', 'ADMIN'), 1,
+    'Setting an owner works');
+@lines = $admin->report_owners ('%', '%');
+is (scalar (@lines), 1, ' and now there is one owner in the report');
+is ($lines[0][0], 'krb5', ' with the right scheme');
+is ($lines[0][1], 'admin@EXAMPLE.COM', ' and the right identifier');
+@lines = $admin->report_owners ('keytab', '%');
+is (scalar (@lines), 0, 'Owners of keytabs is empty');
+is ($admin->error, undef, ' with no error');
+@lines = $admin->report_owners ('base', 'foo/%');
+is (scalar (@lines), 0, 'Owners of base foo/* objects is empty');
+is ($admin->error, undef, ' with no error');
+
+# Create a second object with the same owner.
+is ($server->create ('base', 'service/foo'), 1,
+    'Creating base:service/foo succeeds');
+is ($server->owner ('base', 'service/foo', 'ADMIN'), 1,
+    ' and setting the owner to the same value works');
+@lines = $admin->report_owners ('base', 'service/%');
+is (scalar (@lines), 1, ' and there is still owner in the report');
+is ($lines[0][0], 'krb5', ' with the right scheme');
+is ($lines[0][1], 'admin@EXAMPLE.COM', ' and the right identifier');
+
+# Change the owner of the second object to an empty ACL.
+is ($server->owner ('base', 'service/foo', 'second'), 1,
+    ' and changing the owner to an empty ACL works');
+@lines = $admin->report_owners ('base', '%');
+is (scalar (@lines), 1, ' and there is still owner in the report');
+is ($lines[0][0], 'krb5', ' with the right scheme');
+is ($lines[0][1], 'admin@EXAMPLE.COM', ' and the right identifier');
+
+# Add a few things to the second ACL to see what happens.
+is ($server->acl_add ('second', 'base', 'foo'), 1,
+    'Adding an ACL line to the new ACL works');
+is ($server->acl_add ('second', 'base', 'bar'), 1,
+    ' and adding another ACL line to the new ACL works');
+@lines = $admin->report_owners ('base', '%');
+is (scalar (@lines), 3, ' and now there are three owners in the report');
+is ($lines[0][0], 'base', ' first has the right scheme');
+is ($lines[0][1], 'bar', ' and the right identifier');
+is ($lines[1][0], 'base', ' second has the right scheme');
+is ($lines[1][1], 'foo', ' and the right identifier');
+is ($lines[2][0], 'krb5', ' third has the right scheme');
+is ($lines[2][1], 'admin@EXAMPLE.COM', ' and the right identifier');
 
 # Clean up.
 is ($admin->destroy, 1, 'Destruction succeeds');

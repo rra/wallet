@@ -3,12 +3,12 @@
 # Tests for the wallet-admin dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 54;
+use Test::More tests => 64;
 
 # Create a dummy class for Wallet::Admin that prints what method was called
 # with its arguments and returns data for testing.
@@ -71,6 +71,13 @@ sub register_verifier {
     return 1;
 }
 
+sub report_owners {
+    shift;
+    print "report_owners @_\n";
+    return if ($error or $empty);
+    return ([ krb5 => 'admin@EXAMPLE.COM' ]);
+}
+
 # Back to the main package and the actual test suite.  Lie about whether the
 # Wallet::Admin package has already been loaded.
 package main;
@@ -98,10 +105,11 @@ is ($err, "unknown command foo\n", 'Unknown command');
 is ($out, "new\n", ' and nothing ran');
 
 # Check too few and too many arguments for every command.
-my %commands = (destroy    => [0, 0],
-                initialize => [1, 1],
-                list       => [1, 1],
-                register   => [3, 3]);
+my %commands = (destroy    => [0,  0],
+                initialize => [1,  1],
+                list       => [1,  1],
+                register   => [3,  3],
+                report     => [1, -1]);
 for my $command (sort keys %commands) {
     my ($min, $max) = @{ $commands{$command} };
     if ($min > 0) {
@@ -110,10 +118,12 @@ for my $command (sort keys %commands) {
             "Too few arguments for $command");
         is ($out, "new\n", ' and nothing ran');
     }
-    ($out, $err) = run_admin ($command, ('foo') x ($max + 1));
-    is ($err, "too many arguments to $command\n",
-        "Too many arguments for $command");
-    is ($out, "new\n", ' and nothing ran');
+    if ($max >= 0) {
+        ($out, $err) = run_admin ($command, ('foo') x ($max + 1));
+        is ($err, "too many arguments to $command\n",
+            "Too many arguments for $command");
+        is ($out, "new\n", ' and nothing ran');
+    }
 }
 
 # Test destroy.
@@ -179,6 +189,15 @@ is ($err, '', 'Register succeeds for verifier');
 is ($out, "new\nregister_verifier foo Foo::Verifier\n",
     ' and returns the right outout');
 
+# Test report.
+($out, $err) = run_admin ('report', 'foo');
+is ($err, "unknown report type foo\n", 'Report requires a known report');
+is ($out, "new\n", ' and nothing was run');
+($out, $err) = run_admin ('report', 'owners', '%', '%');
+is ($err, '', 'Report succeeds for owners');
+is ($out, "new\nreport_owners % %\nkrb5 admin\@EXAMPLE.COM\n",
+    ' and returns the right output');
+
 # Test error handling.
 $Wallet::Admin::error = 1;
 ($out, $err) = run_admin ('destroy');
@@ -204,6 +223,9 @@ is ($out, "new\nregister_object foo Foo::Object\n",
 is ($err, "some error\n", 'Error handling succeeds for register verifier');
 is ($out, "new\nregister_verifier foo Foo::Verifier\n",
     ' and calls the right methods');
+($out, $err) = run_admin ('report', 'owners', 'foo', 'bar');
+is ($err, "some error\n", 'Error handling succeeds for report owners');
+is ($out, "new\nreport_owners foo bar\n", ' and calls the right methods');
 
 # Test empty lists.
 $Wallet::Admin::error = 0;
@@ -214,3 +236,6 @@ is ($out, "new\nlist_objects\n", ' and calls the right methods');
 ($out, $err) = run_admin ('list', 'acls');
 is ($err, '', 'list acls runs with an empty list and no errors');
 is ($out, "new\nlist_acls\n", ' and calls the right methods');
+($out, $err) = run_admin ('report', 'owners', 'foo', 'bar');
+is ($err, '', 'report owners runs with an empty list and no errors');
+is ($out, "new\nreport_owners foo bar\n", ' and calls the right methods');

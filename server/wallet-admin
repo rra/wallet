@@ -3,7 +3,7 @@
 # wallet-admin -- Wallet server administrative commands.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -63,6 +63,22 @@ sub command {
             }
         } else {
             die "only objects or acls are supported for list\n";
+        }
+    } elsif ($command eq 'report') {
+        die "too few arguments to report\n" if @args < 1;
+        my $report = shift @args;
+        if ($report eq 'owners') {
+            die "too many arguments to report owners\n" if @args > 2;
+            die "too few arguments to report owners\n" if @args < 2;
+            my @lines = $admin->report_owners (@args);
+            if (!@lines and $admin->error) {
+                die $admin->error, "\n";
+            }
+            for my $line (@lines) {
+                print join (' ', @$line), "\n";
+            }
+        } else {
+            die "unknown report type $report\n";
         }
     } elsif ($command eq 'register') {
         die "too many arguments to register\n" if @args > 3;
@@ -167,6 +183,27 @@ All object and ACL implementations that come with wallet are registered by
 default as part of database initialization, so this command is used
 primarily to register local implementations of additional object types or
 ACL schemes.
+
+=item report <type> [ <arg> ... ]
+
+Runs a wallet report.  The currently supported report types are:
+
+=over 4
+
+=item report owners <type-pattern> <name-pattern>
+
+Returns a list of all ACL lines in owner ACLs for all objects matching
+both <type-pattern> and <name-pattern>.  These can be the type or name of
+objects or they can be patterns using C<%> as the wildcard character
+following the normal rules of SQL patterns.
+
+The output will be one line per ACL line in the form:
+
+    <scheme> <identifier>
+
+with duplicates suppressed.
+
+=back
 
 =back
 
