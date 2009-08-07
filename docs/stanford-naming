@@ -70,13 +70,6 @@ Object Naming
     Then, we use the following naming conventions for different types of
     objects:
 
-    <group>-<service>-db-<name>
-
-        Stores the database password for the database named <name>.  This
-        may be a file containing only the database password or a Perl
-        AppConfig configuration file with the database connection
-        information including the password.
-
     <group>-<server>-htpasswd-<app>
 
         An .htpasswd file for HTTP Basic Authentication for special-case
@@ -109,6 +102,13 @@ Object Naming
         The public certificate we manage external to wallet since it
         doesn't need to be protected or encrypted.
 
+    <group>-<service>-db-<name>
+
+        Stores the database password for the database named <name>.  This
+        may be a file containing only the database password or a Perl
+        AppConfig configuration file with the database connection
+        information including the password.
+
     <group>-<service>-gpg-key
 
         Stores the GnuPG private key for a service that needs to do GnuPG
@@ -121,6 +121,13 @@ Object Naming
         Ideally the secure data should be stored in separate files, but
         sometimes it's too hard to separate out chunks of a properties
         file.
+
+    <group>-<service>-puppetconf
+
+        A puppet.conf configuration file for Puppet that contains some
+        secure data (such as SSL key passwords or database passwords).
+        Ideally the secure data should be stored in separate files, but
+        Puppet likes to use a single configuration file.
 
     <group>-<service>-shibboleth
 
