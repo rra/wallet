@@ -102,6 +102,15 @@ Object Naming
         The public certificate we manage external to wallet since it
         doesn't need to be protected or encrypted.
 
+    <group>-<service>-config-<name>
+
+        A configuration file named <name> that contains some secure
+        information, such as a database password.  Ideally, the secure
+        data should be stored in a separate file and assembled into the
+        configuration file, but that isn't always the path of least
+        resistance.  Only use this naming convention if there is not a
+        more specific one below.
+
     <group>-<service>-db-<name>
 
         Stores the database password for the database named <name>.  This
