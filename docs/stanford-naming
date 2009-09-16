@@ -102,6 +102,14 @@ Object Naming
         The public certificate we manage external to wallet since it
         doesn't need to be protected or encrypted.
 
+    <group>-<server>-tivoli-key
+
+        The Tivoli backup encryption key for this server.  This is stored
+        in the same file as the password used to connect to the Tivoli
+        server, so both are stored together.  This file is found at
+        /etc/adsm/TSM.PWD.  It must be base64-encoded before being stored
+        in the wallet.
+
     <group>-<service>-config-<name>
 
         A configuration file named <name> that contains some secure
