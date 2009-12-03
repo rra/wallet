@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 57;
+use Test::More tests => 77;
 
 use Wallet::Admin;
 use Wallet::Schema;
@@ -53,15 +53,6 @@ is ($objects[0][1], 'service/admin', ' and the right name');
 # this right now.
 is ($admin->register_verifier ('base', 'Wallet::ACL::Base'), 1,
     'Registering Wallet::ACL::Base works');
-
-# Create another ACL.
-is ($server->acl_create ('first'), 1, 'ACL creation succeeds');
-@acls = $admin->list_acls;
-is (scalar (@acls), 2, ' and now there are two ACLs');
-is ($acls[0][0], 1, ' and the first ID is correct');
-is ($acls[0][1], 'ADMIN', ' and the first name is correct');
-is ($acls[1][0], 2, ' and the second ID is correct');
-is ($acls[1][1], 'first', ' and the second name is correct');
 
 # Delete that ACL and create another.
 is ($server->acl_create ('second'), 1, 'Second ACL creation succeeds');
@@ -123,6 +114,50 @@ is ($lines[1][0], 'base', ' second has the right scheme');
 is ($lines[1][1], 'foo', ' and the right identifier');
 is ($lines[2][0], 'krb5', ' third has the right scheme');
 is ($lines[2][1], 'admin@EXAMPLE.COM', ' and the right identifier');
+
+# Test ownership and other ACL values.  Change one keytab to be not owned by
+# ADMIN, but have group permission on it.  We'll need a third object neither
+# owned by ADMIN or with any permissions from it.
+is ($server->create ('base', 'service/null'), 1,
+    'Creating base:service/null succeeds');
+is ($server->acl ('base', 'service/foo', 'get', 'ADMIN'), 1, 
+    'Changing the get ACL for the search also does');
+@lines = $admin->list_objects ('owner', 'ADMIN');
+is (scalar (@lines), 1, 'Searching for objects owned by ADMIN finds one');
+is ($lines[0][0], 'base', ' and it has the right type');
+is ($lines[0][1], 'service/admin', ' and the right name');
+@lines = $admin->list_objects ('owner', 'null');
+is (scalar (@lines), 1, 'Searching for objects with no set ownerfinds one');
+is ($lines[0][0], 'base', ' and it has the right type');
+is ($lines[0][1], 'service/null', ' and the right name');
+@lines = $admin->list_objects ('acl', 'ADMIN');
+is (scalar (@lines), 2, 'ADMIN has any rights at all on two objects');
+is ($lines[0][0], 'base', ' and the first has the right type');
+is ($lines[0][1], 'service/admin', ' and the right name');
+is ($lines[1][0], 'base', ' and the second has the right type');
+is ($lines[1][1], 'service/foo', ' and the right name');
+
+# Listing objects of a specific type.
+@lines = $admin->list_objects ('type', 'base');
+is (scalar (@lines), 3, 'Searching for all objects of type base finds three');
+is ($lines[0][0], 'base', ' and the first has the right type');
+is ($lines[0][1], 'service/admin', ' and the right name');
+is ($lines[1][0], 'base', ' and the second has the right type');
+is ($lines[1][1], 'service/foo', ' and the right name');
+is ($lines[2][0], 'base', ' and the third has the right type');
+is ($lines[2][1], 'service/null', ' and the right name');
+@lines = $admin->list_objects ('type', 'keytab');
+is (scalar (@lines), 0, 'Searching for all objects of type keytab finds none');
+
+# Test setting a flag, searching for objects with it, and then clearing it.
+is ($server->flag_set ('base', 'service/admin', 'unchanging'), 1, 
+    'Setting a flag works');
+@lines = $admin->list_objects ('flag', 'unchanging');
+is (scalar (@lines), 1, 'Searching for all objects with that flag finds one');
+is ($lines[0][0], 'base', ' and it has the right type');
+is ($lines[0][1], 'service/admin', ' and the right name');
+is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
+    'Clearing the flag works');
 
 # Clean up.
 is ($admin->destroy, 1, 'Destruction succeeds');

@@ -42,11 +42,11 @@ sub command {
             unless $args[0] =~ /^[^\@\s]+\@\S+$/;
         $admin->initialize (@args) or die $admin->error, "\n";
     } elsif ($command eq 'list') {
-        die "too many arguments to list\n" if @args > 1;
+        die "too many arguments to list\n" if @args > 4;
         die "too few arguments to list\n" if @args < 1;
-        my ($type) = @args;
+        my ($type, $subtype, @search) = @args;
         if ($type eq 'objects') {
-            my @objects = $admin->list_objects;
+            my @objects = $admin->list_objects ($subtype, @search);
             if (!@objects and $admin->error) {
                 die $admin->error, "\n";
             }
@@ -54,7 +54,7 @@ sub command {
                 print join (' ', @$object), "\n";
             }
         } elsif ($type eq 'acls') {
-            my @acls = $admin->list_acls;
+            my @acls = $admin->list_acls ($subtype, @search);
             if (!@acls and $admin->error) {
                 die $admin->error, "\n";
             }
