@@ -15,6 +15,7 @@
 /perl/t/data/test.keytab
 /perl/t/data/test.principal
 /perl/t/data/test.realm
+/perl/t/data/test.krbtype
 /tests/client/basic-t
 /tests/client/full-t
 /tests/client/pod-t
@@ -24,6 +25,7 @@
 /tests/data/test.keytab
 /tests/data/test.password
 /tests/data/test.principal
+/tests/data/test.krbtype
 /tests/kasetkey/basic-t
 /tests/portable/asprintf-t
 /tests/portable/snprintf-t
