@@ -8,7 +8,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 225;
+use Test::More tests => 221;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -154,8 +154,6 @@ sub enctypes {
 	    next unless /^ *\d+ /;
 	    my ($string) = /^\s*\d+\s+(\S+)/;
 	    next unless $string;
-	    #$enctype = $enctype{lc $string} || 'UNKNOWN';
-	    #push (@enctypes, $enctype);
 	    push (@enctypes, $string);
 	}
 	close KTUTIL;
