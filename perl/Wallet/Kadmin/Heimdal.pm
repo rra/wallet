@@ -62,7 +62,7 @@ sub kadmin_client {
 ##############################################################################
 
 # Check whether a given principal already exists in Kerberos.  Returns true if
-# so, false otherwise.  Throws an exception if kadmin fails.
+# so, false otherwise.  Throws an exception if an error.
 sub exists {
     my ($self, $principal) = @_;
     return unless $self->valid_principal ($principal);
@@ -70,11 +70,15 @@ sub exists {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     my $kadmin = $self->{client};
-    my @names = $kadmin->getPrincipals ($principal);
-    if (@names) {
-        return 1;
+    my $princdata = eval { $kadmin->getPrincipal ($principal) };
+
+    if ($@) {
+	die $@;
+	return 0;
+    } elsif ($princdata) { 
+	return 1;
     } else {
-        return 0;
+	return 0;
     }
 }
 
@@ -86,10 +90,13 @@ sub addprinc {
     unless ($self->valid_principal ($principal)) {
         die "invalid principal name $principal\n";
     }
-    return 1 if $self->exists ($principal);
+
+    my $exists = eval { $self->exists ($principal) };
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
+    die "error adding principal $principal: $@" if $@;
+    return 1 if $exists;
 
     # The way Heimdal::Kadm5 works, we create a principal object, create the
     # actual principal set inactive, then randomize it and activate it.
@@ -131,21 +138,28 @@ sub ktadd {
 
     my $kadmin = $self->{client};
     my $princdata = eval { $kadmin->getPrincipal ($principal) };
+    if ($@) {
+	die "error creating keytab for $principal: $@";
+    } elsif (!$princdata) {
+	die "error creating keytab for $principal: principal does not exist";
+    }
 
     # Remove enctypes we don't want in this keytab.  Must find all current
     # keytypes, then remove those that do not match.
-    my (%wanted);
-    my $alltypes = $princdata->getKeytypes ();
-    foreach (@enctypes) { $wanted{$_} = 1 }
-    foreach my $key (@{$alltypes}) {
-	my $keytype = ${$key}[0];
-	next if exists $wanted{$keytype};
-	eval { $princdata->delKeytypes ($keytype) };
-	die "error removing keytype $keytype from the keytab: $@" if $@;
+    if (@enctypes) {
+	my (%wanted);
+	my $alltypes = $princdata->getKeytypes ();
+	foreach (@enctypes) { $wanted{$_} = 1 }
+	foreach my $key (@{$alltypes}) {
+	    my $keytype = ${$key}[0];
+	    next if exists $wanted{$keytype};
+	    eval { $princdata->delKeytypes ($keytype) };
+	    die "error removing keytype $keytype from the keytab: $@" if $@;
+	}
+	eval { $kadmin->modifyPrincipal ($princdata) };
     }
-    eval { $kadmin->modifyPrincipal ($princdata) };
 
-    my $retval = eval { $kadmin->extractKeytab ($princdata, $file) };
+    eval { $kadmin->extractKeytab ($princdata, $file) };
     die "error creating keytab for principal: $@" if $@;
 
     return 1;
