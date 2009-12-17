@@ -491,6 +491,13 @@ sub create {
     return $self;
 }
 
+# Provides wrapper to individual Kadmin class's valid_principal.  Here only
+# to help expose for testing.
+sub valid_principal {
+    my ($self, $principal) = @_;
+    return Wallet::Kadmin->valid_principal ($principal);
+}
+
 # Override destroy to delete the principal out of Kerberos as well.
 sub destroy {
     my ($self, $user, $host, $time) = @_;
@@ -547,7 +554,12 @@ sub get {
     unlink $file;
     my @enctypes = $self->attr ('enctypes');
     my $kadmin = $self->{kadmin};
-    return if not $kadmin->ktadd ($self->{name}, $file, @enctypes);
+    my $retval = eval { $kadmin->ktadd ($self->{name}, $file, @enctypes) };
+    if ($@) {
+	$self->error ($@);
+	return;
+    }
+    return unless $retval;
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
