@@ -8,7 +8,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 223;
+use Test::More tests => 225;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -56,10 +56,17 @@ sub system_quiet {
 # been set up.
 sub create {
     my ($principal) = @_;
-    my @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
-                '-t', $Wallet::Config::KEYTAB_FILE,
-                '-r', $Wallet::Config::KEYTAB_REALM,
-                '-q', "addprinc -clearpolicy -randkey $principal");
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+	my @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
+		    '-t', $Wallet::Config::KEYTAB_FILE,
+		    '-r', $Wallet::Config::KEYTAB_REALM,
+		    '-q', "addprinc -clearpolicy -randkey $principal");
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+	@args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL,
+		 '-K', $Wallet::Config::KEYTAB_FILE,
+		 '-r', $Wallet::Config::KEYTAB_REALM,
+		 'add', $principal);
+    }
     system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args);
 }
 
@@ -67,20 +74,37 @@ sub create {
 # been set up.
 sub destroy {
     my ($principal) = @_;
-    my @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
-                '-t', $Wallet::Config::KEYTAB_FILE,
-                '-r', $Wallet::Config::KEYTAB_REALM,
-                '-q', "delprinc -force $principal");
+    my (@args);
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+	@args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
+		 '-t', $Wallet::Config::KEYTAB_FILE,
+		 '-r', $Wallet::Config::KEYTAB_REALM,
+		 '-q', "delprinc -force $principal");
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+	@args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL,
+		 '-K', $Wallet::Config::KEYTAB_FILE,
+		 '-r', $Wallet::Config::KEYTAB_REALM,
+		 'delete', $principal);
+    }
     system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args);
 }
 
-# Check whether a principal exists.
+# Check whether a principal exists.  kvno works for MIT, but isn't in the
+# Heimdal dist.
 sub created {
     my ($principal) = @_;
     $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    local $ENV{KRB5CCNAME} = 'krb5cc_temp';
-    getcreds ('t/data/test.keytab', $Wallet::Config::KEYTAB_PRINCIPAL);
-    return (system_quiet ('kvno', $principal) == 0);
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+	local $ENV{KRB5CCNAME} = 'krb5cc_temp';
+	getcreds ('t/data/test.keytab', $Wallet::Config::KEYTAB_PRINCIPAL);
+	return (system_quiet ('kvno', $principal) == 0);
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+	@args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL,
+		 '-K', $Wallet::Config::KEYTAB_FILE,
+		 '-r', $Wallet::Config::KEYTAB_REALM,
+		 'get', $principal);
+	return (system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args) == 0);
+    }
 }
 
 # Given keytab data and the principal, write it to a file and try
@@ -101,24 +125,41 @@ sub valid {
 # Given keytab data, write it to a file and try to determine the enctypes of
 # the keys present in that file.  Returns the enctypes as a list, with UNKNOWN
 # for encryption types that weren't recognized.  This is an ugly way of doing
-# this.
+# this for MIT.  Heimdal is much more straightforward, but MIT ktutil doesn't
+# have the needed abilities.
 sub enctypes {
     my ($keytab) = @_;
     open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
     print KEYTAB $keytab;
     close KEYTAB;
-    open (KLIST, '-|', 'klist', '-ke', 'keytab')
-        or die "cannot run klist: $!\n";
+
     my @enctypes;
-    local $_;
-    while (<KLIST>) {
-        next unless /^ *\d+ /;
-        my ($string) = /\((.*)\)\s*$/;
-        next unless $string;
-        $enctype = $enctype{lc $string} || 'UNKNOWN';
-        push (@enctypes, $enctype);
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+	open (KLIST, '-|', 'klist', '-ke', 'keytab')
+	    or die "cannot run klist: $!\n";
+	local $_;
+	while (<KLIST>) {
+	    next unless /^ *\d+ /;
+	    my ($string) = /\((.*)\)\s*$/;
+	    next unless $string;
+	    $enctype = $enctype{lc $string} || 'UNKNOWN';
+	    push (@enctypes, $enctype);
+	}
+	close KLIST;
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+	open (KTUTIL, '-|', 'ktutil', '-k', 'keytab', 'list')
+	    or die "cannot run ktutil: $!\n";
+	local $_;
+	while (<KTUTIL>) {
+	    next unless /^ *\d+ /;
+	    my ($string) = /^\s*\d+\s+(\S+)/;
+	    next unless $string;
+	    #$enctype = $enctype{lc $string} || 'UNKNOWN';
+	    #push (@enctypes, $enctype);
+	    push (@enctypes, $string);
+	}
+	close KTUTIL;
     }
-    close KLIST;
     unlink 'keytab';
     return sort @enctypes;
 }
@@ -173,6 +214,7 @@ SKIP: {
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP       = '.';
     my $realm = $Wallet::Config::KEYTAB_REALM;
 
@@ -258,12 +300,17 @@ EOO
     is ($object->error, 'KEYTAB_TMP configuration variable not set',
         ' with the right error');
     $Wallet::Config::KEYTAB_TMP = '.';
-    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
-    $data = $object->get (@trace);
-    is ($data, undef, 'Cope with a failure to run kadmin');
-    like ($object->error, qr{^cannot run /some/nonexistent/file: },
-          ' with the right error');
-    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+    SKIP: {
+	skip ' no kadmin program test for Heimdal', 2
+	    if $Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal';
+
+	$Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+	$data = $object->get (@trace);
+	is ($data, undef, 'Cope with a failure to run kadmin');
+	like ($object->error, qr{^cannot run /some/nonexistent/file: },
+	      ' with the right error');
+	$Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+    }
     destroy ('wallet/one');
     $data = $object->get (@trace);
     is ($data, undef, 'Getting a keytab for a nonexistent principal fails');
@@ -278,12 +325,19 @@ EOO
       };
     ok (defined ($object), 'Creating good principal succeeds');
     ok (created ('wallet/one'), ' and the principal was created');
-    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
-    is ($object->destroy (@trace), undef,
-        ' and destroying it with bad kadmin fails');
-    like ($object->error, qr{^cannot run /some/nonexistent/file: },
-          ' with the right error');
-    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+
+    SKIP: {
+	skip ' no kadmin program test for Heimdal', 2
+	    if $Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal';
+
+	$Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+	is ($object->destroy (@trace), undef,
+	    ' and destroying it with bad kadmin fails');
+	like ($object->error, qr{^cannot run /some/nonexistent/file: },
+	      ' with the right error');
+	$Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+    }
+
     is ($object->flag_set ('locked', @trace), 1, ' and setting locked works');
     is ($object->destroy (@trace), undef, ' and destroying it fails');
     is ($object->error, "cannot destroy keytab:wallet/one: object is locked",
@@ -341,14 +395,6 @@ EOO
     is ($@, "keytab object implementation not configured\n",
         ' with the right error');
     $Wallet::Config::KEYTAB_REALM = contents ('t/data/test.realm');
-    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
-    $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
-      };
-    is ($object, undef, 'Cope with a failure to run kadmin');
-    like ($@, qr{^cannot run /some/nonexistent/file: },
-          ' with the right error');
-    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
 }
 
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
@@ -669,7 +715,8 @@ EOO
 
 # Tests for enctype restriction.
 SKIP: {
-    skip 'no keytab configuration', 36 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 36 unless (-f 't/data/test.keytab' 
+        && $Wallet::Config::KEYTAB_KRBTYPE eq 'MIT');
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -765,6 +812,7 @@ EOO
         ok (defined ($keytab), ' and retrieving the keytab still works');
         @values = enctypes ($keytab);
         is ("@values", $enctypes[0], ' and it has the right enctype');
+        ok (defined ($one), ' and recreating it succeeds');
         is ($one->attr ('enctypes', [ $enctypes[1] ], @trace), 1,
             'Setting a different single enctype works');
         @values = $one->attr ('enctypes');
@@ -773,6 +821,7 @@ EOO
         ok (defined ($keytab), ' and retrieving the keytab still works');
         @values = enctypes ($keytab);
         is ("@values", $enctypes[1], ' and it has the right enctype');
+        ok (defined ($one), ' and recreating it succeeds');
         is ($one->attr ('enctypes', [ @enctypes[0..1] ], @trace), 1,
             'Setting two enctypes works');
         @values = $one->attr ('enctypes');
