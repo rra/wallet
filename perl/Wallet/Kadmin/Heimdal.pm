@@ -136,7 +136,14 @@ sub ktadd {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
 
+    # The way Heimdal works, you can only remove enctypes from a principal,
+    # not add them back in.  So we need to run randkeyPrincipal first each
+    # time to restore all possible enctypes and then whittle them back down 
+    # to those we have been asked for this time.
     my $kadmin = $self->{client};
+    eval { $kadmin->randKeyPrincipal ($principal) };
+    die "error creating keytab for $principal: could not reinit enctypes: $@" 
+        if $@;
     my $princdata = eval { $kadmin->getPrincipal ($principal) };
     if ($@) {
 	die "error creating keytab for $principal: $@";
@@ -144,8 +151,7 @@ sub ktadd {
 	die "error creating keytab for $principal: principal does not exist";
     }
 
-    # Remove enctypes we don't want in this keytab.  Must find all current
-    # keytypes, then remove those that do not match.
+    # Now actually remove any non-requested enctypes, if we requested any.
     if (@enctypes) {
 	my (%wanted);
 	my $alltypes = $princdata->getKeytypes ();
