@@ -397,31 +397,31 @@ DATE  set expires to $now
     by $admin from $host
 DATE  unset expires (was $now)
     by $admin from $host
-DATE  set acl_get to 1
+DATE  set acl_get to ADMIN (1)
     by $admin from $host
-DATE  unset acl_get (was 1)
+DATE  unset acl_get (was ADMIN (1))
     by $admin from $host
-DATE  set acl_store to 1
+DATE  set acl_store to ADMIN (1)
     by $admin from $host
-DATE  unset acl_store (was 1)
+DATE  unset acl_store (was ADMIN (1))
     by $admin from $host
-DATE  set owner to 1
+DATE  set owner to ADMIN (1)
     by $admin from $host
-DATE  set acl_get to 5
+DATE  set acl_get to empty (5)
     by $admin from $host
-DATE  set acl_store to 5
+DATE  set acl_store to empty (5)
     by $admin from $host
-DATE  unset acl_store (was 5)
+DATE  unset acl_store (was empty (5))
     by $admin from $host
-DATE  unset owner (was 1)
+DATE  unset owner (was ADMIN (1))
     by $admin from $host
-DATE  set owner to 1
+DATE  set owner to ADMIN (1)
     by $admin from $host
 DATE  set flag locked
     by $admin from $host
 DATE  clear flag locked
     by $admin from $host
-DATE  unset owner (was 1)
+DATE  unset owner (was ADMIN (1))
     by $admin from $host
 DATE  set flag unchanging
     by $admin from $host
@@ -527,7 +527,7 @@ is ($show, $expected, ' and show an object we own');
 $history = <<"EOO";
 DATE  create
     by $admin from $host
-DATE  set owner to 2
+DATE  set owner to user1 (2)
     by $admin from $host
 EOO
 $seen = $server->history ('base', 'service/user1');
@@ -608,13 +608,13 @@ is ($show, $expected, ' and show an object we jointly own');
 $history = <<"EOO";
 DATE  create
     by $admin from $host
-DATE  set owner to 4
+DATE  set owner to both (4)
     by $admin from $host
-DATE  set acl_show to 2
+DATE  set acl_show to user1 (2)
     by $admin from $host
-DATE  set acl_destroy to 3
+DATE  set acl_destroy to user2 (3)
     by $admin from $host
-DATE  set acl_flags to 2
+DATE  set acl_flags to user1 (2)
     by $admin from $host
 DATE  set flag unchanging
     by $user1 from $host
@@ -679,7 +679,7 @@ is ($show, $expected, ' and show an object we own');
 $history = <<"EOO";
 DATE  create
     by $admin from $host
-DATE  set owner to 3
+DATE  set owner to user2 (3)
     by $admin from $host
 EOO
 $seen = $server->history ('base', 'service/user2');

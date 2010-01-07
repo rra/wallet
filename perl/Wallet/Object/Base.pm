@@ -445,6 +445,22 @@ sub flag_set {
 # History
 ##############################################################################
 
+# Expand a given ACL id to add its name, for readability.  Returns the 
+# original id alone if there was a problem finding the name.
+sub format_acl_id {
+    my ($self, $id) = @_;
+    my $name = $id;
+
+    my $sql = 'select ac_name from acls where ac_id = ?';
+    my $sth = $self->{dbh}->prepare ($sql);
+    $sth->execute ($id);
+    if (my @ref = $sth->fetchrow_array) {
+	$name = $ref[0] . " ($id)";
+    }
+
+    return $name;
+}
+
 # Return the formatted history for a given object or undef on error.
 # Currently always returns the complete history, but eventually will need to
 # provide some way of showing only recent entries.
@@ -475,6 +491,18 @@ sub history {
                     $output .= "remove $old from attribute $attr";
                 } elsif (defined ($new)) {
                     $output .= "add $new to attribute $attr";
+                }
+            } elsif ($data[0] eq 'set' 
+		     and ($data[1] eq 'owner' or $data[1] =~ /^acl_/)) {
+                my $field = $data[1];
+		$old = $self->format_acl_id ($old) if defined ($old);
+		$new = $self->format_acl_id ($new) if defined ($new);
+                if (defined ($old) and defined ($new)) {
+                    $output .= "set $field to $new (was $old)";
+                } elsif (defined ($new)) {
+                    $output .= "set $field to $new";
+                } elsif (defined ($old)) {
+                    $output .= "unset $field (was $old)";
                 }
             } elsif ($data[0] eq 'set') {
                 my $field = $data[1];
