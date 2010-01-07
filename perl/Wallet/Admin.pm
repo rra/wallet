@@ -261,6 +261,15 @@ sub list_acls_all {
     return ($sql);
 }
 
+# Returns the SQL statement required to find and returned all empty ACLs in
+# the db.
+sub list_acls_empty {
+    my ($self) = @_;
+    my $sql = 'select ac_id, ac_name from acls left join acl_entries '
+	.'on (acls.ac_id=acl_entries.ae_id) where ae_id is null;';
+    return ($sql);
+}
+
 # Returns the SQL statement and the field required to search the ACLs and
 # return only those entries which contain a entries with identifiers 
 # matching a particular given string.
@@ -289,10 +298,14 @@ sub list_acls {
     if (!defined $type || $type eq '') {
         ($sql) = $self->list_acls_all ();
     } else {
-        if (@args == 0) {
-            $self->error ("acl searches require an argument to search");
-        } elsif ($type eq 'entry') {
-            ($sql, @search) = $self->list_acls_entry (@args);
+        if ($type eq 'entry') {
+	    if (@args == 0) {
+		$self->error ("acl searches require an argument to search");
+	    } else {
+		($sql, @search) = $self->list_acls_entry (@args);
+	    }
+        } elsif ($type eq 'empty') {
+            ($sql) = $self->list_acls_empty ();
         } else {
             $self->error ("do not know search type: $type");
         }
