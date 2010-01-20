@@ -107,7 +107,7 @@ is ($out, "new\n", ' and nothing ran');
 # Check too few and too many arguments for every command.
 my %commands = (destroy    => [0,  0],
                 initialize => [1,  1],
-                list       => [1,  1],
+                list       => [1,  4],
                 register   => [3,  3],
                 report     => [1, -1]);
 for my $command (sort keys %commands) {
