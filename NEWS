@@ -8,9 +8,19 @@ wallet 0.10 (unreleased)
     Fix logging in wallet-backend and the remctl configuration to not log
     the data passed to store.
 
+    Add additional reports for wallet-admin list: objects owned by a
+    specific ACL, objects owned by no one, objects of a specific type,
+    objects with a specific flag, objects for which a specific ACL has
+    privileges, ACLs with an entry with a given type and identifier, and
+    ACLs with no members.
+
     Add a new report owners command to wallet-admin and corresponding
     report_owners() method to Wallet::Admin, which returns all ACL lines
     on owner ACLs for matching objects.
+
+    Report ACL names as well as numbers in object history.
+
+    Add support for Heimdal KDCs as well as MIT Kerberos KDCs.
 
 wallet 0.9 (2008-04-24)
 

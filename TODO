@@ -9,16 +9,6 @@ Release 1.0:
 
 * Provide a way to get history for deleted objects and ACLs.
 
-* Display ACL names rather than index numbers when displaying history of
-  owner and acl_* settings.
-
-* Provide a way to list all objects by type, by owner (including null), or
-  by all uses of an ACL.
-
-* Provide an interface to list all empty ACLs.
-
-* Provide an interface to find all ACLs with a particular line.
-
 * Provide an interface to mass-change all instances of one ACL to another.
 
 * Add a help function to wallet-backend listing the commands.
@@ -35,9 +25,6 @@ Release 1.0:
 
 * Error messages from ACL operations should refer to the ACLs by name
   instead of by ID.
-
-* History records should list both ACL ID and ACL name if the name is
-  still found in the database.
 
 * Add the database schema version to a global table so that we can use it
   to support schema upgrades in the future.
@@ -110,11 +97,6 @@ Future work:
   check expiration before allowing anyone to get or store objects.
 
 * Add a comment field for objects that can be set by the owner.
-
-* The keytab backend currently only supports MIT Kerberos.  Add support
-  for Heimdal.  This should probably be done by writing a separate class
-  that handles the kadmin operations that can be subclassed and that
-  dynamically chooses its implementation based on run-time configuration.
 
 * Use the Perl Authen::Krb5::Admin module instead of rolling our own
   kadmin code with Expect now that MIT Kerberos has made the kadmin API
