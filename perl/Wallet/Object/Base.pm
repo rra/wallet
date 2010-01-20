@@ -445,7 +445,7 @@ sub flag_set {
 # History
 ##############################################################################
 
-# Expand a given ACL id to add its name, for readability.  Returns the 
+# Expand a given ACL id to add its name, for readability.  Returns the
 # original id alone if there was a problem finding the name.
 sub format_acl_id {
     my ($self, $id) = @_;
@@ -455,7 +455,7 @@ sub format_acl_id {
     my $sth = $self->{dbh}->prepare ($sql);
     $sth->execute ($id);
     if (my @ref = $sth->fetchrow_array) {
-	$name = $ref[0] . " ($id)";
+        $name = $ref[0] . " ($id)";
     }
 
     return $name;
@@ -492,11 +492,11 @@ sub history {
                 } elsif (defined ($new)) {
                     $output .= "add $new to attribute $attr";
                 }
-            } elsif ($data[0] eq 'set' 
-		     and ($data[1] eq 'owner' or $data[1] =~ /^acl_/)) {
+            } elsif ($data[0] eq 'set'
+                     and ($data[1] eq 'owner' or $data[1] =~ /^acl_/)) {
                 my $field = $data[1];
-		$old = $self->format_acl_id ($old) if defined ($old);
-		$new = $self->format_acl_id ($new) if defined ($new);
+                $old = $self->format_acl_id ($old) if defined ($old);
+                $new = $self->format_acl_id ($new) if defined ($new);
                 if (defined ($old) and defined ($new)) {
                     $output .= "set $field to $new (was $old)";
                 } elsif (defined ($new)) {

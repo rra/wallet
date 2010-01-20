@@ -114,23 +114,22 @@ sub destroy {
 # Reporting
 ##############################################################################
 
-# Given an ACL name, translate it to the ID for that ACL and return it.  
+# Given an ACL name, translate it to the ID for that ACL and return it.
 # Often this is unneeded and could be done with a join, but by doing it in a
-# separate step, we can give an error for the specific case of someone 
+# separate step, we can give an error for the specific case of someone
 # searching for a non-existant ACL.
 sub acl_name_to_id {
     my ($self, $acl) = @_;
     my ($id);
     eval {
-	my $sql = 'select ac_id from acls where ac_name=?';
-	my $sth = $self->{dbh}->prepare ($sql);
-	$sth->execute ($acl);
-	while (defined (my $row = $sth->fetchrow_hashref)) {
-	    $id = $row->{'ac_id'};
-	}
-	$self->{dbh}->commit;
+        my $sql = 'select ac_id from acls where ac_name = ?';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($acl);
+        while (defined (my $row = $sth->fetchrow_hashref)) {
+            $id = $row->{ac_id};
+        }
+        $self->{dbh}->commit;
     };
-    
     if (!defined $id || $id !~ /^\d+$/) {
         $self->error ("could not find the acl $acl");
         return '';
@@ -155,7 +154,7 @@ sub list_objects_type {
     return ($sql, $type);
 }
 
-# Return the SQL statement and search field required to find all objects 
+# Return the SQL statement and search field required to find all objects
 # owned by a given ACL.  If the requested owner is 'null', then we ignore
 # this and do a different search for IS NULL.  If the requested owner does
 # not actually match any ACLs, set an error and return the empty string.
@@ -163,15 +162,15 @@ sub list_objects_owner {
     my ($self, $owner) = @_;
     my ($sth);
     if ($owner =~ /^null$/i) {
-	my $sql = 'select ob_type, ob_name from objects where ob_owner is null
+        my $sql = 'select ob_type, ob_name from objects where ob_owner is null
             order by objects.ob_type, objects.ob_name';
-	return ($sql);
+        return ($sql);
     } else {
-	my $id = $self->acl_name_to_id ($owner);
-	return '' unless $id;
-	my $sql = 'select ob_type, ob_name from objects where ob_owner=?
+        my $id = $self->acl_name_to_id ($owner);
+        return '' unless $id;
+        my $sql = 'select ob_type, ob_name from objects where ob_owner = ?
             order by objects.ob_type, objects.ob_name';
-	return ($sql, $id);
+        return ($sql, $id);
     }
 }
 
@@ -180,26 +179,24 @@ sub list_objects_owner {
 sub list_objects_flag {
     my ($self, $flag) = @_;
     my $sql = 'select ob_type, ob_name from objects left join flags on
-        (objects.ob_type=flags.fl_type AND objects.ob_name=flags.fl_name)
-        where flags.fl_flag=? order by objects.ob_type, objects.ob_name';
+        (objects.ob_type = flags.fl_type and objects.ob_name = flags.fl_name)
+        where flags.fl_flag = ? order by objects.ob_type, objects.ob_name';
     return ($sql, $flag);
 }
 
-# Return the SQL statement and search field required to find all objects 
+# Return the SQL statement and search field required to find all objects
 # that a given ACL has any permissions on.  This expands from
 # list_objects_owner in that it will also match any records that have the ACL
 # set for get, store, show, destroy, or flags.  If the requested owner does
 # not actually match any ACLs, set an error and return the empty string.
 sub list_objects_acl {
     my ($self, $acl) = @_;
-
     my $id = $self->acl_name_to_id ($acl);
     return '' unless $id;
-
-    my $sql = 'select ob_type, ob_name from objects where
-        ob_owner=? or ob_acl_get=? or ob_acl_store=? or ob_acl_show=? or
-        ob_acl_destroy=? or ob_acl_flags=? 
-        order by objects.ob_type, objects.ob_name';
+    my $sql = 'select ob_type, ob_name from objects where ob_owner = ? or
+        ob_acl_get = ? or ob_acl_store = ? or ob_acl_show = ? or
+        ob_acl_destroy = ? or ob_acl_flags = ? order by objects.ob_type,
+        objects.ob_name';
     return ($sql, $id, $id, $id, $id, $id, $id);
 }
 
@@ -217,29 +214,29 @@ sub list_objects {
     my $sql = '';
     my @search = ();
     if (!defined $type || $type eq '') {
-	($sql) = $self->list_objects_all ();
+        ($sql) = $self->list_objects_all ();
     } else {
-	if (@args != 1) {
-	    $self->error ("object searches require an argument to search");
-	} elsif ($type eq 'type') {
-	    ($sql, @search) = $self->list_objects_type (@args);
-	} elsif ($type eq 'owner') {
-	    ($sql, @search) = $self->list_objects_owner (@args);
-	} elsif ($type eq 'flag') {
-	    ($sql, @search) = $self->list_objects_flag (@args);
-	} elsif ($type eq 'acl') {
-	    ($sql, @search) = $self->list_objects_acl (@args);
-	} else {
-	    $self->error ("do not know search type: $type");
-	}
-	return unless $sql;
+        if (@args != 1) {
+            $self->error ("object searches require an argument to search");
+        } elsif ($type eq 'type') {
+            ($sql, @search) = $self->list_objects_type (@args);
+        } elsif ($type eq 'owner') {
+            ($sql, @search) = $self->list_objects_owner (@args);
+        } elsif ($type eq 'flag') {
+            ($sql, @search) = $self->list_objects_flag (@args);
+        } elsif ($type eq 'acl') {
+            ($sql, @search) = $self->list_objects_acl (@args);
+        } else {
+            $self->error ("do not know search type: $type");
+        }
+        return unless $sql;
     }
 
     my @objects;
     eval {
         my $object;
-	my $sth = $self->{dbh}->prepare ($sql);
-	$sth->execute (@search);
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute (@search);
         while (defined ($object = $sth->fetchrow_arrayref)) {
             push (@objects, [ @$object ]);
         }
@@ -265,19 +262,19 @@ sub list_acls_all {
 # the db.
 sub list_acls_empty {
     my ($self) = @_;
-    my $sql = 'select ac_id, ac_name from acls left join acl_entries '
-	.'on (acls.ac_id=acl_entries.ae_id) where ae_id is null;';
+    my $sql = 'select ac_id, ac_name from acls left join acl_entries
+        on (acls.ac_id = acl_entries.ae_id) where ae_id is null';
     return ($sql);
 }
 
 # Returns the SQL statement and the field required to search the ACLs and
-# return only those entries which contain a entries with identifiers 
+# return only those entries which contain a entries with identifiers
 # matching a particular given string.
 sub list_acls_entry {
     my ($self, $type, $identifier) = @_;
-    my $sql = 'select distinct ac_id, ac_name from acl_entries 
-        left join acls on (ae_id=ac_id) where ae_scheme=? and 
-        ae_identifier like ? order by ac_id';
+    my $sql = 'select distinct ac_id, ac_name from acl_entries left join acls
+        on (ae_id = ac_id) where ae_scheme = ? and ae_identifier like ? order
+        by ac_id';
     $identifier = '%'.$identifier.'%';
     return ($sql, $type, $identifier);
 }
@@ -299,11 +296,11 @@ sub list_acls {
         ($sql) = $self->list_acls_all ();
     } else {
         if ($type eq 'entry') {
-	    if (@args == 0) {
-		$self->error ("acl searches require an argument to search");
-	    } else {
-		($sql, @search) = $self->list_acls_entry (@args);
-	    }
+            if (@args == 0) {
+                $self->error ("acl searches require an argument to search");
+            } else {
+                ($sql, @search) = $self->list_acls_entry (@args);
+            }
         } elsif ($type eq 'empty') {
             ($sql) = $self->list_acls_empty ();
         } else {

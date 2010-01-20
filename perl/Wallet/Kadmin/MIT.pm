@@ -130,7 +130,7 @@ sub addprinc {
 sub ktadd {
     my ($self, $principal, $file, @enctypes) = @_;
     unless ($self->valid_principal ($principal)) {
-        die ("invalid principal name: $principal");
+        die "invalid principal name: $principal\n";
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
@@ -143,7 +143,7 @@ sub ktadd {
     my $output = eval { $self->kadmin ("$command $principal") };
     die ($@) if ($@);
     if ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
-        die ("error creating keytab for $principal: $1");
+        die "error creating keytab for $principal: $1\n";
     }
     return 1;
 }
@@ -154,7 +154,7 @@ sub ktadd {
 sub delprinc {
     my ($self, $principal) = @_;
     unless ($self->valid_principal ($principal)) {
-        die ("invalid principal name: $principal");
+        die "invalid principal name: $principal\n";
     }
     my $exists = eval { $self->exists ($principal) };
     die $@ if $@;
@@ -167,7 +167,7 @@ sub delprinc {
     my $output = eval { $self->kadmin ("delprinc -force $principal") };
     die $@ if $@;
     if ($output =~ /^delete_principal: (.*)/m) {
-        die ("error deleting $principal: $1");
+        die "error deleting $principal: $1\n";
     }
     return 1;
 }
@@ -177,12 +177,11 @@ sub delprinc {
 ##############################################################################
 
 # Create a new MIT kadmin object.  Very empty for the moment, but later it
-# will probably fill out if we go to using a module rather than calling 
+# will probably fill out if we go to using a module rather than calling
 # kadmin directly.
 sub new {
     my ($class) = @_;
-    my $self = {
-    };
+    my $self = {};
     bless ($self, $class);
     return $self;
 }
@@ -212,7 +211,7 @@ Wallet::Kadmin::MIT is an interface for keytab integration with the wallet,
 specifically for using kadmin to create, delete, and add enctypes to keytabs.
 It implments the wallet kadmin API and provides the necessary glue to MIT
 Kerberos installs for each of these functions, while allowing the wallet
-to keep the details of what type of Kerberos installation is being used 
+to keep the details of what type of Kerberos installation is being used
 abstracted.
 
 A keytab is an on-disk store for the key or keys for a Kerberos principal.
@@ -231,15 +230,15 @@ information about how to set wallet configuration.
 
 =item addprinc(PRINCIPAL)
 
-Adds a new principal with a given name.  The principal is created with a 
-random password, and any other flags set by Wallet::Config.  Returns true on 
+Adds a new principal with a given name.  The principal is created with a
+random password, and any other flags set by Wallet::Config.  Returns true on
 success, or throws an error if there was a failure in adding the principal.
-If the principal already exists, return true as we are bringing our 
+If the principal already exists, return true as we are bringing our
 expectations in line with reality.
 
 =item addprinc(PRINCIPAL)
 
-Removes a principal with the given name.  Returns true on success, or throws 
+Removes a principal with the given name.  Returns true on success, or throws
 an error if there was a failure in removing the principal.  If the principal
 does not exist, return true as we are bringing our expectations in line with
 reality.
@@ -247,8 +246,8 @@ reality.
 =item ktadd(PRINCIPAL, FILE, ENCTYPES)
 
 Creates a new keytab for the given principal, as the given file, limited to
-the enctypes supplied.  The enctype values must be enctype strings recognized 
-by Kerberos (strings like C<aes256-cts> or C<des-cbc-crc>).  An error is 
+the enctypes supplied.  The enctype values must be enctype strings recognized
+by Kerberos (strings like C<aes256-cts> or C<des-cbc-crc>).  An error is
 thrown on failure or if the creation fails, otherwise true is returned.
 
 =back
@@ -256,7 +255,7 @@ thrown on failure or if the creation fails, otherwise true is returned.
 =head1 LIMITATIONS
 
 Currently, this implementation calls an external B<kadmin> program rather
- than using a native Perl module and therefore requires B<kadmin> be 
+than using a native Perl module and therefore requires B<kadmin> be
 installed and parses its output.  It may miss some error conditions if the
 output of B<kadmin> ever changes.
 
@@ -269,7 +268,6 @@ from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 
-Russ Allbery <rra@stanford.edu>
-Jon Robertson <jonrober@stanford.edu>
+Russ Allbery <rra@stanford.edu> and Jon Robertson <jonrober@stanford.edu>.
 
 =cut

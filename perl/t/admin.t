@@ -120,7 +120,7 @@ is ($lines[2][1], 'admin@EXAMPLE.COM', ' and the right identifier');
 # owned by ADMIN or with any permissions from it.
 is ($server->create ('base', 'service/null'), 1,
     'Creating base:service/null succeeds');
-is ($server->acl ('base', 'service/foo', 'get', 'ADMIN'), 1, 
+is ($server->acl ('base', 'service/foo', 'get', 'ADMIN'), 1,
     'Changing the get ACL for the search also does');
 @lines = $admin->list_objects ('owner', 'ADMIN');
 is (scalar (@lines), 1, 'Searching for objects owned by ADMIN finds one');
@@ -150,7 +150,7 @@ is ($lines[2][1], 'service/null', ' and the right name');
 is (scalar (@lines), 0, 'Searching for all objects of type keytab finds none');
 
 # Test setting a flag, searching for objects with it, and then clearing it.
-is ($server->flag_set ('base', 'service/admin', 'unchanging'), 1, 
+is ($server->flag_set ('base', 'service/admin', 'unchanging'), 1,
     'Setting a flag works');
 @lines = $admin->list_objects ('flag', 'unchanging');
 is (scalar (@lines), 1, 'Searching for all objects with that flag finds one');

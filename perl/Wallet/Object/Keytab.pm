@@ -1,7 +1,7 @@
 # Wallet::Object::Keytab -- Keytab object implementation for the wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2009 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -477,15 +477,14 @@ sub new {
 # caller.
 sub create {
     my ($class, $type, $name, $dbh, $creator, $host, $time) = @_;
-    my $self = { 
-	dbh    => $dbh,
-	kadmin => undef,
+    my $self = {
+        dbh    => $dbh,
+        kadmin => undef,
     };
     bless $self, $class;
     my $kadmin = Wallet::Kadmin->new ();
     $self->{kadmin} = $kadmin;
     $kadmin->addprinc ($name);
-    
     $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
     $self->{kadmin} = $kadmin;
     return $self;
@@ -556,8 +555,8 @@ sub get {
     my $kadmin = $self->{kadmin};
     my $retval = eval { $kadmin->ktadd ($self->{name}, $file, @enctypes) };
     if ($@) {
-	$self->error ($@);
-	return;
+        $self->error ($@);
+        return;
     }
     return unless $retval;
     local *KEYTAB;

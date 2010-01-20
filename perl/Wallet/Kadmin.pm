@@ -27,8 +27,8 @@ $VERSION = '0.02';
 ##############################################################################
 
 # Validate a principal with a submodule's validator.  We can also do this via
-# creating an object with new and then running valid_principal from that, 
-# but there are times we might wish to run it without going through the 
+# creating an object with new and then running valid_principal from that,
+# but there are times we might wish to run it without going through the
 # object creation.
 sub valid_principal {
     my ($class, $principal) = @_;
@@ -48,10 +48,10 @@ sub new {
     my ($class) = @_;
     my ($kadmin);
     if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
-	require Wallet::Kadmin::MIT;
+        require Wallet::Kadmin::MIT;
         $kadmin = Wallet::Kadmin::MIT->new ();
     } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
-	require Wallet::Kadmin::Heimdal;
+        require Wallet::Kadmin::Heimdal;
         $kadmin = Wallet::Kadmin::Heimdal->new ();
     } else {
         die "keytab krb server type not set to a valid value\n";
@@ -82,7 +82,7 @@ Wallet::Kadmin - Kadmin module wrapper for wallet keytabs
 =head1 DESCRIPTION
 
 Wallet::Kadmin is a wrapper to modules that provide an interface for keytab
-integration with the wallet.  Each module is meant to interface with a 
+integration with the wallet.  Each module is meant to interface with a
 specific type of Kerberos implementation, such as MIT Kerberos or Heimdal
 Kerberos, and provide a standndard set of API calls used to interact with
 that implementation's kadmind.
