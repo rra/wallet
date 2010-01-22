@@ -24,7 +24,7 @@ use Wallet::Kadmin;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 ##############################################################################
 # AFS kaserver synchronization
@@ -488,13 +488,6 @@ sub create {
     $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
     $self->{kadmin} = $kadmin;
     return $self;
-}
-
-# Provides wrapper to individual Kadmin class's valid_principal.  Here only
-# to help expose for testing.
-sub valid_principal {
-    my ($self, $principal) = @_;
-    return Wallet::Kadmin->valid_principal ($principal);
 }
 
 # Override destroy to delete the principal out of Kerberos as well.

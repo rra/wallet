@@ -20,26 +20,11 @@ use Wallet::Config ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Public methods
 ##############################################################################
-
-# Validate a principal with a submodule's validator.  We can also do this via
-# creating an object with new and then running valid_principal from that,
-# but there are times we might wish to run it without going through the
-# object creation.
-sub valid_principal {
-    my ($class, $principal) = @_;
-    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
-        require Wallet::Kadmin::MIT;
-        return Wallet::Kadmin::MIT->valid_principal ($principal);
-    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
-        require Wallet::Kadmin::Heimdal;
-        return Wallet::Kadmin::Heimdal->valid_principal ($principal);
-    }
-}
 
 # Create a new kadmin object, by finding the type requested in the wallet
 # config and passing off to the proper module.  Returns the object directly
@@ -110,15 +95,6 @@ information about how to set wallet configuration.
 Finds the proper Kerberos implementation and calls the new() constructor for
 that implementation's module, returning the result.  If the implementation
 is not recognized or set, die with an error message.
-
-=item valid_principal(PRINCIPAL)
-
-Finds the proper Kerberos implementation and calls its own valid_principal
-method, returning the result.  This tells whether a principal is valid for
-that implementation.  This can be achieved by using new() and then directly
-calling valid_principal on the returned object -- this method is a shortcut
-in case we want to check validity without creating the object and worrying
-about proper setup.
 
 =back
 

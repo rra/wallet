@@ -21,20 +21,11 @@ use Wallet::Config ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # kadmin Interaction
 ##############################################################################
-
-# Make sure that principals are well-formed and don't contain characters that
-# will cause us problems when talking to kadmin.  Takes a principal and
-# returns true if it's okay, false otherwise.  Note that we do not permit
-# realm information here.
-sub valid_principal {
-    my ($self, $principal) = @_;
-    return scalar ($principal =~ m,^[\w-]+(/[\w_.-]+)?\z,);
-}
 
 # Create a Heimdal::Kadm5 client object and return it.  It should load
 # configuration from Wallet::Config.
@@ -62,7 +53,6 @@ sub kadmin_client {
 # so, false otherwise.  Throws an exception if an error.
 sub exists {
     my ($self, $principal) = @_;
-    return unless $self->valid_principal ($principal);
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
@@ -76,9 +66,6 @@ sub exists {
 # undef.
 sub addprinc {
     my ($self, $principal) = @_;
-    unless ($self->valid_principal ($principal)) {
-        die "invalid principal name $principal\n";
-    }
 
     my $exists = eval { $self->exists ($principal) };
     if ($Wallet::Config::KEYTAB_REALM) {
@@ -117,9 +104,6 @@ sub addprinc {
 # error.
 sub ktadd {
     my ($self, $principal, $file, @enctypes) = @_;
-    unless ($self->valid_principal ($principal)) {
-        die "invalid principal name: $principal\n";
-    }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
@@ -164,9 +148,6 @@ sub ktadd {
 # exist, return success; we're bringing reality in line with our expectations.
 sub delprinc {
     my ($self, $principal) = @_;
-    unless ($self->valid_principal ($principal)) {
-        die "invalid principal name: $principal\n";
-    }
     my $exists = eval { $self->exists ($principal) };
     die $@ if $@;
     if (not $exists) {

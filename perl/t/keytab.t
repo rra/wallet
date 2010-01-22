@@ -8,7 +8,8 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 219;
+use Test::More tests => 208
+;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -192,18 +193,6 @@ my $dbh = $admin->dbh;
 my $history = '';
 my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 
-# Do some white-box testing of the principal validation regex.
-for my $bad (qw{service\* = host/foo+bar host/foo/bar /bar bar/
-                rcmd.foo}) {
-    ok (! Wallet::Object::Keytab->valid_principal ($bad),
-        "Invalid principal name $bad");
-}
-for my $good (qw{service service/foo bar foo/bar host/example.org
-                 aservice/foo}) {
-    ok (Wallet::Object::Keytab->valid_principal ($good),
-        "Valid principal name $good");
-}
-
 # Basic keytab creation and manipulation tests.
 SKIP: {
     skip 'no keytab configuration', 49 unless -f 't/data/test.keytab';
@@ -228,12 +217,21 @@ SKIP: {
         Wallet::Object::Keytab->create ('keytab', "wallet\nf", $dbh, @trace)
       };
     is ($object, undef, 'Creating malformed principal fails');
-    is ($@, "invalid principal name wallet\nf\n", ' with the right error');
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+        is ($@, "invalid principal name wallet\nf\n", ' with the right error');
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+        like ($@, qr/^error adding principal wallet\nf/, 
+              ' with the right error');
+    }
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', '', $dbh, @trace)
       };
     is ($object, undef, 'Creating empty principal fails');
-    is ($@, "invalid principal name \n", ' with the right error');
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+        is ($@, "invalid principal name \n", ' with the right error');
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+        like ($@, qr/^error adding principal \@/, ' with the right error');
+    }
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
