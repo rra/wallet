@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 77;
+use Test::More tests => 83;
 
 use Wallet::Admin;
 use Wallet::Schema;
@@ -53,6 +53,15 @@ is ($objects[0][1], 'service/admin', ' and the right name');
 # this right now.
 is ($admin->register_verifier ('base', 'Wallet::ACL::Base'), 1,
     'Registering Wallet::ACL::Base works');
+
+# Create another ACL.
+is ($server->acl_create ('first'), 1, 'ACL creation succeeds');
+@acls = $admin->list_acls;
+is (scalar (@acls), 2, ' and now there are two ACLs');
+is ($acls[0][0], 1, ' and the first ID is correct');
+is ($acls[0][1], 'ADMIN', ' and the first name is correct');
+is ($acls[1][0], 2, ' and the second ID is correct');
+is ($acls[1][1], 'first', ' and the second name is correct');
 
 # Delete that ACL and create another.
 is ($server->acl_create ('second'), 1, 'Second ACL creation succeeds');
