@@ -156,10 +156,10 @@ Before running C<initialize>, the wallet system has to be configured.  See
 Wallet::Config(3) for more details.  Depending on the database backend
 used, the database may also have to be created in advance.
 
-=item list (acls | objects)
+=item list (acls | objects) [ <searchtype> [ <arg> ... ] ]
 
-Returns a list of all ACLs or objects in the database.  ACLs will be
-listed in the form:
+Returns a list of ACLs or objects in the database.  ACLs will be listed 
+in the form:
 
     <name> (ACL ID: <id>)
 
@@ -170,6 +170,51 @@ be listed in the form:
     <type> <name>
 
 In both cases, there will be one line per ACL or object.
+
+If no searchtype is given, all the ACLs or objects in the database will
+be returned.  If a searchtype (and possible search arguments) are given,
+then the ACLs or objects will be limited to those that match the search.
+
+The currently supported object search types are:
+
+=over 4
+
+=item list objects type <type>
+
+Returns all objects of the given type.
+
+=item list objects flag <flag>
+
+Returns all objects which have the given flag set.
+
+=item list objects owner <acl name>
+
+Returns all objects owned by the given ACL name.
+
+=item list objects acl <acl name>
+
+Returns all objects for which the given ACL name has any permissions.
+This includes those objects owned by the ACL, but also those for which the
+ACL has get permissions, for example.
+
+=back
+
+The currently supported ACL search types are:
+
+=over 4
+
+=item list acls empty
+
+Returns all ACLs which have no entries, generally so that abandoned ACLs
+can be housekept.
+
+=item list acls entry <schema> <identifier>
+
+Returns all ACLs containing an entry with given schema and identifier.  
+The schema is used for an exact search, while the identifier given will 
+match any identifier containing that text, for flexibility.
+
+=back
 
 =item register (object | verifier) <type> <class>
 

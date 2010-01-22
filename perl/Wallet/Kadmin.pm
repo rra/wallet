@@ -120,6 +120,8 @@ calling valid_principal on the returned object -- this method is a shortcut
 in case we want to check validity without creating the object and worrying
 about proper setup.
 
+=back
+
 =head1 SEE ALSO
 
 kadmin(8), Wallet::Config(3), Wallet::Object::Keytab(3), wallet-backend(8)
