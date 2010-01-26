@@ -13,8 +13,16 @@ use Test::More tests => 17;
 use Wallet::Admin;
 use Wallet::Config;
 use Wallet::Kadmin;
-use Wallet::Kadmin::Heimdal;
 use Wallet::Kadmin::MIT;
+
+# Only load Wallet::Kadmin::Heimdal if a required module is found.
+my $heimdal_kadm5 = 0;
+eval 'use Heimdal::Kadm5';
+if (!$@) {
+    print "No error...\n";
+    $heimdal_kadm5 = 1;
+    require Wallet::Kadmin::Heimdal;
+}
 
 use lib 't/lib';
 use Util;
@@ -41,7 +49,7 @@ ok (defined ($kadmin), 'MIT kadmin object created');
 my $callback = sub { return 1 };
 $kadmin->fork_callback ($callback);
 is ($kadmin->{fork_callback} (), 1, ' and callback works.');
-my $callback = sub { return 2 };
+$callback = sub { return 2 };
 $kadmin->fork_callback ($callback);
 is ($kadmin->{fork_callback} (), 2, ' and changing it works.');
 
@@ -49,10 +57,13 @@ is ($kadmin->{fork_callback} (), 2, ' and changing it works.');
 # we need a properly configured Heimdal KDC.  So instead, we deliberately
 # connect without configuration to get the error.  That at least tests that
 # we can find the Heimdal module and it dies how it should.
-undef $Wallet::Config::KEYTAB_PRINCIPAL;
-undef $Wallet::Config::KEYTAB_FILE;
-undef $Wallet::Config::KEYTAB_REALM;
-undef $kadmin;
-$Wallet::Config::KEYTAB_KRBTYPE = 'Heimdal';
-$kadmin = eval { Wallet::Kadmin->new () };
-is ($kadmin, undef, 'Heimdal fails properly.');
+SKIP: {
+    skip 'Heimdal::Kadm5 not installed', 1 unless $heimdal_kadm5;
+    undef $Wallet::Config::KEYTAB_PRINCIPAL;
+    undef $Wallet::Config::KEYTAB_FILE;
+    undef $Wallet::Config::KEYTAB_REALM;
+    undef $kadmin;
+    $Wallet::Config::KEYTAB_KRBTYPE = 'Heimdal';
+    $kadmin = eval { Wallet::Kadmin->new () };
+    is ($kadmin, undef, 'Heimdal fails properly.');
+}
