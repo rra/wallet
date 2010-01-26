@@ -466,6 +466,11 @@ sub new {
     my $kadmin = Wallet::Kadmin->new ();
     $self->{kadmin} = $kadmin;
 
+    # Set a callback for things to do after a fork, specifically for the MIT
+    # kadmin module which forks to kadmin.
+    my $callback = sub { $self->{dbh}->{InactiveDestroy} = 1 };
+    $kadmin->fork_callback ($callback);
+
     $self = $class->SUPER::new ($type, $name, $dbh);
     $self->{kadmin} = $kadmin;
     return $self;
@@ -484,8 +489,14 @@ sub create {
     bless $self, $class;
     my $kadmin = Wallet::Kadmin->new ();
     $self->{kadmin} = $kadmin;
+
+    # Set a callback for things to do after a fork, specifically for the MIT
+    # kadmin module which forks to kadmin.
+    my $callback = sub { $self->{dbh}->{InactiveDestroy} = 1 };
+    $kadmin->fork_callback ($callback);
+
     if (not $kadmin->addprinc ($name)) {
-        die $kadmin->error;
+        die $kadmin->error, "\n";
     }    
     $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
     $self->{kadmin} = $kadmin;

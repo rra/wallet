@@ -8,7 +8,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 15;
+use Test::More tests => 17;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -34,11 +34,16 @@ for my $good (qw{service service/foo bar foo/bar host/example.org
         "Valid principal name $good");
 }
 
-# Test creating an MIT object.  We don't care about anything but correctly
-# creating it -- testing operations is for the keytab tests.
+# Test creating an MIT object and seeing if the callback works.
 $Wallet::Config::KEYTAB_KRBTYPE = 'MIT';
 my $kadmin = Wallet::Kadmin->new ();
 ok (defined ($kadmin), 'MIT kadmin object created');
+my $callback = sub { return 1 };
+$kadmin->fork_callback ($callback);
+is ($kadmin->{fork_callback} (), 1, ' and callback works.');
+my $callback = sub { return 2 };
+$kadmin->fork_callback ($callback);
+is ($kadmin->{fork_callback} (), 2, ' and changing it works.');
 
 # Test creating a Heimdal object.  For us to test a working Heimdal object,
 # we need a properly configured Heimdal KDC.  So instead, we deliberately

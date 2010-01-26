@@ -39,6 +39,11 @@ sub error {
     return $self->{error};
 }
 
+# Set a callback to be called for forked kadmin processes.  This does nothing
+# for Heimdal, as we're not forking anything, but remains for compatibility
+# with the MIT kadmin module.
+sub fork_callback { }
+
 ##############################################################################
 # kadmin Interaction
 ##############################################################################

@@ -39,6 +39,12 @@ sub error {
     return $self->{error};
 }
 
+# Set a callback to be called for forked kadmin processes.
+sub fork_callback {
+    my ($self, $callback) = @_;
+    $self->{fork_callback} = $callback;
+}
+
 ##############################################################################
 # kadmin Interaction
 ##############################################################################
@@ -73,11 +79,7 @@ sub kadmin {
         $self->error ("cannot fork: $!");
         return;
     } elsif ($pid == 0) {
-        # TODO - How should I handle the db handle?
-        # Don't use die here; it will get trapped as an exception.  Also be
-        # careful about our database handles.  (We still lose if there's some
-        # other database handle open we don't know about.)
-        #$object->{dbh}->{InactiveDestroy} = 1;
+        $self->{fork_callback} ();
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
             exit 1;
