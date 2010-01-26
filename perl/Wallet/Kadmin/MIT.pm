@@ -21,7 +21,23 @@ use Wallet::Config ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
+
+##############################################################################
+# Utility functions
+##############################################################################
+
+# Set or return the error stashed in the object.
+sub error {
+    my ($self, @error) = @_;
+    if (@error) {
+        my $error = join ('', @error);
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        $self->{error} = $error;
+    }
+    return $self->{error};
+}
 
 ##############################################################################
 # kadmin Interaction
@@ -54,7 +70,8 @@ sub kadmin {
         if $Wallet::Config::KEYTAB_REALM;
     my $pid = open (KADMIN, '-|');
     if (not defined $pid) {
-        die "cannot fork: $!\n";
+        $self->error ("cannot fork: $!");
+        return;
     } elsif ($pid == 0) {
         # TODO - How should I handle the db handle?
         # Don't use die here; it will get trapped as an exception.  Also be
@@ -75,7 +92,8 @@ sub kadmin {
     while (<KADMIN>) {
         if (/^wallet: cannot /) {
             s/^wallet: //;
-            die $_;
+            $self->error ($_);
+            return;
         }
         push (@output, $_) unless /Authenticating as principal/;
     }
@@ -88,7 +106,8 @@ sub kadmin {
 ##############################################################################
 
 # Check whether a given principal already exists in Kerberos.  Returns true if
-# so, false otherwise.  Throws an exception if kadmin fails.
+# so, false otherwise.  Returns undef if kadmin fails, with the error already
+# set by kadmin.
 sub exists {
     my ($self, $principal) = @_;
     return unless $self->valid_principal ($principal);
@@ -96,20 +115,22 @@ sub exists {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     my $output = $self->kadmin ("getprinc $principal");
-    if ($output =~ /^get_principal: /) {
+    if (!defined $output) {
         return;
+    } elsif ($output =~ /^get_principal: /) {
+        return 0;
     } else {
         return 1;
     }
 }
 
-# Create a principal in Kerberos.  Since this is only called by create, it
-# throws an exception on failure rather than setting the error and returning
-# undef.
+# Create a principal in Kerberos.  Sets the error and returns undef on failure,
+# and returns 1 on either success or the principal already existing.
 sub addprinc {
     my ($self, $principal) = @_;
     unless ($self->valid_principal ($principal)) {
-        die "invalid principal name $principal\n";
+        $self->error ("invalid principal name $principal");
+        return;
     }
     return 1 if $self->exists ($principal);
     if ($Wallet::Config::KEYTAB_REALM) {
@@ -117,8 +138,11 @@ sub addprinc {
     }
     my $flags = $Wallet::Config::KEYTAB_FLAGS || '';
     my $output = $self->kadmin ("addprinc -randkey $flags $principal");
-    if ($output =~ /^add_principal: (.*)/m) {
-        die "error adding principal $principal: $1\n";
+    if (!defined $output) {
+        return;
+    } elsif ($output =~ /^add_principal: (.*)/m) {
+        $self->error ("error adding principal $principal: $1");
+        return;
     }
     return 1;
 }
@@ -130,7 +154,8 @@ sub addprinc {
 sub ktadd {
     my ($self, $principal, $file, @enctypes) = @_;
     unless ($self->valid_principal ($principal)) {
-        die "invalid principal name: $principal\n";
+        $self->error ("invalid principal name: $principal");
+        return;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
@@ -140,10 +165,12 @@ sub ktadd {
         @enctypes = map { /:/ ? $_ : "$_:normal" } @enctypes;
         $command .= ' -e "' . join (' ', @enctypes) . '"';
     }
-    my $output = eval { $self->kadmin ("$command $principal") };
-    die ($@) if ($@);
-    if ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
-        die "error creating keytab for $principal: $1\n";
+    my $output = $self->kadmin ("$command $principal");
+    if (!defined $output) {
+        return;
+    } elsif ($output =~ /^(?:kadmin|ktadd): (.*)/m) {
+        $self->error ("error creating keytab for $principal: $1");
+        return;
     }
     return 1;
 }
@@ -154,20 +181,23 @@ sub ktadd {
 sub delprinc {
     my ($self, $principal) = @_;
     unless ($self->valid_principal ($principal)) {
-        die "invalid principal name: $principal\n";
+        $self->error ("invalid principal name: $principal");
     }
-    my $exists = eval { $self->exists ($principal) };
-    die $@ if $@;
-    if (not $exists) {
+    my $exists = $self->exists ($principal);
+    if (!defined $exists) {
+        return;
+    } elsif (not $exists) {
         return 1;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    my $output = eval { $self->kadmin ("delprinc -force $principal") };
-    die $@ if $@;
-    if ($output =~ /^delete_principal: (.*)/m) {
-        die "error deleting $principal: $1\n";
+    my $output = $self->kadmin ("delprinc -force $principal");
+    if (!defined $output) {
+        return;
+    } elsif ($output =~ /^delete_principal: (.*)/m) {
+        $self->error ("error deleting $principal: $1");
+        return;
     }
     return 1;
 }

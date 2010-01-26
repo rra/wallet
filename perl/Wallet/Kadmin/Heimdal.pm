@@ -21,7 +21,23 @@ use Wallet::Config ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
+
+##############################################################################
+# Utility functions
+##############################################################################
+
+# Set or return the error stashed in the object.
+sub error {
+    my ($self, @error) = @_;
+    if (@error) {
+        my $error = join ('', @error);
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        $self->{error} = $error;
+    }
+    return $self->{error};
+}
 
 ##############################################################################
 # kadmin Interaction
@@ -30,17 +46,18 @@ $VERSION = '0.02';
 # Create a Heimdal::Kadm5 client object and return it.  It should load
 # configuration from Wallet::Config.
 sub kadmin_client {
+    my ($self) = @_;
     unless (defined ($Wallet::Config::KEYTAB_PRINCIPAL)
             and defined ($Wallet::Config::KEYTAB_FILE)
             and defined ($Wallet::Config::KEYTAB_REALM)) {
         die "keytab object implementation not configured\n";
     }
     my $server = $Wallet::Config::KEYTAB_HOST || 'localhost';
-    my @options = (RaiseErrors => 1,
-                   Server      => $server,
-                   Principal   => $Wallet::Config::KEYTAB_PRINCIPAL,
-                   Realm       => $Wallet::Config::KEYTAB_REALM,
-                   Keytab      => $Wallet::Config::KEYTAB_FILE);
+    my @options = (RaiseError => 1,
+                   Server     => $server,
+                   Principal  => $Wallet::Config::KEYTAB_PRINCIPAL,
+                   Realm      => $Wallet::Config::KEYTAB_REALM,
+                   Keytab     => $Wallet::Config::KEYTAB_FILE);
     my $client = Heimdal::Kadm5::Client->new (@options);
     return $client;
 }
@@ -50,28 +67,34 @@ sub kadmin_client {
 ##############################################################################
 
 # Check whether a given principal already exists in Kerberos.  Returns true if
-# so, false otherwise.  Throws an exception if an error.
+# so, false otherwise.
 sub exists {
     my ($self, $principal) = @_;
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
     my $kadmin = $self->{client};
-    my $princdata = $kadmin->getPrincipal ($principal);
+    my $princdata = eval { $kadmin->getPrincipal ($principal) };
+    if ($@) {
+        $self->error ("error getting principal: $@");
+        return;
+    }
     return $princdata ? 1 : 0;
 }
 
-# Create a principal in Kerberos.  Since this is only called by create, it
-# throws an exception on failure rather than setting the error and returning
-# undef.
+# Create a principal in Kerberos.  If there is an error, return undef and set
+# the error.  Return 1 on success or the principal already existing.
 sub addprinc {
     my ($self, $principal) = @_;
 
-    my $exists = eval { $self->exists ($principal) };
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
-    die "error adding principal $principal: $@\n" if $@;
+    my $exists = eval { $self->exists ($principal) };
+    if ($@) {
+        $self->error ("error adding principal $principal: $@");
+        return undef;
+    }
     return 1 if $exists;
 
     # The way Heimdal::Kadm5 works, we create a principal object, create the
@@ -80,21 +103,34 @@ sub addprinc {
     #        on creation even if it is inactive until after randomized by
     #        module.
     my $kadmin = $self->{client};
-    my $princdata = $kadmin->makePrincipal ($principal);
+    my $princdata = eval { $kadmin->makePrincipal ($principal) };
+    if ($@) {
+        $self->error ("error adding principal $principal: $@");
+        return;
+    }
 
     # Disable the principal before creating, until we've randomized the
     # password.
-    my $attrs = $princdata->getAttributes;
+    my $attrs = eval { $princdata->getAttributes };
+    if ($@) {
+        $self->error ("error adding principal $principal: $@");
+        return;
+    }
     $attrs |= KRB5_KDB_DISALLOW_ALL_TIX;
-    $princdata->setAttributes ($attrs);
+    eval { $princdata->setAttributes ($attrs) };
+    if ($@) {
+        $self->error ("error adding principal $principal: $@");
+        return;
+    }
 
     my $password = 'inactive';
-    eval {
-        $kadmin->createPrincipal ($princdata, $password, 0);
-        $kadmin->randKeyPrincipal ($principal);
-        $kadmin->enablePrincipal ($principal);
-    };
-    die "error adding principal $principal: $@" if $@;
+    my $test = eval { $kadmin->createPrincipal ($princdata, $password, 0) };
+    eval { $kadmin->randKeyPrincipal ($principal) } unless $@;
+    eval { $kadmin->enablePrincipal ($principal) } unless $@;
+    if ($@) {
+        $self->error ("error adding principal $principal: $@");
+        return;
+    }
     return 1;
 }
 
@@ -114,13 +150,19 @@ sub ktadd {
     # to those we have been asked for this time.
     my $kadmin = $self->{client};
     eval { $kadmin->randKeyPrincipal ($principal) };
-    die "error creating keytab for $principal: could not reinit enctypes: $@\n"
-        if $@;
+    if ($@) {
+        $self->error ("error creating keytab for $principal: could not "
+                      ."reinit enctypes: $@");
+        return;
+    }
     my $princdata = eval { $kadmin->getPrincipal ($principal) };
     if ($@) {
-        die "error creating keytab for $principal: $@\n";
+        $self->error ("error creating keytab for $principal: $@");
+        return;
     } elsif (!$princdata) {
-        die "error creating keytab for $principal: principal does not exist\n";
+        $self->error ("error creating keytab for $principal: principal does "
+                      ."not exist");
+        return;
     }
 
     # Now actually remove any non-requested enctypes, if we requested any.
@@ -132,13 +174,24 @@ sub ktadd {
             my $keytype = ${$key}[0];
             next if exists $wanted{$keytype};
             eval { $princdata->delKeytypes ($keytype) };
-            die "error removing keytype $keytype from the keytab: $@\n" if $@;
+            if ($@) {
+                $self->error ("error removing keytype $keytype from the ".
+                              "keytab: $@");
+                return;
+            }
         }
         eval { $kadmin->modifyPrincipal ($princdata) };
+        if ($@) {
+            $self->error ("error saving principal modifications: $@");
+            return;
+        }
     }
 
     eval { $kadmin->extractKeytab ($princdata, $file) };
-    die "error creating keytab for principal: $@\n" if $@;
+    if ($@) {
+        $self->error ("error creating keytab for principal: $@");
+        return;
+    }
 
     return 1;
 }
@@ -149,8 +202,10 @@ sub ktadd {
 sub delprinc {
     my ($self, $principal) = @_;
     my $exists = eval { $self->exists ($principal) };
-    die $@ if $@;
-    if (not $exists) {
+    if ($@) {
+        $self->error ("error checking principal existance: $@");
+        return;
+    } elsif (not $exists) {
         return 1;
     }
     if ($Wallet::Config::KEYTAB_REALM) {
@@ -159,7 +214,10 @@ sub delprinc {
 
     my $kadmin = $self->{client};
     my $retval = eval { $kadmin->deletePrincipal ($principal) };
-    die "error deleting $principal: $@\n" if $@;
+    if ($@) {
+        $self->error ("error deleting $principal: $@");
+        return;
+    }
     return 1;
 }
 
@@ -173,9 +231,10 @@ sub delprinc {
 sub new {
     my ($class) = @_;
     my $self = {
-        client => kadmin_client (),
+        client => undef,
     };
     bless ($self, $class);
+    $self->{client} = kadmin_client ();
     return $self;
 }
 

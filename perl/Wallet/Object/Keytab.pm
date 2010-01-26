@@ -484,7 +484,9 @@ sub create {
     bless $self, $class;
     my $kadmin = Wallet::Kadmin->new ();
     $self->{kadmin} = $kadmin;
-    $kadmin->addprinc ($name);
+    if (not $kadmin->addprinc ($name)) {
+        die $kadmin->error;
+    }    
     $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
     $self->{kadmin} = $kadmin;
     return $self;
@@ -517,7 +519,10 @@ sub destroy {
         return;
     }
     my $kadmin = $self->{kadmin};
-    return if not $kadmin->delprinc ($self->{name});
+    if (not $kadmin->delprinc ($self->{name})) {
+        $self->error ($kadmin->error);
+        return;
+    }
     return $self->SUPER::destroy ($user, $host, $time);
 }
 
@@ -546,12 +551,10 @@ sub get {
     unlink $file;
     my @enctypes = $self->attr ('enctypes');
     my $kadmin = $self->{kadmin};
-    my $retval = eval { $kadmin->ktadd ($self->{name}, $file, @enctypes) };
-    if ($@) {
-        $self->error ($@);
+    if (not $kadmin->ktadd ($self->{name}, $file, @enctypes)) {
+        $self->error ($kadmin->error);
         return;
     }
-    return unless $retval;
     local *KEYTAB;
     unless (open (KEYTAB, '<', $file)) {
         my $princ = $self->{name};
