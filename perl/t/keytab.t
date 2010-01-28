@@ -8,7 +8,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 208
+use Test::More tests => 212
 ;
 
 use Wallet::Admin;
@@ -387,6 +387,21 @@ EOO
     is ($@, "keytab object implementation not configured\n",
         ' with the right error');
     $Wallet::Config::KEYTAB_REALM = contents ('t/data/test.realm');
+    undef $Wallet::Config::KEYTAB_KRBTYPE;
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, ' and another');
+    is ($@, "keytab object implementation not configured\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_KRBTYPE = 'Active Directory';
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, ' and one set to an invalid value');
+    is ($@, "keytab krb server type not set to a valid value\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_KRBTYPE = contents ('t/data/test.krbtype');
 }
 
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
@@ -403,6 +418,7 @@ SKIP: {
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP       = '.';
     my $realm = $Wallet::Config::KEYTAB_REALM;
     my $principal = $Wallet::Config::KEYTAB_PRINCIPAL;
@@ -581,6 +597,7 @@ EOO
     $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KRBTYPE      = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP          = '.';
     $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
     my $realm = $Wallet::Config::KEYTAB_REALM;
@@ -707,8 +724,7 @@ EOO
 
 # Tests for enctype restriction.
 SKIP: {
-    unless (-f 't/data/test.keytab'
-            && $Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+    unless (-f 't/data/test.keytab') {
         skip 'no keytab configuration', 36;
     }
 
@@ -716,6 +732,7 @@ SKIP: {
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP       = '.';
     my $realm = $Wallet::Config::KEYTAB_REALM;
     my $principal = $Wallet::Config::KEYTAB_PRINCIPAL;
