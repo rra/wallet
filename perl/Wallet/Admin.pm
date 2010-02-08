@@ -477,11 +477,11 @@ actions on the object it returns.
 
 =item list_acls(TYPE, SEARCH)
 
-Returns a list of all ACLs matching a search type and string in the 
-database, or all ACLs if no search information is given.  The return value 
-is a list of references to pairs of ACL ID and name.  For example, if 
-there are two ACLs in the database, one with name "ADMIN" and ID 1 and one 
-with name "group/admins" and ID 3, list_acls() with no arguments would 
+Returns a list of all ACLs matching a search type and string in the
+database, or all ACLs if no search information is given.  The return value
+is a list of references to pairs of ACL ID and name.  For example, if
+there are two ACLs in the database, one with name "ADMIN" and ID 1 and one
+with name "group/admins" and ID 3, list_acls() with no arguments would
 return:
 
     ([ 1, 'ADMIN' ], [ 3, 'group/admins' ])
@@ -492,18 +492,18 @@ database with no ACLs by calling error().  error() is guaranteed to return
 the error message if there was an error and undef if there was no error.
 
 There are currently two search types.  'empty' takes no arguments, and will
-return only those acls that have no entries within them.  'entry' takes two 
-arguments -- an entry scheme and an entry identifier -- and will return 
+return only those acls that have no entries within them.  'entry' takes two
+arguments -- an entry scheme and an entry identifier -- and will return
 any ACLs with an entry that matches the given scheme and contains the
 given identifier.
 
 =item list_objects(TYPE, SEARCH)
 
-Returns a list of all objects matching a search type and string in the 
-database, or all objects in the database if no search information is 
-given.  The return value is a list of references to pairs of type and 
-name.  For example, if two objects existed in the database, both of type 
-"keytab" and with values "host/example.com" and "foo", list_objects() 
+Returns a list of all objects matching a search type and string in the
+database, or all objects in the database if no search information is
+given.  The return value is a list of references to pairs of type and
+name.  For example, if two objects existed in the database, both of type
+"keytab" and with values "host/example.com" and "foo", list_objects()
 with no arguments would return:
 
     ([ 'keytab', 'host/example.com' ], [ 'keytab', 'foo' ])
@@ -516,8 +516,8 @@ if there was no error.
 There are four types of searches currently.  'type' (with a given type)
 will return only those entries where the type matches the given type.
 'owner', with a given owner, will only return those objects owned by the
-given acl name.  'flag', with a given flag name, will only return those 
-items with a flag set to the given value.  'acl' operates like 'owner', 
+given acl name.  'flag', with a given flag name, will only return those
+items with a flag set to the given value.  'acl' operates like 'owner',
 but will return only those objects that have the given acl name on any
 of the possible acl settings, not just owner.
 

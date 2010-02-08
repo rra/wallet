@@ -29,7 +29,7 @@ use Util;
 
 # We test a Wallet::Kadmin::* module's actual workings in the keytab.t tests.
 # The only things we want to test here are that each module is found, that
-# Wallet::Kadmin itself delegates to them, and that the private MIT principal 
+# Wallet::Kadmin itself delegates to them, and that the private MIT principal
 # validation works as it should.
 for my $bad (qw{service\* = host/foo+bar host/foo/bar /bar bar/
                 rcmd.foo}) {
@@ -44,7 +44,7 @@ for my $good (qw{service service/foo bar foo/bar host/example.org
 
 # Test creating an MIT object and seeing if the callback works.
 $Wallet::Config::KEYTAB_KRBTYPE = 'MIT';
-my $kadmin = Wallet::Kadmin->new ();
+my $kadmin = Wallet::Kadmin->new;
 ok (defined ($kadmin), 'MIT kadmin object created');
 my $callback = sub { return 1 };
 $kadmin->fork_callback ($callback);
@@ -64,6 +64,6 @@ SKIP: {
     undef $Wallet::Config::KEYTAB_REALM;
     undef $kadmin;
     $Wallet::Config::KEYTAB_KRBTYPE = 'Heimdal';
-    $kadmin = eval { Wallet::Kadmin->new () };
+    $kadmin = eval { Wallet::Kadmin->new };
     is ($kadmin, undef, 'Heimdal fails properly.');
 }

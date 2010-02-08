@@ -98,40 +98,27 @@ sub addprinc {
     my $exists = eval { $self->exists ($principal) };
     if ($@) {
         $self->error ("error adding principal $principal: $@");
-        return undef;
+        return;
     }
     return 1 if $exists;
 
     # The way Heimdal::Kadm5 works, we create a principal object, create the
     # actual principal set inactive, then randomize it and activate it.
+    #
     # TODO - Paranoia makes me want to set the password to something random
     #        on creation even if it is inactive until after randomized by
     #        module.
     my $kadmin = $self->{client};
-    my $princdata = eval { $kadmin->makePrincipal ($principal) };
-    if ($@) {
-        $self->error ("error adding principal $principal: $@");
-        return;
+    eval {
+        my $princdata = $kadmin->makePrincipal ($principal);
+        my $attrs = $princdata->getAttributes;
+        $attrs |= KRB5_KDB_DISALLOW_ALL_TIX;
+        $princdata->setAttributes ($attrs);
+        my $password = 'inactive';
+        $kadmin->createPrincipal ($princdata, $password, 0);
+        $kadmin->randKeyPrincipal ($principal);
+        $kadmin->enablePrincipal ($principal);
     }
-
-    # Disable the principal before creating, until we've randomized the
-    # password.
-    my $attrs = eval { $princdata->getAttributes };
-    if ($@) {
-        $self->error ("error adding principal $principal: $@");
-        return;
-    }
-    $attrs |= KRB5_KDB_DISALLOW_ALL_TIX;
-    eval { $princdata->setAttributes ($attrs) };
-    if ($@) {
-        $self->error ("error adding principal $principal: $@");
-        return;
-    }
-
-    my $password = 'inactive';
-    my $test = eval { $kadmin->createPrincipal ($princdata, $password, 0) };
-    eval { $kadmin->randKeyPrincipal ($principal) } unless $@;
-    eval { $kadmin->enablePrincipal ($principal) } unless $@;
     if ($@) {
         $self->error ("error adding principal $principal: $@");
         return;
@@ -156,8 +143,8 @@ sub ktadd {
     my $kadmin = $self->{client};
     eval { $kadmin->randKeyPrincipal ($principal) };
     if ($@) {
-        $self->error ("error creating keytab for $principal: could not "
-                      ."reinit enctypes: $@");
+        $self->error ("error creating keytab for $principal: could not"
+                      . " reinit enctypes: $@");
         return;
     }
     my $princdata = eval { $kadmin->getPrincipal ($principal) };
@@ -165,23 +152,22 @@ sub ktadd {
         $self->error ("error creating keytab for $principal: $@");
         return;
     } elsif (!$princdata) {
-        $self->error ("error creating keytab for $principal: principal does "
-                      ."not exist");
+        $self->error ("error creating keytab for $principal: principal does"
+                      . " not exist");
         return;
     }
 
     # Now actually remove any non-requested enctypes, if we requested any.
     if (@enctypes) {
-        my (%wanted);
-        my $alltypes = $princdata->getKeytypes ();
-        foreach (@enctypes) { $wanted{$_} = 1 }
-        foreach my $key (@{$alltypes}) {
-            my $keytype = ${$key}[0];
+        my $alltypes = $princdata->getKeytypes;
+        my %wanted = map { $_ => 1 } @enctypes;
+        for my $key (@{ $alltypes }) {
+            my $keytype = $key->[0];
             next if exists $wanted{$keytype};
             eval { $princdata->delKeytypes ($keytype) };
             if ($@) {
-                $self->error ("error removing keytype $keytype from the ".
-                              "keytab: $@");
+                $self->error ("error removing keytype $keytype from the"
+                              . " keytab: $@");
                 return;
             }
         }
@@ -192,12 +178,12 @@ sub ktadd {
         }
     }
 
+    # Create the keytab.
     eval { $kadmin->extractKeytab ($princdata, $file) };
     if ($@) {
         $self->error ("error creating keytab for principal: $@");
         return;
     }
-
     return 1;
 }
 
@@ -226,20 +212,14 @@ sub delprinc {
     return 1;
 }
 
-##############################################################################
-# Documentation
-##############################################################################
-
-# Create a new MIT kadmin object.  Very empty for the moment, but later it
-# will probably fill out if we go to using a module rather than calling
-# kadmin directly.
+# Create a new Heimdal kadmin object.
 sub new {
     my ($class) = @_;
     my $self = {
         client => undef,
     };
     bless ($self, $class);
-    $self->{client} = kadmin_client ();
+    $self->{client} = $self->kadmin_client;
     return $self;
 }
 

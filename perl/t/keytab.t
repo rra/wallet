@@ -220,7 +220,7 @@ SKIP: {
     if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
         is ($@, "invalid principal name wallet\nf\n", ' with the right error');
     } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
-        like ($@, qr/^error adding principal wallet\nf/, 
+        like ($@, qr/^error adding principal wallet\nf/,
               ' with the right error');
     }
     $object = eval {

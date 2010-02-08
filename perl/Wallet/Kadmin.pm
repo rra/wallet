@@ -32,15 +32,14 @@ $VERSION = '0.03';
 sub new {
     my ($class) = @_;
     my ($kadmin);
-    if (!defined $Wallet::Config::KEYTAB_KRBTYPE 
-        || !$Wallet::Config::KEYTAB_KRBTYPE) {
+    if (not $Wallet::Config::KEYTAB_KRBTYPE) {
         die "keytab object implementation not configured\n";
     } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
         require Wallet::Kadmin::MIT;
-        $kadmin = Wallet::Kadmin::MIT->new ();
+        $kadmin = Wallet::Kadmin::MIT->new;
     } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
         require Wallet::Kadmin::Heimdal;
-        $kadmin = Wallet::Kadmin::Heimdal->new ();
+        $kadmin = Wallet::Kadmin::Heimdal->new;
     } else {
         die "keytab krb server type not set to a valid value\n";
     }

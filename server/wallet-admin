@@ -158,7 +158,7 @@ used, the database may also have to be created in advance.
 
 =item list (acls | objects) [ <searchtype> [ <arg> ... ] ]
 
-Returns a list of ACLs or objects in the database.  ACLs will be listed 
+Returns a list of ACLs or objects in the database.  ACLs will be listed
 in the form:
 
     <name> (ACL ID: <id>)
@@ -210,8 +210,8 @@ can be housekept.
 
 =item list acls entry <schema> <identifier>
 
-Returns all ACLs containing an entry with given schema and identifier.  
-The schema is used for an exact search, while the identifier given will 
+Returns all ACLs containing an entry with given schema and identifier.
+The schema is used for an exact search, while the identifier given will
 match any identifier containing that text, for flexibility.
 
 =back

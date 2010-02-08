@@ -497,7 +497,7 @@ sub create {
 
     if (not $kadmin->addprinc ($name)) {
         die $kadmin->error, "\n";
-    }    
+    }
     $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
     $self->{kadmin} = $kadmin;
     return $self;
