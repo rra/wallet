@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 212;
+use Test::More tests => 213;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -26,7 +26,7 @@ my %enctype =
     ('triple des cbc mode with hmac/sha1'      => 'des3-cbc-sha1',
      'des cbc mode with crc-32'                => 'des-cbc-crc',
      'des cbc mode with rsa-md5'               => 'des-cbc-md5',
-     'aes-256 cts mode with 96-bit sha-1 hmac' => 'aes256-cts',
+     'aes-256 cts mode with 96-bit sha-1 hmac' => 'aes256-cts-hmac-sha1-96',
      'arcfour with hmac/md5'                   => 'rc4-hmac');
 
 # Some global defaults to use.
@@ -788,8 +788,7 @@ EOO
         'Setting an unrecognized enctype fails');
     is ($one->error, 'unknown encryption type foo-bar',
         ' with the right error message');
-    @values = enctypes ($keytab);
-    is ("@values", "@enctypes", ' and we did rollback properly');
+    is ($one->show, $expected, ' and we did rollback properly');
     $history .= <<"EOO";
 $date  get
     by $user from $host
@@ -810,8 +809,12 @@ EOO
         is ("@values", $enctypes[0], ' and we get back the right value');
         $keytab = $one->get (@trace);
         ok (defined ($keytab), ' and retrieving the keytab still works');
-        @values = enctypes ($keytab);
-        is ("@values", $enctypes[0], ' and it has the right enctype');
+        if (defined ($keytab)) {
+            @values = enctypes ($keytab);
+            is ("@values", $enctypes[0], ' and it has the right enctype');
+        } else {
+            ok (0, ' and it has the right keytab');
+        }
         is ($one->attr ('enctypes', [ $enctypes[1] ], @trace), 1,
             'Setting a different single enctype works');
         @values = $one->attr ('enctypes');
