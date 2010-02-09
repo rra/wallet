@@ -57,12 +57,13 @@ sub kadmin_client {
             and defined ($Wallet::Config::KEYTAB_REALM)) {
         die "keytab object implementation not configured\n";
     }
-    my $server = $Wallet::Config::KEYTAB_HOST || 'localhost';
     my @options = (RaiseError => 1,
-                   Server     => $server,
                    Principal  => $Wallet::Config::KEYTAB_PRINCIPAL,
                    Realm      => $Wallet::Config::KEYTAB_REALM,
                    Keytab     => $Wallet::Config::KEYTAB_FILE);
+    if ($Wallet::Config::KEYTAB_HOST) {
+        push (@options, Server => $Wallet::Config::KEYTAB_HOST);
+    }
     my $client = Heimdal::Kadm5::Client->new (@options);
     return $client;
 }
