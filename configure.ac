@@ -37,7 +37,7 @@ RRA_C_GNU_VAMACROS
 AC_TYPE_LONG_LONG_INT
 RRA_FUNC_SNPRINTF
 AC_CHECK_FUNCS([setrlimit])
-AC_REPLACE_FUNCS([asprintf strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
 
 AC_ARG_WITH([wallet-server],
     [AC_HELP_STRING([--with-wallet-server=HOST], [Default wallet server])],

@@ -62,6 +62,8 @@ wallet 0.10 (unreleased)
     * Prefer KRB5_CONFIG over a path constructed from --with-*.
     * Update GSS-API probes for Solaris 10's native implementation.
     * Change AC_TRY_* to AC_*_IFELSE as recommended by Autoconf.
+    * Use AC_TYPE_LONG_LONG_INT instead of AC_CHECK_TYPES([long long]).
+    * Provide a proper bool type with Sun Studio 12 on Solaris 10.
 
 wallet 0.9 (2008-04-24)
 

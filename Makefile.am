@@ -1,7 +1,8 @@
-# Makefile.am -- Automake makefile for wallet.
+# Automake makefile for wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008, 2010
+#     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
