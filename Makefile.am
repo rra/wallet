@@ -9,17 +9,18 @@
 # and are not generated or touched by configure.  They're listed here to be
 # added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm \
-	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/NetDB.pm \
-	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm \
-	perl/Wallet/Config.pm perl/Wallet/Database.pm \
-	perl/Wallet/Object/Base.pm perl/Wallet/Object/File.pm \
-	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm \
-	perl/Wallet/Server.pm perl/t/acl.t perl/t/admin.t perl/t/config.t \
-	perl/t/data/README perl/t/data/keytab-fake perl/t/data/keytab.conf \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/init.t \
-	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t \
-	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t \
+PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
+	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/NetDB.pm		    \
+	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm		    \
+	perl/Wallet/Config.pm perl/Wallet/Database.pm perl/Wallet/Kadmin.pm \
+	perl/Wallet/Kadmin/Heimdal.pm perl/Wallet/Kadmin/MIT.pm		    \
+	perl/Wallet/Object/Base.pm perl/Wallet/Object/File.pm		    \
+	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm		    \
+	perl/Wallet/Server.pm perl/t/acl.t perl/t/admin.t perl/t/config.t   \
+	perl/t/data/README perl/t/data/keytab-fake perl/t/data/keytab.conf  \
+	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/init.t	    \
+	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t	    \
+	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		    \
 	perl/t/verifier.t
 TEST_FILES = tests/TESTS tests/data/README tests/data/allow-extract \
 	tests/data/basic.conf tests/data/cmd-fake tests/data/fake-data \
