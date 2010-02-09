@@ -58,8 +58,13 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     ret = krb5_kt_get_entry(ctx, kt, princ, 0, ENCTYPE_DES_CBC_CRC, &entry);
     if (ret != 0)
         die_krb5(ctx, ret, "error reading DES key from keytab %s", keytab);
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
+    if (entry.keyblock.keyvalue.length != 8)
+        die("invalid DES key length in keytab");
+#else
     if (entry.key.length != 8)
         die("invalid DES key length in keytab");
+#endif
     krb5_kt_close(ctx, kt);
 
     /* Convert the principal to a Kerberos v4 principal. */
@@ -80,9 +85,17 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     length += strlen(realm);
     data[length++] = '\0';
     data[length++] = '\0';
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
+    memcpy(data + length, entry.keyblock.keyvalue.data, 8);
+#else
     memcpy(data + length, entry.key.contents, 8);
+#endif
     length += 8;
+#ifdef HAVE_KRB5_KT_FREE_ENTRY
+    krb5_kt_free_entry(ctx, &entry);
+#else
     krb5_free_keytab_entry_contents(ctx, &entry);
+#endif
 
     /* Write out the srvtab file. */
     write_file(srvtab, data, length);

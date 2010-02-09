@@ -45,6 +45,10 @@ AC_ARG_WITH([wallet-port],
 
 RRA_LIB_REMCTL
 RRA_LIB_KRB5
+RRA_LIB_KRB5_SWITCH
+AC_CHECK_FUNCS([krb5_kt_free_entry])
+AC_CHECK_MEMBERS([krb5_keytab_entry.keyblock], , , [#include <krb5.h>])
+RRA_LIB_KRB5_RESTORE
 RRA_LIB_AFS
 AS_IF([test x"$rra_afs" = xtrue],
     [RRA_LIB_KRB4
