@@ -12,7 +12,7 @@
 . "@abs_top_srcdir@/tests/libtest.sh"
 
 # Print the number of tests.
-total=35
+total=31
 count=1
 echo "$total"
 
