@@ -2,6 +2,14 @@
 
 wallet 0.10 (unreleased)
 
+    Remove kaserver synchronization support.  It is no longer tested, and
+    retaining the code was increasing the complexity of wallet, and some
+    specific requirements (such as different realm names between kaserver
+    and Kerberos v5 and the kvno handling) were Stanford-specific.  Rather
+    than using this support, AFS sites running kaserver will probably find
+    deploying Heimdal with its internal kaserver compatibility is probably
+    an easier transition approach.
+
     Correctly handle storing of data that begins with a dash and don't
     parse it as an argument to wallet-backend.
 

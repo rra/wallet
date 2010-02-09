@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 213;
+use Test::More tests => 125;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -145,24 +145,6 @@ sub enctypes {
     }
     unlink 'keytab';
     return sort @enctypes;
-}
-
-# Given a Wallet::Object::Keytab object, the keytab data, the Kerberos v5
-# principal, and the Kerberos v4 principal, write the keytab to a file,
-# generate a srvtab, and try authenticating using k4start.
-sub valid_srvtab {
-    my ($object, $keytab, $k5, $k4) = @_;
-    open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
-    print KEYTAB $keytab;
-    close KEYTAB;
-    unless ($object->kaserver_srvtab ('keytab', $k5, 'srvtab', $k4)) {
-        warn "cannot write srvtab: ", $object->error, "\n";
-        return 0;
-    }
-    $ENV{KRBTKFILE} = 'krb4cc_temp';
-    system ("k4start -f srvtab $k4 2>&1 >/dev/null </dev/null");
-    unlink 'keytab', 'srvtab', 'krb4cc_temp';
-    return ($? == 0) ? 1 : 0;
 }
 
 # Use Wallet::Admin to set up the database.
@@ -474,55 +456,18 @@ EOO
     is ($one->history, $history, 'History is correct to this point');
 }
 
-# Tests for kaserver synchronization support.
+# Tests for synchronization support.  This code is deactivated at present
+# since no synchronization targets are supported, but we want to still test
+# the basic stub code.
 SKIP: {
     skip 'no keytab configuration', 106 unless -f 't/data/test.keytab';
 
-    # Test the principal mapping.  We can do this without having a kaserver
-    # configuration.  We only need a basic keytab object configuration.  Do
-    # this as white-box testing since we don't want to fill the test realm
-    # with a bunch of random principals.
+    # Test setting synchronization attributes, which can also be done without
+    # configuration.
     my $one = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
     ok (defined ($one), 'Creating wallet/one succeeds');
-    my %princs =
-        (foo                     => 'foo',
-         host                    => 'host',
-         rcmd                    => 'rcmd',
-         'rcmd.foo'              => 'rcmd.foo',
-         'host/foo.example.org'  => 'rcmd.foo',
-         'ident/foo.example.org' => 'ident.foo',
-         'imap/foo.example.org'  => 'imap.foo',
-         'pop/foo.example.org'   => 'pop.foo',
-         'smtp/foo.example.org'  => 'smtp.foo',
-         'service/foo'           => 'service.foo',
-         'foo/bar'               => 'foo.bar');
-    for my $princ (sort keys %princs) {
-        my $result = $princs{$princ};
-        is ($one->kaserver_name ($princ), $result, "Name mapping: $princ");
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), $result,
-            ' with K5 realm');
-        $Wallet::Config::KEYTAB_AFS_REALM = 'AFS.EXAMPLE.ORG';
-        is ($one->kaserver_name ($princ), "$result\@AFS.EXAMPLE.ORG",
-            ' with K4 realm');
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"),
-            "$result\@AFS.EXAMPLE.ORG", ' with K5 and K4 realm');
-        undef $Wallet::Config::KEYTAB_AFS_REALM;
-    }
-    for my $princ (qw{service/foo/bar foo/bar/baz}) {
-        is ($one->kaserver_name ($princ), undef, "Name mapping: $princ");
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), undef,
-            ' with K5 realm');
-        $Wallet::Config::KEYTAB_AFS_REALM = 'AFS.EXAMPLE.ORG';
-        is ($one->kaserver_name ($princ), undef, ' with K4 realm');
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), undef,
-            ' with K5 and K4 realm');
-        undef $Wallet::Config::KEYTAB_AFS_REALM;
-    }
-
-    # Test setting synchronization attributes, which can also be done without
-    # configuration.
     my $expected = <<"EOO";
            Type: keytab
            Name: wallet/one
@@ -537,16 +482,20 @@ EOO
     my @targets = $one->attr ('foo');
     is (scalar (@targets), 0, ' and getting an unknown attribute fails');
     is ($one->error, 'unknown attribute foo', ' with the right error');
-    is ($one->attr ('sync', [ 'foo' ], @trace), undef,
+    is ($one->attr ('sync', [ 'kaserver' ], @trace), undef,
         ' and setting an unknown sync target fails');
-    is ($one->error, 'unsupported synchronization target foo',
+    is ($one->error, 'unsupported synchronization target kaserver',
         ' with the right error');
     is ($one->attr ('sync', [ 'kaserver', 'bar' ], @trace), undef,
         ' and setting two targets fails');
     is ($one->error, 'only one synchronization target supported',
         ' with the right error');
-    is ($one->attr ('sync', [ 'kaserver' ], @trace), 1,
-        ' but setting only kaserver works');
+
+    # Create a synchronization manually so that we can test the display and
+    # removal code.
+    my $sql = "insert into keytab_sync (ks_name, ks_target) values
+        ('wallet/one', 'kaserver')";
+    $dbh->do ($sql);
     @targets = $one->attr ('sync');
     is (scalar (@targets), 1, ' and now one target is set');
     is ($targets[0], 'kaserver', ' and it is correct');
@@ -563,15 +512,10 @@ EOO
     $history .= <<"EOO";
 $date  create
     by $user from $host
-$date  add kaserver to attribute sync
-    by $user from $host
 EOO
     is ($one->history, $history, ' and history is correct for attributes');
-    is ($one->destroy (@trace), undef, 'Destroying wallet/one fails');
-    is ($one->error, 'kaserver synchronization not configured',
-        ' because kaserver support is not configured');
     is ($one->attr ('sync', [], @trace), 1,
-        ' but removing the kaserver sync attribute works');
+        'Removing the kaserver sync attribute works');
     is ($one->destroy (@trace),1, ' and then destroying wallet/one works');
     $history .= <<"EOO";
 $date  remove kaserver from attribute sync
@@ -579,136 +523,7 @@ $date  remove kaserver from attribute sync
 $date  destroy
     by $user from $host
 EOO
-
-    # Set up our configuration.
-    skip 'no AFS kaserver configuration', 34 unless -f 't/data/test.srvtab';
-    skip 'no kaserver support', 34 unless -x '../kasetkey/kasetkey';
-    $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
-    $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
-    $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
-    $Wallet::Config::KEYTAB_KRBTYPE      = contents ('t/data/test.krbtype');
-    $Wallet::Config::KEYTAB_TMP          = '.';
-    $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
-    my $realm = $Wallet::Config::KEYTAB_REALM;
-    my $k5 = "wallet/one\@$realm";
-
-    # Recreate and reconfigure the object.
-    $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
-      };
-    ok (defined ($one), 'Creating wallet/one succeeds');
-    is ($one->attr ('sync', [ 'kaserver' ], @trace), 1,
-        ' and setting the kaserver sync attribute works');
-
-    # Finally, we can test.
-    is ($one->get (@trace), undef, 'Get without configuration fails');
-    is ($one->error, 'kaserver synchronization not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_AFS_ADMIN = contents ('t/data/test.admin');
-    my $k4_realm = $Wallet::Config::KEYTAB_AFS_ADMIN;
-    $k4_realm =~ s/^[^\@]+\@//;
-    $Wallet::Config::KEYTAB_AFS_REALM = $k4_realm;
-    my $k4 = "wallet.one\@$k4_realm";
-    is ($one->get (@trace), undef, ' and still fails with just admin');
-    is ($one->error, 'kaserver synchronization not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_AFS_SRVTAB = 't/data/test.srvtab';
-    my $keytab = $one->get (@trace);
-    if (defined ($keytab)) {
-        ok (1, ' and now get works');
-    } else {
-        is ($one->error, '', ' and now get works');
-    }
-    ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the srvtab is valid');
-    ok (! -f "./srvtab.$$", ' and the temporary file was cleaned up');
-
-    # Now remove the sync attribute and make sure things aren't synced.
-    is ($one->attr ('sync', [], @trace), 1, 'Clearing sync works');
-    @targets = $one->attr ('sync');
-    is (scalar (@targets), 0, ' and now there is no attribute');
-    is ($one->error, undef, ' and no error');
-    my $new_keytab = $one->get (@trace);
-    ok (defined ($new_keytab), ' and get still works');
-    ok (! valid_srvtab ($one, $new_keytab, $k5, $k4),
-        ' but the srvtab does not');
-    ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the old one does');
-    is ($one->destroy (@trace), 1, ' and destroying wallet/one works');
-    ok (valid_srvtab ($one, $keytab, $k5, $k4),
-        ' and the principal is still there');
-
-    # Test KEYTAB_AFS_DESTROY.
-    $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
-      };
-    ok (defined ($one), 'Creating wallet/one succeeds');
-    $Wallet::Config::KEYTAB_AFS_DESTROY = 1;
-    $new_keytab = $one->get (@trace);
-    ok (defined ($new_keytab), ' and get works');
-    ok (! valid_srvtab ($one, $new_keytab, $k5, $k4),
-        ' but the srvtab does not');
-    ok (! valid_srvtab ($one, $keytab, $k5, $k4),
-        ' and now neither does the old one');
-    $Wallet::Config::KEYTAB_AFS_DESTROY = 0;
-
-    # Put it back and make sure it works again.
-    is ($one->attr ('sync', [ 'kaserver' ], @trace), 1, 'Setting sync works');
-    $keytab = $one->get (@trace);
-    ok (defined ($keytab), ' and get works');
-    ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the srvtab is valid');
-    $Wallet::Config::KEYTAB_AFS_KASETKEY = '/path/to/nonexistent/file';
-    $new_keytab = $one->get (@trace);
-    ok (! defined ($new_keytab),
-        ' but it fails if we mess up the kasetkey path');
-    like ($one->error, qr{^cannot synchronize key with kaserver: },
-          ' with the right error message');
-    ok (! -f "keytab.$$", ' and the temporary file was cleaned up');
-    $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
-
-    # Destroy the principal and recreate it and make sure we cleaned up.
-    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
-    ok (! valid_srvtab ($one, $keytab, $k5, $k4),
-        ' and the principal is gone');
-    $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
-      };
-    ok (defined ($one), ' and recreating it succeeds');
-    @targets = $one->attr ('sync');
-    is (scalar (@targets), 0, ' and now there is no attribute');
-    is ($one->error, undef, ' and no error');
-
-    # Now destroy it for good.
-    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
-
-    # Check that history is still correct.
-    $history .= <<"EOO";
-$date  create
-    by $user from $host
-$date  add kaserver to attribute sync
-    by $user from $host
-$date  get
-    by $user from $host
-$date  remove kaserver from attribute sync
-    by $user from $host
-$date  get
-    by $user from $host
-$date  destroy
-    by $user from $host
-$date  create
-    by $user from $host
-$date  get
-    by $user from $host
-$date  add kaserver to attribute sync
-    by $user from $host
-$date  get
-    by $user from $host
-$date  destroy
-    by $user from $host
-$date  create
-    by $user from $host
-$date  destroy
-    by $user from $host
-EOO
-    is ($one->history, $history, 'History is correct to this point');
+    is ($one->history, $history, ' and history is correct for removal');
 }
 
 # Tests for enctype restriction.

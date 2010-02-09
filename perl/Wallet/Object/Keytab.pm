@@ -1,7 +1,8 @@
 # Wallet::Object::Keytab -- Keytab object implementation for the wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2009, 2010
+#     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -24,230 +25,7 @@ use Wallet::Kadmin;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.07';
-
-##############################################################################
-# AFS kaserver synchronization
-##############################################################################
-
-# Given a Kerberos v5 principal name, convert it to a Kerberos v4 principal
-# name.  Returns undef if it can't convert the name for some reason (right
-# now, only if the principal has more than two parts).  Note that this mapping
-# does not guarantee a unique result; multiple hosts in different domains can
-# be mapped to the same Kerberos v4 principal name using this function.
-sub kaserver_name {
-    my ($self, $k5) = @_;
-    my %host = map { $_ => 1 } qw(host ident imap pop smtp);
-    $k5 =~ s/\@.*//;
-    my @parts = split ('/', $k5);
-    if (@parts > 2) {
-        return;
-    } elsif (@parts == 2 and $host{$parts[0]}) {
-        $parts[1] =~ s/\..*//;
-        $parts[0] = 'rcmd' if $parts[0] eq 'host';
-    }
-    my $k4 = join ('.', @parts);
-    if ($Wallet::Config::KEYTAB_AFS_REALM) {
-        $k4 .= '@' . $Wallet::Config::KEYTAB_AFS_REALM;
-    }
-    return $k4;
-}
-
-# Run kasetkey with the given arguments.  Returns true on success and false on
-# failure.  On failure, sets the internal error to the error from kasetkey.
-sub kaserver_kasetkey {
-    my ($self, @args) = @_;
-    my $admin = $Wallet::Config::KEYTAB_AFS_ADMIN;
-    my $admin_srvtab = $Wallet::Config::KEYTAB_AFS_SRVTAB;
-    my $kasetkey = $Wallet::Config::KEYTAB_AFS_KASETKEY;
-    unless ($kasetkey and $admin and $admin_srvtab) {
-        $self->error ('kaserver synchronization not configured');
-        return;
-    }
-    my $pid = open (KASETKEY, '-|');
-    if (not defined $pid) {
-        $self->error ("cannot fork: $!");
-        return;
-    } elsif ($pid == 0) {
-        # Don't use die here; it will get trapped as an exception.  Also be
-        # careful about our database handles.  (We still lose if there's some
-        # other database handle open we don't know about.)
-        $self->{dbh}->{InactiveDestroy} = 1;
-        unless (open (STDERR, '>&STDOUT')) {
-            warn "cannot redirect stderr: $!\n";
-            exit 1;
-        }
-        unless (exec ($kasetkey, '-k', $admin_srvtab, '-a', $admin, @args)) {
-            warn "cannot exec $kasetkey: $!\n";
-            exit 1;
-        }
-    } else {
-        local $/;
-        my $output = <KASETKEY>;
-        close KASETKEY;
-        if ($? != 0) {
-            $output =~ s/\s+\z//;
-            $output =~ s/\n/, /g;
-            $output = ': ' . $output if $output;
-            $self->error ("cannot synchronize key with kaserver$output");
-            return;
-        }
-    }
-    return 1;
-}
-
-# Given a keytab file name, the Kerberos v5 principal that's stored in that
-# keytab, a srvtab file name, and the corresponding Kerberos v4 principal,
-# write out a srvtab file containing the DES key in that keytab.  Fails if
-# there is no DES key in the keytab.
-sub kaserver_srvtab {
-    my ($self, $keytab, $k5, $srvtab, $k4) = @_;
-
-    # Gah.  Someday I will write Perl bindings for Kerberos that are less
-    # broken.
-    eval { require Authen::Krb5 };
-    if ($@) {
-        $self->error ("kaserver synchronization support not available: $@");
-        return;
-    }
-    eval { Authen::Krb5::init_context() };
-    if ($@ and not $@ =~ /^Authen::Krb5 already initialized/) {
-        $self->error ('Kerberos initialization failed');
-        return;
-    }
-    undef $@;
-
-    # Do the interface dance.  We call kt_read_service_key with 0 for the kvno
-    # to get any kvno, which works with MIT Kerberos at least.  Assume a DES
-    # enctype of 1.  This code won't work with any enctype other than
-    # des-cbc-crc.
-    my $princ = Authen::Krb5::parse_name ($k5);
-    unless (defined $princ) {
-        my $error = Authen::Krb5::error();
-        $self->error ("cannot parse $k5: $error");
-        return;
-    }
-    my $key = Authen::Krb5::kt_read_service_key ($keytab, $princ, 0, 1);
-    unless (defined $key) {
-        my $error = Authen::Krb5::error();
-        $self->error ("cannot find des-cbc-crc key in $keytab: $error");
-        return;
-    }
-    unless (open (SRVTAB, '>', $srvtab)) {
-        $self->error ("cannot create $srvtab: $!");
-        return;
-    }
-
-    # srvtab format is nul-terminated name, nul-terminated instance,
-    # nul-terminated realm, single character kvno (which we always set to 0),
-    # and DES keyblock.
-    my ($principal, $realm) = split ('@', $k4);
-    $realm ||= '';
-    my ($name, $inst) = split (/\./, $principal, 2);
-    $inst ||= '';
-    my $data = join ("\0", $name, $inst, $realm);
-    $data .= "\0\0" . $key->contents;
-    print SRVTAB $data;
-    unless (close SRVTAB) {
-        unlink $srvtab;
-        $self->error ("cannot write to $srvtab: $!");
-        return;
-    }
-    return 1;
-}
-
-# Given a principal name and a path to the keytab, synchronizes the key with a
-# principal in an AFS kaserver.  Returns true on success and false on failure.
-# On failure, sets the internal error.
-sub kaserver_sync {
-    my ($self, $principal, $keytab) = @_;
-    if ($Wallet::Config::KEYTAB_REALM) {
-        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    }
-    my $k4 = $self->kaserver_name ($principal);
-    if (not defined $k4) {
-        $self->error ("cannot convert $principal to Kerberos v4");
-        return;
-    }
-    my $srvtab = $Wallet::Config::KEYTAB_TMP . "/srvtab.$$";
-    unless ($self->kaserver_srvtab ($keytab, $principal, $srvtab, $k4)) {
-        return;
-    }
-    unless ($self->kaserver_kasetkey ('-c', $srvtab, '-s', $k4)) {
-        unlink $srvtab;
-        return;
-    }
-    unlink $srvtab;
-    return 1;
-}
-
-# Given a principal name, destroy the corresponding principal in the AFS
-# kaserver.  Returns true on success and false on failure, setting the object
-# error if it fails.
-sub kaserver_destroy {
-    my ($self, $principal) = @_;
-    my $k4 = $self->kaserver_name ($principal);
-    if (not defined $k4) {
-        $self->error ("cannot convert $principal to Kerberos v4");
-        return;
-    }
-    return $self->kaserver_kasetkey ('-D', $k4);
-}
-
-# Set the kaserver sync attribute.  Called by attr().  Returns true on success
-# and false on failure, setting the object error if it fails.
-sub kaserver_set {
-    my ($self, $user, $host, $time) = @_;
-    $time ||= time;
-    my @trace = ($user, $host, $time);
-    my $name = $self->{name};
-    eval {
-        my $sql = "select ks_name from keytab_sync where ks_name = ? and
-            ks_target = 'kaserver'";
-        my $result = $self->{dbh}->selectrow_array ($sql, undef, $name);
-        if ($result) {
-            die "kaserver synchronization already set\n";
-        }
-        $sql = "insert into keytab_sync (ks_name, ks_target)
-            values (?, 'kaserver')";
-        $self->{dbh}->do ($sql, undef, $name);
-        $self->log_set ('type_data sync', undef, 'kaserver', @trace);
-        $self->{dbh}->commit;
-    };
-    if ($@) {
-        $self->error ($@);
-        $self->{dbh}->rollback;
-        return;
-    }
-    return 1;
-}
-
-# Clear the kaserver sync attribute.  Called by attr().  Returns true on
-# success and false on failure, setting the object error if it fails.
-sub kaserver_clear {
-    my ($self, $user, $host, $time) = @_;
-    $time ||= time;
-    my @trace = ($user, $host, $time);
-    my $name = $self->{name};
-    eval {
-        my $sql = "select ks_name from keytab_sync where ks_name = ? and
-            ks_target = 'kaserver'";
-        my $result = $self->{dbh}->selectrow_array ($sql, undef, $name);
-        unless ($result) {
-            die "kaserver synchronization not set\n";
-        }
-        $sql = 'delete from keytab_sync where ks_name = ?';
-        $self->{dbh}->do ($sql, undef, $name);
-        $self->log_set ('type_data sync', 'kaserver', undef, @trace);
-        $self->{dbh}->commit;
-    };
-    if ($@) {
-        $self->error ($@);
-        $self->{dbh}->rollback;
-        return;
-    }
-    return 1;
-}
+$VERSION = '0.08';
 
 ##############################################################################
 # Enctype restriction
@@ -379,9 +157,14 @@ sub keytab_retrieve {
 # Core methods
 ##############################################################################
 
-# Override attr to support setting the enctypes and sync attributes.
+# Override attr to support setting the enctypes and sync attributes.  Note
+# that the sync attribute has no supported targets at present and hence will
+# always return an error, but the code is still here so that it doesn't have
+# to be rewritten once a new sync target is added.
 sub attr {
     my ($self, $attribute, $values, $user, $host, $time) = @_;
+    $time ||= time;
+    my @trace = ($user, $host, $time);
     my %known = map { $_ => 1 } qw(enctypes sync);
     undef $self->{error};
     unless ($known{$attribute}) {
@@ -395,14 +178,25 @@ sub attr {
             if (@$values > 1) {
                 $self->error ('only one synchronization target supported');
                 return;
-            } elsif (@$values and $values->[0] ne 'kaserver') {
+            } elsif (@$values) {
                 my $target = $values->[0];
                 $self->error ("unsupported synchronization target $target");
                 return;
-            } elsif (@$values) {
-                return $self->kaserver_set ($user, $host, $time);
             } else {
-                return $self->kaserver_clear ($user, $host, $time);
+                eval {
+                    my $sql = 'select ks_target from keytab_sync where
+                        ks_name = ?';
+                    my $dbh = $self->{dbh};
+                    my $name = $self->{name};
+                    my ($result) = $dbh->selectrow_array ($sql, undef, $name);
+                    if ($result) {
+                        my $sql = 'delete from keytab_sync where ks_name = ?';
+                        $self->{dbh}->do ($sql, undef, $name);
+                        $self->log_set ('type_data sync', $result, undef,
+                                        @trace);
+                    }
+                    $self->{dbh}->commit;
+                }
             }
         }
     } else {
@@ -511,12 +305,6 @@ sub destroy {
         $self->error ("cannot destroy $id: object is locked");
         return;
     }
-    my @sync = $self->attr ('sync');
-    if (grep { $_ eq 'kaserver' } @sync) {
-        unless ($self->kaserver_destroy ($self->{name})) {
-            return;
-        }
-    }
     eval {
         my $sql = 'delete from keytab_sync where ks_name = ?';
         $self->{dbh}->do ($sql, undef, $self->{name});
@@ -582,15 +370,6 @@ sub get {
         return;
     }
     close KEYTAB;
-    my @sync = $self->attr ('sync');
-    if (grep { $_ eq 'kaserver' } @sync) {
-        unless ($self->kaserver_sync ($self->{name}, $file)) {
-            unlink $file;
-            return;
-        }
-    } elsif ($Wallet::Config::KEYTAB_AFS_DESTROY) {
-        $self->kaserver_destroy ($self->{name});
-    }
     unlink $file;
     $self->log_action ('get', $user, $host, $time);
     return $data;
@@ -646,7 +425,7 @@ methods that are overridden or behave specially for this implementation.
 
 =item attr(ATTRIBUTE [, VALUES, PRINCIPAL, HOSTNAME [, DATETIME]])
 
-Sets or retrieves a given object attribute.  The following attributes are
+Sets or retrieves a given object attribute.  The following attribute is
 supported:
 
 =over 4
@@ -655,39 +434,20 @@ supported:
 
 Restricts the generated keytab to a specific set of encryption types.  The
 values of this attribute must be enctype strings recognized by Kerberos
-(strings like C<aes256-cts> or C<des-cbc-crc>).  Encryption types must also
-be present in the list of supported enctypes stored in the database database
-or the attr() method will reject them.  Note that the salt should not be
-included; since the salt is irrelevant for keytab keys, it will always be
-set to C<normal> by the wallet.
+(strings like C<aes256-cts-hmac-sha1-96> or C<des-cbc-crc>).  Encryption
+types must also be present in the list of supported enctypes stored in the
+database database or the attr() method will reject them.  Note that the
+salt should not be included; since the salt is irrelevant for keytab keys,
+it will always be set to the default by the wallet.
 
-If this attribute is set, the specified enctype list will be passed to
-ktadd when get() is called for that keytab.  If it is not set, the default
-set in the KDC will be used.
+If this attribute is set, the principal will be restricted to that
+specific enctype list when get() is called for that keytab.  If it is not
+set, the default set in the KDC will be used.
 
 This attribute is ignored if the C<unchanging> flag is set on a keytab.
 Keytabs retrieved with C<unchanging> set will contain all keys present in
 the KDC for that Kerberos principal and therefore may contain different
 enctypes than those requested by this attribute.
-
-=item sync
-
-Sets the external systems to which the key of a given principal is
-synchronized.  The only supported value for this attribute is C<kaserver>,
-which says to synchronize the key with an AFS Kerberos v4 kaserver.
-
-If this attribute is set on a keytab, whenever get() is called for that
-keytab, the new DES key will be extracted from that keytab and set in the
-configured AFS kaserver.  The Kerberos v4 principal name will be the same as
-the Kerberos v5 principal name except that the components are separated by
-C<.> instead of C</>; the second component is truncated after the first C<.>
-if the first component is one of C<host>, C<ident>, C<imap>, C<pop>, or
-C<smtp>; and the first component is C<rcmd> if the Kerberos v5 principal
-component is C<host>.  The principal name must not contain more than two
-components.
-
-If this attribute is set, calling destroy() will also destroy the principal
-from the AFS kaserver, with a principal mapping determined as above.
 
 =back
 
@@ -716,11 +476,11 @@ used.
 
 When a new keytab object is created, the Kerberos principal designated by
 NAME is also created in the Kerberos realm determined from the wallet
-configuration.  If the principal already exists, create() still succeeds (so
-that a previously unmanaged principal can be imported into the wallet).
-Otherwise, if the Kerberos principal could not be created, create() fails.
-The principal is created with the C<-randkey> option to randomize its keys.
-NAME must not contain the realm; instead, the KEYTAB_REALM configuration
+configuration.  If the principal already exists, create() still succeeds
+(so that a previously unmanaged principal can be imported into the
+wallet).  Otherwise, if the Kerberos principal could not be created,
+create() fails.  The principal is created with the randomized keys.  NAME
+must not contain the realm; instead, the KEYTAB_REALM configuration
 variable should be set.  See Wallet::Config(3) for more information.
 
 If create() fails, it throws an exception.
@@ -738,18 +498,14 @@ destroying the object.  If DATETIME isn't given, the current time is used.
 
 =item get(PRINCIPAL, HOSTNAME [, DATETIME])
 
-Retrieves a keytab for this object and returns the keytab data or undef
-on error.  The caller should call error() to get the error message if
-get() returns undef.  The keytab is created with C<ktadd>, invalidating
-any existing keytabs for that principal, unless the unchanging flag is set
-on the object.  PRINCIPAL, HOSTNAME, and DATETIME are stored as history
-information.  PRINCIPAL should be the user who is downloading the keytab.
-If DATETIME isn't given, the current time is used.
-
-If the configuration variable $KEYTAB_AFS_DESTROY is set and the C<sync>
-attribute is not set to C<kaserver>, calling get() on a keytab object will
-cause the corresponding Kerberos v4 principal to be destroyed.  This
-variable is not set by default.
+Retrieves a keytab for this object and returns the keytab data or undef on
+error.  The caller should call error() to get the error message if get()
+returns undef.  The keytab is created with new randomized keys,
+invalidating any existing keytabs for that principal, unless the
+unchanging flag is set on the object.  PRINCIPAL, HOSTNAME, and DATETIME
+are stored as history information.  PRINCIPAL should be the user who is
+downloading the keytab.  If DATETIME isn't given, the current time is
+used.
 
 =back
 
@@ -767,15 +523,14 @@ of the current process.  The file is unlinked after being read.
 
 =head1 LIMITATIONS
 
-Currently, this implementation only supports MIT Kerberos and needs
-modifications to support Heimdal.  It calls an external B<kadmin> program
-rather than using a native Perl module and therefore requires B<kadmin> be
-installed and parses its output.  It may miss some error conditions if the
-output of B<kadmin> ever changes.
+Currently, when used with MIT Kerberos, this implementation calls an
+external B<kadmin> program rather than using a native Perl module and
+therefore requires B<kadmin> be installed and parses its output.  It may
+miss some error conditions if the output of B<kadmin> ever changes.
 
 Only one Kerberos realm is supported for a given wallet implementation and
-all keytab objects stored must be in that realm.  Keytab names in the wallet
-database do not have realm information.
+all keytab objects stored must be in that realm.  Keytab names in the
+wallet database do not have realm information.
 
 =head1 SEE ALSO
 

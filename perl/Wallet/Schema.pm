@@ -1,7 +1,7 @@
 # Wallet::Schema -- Database schema for the wallet system.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -20,7 +20,7 @@ use DBI;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 ##############################################################################
 # Data manipulation
@@ -372,12 +372,12 @@ change was made.
 
 =head2 Keytab Backend Data
 
-The keytab backend supports synchronizing keys with an external system.  The
-permitted external systems are listed in a normalization table:
+The keytab backend has stub support for synchronizing keys with an
+external system, although no external systems are currently supported.
+The permitted external systems are listed in a normalization table:
 
   create table sync_targets
      (st_name             varchar(255) primary key);
-  insert into sync_targets (st_name) values ('kaserver');
 
 and then the synchronization targets for a given keytab are stored in this
 table:
