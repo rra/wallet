@@ -50,6 +50,19 @@ wallet 0.10 (unreleased)
     implementation than the wallet client.  This primarily helps with
     testing.
 
+    Update to rra-c-util 3.0:
+
+    * Sanity-check the results of krb5-config before proceeding.
+    * Fall back on manual probing if krb5-config results don't work.
+    * Add --with-krb5-include and --with-krb5-lib configure options.
+    * Add --with-remctl-include and --with-remctl-lib configure options.
+    * Add --with-gssapi-include and --with-gssapi-lib configure options.
+    * Don't break if the user clobbers CPPFLAGS at build time.
+    * Suppress error output from krb5-config probes.
+    * Prefer KRB5_CONFIG over a path constructed from --with-*.
+    * Update GSS-API probes for Solaris 10's native implementation.
+    * Change AC_TRY_* to AC_*_IFELSE as recommended by Autoconf.
+
 wallet 0.9 (2008-04-24)
 
     The wallet command-line client now reads the data for store from a

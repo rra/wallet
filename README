@@ -3,9 +3,10 @@
 
                 Written by Russ Allbery <rra@stanford.edu>
 
-  Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr.
-  University.  This software is distributed under a BSD-style license.
-  Please see the file LICENSE in the distribution for more information.
+  Copyright 2006, 2007, 2008, 2009, 2010 Board of Trustees, Leland
+  Stanford Jr. University.  This software is distributed under a BSD-style
+  license.  Please see the file LICENSE in the distribution for more
+  information.
 
   This software is beta-quality and should be treated with caution.  It is
   currently being tested for production deployment at Stanford.
@@ -159,9 +160,9 @@ BUILD AND INSTALLATION
 
   If remctl was installed in a path not normally searched by your
   compiler, you must specify its installation prefix to configure with the
-  --with-remctl=DIR option.  If the GSS-API libraries used by remctl
-  aren't in a path normally searched by your compiler, you must generally
-  also specify its installation prefix with the --with-gssapi=DIR option.
+  --with-remctl=DIR option, or alternately set the path to the include
+  files and libraries separately with --with-remctl-include=DIR and
+  --with-remctl-lib=DIR.
 
   Normally, configure will use krb5-config to determine the flags to use
   to compile with your Kerberos libraries.  If krb5-config isn't found, it
@@ -170,9 +171,16 @@ BUILD AND INSTALLATION
   path is not the one corresponding to the Kerberos libraries you want to
   use or if your Kerberos libraries and includes aren't in a location
   searched by default by your compiler, you need to specify
-  --with-krb5=PATH:
+  --with-krb5=PATH and --with-gssapi=PATH:
 
-      ./configure --with-krb5=/usr/pubsw
+      ./configure --with-krb5=/usr/pubsw --with-gssapi=/usr/pubsw
+
+  You can also individually set the paths to the include directory and the
+  library directory with --with-krb5-include, --with-krb5-lib,
+  --with-gssapi-include, and --with-gssapi-lib.  You may need to do this
+  if Autoconf can't figure out whether to use lib, lib32, or lib64 on your
+  platform.  Note that these settings aren't used if a krb5-config script
+  is found.
 
   To specify a particular krb5-config script to use, either set the
   KRB5_CONFIG environment variable or pass it to configure like:
@@ -183,18 +191,6 @@ BUILD AND INSTALLATION
   krb5-config script on your path, set KRB5_CONFIG to a nonexistent path:
 
       ./configure KRB5_CONFIG=/nonexistent
-
-  To build with AFS kaserver synchronization support, pass --with-kaserver
-  to configure.  You may need to include the path to the AFS include files
-  and libraries, such as:
-
-      ./configure --with-kaserver=/usr/afsws
-
-  The AFS kaserver support also requires Kerberos v4 libraries and tries
-  to use krb5-config to find such libraries.  If your Kerberos v4
-  libraries aren't somewhere found by your compiler and the krb5-config
-  script doesn't produce correct results, you need to specify
-  --with-krb4=PATH giving the root path of the Kerberos v4 installation.
 
   You can build wallet in a different directory from the source if you
   wish.  To do this, create a new empty directory, cd to that directory,
@@ -228,10 +224,7 @@ TESTING
       perl/t/data/README
 
   and follow the instructions in those files to enable the full test
-  suite.  Note that testing the AFS kaserver requires creating a srvtab
-  with ADMIN access to a running AFS kaserver; if you don't care about AFS
-  kaserver synchronization, you may want to skip that part of the test
-  suite configuration.
+  suite.
 
   The test suite also requires some additional software be installed that
   isn't otherwise used by the wallet.  See REQUIREMENTS above for the full
