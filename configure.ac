@@ -49,13 +49,6 @@ RRA_LIB_KRB5_SWITCH
 AC_CHECK_FUNCS([krb5_kt_free_entry])
 AC_CHECK_MEMBERS([krb5_keytab_entry.keyblock], , , [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
-RRA_LIB_AFS
-AS_IF([test x"$rra_afs" = xtrue],
-    [RRA_LIB_KRB4
-     RRA_LIB_AFS_SWITCH
-     AC_CHECK_DECLS([ubik_Call], , , [#include <ubik.h>])
-     RRA_LIB_AFS_RESTORE])
-AM_CONDITIONAL([AFS], [test x"$rra_afs" = xtrue])
 
 AC_ARG_VAR([REMCTLD], [Path to the remctld binary])
 AC_PATH_PROG([REMCTLD], [remctld], , [$PATH:/usr/sbin:/usr/local/sbin])
