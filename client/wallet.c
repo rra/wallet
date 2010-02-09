@@ -260,5 +260,7 @@ main(int argc, char *argv[])
     }
     remctl_close(r);
     krb5_free_context(ctx);
+    if (options.user != NULL)
+        kdestroy();
     exit(status);
 }

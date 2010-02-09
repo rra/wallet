@@ -6,7 +6,7 @@
  * client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
  */
 
 #include <config.h>
@@ -16,9 +16,6 @@
 
 #include <client/internal.h>
 #include <util/util.h>
-
-/* The memory cache used for wallet authentication. */
-#define CACHE_NAME "MEMORY:wallet"
 
 
 /*
@@ -34,6 +31,8 @@ kinit(krb5_context ctx, const char *principal)
     krb5_creds creds;
     krb5_get_init_creds_opt opts;
     krb5_error_code status;
+    char cache_name[] = "/tmp/krb5cc_wallet_XXXXXX";
+    int fd;
 
     /* Obtain a TGT. */
     status = krb5_parse_name(ctx, principal, &princ);
@@ -46,18 +45,38 @@ kinit(krb5_context ctx, const char *principal)
     if (status != 0)
         die_krb5(ctx, status, "authentication failed");
 
-    /* Put the new credentials into a memory cache. */
-    status = krb5_cc_resolve(ctx, CACHE_NAME, &ccache);
+    /* Put the new credentials into a ticket cache. */
+    fd = mkstemp(cache_name);
+    if (fd < 0)
+        sysdie("cannot create temporary ticket cache", cache_name);
+    status = krb5_cc_resolve(ctx, cache_name, &ccache);
     if (status != 0)
-        die_krb5(ctx, status, "cannot create cache %s", CACHE_NAME);
+        die_krb5(ctx, status, "cannot create cache %s", cache_name);
     status = krb5_cc_initialize(ctx, ccache, princ);
     if (status != 0)
-        die_krb5(ctx, status, "cannot initialize cache %s", CACHE_NAME);
+        die_krb5(ctx, status, "cannot initialize cache %s", cache_name);
     krb5_free_principal(ctx, princ);
     status = krb5_cc_store_cred(ctx, ccache, &creds);
     if (status != 0)
         die_krb5(ctx, status, "cannot store credentials");
     krb5_cc_close(ctx, ccache);
-    if (putenv((char *) "KRB5CCNAME=" CACHE_NAME) != 0)
+    close(fd);
+    if (setenv("KRB5CCNAME", cache_name, 1) < 0)
         sysdie("cannot set KRB5CCNAME");
+}
+
+
+/*
+ * Clean up the temporary ticket cache created by kinit().
+ */
+void
+kdestroy(void)
+{
+    const char *cache;
+
+    cache = getenv("KRB5CCNAME");
+    if (cache == NULL)
+        die("cannot destroy temporary ticket cache: KRB5CCNAME is not set");
+    if (unlink(cache) < 0)
+        sysdie("cannot destroy temporary ticket cache");
 }

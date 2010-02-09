@@ -2,9 +2,6 @@
 
 Release 0.10:
 
-* Switch to using a disk cache in case the wallet client and libremctl are
-  built against different versions of Kerberos.
-
 * Remove stub fork hook from Wallet::Kadmin::MIT.
 
 * Handle unchanging support for Heimdal.

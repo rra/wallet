@@ -22,10 +22,11 @@ BEGIN_DECLS
 
 /*
  * Given a Kerberos context and a principal name, obtain Kerberos credentials
- * for that principal and store them in a memory cache for use by later
- * operations.
+ * for that principal and store them in a temporary ticket cache for use by
+ * later operations.  kdestroy() then cleans up that cache.
  */
 void kinit(krb5_context, const char *principal);
+void kdestroy(void);
 
 /*
  * Given a remctl object, run a remctl command.  If data is non-NULL, saves
