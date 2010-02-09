@@ -63,7 +63,7 @@ Wallet::Kadmin - Kadmin module wrapper for wallet keytabs
 
     my $kadmin = Wallet::Kadmin->new ();
     $kadmin->addprinc ("host/shell.example.com");
-    $kadmin->ktadd ("host/shell.example.com", "aes256-cts");
+    $kadmin->ktadd ("host/shell.example.com", "aes256-cts-hmac-sha1-96");
     my $exists = $kadmin->exists ("host/oldshell.example.com");
     $kadmin->delprinc ("host/oldshell.example.com") if $exists;
 

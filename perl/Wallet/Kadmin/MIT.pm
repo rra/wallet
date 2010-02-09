@@ -2,7 +2,8 @@
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Pulled into a module by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2007, 2008, 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2009, 2010
+#     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -233,7 +234,7 @@ Wallet::Kadmin::MIT - MIT admin interactions for wallet keytabs
 
     my $kadmin = Wallet::Kadmin::MIT->new ();
     $kadmin->addprinc ("host/shell.example.com");
-    $kadmin->ktadd ("host/shell.example.com", "aes256-cts");
+    $kadmin->ktadd ("host/shell.example.com", "aes256-cts-hmac-sha1-96");
     my $exists = $kadmin->exists ("host/oldshell.example.com");
     $kadmin->delprinc ("host/oldshell.example.com") if $exists;
 
@@ -277,10 +278,11 @@ reality.
 
 =item ktadd(PRINCIPAL, FILE, ENCTYPES)
 
-Creates a new keytab for the given principal, as the given file, limited to
-the enctypes supplied.  The enctype values must be enctype strings recognized
-by Kerberos (strings like C<aes256-cts> or C<des-cbc-crc>).  An error is
-thrown on failure or if the creation fails, otherwise true is returned.
+Creates a new keytab for the given principal, as the given file, limited
+to the enctypes supplied.  The enctype values must be enctype strings
+recognized by Kerberos (strings like C<aes256-cts-hmac-sha1-96> or
+C<des-cbc-crc>).  An error is thrown on failure or if the creation fails,
+otherwise true is returned.
 
 =back
 

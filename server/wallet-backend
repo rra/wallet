@@ -558,9 +558,9 @@ Keytab objects support the following attributes:
 
 Restricts the generated keytab to a specific set of encryption types.  The
 values of this attribute must be enctype strings recognized by Kerberos
-(strings like C<aes256-cts> or C<des-cbc-crc>).  Note that the salt should
-not be included; since the salt is irrelevant for keytab keys, it will
-always be set to C<normal> by the wallet.
+(strings like C<aes256-cts-hmac-sha1-96> or C<des-cbc-crc>).  Note that
+the salt should not be included; since the salt is irrelevant for keytab
+keys, it will always be set to C<normal> by the wallet.
 
 If this attribute is set, the specified enctype list will be passed to ktadd
 when get() is called for that keytab.  If it is not set, the default set in
