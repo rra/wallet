@@ -34,8 +34,7 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	config/keytab config/keytab.acl config/wallet docs/design \
 	contrib/README contrib/wallet-report contrib/wallet-report.8 \
 	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
-	docs/setup examples/stanford.conf kasetkey/README \
-	kasetkey/kasetkey.pod $(PERL_FILES) $(TEST_FILES)
+	docs/setup examples/stanford.conf $(PERL_FILES) $(TEST_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c portable/macros.h \
@@ -58,15 +57,6 @@ client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
 dist_man_MANS = client/wallet.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8
 
-if AFS
-sbin_PROGRAMS = kasetkey/kasetkey
-kasetkey_kasetkey_CPPFLAGS = $(AFS_CPPFLAGS) $(KRB4_CPPFLAGS)
-kasetkey_kasetkey_LDFLAGS = $(AFS_LDFLAGS) $(KRB4_LDFLAGS)
-kasetkey_kasetkey_LDADD = util/libutil.a portable/libportable.a $(AFS_LIBS) \
-	$(KRB4_LIBS)
-dist_man_MANS += kasetkey/kasetkey.8
-endif
-
 $(srcdir)/client/wallet.1: $(srcdir)/client/wallet.pod
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
 	    --section=1 $(srcdir)/client/wallet.pod > $@
@@ -74,10 +64,6 @@ $(srcdir)/client/wallet.1: $(srcdir)/client/wallet.pod
 $(srcdir)/contrib/wallet-report.8: $(srcdir)/contrib/wallet-report
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
 	    --section=8 $(srcdir)/contrib/wallet-report > $@
-
-$(srcdir)/kasetkey/kasetkey.8: $(srcdir)/kasetkey/kasetkey.pod
-	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=8 $(srcdir)/kasetkey/kasetkey.pod > $@
 
 $(srcdir)/server/keytab-backend.8: $(srcdir)/server/keytab-backend
 	pod2man --release=$(VERSION) --center="Administrative Commands" \
@@ -104,10 +90,10 @@ warnings:
 
 # Remove some additional files.
 DISTCLEANFILES = perl/Makefile
-MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~ \
-	configure client/wallet.1 kasetkey/kasetkey.8 \
-	server/keytab-backend.8	server/wallet-backend.8 tools/compile \
-	tools/depcomp tools/install-sh tools/missing
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	     \
+	configure client/wallet.1 server/keytab-backend.8		     \
+	server/wallet-backend.8 tools/compile tools/depcomp tools/install-sh \
+	tools/missing
 
 # Take appropriate actions in the Perl directory as well.  We don't want to
 # always build the Perl directory in all-local, since otherwise Automake does

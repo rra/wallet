@@ -16,6 +16,8 @@ wallet 0.10 (unreleased)
     deploying Heimdal with its internal kaserver compatibility is probably
     an easier transition approach.
 
+    Remove the kasetkey client for setting keys in an AFS kaserver.
+
     Correctly handle storing of data that begins with a dash and don't
     parse it as an argument to wallet-backend.
 
