@@ -3,16 +3,17 @@
 # t/keytab.t -- Tests for the keytab object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2009, 2010
+#     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 212
-;
+use Test::More tests => 212;
 
 use Wallet::Admin;
 use Wallet::Config;
+use Wallet::Kadmin;
 use Wallet::Object::Keytab;
 
 use lib 't/lib';
@@ -57,37 +58,16 @@ sub system_quiet {
 # been set up.
 sub create {
     my ($principal) = @_;
-    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
-        my @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
-                    '-t', $Wallet::Config::KEYTAB_FILE,
-                    '-r', $Wallet::Config::KEYTAB_REALM,
-                    '-q', "addprinc -clearpolicy -randkey $principal");
-    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
-        @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL,
-                 '-K', $Wallet::Config::KEYTAB_FILE,
-                 '-r', $Wallet::Config::KEYTAB_REALM,
-                 'add', $principal);
-    }
-    system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args);
+    my $kadmin = Wallet::Kadmin->new;
+    return $kadmin->addprinc ($principal);
 }
 
 # Destroy a principal out of Kerberos.  Only usable once the configuration has
 # been set up.
 sub destroy {
     my ($principal) = @_;
-    my (@args);
-    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
-        @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
-                 '-t', $Wallet::Config::KEYTAB_FILE,
-                 '-r', $Wallet::Config::KEYTAB_REALM,
-                 '-q', "delprinc -force $principal");
-    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
-        @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL,
-                 '-K', $Wallet::Config::KEYTAB_FILE,
-                 '-r', $Wallet::Config::KEYTAB_REALM,
-                 'delete', $principal);
-    }
-    system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args);
+    my $kadmin = Wallet::Kadmin->new;
+    return $kadmin->delprinc ($principal);
 }
 
 # Check whether a principal exists.  MIT uses kvno and Heimdal uses kgetcred.
