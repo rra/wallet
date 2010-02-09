@@ -88,12 +88,13 @@ REQUIREMENTS
   Perl module, which comes with recent versions of Perl and is available
   on CPAN for older versions.
 
-  The keytab support in the wallet server requires the kadmin client
-  program be installed and currently assumes that it follows the syntax of
-  the MIT Kerberos kadmin client.  It also requires that the wallet server
-  have a keytab for a principal with appropriate access to create, modify,
-  and delete principals from the KDC (as configured in kadm5.acl on an MIT
-  Kerberos KDC).
+  The keytab support in the wallet server supports either Heimdal or MIT
+  Kerberos KDCs.  The Heimdal support requires the Heimdal::Kadm5 Perl
+  module.  The MIT Kerberos support requires the MIT Kerberos kadmin
+  client program be installed.  In either case, wallet also requires that
+  the wallet server have a keytab for a principal with appropriate access
+  to create, modify, and delete principals from the KDC (as configured in
+  kadm5.acl on an MIT Kerberos KDC).
 
   To support the unchanging flag on keytab objects, the Net::Remctl Perl
   module (shipped with remctl) must be installed on the server and the
@@ -105,11 +106,6 @@ REQUIREMENTS
   To support the NetDB ACL verifier (only of interest at sites using NetDB
   to manage DNS), the Net::Remctl Perl  module must be installed on the
   server.
-
-  To support synchronization with an AFS kaserver, the server must have
-  the Authen::Krb5 Perl module installed.  AFS kaserver synchronization
-  support also requires building kasetkey, which requires AFS and Kerberos
-  v4 libraries.
 
   To run the test suite, you must have Perl 5.8 or later and the Perl DBI
   module installed.  You will also need a DBD module installed for the

@@ -1,7 +1,7 @@
 # Wallet::Kadmin -- Kadmin module wrapper for the wallet.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -34,14 +34,15 @@ sub new {
     my ($kadmin);
     if (not $Wallet::Config::KEYTAB_KRBTYPE) {
         die "keytab object implementation not configured\n";
-    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+    } elsif (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'mit') {
         require Wallet::Kadmin::MIT;
         $kadmin = Wallet::Kadmin::MIT->new;
-    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+    } elsif (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'heimdal') {
         require Wallet::Kadmin::Heimdal;
         $kadmin = Wallet::Kadmin::Heimdal->new;
     } else {
-        die "keytab krb server type not set to a valid value\n";
+        my $type = $Wallet::Config::KEYTAB_KRBTYPE;
+        die "unknown KEYTAB_KRBTYPE setting: $type\n";
     }
 
     return $kadmin;

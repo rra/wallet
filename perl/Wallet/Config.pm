@@ -250,6 +250,15 @@ default PATH.
 
 our $KEYTAB_KADMIN = 'kadmin';
 
+=item KEYTAB_KRBTYPE
+
+The Kerberos KDC implementation type, either C<Heimdal> or C<MIT>
+(case-insensitive).  KEYTAB_KRBTYPE must be set to use keytab objects.
+
+=cut
+
+our $KEYTAB_KRBTYPE;
+
 =item KEYTAB_PRINCIPAL
 
 The principal whose key is stored in KEYTAB_FILE.  The wallet will

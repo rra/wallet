@@ -2,6 +2,12 @@
 
 wallet 0.10 (unreleased)
 
+    Add support for Heimdal KDCs as well as MIT Kerberos KDCs.  There is
+    now a mandatory new setting in Wallet::Config: $KEYTAB_KRBTYPE.  It
+    should be set to either "MIT" or "Heimdal" depending on the Kerberos
+    KDC implementation used.  The Heimdal support requires the
+    Heimdal::Kadm5 Perl module.
+
     Remove kaserver synchronization support.  It is no longer tested, and
     retaining the code was increasing the complexity of wallet, and some
     specific requirements (such as different realm names between kaserver
@@ -27,8 +33,6 @@ wallet 0.10 (unreleased)
     on owner ACLs for matching objects.
 
     Report ACL names as well as numbers in object history.
-
-    Add support for Heimdal KDCs as well as MIT Kerberos KDCs.
 
 wallet 0.9 (2008-04-24)
 
