@@ -116,19 +116,22 @@ sub enctypes {
     close KEYTAB;
 
     my @enctypes;
-    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
-        open (KLIST, '-|', 'klist', '-ke', 'keytab')
-            or die "cannot run klist: $!\n";
-        local $_;
-        while (<KLIST>) {
-            next unless /^ *\d+ /;
-            my ($string) = /\((.*)\)\s*$/;
-            next unless $string;
-            $enctype = $enctype{lc $string} || 'UNKNOWN';
-            push (@enctypes, $enctype);
-        }
-        close KLIST;
-    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+    open (KLIST, '-|', 'klist', '-ke', 'keytab')
+        or die "cannot run klist: $!\n";
+    local $_;
+    while (<KLIST>) {
+        next unless /^ *\d+ /;
+        my ($string) = /\((.*)\)\s*$/;
+        next unless $string;
+        $enctype = $enctype{lc $string} || 'UNKNOWN';
+        push (@enctypes, $enctype);
+    }
+    close KLIST;
+
+    # If that failed, we may have a Heimdal user space instead, so try ktutil.
+    # If we try this directly, it will just hang with MIT ktutil.
+    if ($? != 0) {
+        @enctypes = ();
         open (KTUTIL, '-|', 'ktutil', '-k', 'keytab', 'list')
             or die "cannot run ktutil: $!\n";
         local $_;
@@ -227,9 +230,14 @@ SKIP: {
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/two', $dbh, @trace)
       };
-    ok (defined ($object), 'Creating an existing principal succeeds');
+    if (defined ($object)) {
+        ok (defined ($object), 'Creating an existing principal succeeds');
+    } else {
+        is ($@, '', 'Creating an existing principal succeeds');
+    }
     ok ($object->isa ('Wallet::Object::Keytab'), ' and is the right class');
     is ($object->destroy (@trace), 1, ' and destroying it succeeds');
+    is ($object->error, undef, ' with no error message');
     ok (! created ('wallet/two'), ' and now it does not exist');
     my @name = qw(keytab wallet-test/one);
     $object = eval { Wallet::Object::Keytab->create (@name, $dbh, @trace) };
