@@ -2,7 +2,6 @@ client/basic
 client/full
 client/pod
 client/prompt
-kasetkey/basic
 portable/asprintf
 portable/snprintf
 portable/strlcat
