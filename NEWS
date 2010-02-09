@@ -18,6 +18,14 @@ wallet 0.10 (unreleased)
 
     Remove the kasetkey client for setting keys in an AFS kaserver.
 
+    The wallet client no longer enables kaserver synchronization when a
+    srvtab is requested with -S.  Instead, it just extracts the DES key
+    from the keytab and writes it to a srvtab.  It no longer forces the
+    kvno of the srvtab to 0 (a Stanford-specific action) and instead
+    preserves the kvno from the key in the keytab.  This should now do the
+    right thing for sites that use a KDC that serves both Kerberos v4 and
+    Kerberos v5 from the same database.
+
     Correctly handle storing of data that begins with a dash and don't
     parse it as an argument to wallet-backend.
 

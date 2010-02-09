@@ -4,7 +4,7 @@
 # the client test suite.  It doesn't test any of the wallet server code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 # See LICENSE for licensing terms.
 
 command="$1"
@@ -17,55 +17,6 @@ if [ "$type" != "keytab" ] && [ "$type" != "file" ] ; then
 fi
 
 case "$command" in
-getattr)
-    if [ -n "$3" ] ; then
-        echo "Too many arguments" >&2
-        exit 1
-    fi
-    if [ "$type" != "keytab" ] || [ "$2" != sync ] ; then
-        echo "Unknown attribute $2" >&2
-        exit 1
-    fi
-    case "$1" in
-    service/fake-srvtab)
-        if [ -f sync-kaserver ] ; then
-            echo "kaserver"
-        fi
-        ;;
-    *)
-        echo "Looking at sync attribute of wrong keytab" >&2
-        exit 1
-        ;;
-    esac
-    ;;
-setattr)
-    if [ -n "$4" ] ; then
-        echo "Too many arguments" >&2
-        exit 1
-    fi
-    if [ "$type" != "keytab" ] || [ "$2" != sync ] ; then
-        echo "Unknown attribute $2" >&2
-        exit 1
-    fi
-    case "$1" in
-    service/fake-srvtab)
-        if [ "$3" = "kaserver" ] ; then
-            touch sync-kaserver
-        else
-            if [ "$3" = "" ] ; then
-                rm sync-kaserver
-            else
-                echo "Invalid attribute value $3" >&2
-                exit 1
-            fi
-        fi
-        ;;
-    *)
-        echo "Looking at sync attribute of wrong keytab" >&2
-        exit 1
-        ;;
-    esac
-    ;;
 check)
     if [ -n "$2" ] ; then
         echo "Too many arguments" >&2

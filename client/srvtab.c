@@ -2,7 +2,7 @@
  * Implementation of srvtab handling for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
@@ -27,10 +27,6 @@
  * string), and a keytab file name, extract the des-cbc-crc key from that
  * keytab and write it to the newly created srvtab file as a srvtab.  Convert
  * the principal from Kerberos v5 form to Kerberos v4 form.
- *
- * We always force the kvno to 0 for the srvtab.  This works with how the
- * wallet synchronizes keys with kasetkey, even though it's not particularly
- * correct.
  *
  * On any failure, print an error message to standard error and then exit.
  */
@@ -84,7 +80,7 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     strcpy(data + length, realm);
     length += strlen(realm);
     data[length++] = '\0';
-    data[length++] = '\0';
+    data[length++] = (unsigned char) entry.vno;
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
     memcpy(data + length, entry.keyblock.keyvalue.data, 8);
 #else

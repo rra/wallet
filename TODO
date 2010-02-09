@@ -67,16 +67,6 @@ Release 1.0:
   an ACL without having to write it into the database.  Redo default ACL
   creation using that functionality.
 
-* The wallet client currently sets sync kaserver whenever writing a keytab
-  to a srvtab.  This is correct for sites using kaserver and wrong for
-  everyone else.  Remove or rethink this once Stanford's kaserver
-  migration is over.
-
-* The wallet client currently hard-codes a kvno of 0 in srvtabs, which is
-  correct for how kasetkey works but probably isn't correct for people
-  using Heimdal or MIT to serve both K4 and K5 from the same KDC.  Rethink
-  once Stanford's kaserver migration is over.
-
 * Add a hook to enforce ACL naming standards.
 
 Future work:

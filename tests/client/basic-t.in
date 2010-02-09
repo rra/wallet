@@ -3,7 +3,8 @@
 # Test suite for the wallet command-line client.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008, 2010
+#     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -46,10 +47,10 @@ if [ ! -f data/pid ] ; then
     exit 1
 fi
 
-# We need a modified krb5.conf file for the srvtab test to work, since we need
-# to add a v4_realm setting for the test-k5.stanford.edu realm that the keytab
-# is for.  Despite all the Stanford hard-coding, this test isn't
-# Stanford-specific.  It just matches the data files shipped with the package.
+# We need a modified krb5.conf file to test wallet configuration settings in
+# krb5.conf.  Despite the hard-coding of test-k5.stanford.edu, this test isn't
+# Stanford-specific; it just matches the files that are distributed with the
+# package.
 krb5conf=
 for p in /etc/krb5.conf /usr/local/etc/krb5.conf data/krb5.conf ; do
     if [ -r "$p" ] ; then
@@ -63,7 +64,7 @@ for p in /etc/krb5.conf /usr/local/etc/krb5.conf data/krb5.conf ; do
 
 [realms]
     test-k5.stanford.edu = {
-        v4_realm = TEST.STANFORD.EDU
+        v4_realm = test-k5.stanford.edu
     }
 EOF
         KRB5_CONFIG="./krb5.conf"
@@ -77,8 +78,7 @@ if [ -z "$krb5conf" ] ; then
 fi
 
 # Make sure everything's clean.
-rm -f output output.bak keytab keytab.bak srvtab srvtab.bak sync-kaserver \
-    autocreated
+rm -f output output.bak keytab keytab.bak srvtab srvtab.bak autocreated
 
 # Now, we can finally run our tests.  First, basic operations.
 runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
@@ -139,11 +139,6 @@ if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
 else
     printcount "not ok"
 fi
-if [ ! -f sync-kaserver ] ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
 
 # Test srvtab support.
 runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
@@ -153,20 +148,9 @@ else
     printcount "not ok"
 fi
 rm keytab
-if [ -f sync-kaserver ] ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
 runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
 if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
     printcount "ok"
-else
-    printcount "not ok"
-fi
-if [ -f sync-kaserver ] ; then
-    printcount "ok"
-    rm sync-kaserver
 else
     printcount "not ok"
 fi
@@ -196,12 +180,6 @@ fi
 # Test srvtab download into a merged keytab with an older version.
 cp data/fake-keytab-old keytab
 runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
-if [ -f sync-kaserver ] ; then
-    printcount "ok"
-    rm sync-kaserver
-else
-    printcount "not ok"
-fi
 if cmp srvtab data/fake-srvtab >/dev/null 2>&1 ; then
     printcount "ok"
 else
