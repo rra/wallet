@@ -57,26 +57,6 @@ client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
 dist_man_MANS = client/wallet.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8
 
-$(srcdir)/client/wallet.1: $(srcdir)/client/wallet.pod
-	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=1 $(srcdir)/client/wallet.pod > $@
-
-$(srcdir)/contrib/wallet-report.8: $(srcdir)/contrib/wallet-report
-	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=8 $(srcdir)/contrib/wallet-report > $@
-
-$(srcdir)/server/keytab-backend.8: $(srcdir)/server/keytab-backend
-	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=8 $(srcdir)/server/keytab-backend > $@
-
-$(srcdir)/server/wallet-admin.8: $(srcdir)/server/wallet-admin
-	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=8 $(srcdir)/server/wallet-admin > $@
-
-$(srcdir)/server/wallet-backend.8: $(srcdir)/server/wallet-backend
-	pod2man --release=$(VERSION) --center="Administrative Commands" \
-	    --section=8 $(srcdir)/server/wallet-backend > $@
-
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
 # without optimization turned on, and add -DDEBUG=1 so we'll also compile all
 # debugging code and test it.
