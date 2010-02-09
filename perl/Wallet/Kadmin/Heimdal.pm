@@ -39,6 +39,15 @@ sub error {
     return $self->{error};
 }
 
+# Add the realm to the end of the principal if no realm is currently present.
+sub canonicalize_principal {
+    my ($self, $principal) = @_;
+    if ($Wallet::Config::KEYTAB_REALM && $principal !~ /\@/) {
+        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
+    }
+    return $principal;
+}
+
 # Set a callback to be called for forked kadmin processes.  This does nothing
 # for Heimdal, as we're not forking anything, but remains for compatibility
 # with the MIT kadmin module.
@@ -76,9 +85,7 @@ sub kadmin_client {
 # so, false otherwise.
 sub exists {
     my ($self, $principal) = @_;
-    if ($Wallet::Config::KEYTAB_REALM) {
-        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    }
+    $principal = $self->canonicalize_principal ($principal);
     my $kadmin = $self->{client};
     my $princdata = eval { $kadmin->getPrincipal ($principal) };
     if ($@) {
@@ -92,10 +99,7 @@ sub exists {
 # the error.  Return 1 on success or the principal already existing.
 sub addprinc {
     my ($self, $principal) = @_;
-
-    if ($Wallet::Config::KEYTAB_REALM) {
-        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    }
+    $principal = $self->canonicalize_principal ($principal);
     my $exists = eval { $self->exists ($principal) };
     if ($@) {
         $self->error ("error adding principal $principal: $@");
@@ -133,9 +137,7 @@ sub addprinc {
 # error.
 sub ktadd {
     my ($self, $principal, $file, @enctypes) = @_;
-    if ($Wallet::Config::KEYTAB_REALM) {
-        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    }
+    $principal = $self->canonicalize_principal ($principal);
 
     # The way Heimdal works, you can only remove enctypes from a principal,
     # not add them back in.  So we need to run randkeyPrincipal first each
@@ -193,6 +195,7 @@ sub ktadd {
 # exist, return success; we're bringing reality in line with our expectations.
 sub delprinc {
     my ($self, $principal) = @_;
+    $principal = $self->canonicalize_principal ($principal);
     my $exists = eval { $self->exists ($principal) };
     if ($@) {
         $self->error ("error checking principal existance: $@");
@@ -200,10 +203,6 @@ sub delprinc {
     } elsif (not $exists) {
         return 1;
     }
-    if ($Wallet::Config::KEYTAB_REALM) {
-        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    }
-
     my $kadmin = $self->{client};
     my $retval = eval { $kadmin->deletePrincipal ($principal) };
     if ($@) {
