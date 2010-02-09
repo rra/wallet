@@ -272,3 +272,6 @@ THANKS
   To Huaqing Zheng, Paul Pavelko, David Hoffman, and Paul Keser for their
   reviews of the wallet system design and comments on design decisions and
   security models.
+
+  To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
+  and many of the wallet server-side reports.
