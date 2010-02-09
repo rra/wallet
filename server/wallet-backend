@@ -571,26 +571,6 @@ Keytabs retrieved with C<unchanging> set will contain all keys present in
 the KDC for that Kerberos principal and therefore may contain different
 enctypes than those requested by this attribute.
 
-=item sync
-
-Sets the external systems to which the key of a given principal is
-synchronized.  The only supported value for this attribute is C<kaserver>,
-which says to synchronize the key with an AFS Kerberos v4 kaserver.
-
-If this attribute is set on a keytab, whenever the C<get> command is run for
-that keytab, the DES key will be extracted from that keytab and set in the
-configured AFS kaserver.  The Kerberos v4 principal name will be the same as
-the Kerberos v5 principal name except that the components are separated by
-C<.> instead of C</>; the second component is truncated after the first C<.>
-if the first component is one of C<host>, C<ident>, C<imap>, C<pop>, or
-C<smtp>; and the first component is C<rcmd> if the Kerberos v5 principal
-component is C<host>.  The principal name must not contain more than two
-components.
-
-If this attribute is set, calling C<destroy> will also destroy the
-principal from the AFS kaserver, with a principal mapping determined as
-above.
-
 =back
 
 =head1 SEE ALSO
