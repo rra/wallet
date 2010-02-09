@@ -118,7 +118,7 @@ sub addprinc {
         $kadmin->createPrincipal ($princdata, $password, 0);
         $kadmin->randKeyPrincipal ($principal);
         $kadmin->enablePrincipal ($principal);
-    }
+    };
     if ($@) {
         $self->error ("error adding principal $principal: $@");
         return;
