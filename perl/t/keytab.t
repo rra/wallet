@@ -90,21 +90,22 @@ sub destroy {
     system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args);
 }
 
-# Check whether a principal exists.  kvno works for MIT, but isn't in the
-# Heimdal dist.
+# Check whether a principal exists.  MIT uses kvno and Heimdal uses kgetcred.
+# Note that the Kerberos type may be different than our local userspace, so
+# don't use the Kerberos type to decide here.  Instead, check for which
+# program is available on the path.
 sub created {
     my ($principal) = @_;
     $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
-        local $ENV{KRB5CCNAME} = 'krb5cc_temp';
-        getcreds ('t/data/test.keytab', $Wallet::Config::KEYTAB_PRINCIPAL);
+    local $ENV{KRB5CCNAME} = 'krb5cc_temp';
+    getcreds ('t/data/test.keytab', $Wallet::Config::KEYTAB_PRINCIPAL);
+    if (grep { -x "$_/kvno" } split (':', $ENV{PATH})) {
         return (system_quiet ('kvno', $principal) == 0);
-    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
-        @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL,
-                 '-K', $Wallet::Config::KEYTAB_FILE,
-                 '-r', $Wallet::Config::KEYTAB_REALM,
-                 'get', $principal);
-        return (system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args) == 0);
+    } elsif (grep { -x "$_/kgetcred" } split (':', $ENV{PATH})) {
+        return (system_quiet ('kgetcred', $principal) == 0);
+    } else {
+        warn "# No kvno or kgetcred found\n";
+        return;
     }
 }
 
