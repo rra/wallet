@@ -1,5 +1,14 @@
                             wallet To-Do List
 
+Release 0.10:
+
+* Switch to using a disk cache in case the wallet client and libremctl are
+  built against different versions of Kerberos.
+
+* Remove stub fork hook from Wallet::Kadmin::MIT.
+
+* Move reporting code from Wallet::Admin to Wallet::Report.
+
 Release 1.0:
 
 * Fix case-insensitivity bug in unique keys with MySQL for objects.
