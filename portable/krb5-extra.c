@@ -106,3 +106,20 @@ krb5_get_init_creds_opt_alloc(krb5_context ctx, krb5_get_init_creds_opt **opts)
     return 0;
 }
 #endif /* !HAVE_KRB5_GET_INIT_CREDS_OPT_ALLOC */
+
+
+#ifndef HAVE_KRB5_PRINCIPAL_GET_REALM
+/*
+ * Return the realm of a principal as a const char *.
+ */
+const char *
+krb5_principal_get_realm(krb5_context ctx UNUSED, krb5_const_principal princ)
+{
+    const krb5_data *data;
+
+    data = krb5_princ_realm(ctx, princ);
+    if (data == NULL || data->data == NULL)
+        return NULL;
+    return data->data;
+}
+#endif /* !HAVE_KRB5_PRINCIPAL_GET_REALM */

@@ -68,6 +68,15 @@ krb5_error_code krb5_get_init_creds_opt_alloc(krb5_context,
 # define krb5_kt_free_entry(c, e) krb5_free_keytab_entry_contents((c), (e))
 #endif
 
+/*
+ * Heimdal provides a nice function that just returns a const char *.  On MIT,
+ * there's an accessor macro that returns the krb5_data pointer, wihch
+ * requires more work to get at the underlying char *.
+ */
+#ifndef HAVE_KRB5_PRINCIPAL_GET_REALM
+const char *krb5_principal_get_realm(krb5_context, krb5_const_principal);
+#endif
+
 /* Undo default visibility change. */
 #pragma GCC visibility pop
 
