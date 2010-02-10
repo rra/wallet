@@ -127,10 +127,11 @@ REQUIREMENTS
   srvtab with ADMIN access to a test AFS kaserver, and some additional
   configuration.
 
-  If you change the Automake files and need to regenerate Makefile.in, you
-  will need Automake 1.10 or later.  If you change configure.ac or any of
-  the m4 files it includes and need to regenerate configure or
-  config.h.in, you will need Autoconf 2.61 or later.
+  To bootstrap from a Git checkout, or if you change the Automake files
+  and need to regenerate Makefile.in, you will need Automake 1.11 or
+  later.  For bootstrap or if you change configure.ac or any of the m4
+  files it includes and need to regenerate configure or config.h.in, you
+  will need Autoconf 2.64 or later.
 
 BUILD AND INSTALLATION
 
@@ -139,6 +140,10 @@ BUILD AND INSTALLATION
       ./configure
       make
       make install
+
+  Pass --enable-silent-rules to configure for a quieter build (similar to
+  the Linux kernel).  Use make warnings instead of make to build with full
+  GCC compiler warnings (requires a relatively current version of GCC).
 
   The last step will probably have to be done as root.  Currently, this
   always installs both the client and the server.
