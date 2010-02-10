@@ -12,7 +12,7 @@
 . "$SOURCE/tap/libtap.sh"
 . "$SOURCE/tap/kerberos.sh"
 . "$SOURCE/tap/remctl.sh"
-cd "$BUILD"
+cd "$SOURCE"
 
 # We need a modified krb5.conf file to test wallet configuration settings in
 # krb5.conf.  Despite the hard-coding of test-k5.stanford.edu, this test isn't

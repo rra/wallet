@@ -23,20 +23,19 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
 	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t	    \
 	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		    \
 	perl/t/verifier.t
-TEST_FILES = tests/TESTS tests/data/README tests/data/allow-extract \
-	tests/data/basic.conf tests/data/cmd-fake tests/data/fake-data \
-	tests/data/fake-kadmin tests/data/fake-keytab \
-	tests/data/fake-keytab-2 tests/data/fake-keytab-merge \
-	tests/data/fake-keytab-old tests/data/fake-srvtab \
-	tests/data/wallet.conf tests/libtest.sh
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
-	config/keytab config/keytab.acl config/wallet docs/design \
-	contrib/README contrib/wallet-report contrib/wallet-report.8 \
-	docs/design-acl docs/design-api docs/netdb-role-api docs/notes \
-	docs/setup examples/stanford.conf $(PERL_FILES) $(TEST_FILES)
+EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract	   \
+	config/keytab config/keytab.acl config/wallet docs/design	   \
+	contrib/README contrib/wallet-report contrib/wallet-report.8	   \
+	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	   \
+	docs/setup examples/stanford.conf tests/TESTS tests/data/README	   \
+	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake \
+	tests/data/cmd-wrapper tests/data/fake-data tests/data/fake-kadmin \
+	tests/data/fake-keytab tests/data/fake-keytab-2			   \
+	tests/data/fake-keytab-merge tests/data/fake-keytab-old		   \
+	tests/data/fake-srvtab tests/data/wallet.conf $(PERL_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
@@ -89,8 +88,8 @@ all-local: perl/blib/lib/Wallet/Config.pm
 perl/blib/lib/Wallet/Config.pm:
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
 	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/NetDB \
-		perl/Wallet/Object perl/t perl/t/data perl/t/lib \
-		2>/dev/null || true ; \
+		perl/Wallet/Kadmin perl/Wallet/Object perl/t perl/t/data \
+		perl/t/lib 2>/dev/null || true ; \
 	    for f in $(PERL_FILES) ; do \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
 	    done \
@@ -160,14 +159,7 @@ tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.a
 
 check-local: $(check_PROGRAMS)
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    mkdir tests/data/acls 2>/dev/null || true ; \
-	    for f in $(TEST_FILES) ; do \
-		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
-	    done \
-	fi
-	cd tests && ./runtests TESTS
-	@echo ''
+	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS
 	@echo ''
 	cd perl && $(MAKE) test
 

@@ -19,7 +19,6 @@
 /tests/client/basic-t
 /tests/client/full-t
 /tests/client/prompt-t
-/tests/data/full.conf
 /tests/data/test.keytab
 /tests/data/test.password
 /tests/data/test.principal

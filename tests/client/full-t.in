@@ -51,6 +51,9 @@ sub wallet {
     return ($output, $error, $status);
 }
 
+# cd to the correct directory.
+chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
+
 SKIP: {
     skip 'no keytab configuration', $total
         unless -f "$ENV{BUILD}/data/test.keytab";
@@ -62,8 +65,8 @@ SKIP: {
     unlink ('krb5cc_test', 'test-pid');
     my $principal = contents ("$ENV{BUILD}/data/test.principal");
     remctld_spawn ($remctld, $principal,
-                   '@abs_top_builddir@/tests/data/test.keytab',
-                   '@abs_top_builddir@/tests/data/full.conf');
+                   "$ENV{BUILD}/data/test.keytab",
+                   "$ENV{SOURCE}/data/full.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     getcreds ("$ENV{BUILD}/data/test.keytab", $principal);
 

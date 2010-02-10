@@ -36,7 +36,7 @@ SKIP: {
     unlink ('krb5cc_test', 'test-pid');
     my $principal = contents ("$ENV{BUILD}/data/test.principal");
     remctld_spawn ($remctld, $principal, "$ENV{BUILD}/data/test.keytab",
-                   "$ENV{BUILD}/data/basic.conf");
+                   "$ENV{SOURCE}/data/basic.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
 
     # Read in the principal and password.

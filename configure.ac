@@ -60,8 +60,11 @@ AS_IF([test x"$REMCTLD" != x],
     [AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
         [Define to the full path to remctld to run remctl tests.])])
 
+dnl Create the tests/data directory for builds outside the source directory.
+AC_CONFIG_COMMANDS([tests/data/.placeholder], [touch tests/data/.placeholder])
+
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile perl/Makefile.PL tests/data/full.conf])
+AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
 AC_CONFIG_FILES([tests/client/full-t], [chmod +x tests/client/full-t])
 AC_CONFIG_FILES([tests/client/prompt-t], [chmod +x tests/client/prompt-t])
