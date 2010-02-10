@@ -3,7 +3,6 @@
 # Wrapper around the standard wallet-backend script that sets the Perl INC
 # path and the WALLET_CONFIG environment variable appropriately.
 
-WALLET_CONFIG='@abs_top_srcdir@/tests/data/wallet.conf'
+WALLET_CONFIG="$SOURCE/data/wallet.conf"
 export WALLET_CONFIG
-exec perl -I'@abs_top_srcdir@/perl' '@abs_top_srcdir@/server/wallet-backend' \
-    -q "$@"
+exec perl -I"$SOURCE/../perl" "$SOURCE/../server/wallet-backend" -q "$@"

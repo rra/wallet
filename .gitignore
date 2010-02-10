@@ -18,15 +18,12 @@
 /perl/t/data/test.krbtype
 /tests/client/basic-t
 /tests/client/full-t
-/tests/client/pod-t
 /tests/client/prompt-t
-/tests/data/cmd-wrapper
 /tests/data/full.conf
 /tests/data/test.keytab
 /tests/data/test.password
 /tests/data/test.principal
 /tests/data/test.krbtype
-/tests/kasetkey/basic-t
 /tests/portable/asprintf-t
 /tests/portable/mkstemp-t
 /tests/portable/setenv-t
@@ -34,10 +31,6 @@
 /tests/portable/strlcat-t
 /tests/portable/strlcpy-t
 /tests/runtests
-/tests/server/admin-t
-/tests/server/backend-t
-/tests/server/keytab-t
-/tests/server/pod-t
 /tests/util/concat-t
 /tests/util/messages-krb5-t
 /tests/util/messages-t
