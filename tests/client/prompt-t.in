@@ -1,28 +1,27 @@
 #!/usr/bin/perl -w
 #
-# tests/client/prompt-t -- Password prompting tests for the wallet client.
+# Password prompting tests for the wallet client.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 BEGIN { our $total = 5 }
 use Test::More tests => $total;
 
-use lib '@abs_top_srcdir@/perl';
+use lib "$ENV{SOURCE}/..//perl";
 use Wallet::Admin;
 
-use lib '@abs_top_srcdir@/perl/t/lib';
+use lib "$ENV{SOURCE}/../perl/t/lib";
 use Util;
 
 # cd to the correct directory.
-chdir '@abs_top_srcdir@/tests'
-    or die "Cannot chdir to @abs_top_srcdir@/tests: $!\n";
+chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
 
 SKIP: {
     skip 'no password configuration', $total
-        unless -f '@abs_top_builddir@/tests/data/test.password';
+        unless -f "$ENV{BUILD}/data/test.password";
     my $remctld = '@REMCTLD@';
     skip 'remctld not found', $total unless $remctld;
     eval { require Expect };
@@ -35,22 +34,21 @@ SKIP: {
 
     # Spawn remctld and set up with a different ticket cache.
     unlink ('krb5cc_test', 'test-pid');
-    my $principal = contents ('@abs_top_builddir@/tests/data/test.principal');
-    remctld_spawn ($remctld, $principal,
-                   '@abs_top_builddir@/tests/data/test.keytab',
-                   '@abs_top_builddir@/tests/data/basic.conf');
+    my $principal = contents ("$ENV{BUILD}/data/test.principal");
+    remctld_spawn ($remctld, $principal, "$ENV{BUILD}/data/test.keytab",
+                   "$ENV{BUILD}/data/basic.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
 
     # Read in the principal and password.
-    open (PASS, '<', '@abs_top_builddir@/tests/data/test.password')
-        or die "Cannot open @abs_top_builddir@/tests/data/test.password: $!\n";
+    open (PASS, '<', "$ENV{BUILD}/data/test.password")
+        or die "Cannot open $ENV{BUILD}/data/test.password: $!\n";
     my $user = <PASS>;
     my $password = <PASS>;
     close PASS;
     chomp ($user, $password);
 
     # Spawn wallet and check an invalid password.
-    my $wallet = Expect->spawn ('@abs_top_builddir@/client/wallet', '-k',
+    my $wallet = Expect->spawn ("$ENV{BUILD}/../client/wallet", '-k',
                                 $principal, '-p', 14373, '-s', 'localhost',
                                 '-c', 'fake-wallet', '-u', $user, 'get',
                                 'keytab', 'service/fake-output');
@@ -61,7 +59,7 @@ SKIP: {
     $wallet->soft_close;
 
     # Now check a valid password.
-    $wallet = Expect->spawn ('@abs_top_builddir@/client/wallet', '-k',
+    $wallet = Expect->spawn ("$ENV{BUILD}/../client/wallet", '-k',
                              $principal, '-p', 14373, '-s', 'localhost',
                              '-c', 'fake-wallet', '-u', $user, 'get',
                              'keytab', 'service/fake-output');

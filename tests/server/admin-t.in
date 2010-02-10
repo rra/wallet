@@ -3,7 +3,7 @@
 # Tests for the wallet-admin dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -82,7 +82,7 @@ sub report_owners {
 # Wallet::Admin package has already been loaded.
 package main;
 $INC{'Wallet/Admin.pm'} = 'FAKE';
-eval { do '@abs_top_srcdir@/server/wallet-admin' };
+eval { do "$ENV{SOURCE}/../server/wallet-admin" };
 
 # Run the wallet admin client.  This fun hack takes advantage of the fact that
 # the wallet admin client is written in Perl so that we can substitute our own

@@ -1,10 +1,9 @@
 #!/usr/bin/perl -w
-# $Id: backend-t.in 3547 2007-09-14 23:18:48Z rra $
 #
 # Tests for the keytab-backend dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -16,9 +15,9 @@ use Test::More tests => 63;
 # Load the keytab-backend code and override various settings.
 my $OUTPUT;
 $SYSLOG = \$OUTPUT;
-eval { do '@abs_top_srcdir@/server/keytab-backend' };
-$CONFIG = '@abs_top_srcdir@/tests/data/allow-extract';
-$KADMIN = '@abs_top_srcdir@/tests/data/fake-kadmin';
+eval { do "$ENV{SOURCE}/../server/keytab-backend" };
+$CONFIG = "$ENV{SOURCE}/data/allow-extract";
+$KADMIN = "$ENV{SOURCE}/data/fake-kadmin";
 $TMP = '.';
 
 # Run the keytab backend.
