@@ -51,10 +51,10 @@ data specific to the scheme that specifies which users are authorized.
 For example, for the C<krb5> scheme, the identifier is a principal name
 and only that principal is authorized by that ACL entry.
 
-To run the wallet command-line client, you must already have a Kerberos
-ticket.  You can obtain a Kerberos ticket with B<kinit> and see your
-current Kerberos tickets with B<klist>.  The wallet client uses the remctl
-protocol to talk to the wallet server.
+To run the wallet command-line client, you must either already have a
+Kerberos ticket or use the B<-u> option.  You can obtain a Kerberos ticket
+with B<kinit> and see your current Kerberos tickets with B<klist>.  The
+wallet client uses the remctl protocol to talk to the wallet server.
 
 =head1 OPTIONS
 
