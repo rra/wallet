@@ -1,7 +1,7 @@
 # Wallet::Object::Base -- Parent class for any object stored in the wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -22,7 +22,7 @@ use Wallet::ACL;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ##############################################################################
 # Constructors
@@ -669,6 +669,10 @@ __END__
 
 Wallet::Object::Base - Generic parent class for wallet objects
 
+=for stopwords
+DBH HOSTNAME DATETIME ACL backend metadata timestamp Allbery wallet-backend
+backend-specific
+
 =head1 SYNOPSIS
 
     package Wallet::Object::Simple;
@@ -682,104 +686,107 @@ Wallet::Object::Base - Generic parent class for wallet objects
 =head1 DESCRIPTION
 
 Wallet::Object::Base is the generic parent class for wallet objects (data
-types that can be stored in the wallet system).  It provides defualt
+types that can be stored in the wallet system).  It provides default
 functions and behavior, including handling generic object settings.  All
 handlers for objects stored in the wallet should inherit from it.  It is
 not used directly.
 
 =head1 PUBLIC CLASS METHODS
 
-The following methods are called by the rest of the wallet system and should
-be implemented by all objects stored in the wallet.  They should be called
-with the desired wallet object class as the first argument (generally using
-the Wallet::Object::Type->new syntax).
+The following methods are called by the rest of the wallet system and
+should be implemented by all objects stored in the wallet.  They should be
+called with the desired wallet object class as the first argument
+(generally using the Wallet::Object::Type->new syntax).
 
 =over 4
 
 =item new(TYPE, NAME, DBH)
 
 Creates a new object with the given object type and name, based on data
-already in the database.  This method will only succeed if an object of the
-given TYPE and NAME is already present in the wallet database.  If no such
-object exits, throws an exception.  Otherwise, returns an object blessed
-into the class used for the new() call (so subclasses can leave this method
-alone and not override it).
+already in the database.  This method will only succeed if an object of
+the given TYPE and NAME is already present in the wallet database.  If no
+such object exits, throws an exception.  Otherwise, returns an object
+blessed into the class used for the new() call (so subclasses can leave
+this method alone and not override it).
 
-Takes a Wallet::Database object, which is stored in the object and used for
-any further operations.
+Takes a Wallet::Database object, which is stored in the object and used
+for any further operations.
 
 =item create(TYPE, NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
 
 Similar to new() but instead creates a new entry in the database.  This
 method will throw an exception if an entry for that type and name already
-exists in the database or if creating the database record fails.  Otherwise,
-a new database entry will be created with that type and name, no owner, no
-ACLs, no expiration, no flags, and with created by, from, and on set to the
-PRINCIPAL, HOSTNAME, and DATETIME parameters.  If DATETIME isn't given, the
-current time is used.  The database handle is treated as with new().
+exists in the database or if creating the database record fails.
+Otherwise, a new database entry will be created with that type and name,
+no owner, no ACLs, no expiration, no flags, and with created by, from, and
+on set to the PRINCIPAL, HOSTNAME, and DATETIME parameters.  If DATETIME
+isn't given, the current time is used.  The database handle is treated as
+with new().
 
 =back
 
 =head1 PUBLIC INSTANCE METHODS
 
 The following methods may be called on instantiated wallet objects.
-Normally, the only methods that a subclass will need to override are get(),
-store(), show(), and destroy().
+Normally, the only methods that a subclass will need to override are
+get(), store(), show(), and destroy().
 
-If the locked flag is set on an object, no actions may be performed on that
-object except for the flag methods and show().  All other actions will be
-rejected with an error saying the object is locked.
+If the locked flag is set on an object, no actions may be performed on
+that object except for the flag methods and show().  All other actions
+will be rejected with an error saying the object is locked.
 
 =over 4
 
 =item acl(TYPE [, ACL, PRINCIPAL, HOSTNAME [, DATETIME]])
 
-Sets or retrieves a given object ACL as a numeric ACL ID.  TYPE must be one
-of C<get>, C<store>, C<show>, C<destroy>, or C<flags>, corresponding to the
-ACLs kept on an object.  If no other arguments are given, returns the
-current ACL setting as an ACL ID or undef if that ACL isn't set.  If other
-arguments are given, change that ACL to ACL and return true on success and
-false on failure.  Pass in the empty string for ACL to clear the ACL.  The
-other arguments are used for logging and history and should indicate the
-user and host from which the change is made and the time of the change.
+Sets or retrieves a given object ACL as a numeric ACL ID.  TYPE must be
+one of C<get>, C<store>, C<show>, C<destroy>, or C<flags>, corresponding
+to the ACLs kept on an object.  If no other arguments are given, returns
+the current ACL setting as an ACL ID or undef if that ACL isn't set.  If
+other arguments are given, change that ACL to ACL and return true on
+success and false on failure.  Pass in the empty string for ACL to clear
+the ACL.  The other arguments are used for logging and history and should
+indicate the user and host from which the change is made and the time of
+the change.
 
 =item attr(ATTRIBUTE [, VALUES, PRINCIPAL, HOSTNAME [, DATETIME]])
 
 Sets or retrieves a given object attribute.  Attributes are used to store
-backend-specific information for a particular object type and ATTRIBUTE must
-be an attribute type known to the underlying object implementation.  The
-default implementation of this method rejects all attributes as unknown.
+backend-specific information for a particular object type and ATTRIBUTE
+must be an attribute type known to the underlying object implementation.
+The default implementation of this method rejects all attributes as
+unknown.
 
 If no other arguments besides ATTRIBUTE are given, returns the values of
 that attribute, if any, as a list.  On error, returns the empty list.  To
-distinguish between an error and an empty return, call error() afterwards.
+distinguish between an error and an empty return, call error() afterward.
 It is guaranteed to return undef unless there was an error.
 
 If other arguments are given, sets the given ATTRIBUTE values to VALUES,
-which must be a reference to an array (even if only one value is being set).
-Pass a reference to an empty array to clear the attribute values.  The other
-arguments are used for logging and history and should indicate the user and
-host from which the change is made and the time of the change.  Returns true
-on success and false on failure.
+which must be a reference to an array (even if only one value is being
+set).  Pass a reference to an empty array to clear the attribute values.
+The other arguments are used for logging and history and should indicate
+the user and host from which the change is made and the time of the
+change.  Returns true on success and false on failure.
 
 =item attr_show()
 
-Returns a formatted text description of the type-specific attributes of the
-object, or undef on error.  The default implementation of this method always
-returns the empty string.  If there are any type-specific attributes set,
-this method should return that metadata, formatted as key: value pairs with
-the keys right-aligned in the first 15 characters, followed by a space, a
-colon, and the value.
+Returns a formatted text description of the type-specific attributes of
+the object, or undef on error.  The default implementation of this method
+always returns the empty string.  If there are any type-specific
+attributes set, this method should return that metadata, formatted as key:
+value pairs with the keys right-aligned in the first 15 characters,
+followed by a space, a colon, and the value.
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
 Destroys the object by removing all record of it from the database.  The
-Wallet::Object::Base implementation handles the generic database work,
-but any subclass should override this method to do any deletion of files
-or entries in external databases and any other database entries and then
-call the parent method to handle the generic database cleanup.  Returns
-true on success and false on failure.  The arguments are used for logging
-and history and should indicate the user and host from which the change is
+Wallet::Object::Base implementation handles the generic database work, but
+any subclass should override this method to do any deletion of files or
+entries in external databases and any other database entries and then call
+the parent method to handle the generic database cleanup.  Returns true on
+success and false on failure.  The arguments are used for logging and
+history and should indicate the user and host from which the change is
 made and the time of the change.
 
 =item error([ERROR ...])
@@ -789,47 +796,50 @@ have failed.  Callers should call this function to get the error message
 after an undef return from any other instance method.
 
 For the convenience of child classes, this method can also be called with
-one or more error strings.  If so, those strings are concatenated together,
-trailing newlines are removed, any text of the form S<C< at \S+ line
-\d+\.?>> at the end of the message is stripped off, and the result is stored
-as the error.  Only child classes should call this method with an error
-string.
+one or more error strings.  If so, those strings are concatenated
+together, trailing newlines are removed, any text of the form S<C< at \S+
+line \d+\.?>> at the end of the message is stripped off, and the result is
+stored as the error.  Only child classes should call this method with an
+error string.
 
 =item expires([EXPIRES, PRINCIPAL, HOSTNAME [, DATETIME]])
 
 Sets or retrieves the expiration date of an object.  If no arguments are
-given, returns the current expiration or undef if no expiration is set.  If
-arguments are given, change the expiration to EXPIRES and return true on
-success and false on failure.  EXPIRES must be in the format C<YYYY-MM-DD
-HH:MM:SS>, although the time portion may be omitted.  Pass in the empty
-string for EXPIRES to clear the expiration date.
+given, returns the current expiration or undef if no expiration is set.
+If arguments are given, change the expiration to EXPIRES and return true
+on success and false on failure.  EXPIRES must be in the format
+C<YYYY-MM-DD HH:MM:SS>, although the time portion may be omitted.  Pass in
+the empty string for EXPIRES to clear the expiration date.
 
-The other arguments are used for logging and history and should indicate the
-user and host from which the change is made and the time of the change.
+The other arguments are used for logging and history and should indicate
+the user and host from which the change is made and the time of the
+change.
 
 =item flag_check(FLAG)
 
-Check whether the given flag is set on an object.  Returns true if set, C<0>
-if not set, and undef on error.
+Check whether the given flag is set on an object.  Returns true if set,
+C<0> if not set, and undef on error.
 
 =item flag_clear(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
 
 Clears FLAG on an object.  Returns true on success and false on failure.
-The other arguments are used for logging and history and should indicate the
-user and host from which the change is made and the time of the change.
+The other arguments are used for logging and history and should indicate
+the user and host from which the change is made and the time of the
+change.
 
 =item flag_list()
 
 List the flags set on an object.  If no flags are set, returns the empty
-list.  On failure, returns an empty list.  To distinguish between the empty
-response and an error, the caller should call error() after an empty return.
-It is guaranteed to return undef if there was no error.
+list.  On failure, returns an empty list.  To distinguish between the
+empty response and an error, the caller should call error() after an empty
+return.  It is guaranteed to return undef if there was no error.
 
 =item flag_set(FLAG, PRINCIPAL, HOSTNAME [, DATETIME])
 
 Sets FLAG on an object.  Returns true on success and false on failure.
-The other arguments are used for logging and history and should indicate the
-user and host from which the change is made and the time of the change.
+The other arguments are used for logging and history and should indicate
+the user and host from which the change is made and the time of the
+change.
 
 =item get(PRINCIPAL, HOSTNAME [, DATETIME])
 
@@ -856,9 +866,9 @@ Sets or retrieves the owner of an object as a numeric ACL ID.  If no
 arguments are given, returns the current owner ACL ID or undef if none is
 set.  If arguments are given, change the owner to OWNER and return true on
 success and false on failure.  Pass in the empty string for OWNER to clear
-the owner.  The other arguments are used for logging and history and should
-indicate the user and host from which the change is made and the time of the
-change.
+the owner.  The other arguments are used for logging and history and
+should indicate the user and host from which the change is made and the
+time of the change.
 
 =item show()
 
@@ -866,17 +876,17 @@ Returns a formatted text description of the object suitable for human
 display, or undef on error.  All of the base metadata about the object,
 formatted as key: value pairs with the keys aligned in the first 15
 characters followed by a space, a colon, and the value.  The attr_show()
-method of the object is also called and any formatted output it returns will
-be included.  If any ACLs or an owner are set, after this data there is a
-blank line and then the information for each unique ACL, separated by blank
-lines.
+method of the object is also called and any formatted output it returns
+will be included.  If any ACLs or an owner are set, after this data there
+is a blank line and then the information for each unique ACL, separated by
+blank lines.
 
 =item store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
 
 Store user-supplied data into the given object.  This may not be supported
-by all backends (for instance, backends that automatically generate the data
-will not support this).  The default implementation rejects all store()
-calls with an error message saying that the object is immutable.
+by all backends (for instance, backends that automatically generate the
+data will not support this).  The default implementation rejects all
+store() calls with an error message saying that the object is immutable.
 
 =item type()
 
@@ -894,23 +904,24 @@ provided for subclasses to call to implement some generic actions.
 =item log_action (ACTION, PRINCIPAL, HOSTNAME, DATETIME)
 
 Updates the history tables and trace information appropriately for ACTION,
-which should be either C<get> or C<store>.  No other changes are made to the
-database, just updates of the history table and trace fields with the
+which should be either C<get> or C<store>.  No other changes are made to
+the database, just updates of the history table and trace fields with the
 provided data about who performed the action and when.
 
-This function commits its transaction when complete and therefore should not
-be called inside another transaction.  Normally it's called as a separate
-transaction after the data is successfully stored or retrieved.
+This function commits its transaction when complete and therefore should
+not be called inside another transaction.  Normally it's called as a
+separate transaction after the data is successfully stored or retrieved.
 
 =item log_set (FIELD, OLD, NEW, PRINCIPAL, HOSTNAME, DATETIME)
 
-Updates the history tables for the change in a setting value for an object.
-FIELD should be one of C<owner>, C<acl_get>, C<acl_store>, C<acl_show>,
-C<acl_destroy>, C<acl_flags>, C<expires>, C<flags>, or a value starting with
-C<type_data> followed by a space and a type-specific field name.  The last
-form is the most common form used by a subclass.  OLD is the previous value
-of the field or undef if the field was unset, and NEW is the new value of
-the field or undef if the field should be unset.
+Updates the history tables for the change in a setting value for an
+object.  FIELD should be one of C<owner>, C<acl_get>, C<acl_store>,
+C<acl_show>, C<acl_destroy>, C<acl_flags>, C<expires>, C<flags>, or a
+value starting with C<type_data> followed by a space and a type-specific
+field name.  The last form is the most common form used by a subclass.
+OLD is the previous value of the field or undef if the field was unset,
+and NEW is the new value of the field or undef if the field should be
+unset.
 
 This function does not commit and does not catch database exceptions.  It
 should normally be called as part of a larger transaction that implements
@@ -922,8 +933,8 @@ the change in the setting.
 
 wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

@@ -55,6 +55,9 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+Kadmin keytabs keytab Heimdal API kadmind kadmin
+
 =head1 NAME
 
 Wallet::Kadmin - Kadmin module wrapper for wallet keytabs
@@ -69,21 +72,21 @@ Wallet::Kadmin - Kadmin module wrapper for wallet keytabs
 
 =head1 DESCRIPTION
 
-Wallet::Kadmin is a wrapper to modules that provide an interface for keytab
-integration with the wallet.  Each module is meant to interface with a
-specific type of Kerberos implementation, such as MIT Kerberos or Heimdal
-Kerberos, and provide a standndard set of API calls used to interact with
-that implementation's kadmind.
+Wallet::Kadmin is a wrapper to modules that provide an interface for
+keytab integration with wallet.  Each module is meant to interface with a
+specific type of Kerberos implementation, such as MIT Kerberos or Heimdal,
+and provide a standard set of API calls used to interact with that
+implementation's kadmin interface.
 
 The class simply uses Wallet::Config to find which type of kadmind we have
 requested to use, and then returns an object to use for interacting with
 that kadmind.
 
 A keytab is an on-disk store for the key or keys for a Kerberos principal.
-Keytabs are used by services to verify incoming authentication from clients
-or by automated processes that need to authenticate to Kerberos.  To create
-a keytab, the principal has to be created in Kerberos and then a keytab is
-generated and stored in a file on disk.
+Keytabs are used by services to verify incoming authentication from
+clients or by automated processes that need to authenticate to Kerberos.
+To create a keytab, the principal has to be created in Kerberos and then a
+keytab is generated and stored in a file on disk.
 
 To use this object, several configuration parameters must be set.  See
 Wallet::Config(3) for details on those configuration parameters and
@@ -95,9 +98,9 @@ information about how to set wallet configuration.
 
 =item new()
 
-Finds the proper Kerberos implementation and calls the new() constructor for
-that implementation's module, returning the result.  If the implementation
-is not recognized or set, die with an error message.
+Finds the proper Kerberos implementation and calls the new() constructor
+for that implementation's module, returning the result.  If the
+implementation is not recognized or set, die with an error message.
 
 =back
 
@@ -105,8 +108,8 @@ is not recognized or set, die with an error message.
 
 kadmin(8), Wallet::Config(3), Wallet::Object::Keytab(3), wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 

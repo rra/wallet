@@ -23,6 +23,11 @@ $PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
 
 Wallet::Config - Configuration handling for the wallet server
 
+=for stopwords
+DBI DSN SQLite subdirectories KEYTAB keytab kadmind KDC add-ons kadmin DNS
+SRV kadmin keytabs remctl backend lowercased NETDB ACL NetDB unscoped
+usernames rekey hostnames Allbery wallet-backend keytab-backend
+
 =head1 SYNOPSIS
 
     use Wallet::Config;
@@ -63,9 +68,9 @@ variable DB_DRIVER to C<MySQL>, use:
 
     $DB_DRIVER = 'MySQL';
 
-Always remember the initial dollar sign (C<$>) and ending semicolon (C<;>).
-Those familiar with Perl syntax can of course use the full range of Perl
-expressions.
+Always remember the initial dollar sign (C<$>) and ending semicolon
+(C<;>).  Those familiar with Perl syntax can of course use the full range
+of Perl expressions.
 
 This configuration file should end with the line:
 
@@ -80,11 +85,11 @@ file.
 
 =item DB_DRIVER
 
-Sets the Perl database driver to use for the wallet database.  Common values
-would be C<SQLite> or C<MySQL>.  Less common values would be C<Oracle>,
-C<Sybase>, or C<ODBC>.  The appropriate DBD::* Perl module for the chosen
-driver must be installed and will be dynamically loaded by the wallet.  For
-more information, see DBI(3).
+Sets the Perl database driver to use for the wallet database.  Common
+values would be C<SQLite> or C<MySQL>.  Less common values would be
+C<Oracle>, C<Sybase>, or C<ODBC>.  The appropriate DBD::* Perl module for
+the chosen driver must be installed and will be dynamically loaded by the
+wallet.  For more information, see DBI(3).
 
 This variable must be set.
 
@@ -95,8 +100,8 @@ our $DB_DRIVER;
 =item DB_INFO
 
 Sets the remaining contents for the DBI DSN (everything after the driver).
-Using this variable provides full control over the connect string passed to
-DBI.  When using SQLite, set this variable to the path to the SQLite
+Using this variable provides full control over the connect string passed
+to DBI.  When using SQLite, set this variable to the path to the SQLite
 database.  If this variable is set, DB_NAME, DB_HOST, and DB_PORT are
 ignored.  For more information, see DBI(3) and the documentation for the
 database driver you're using.
@@ -111,9 +116,10 @@ our $DB_INFO;
 =item DB_NAME
 
 If DB_INFO is not set, specifies the database name.  The third part of the
-DBI connect string will be set to C<database=DB_NAME>, possibly with a host
-and port appended if DB_HOST and DB_PORT are set.  For more information, see
-DBI(3) and the documentation for the database driver you're using.
+DBI connect string will be set to C<database=DB_NAME>, possibly with a
+host and port appended if DB_HOST and DB_PORT are set.  For more
+information, see DBI(3) and the documentation for the database driver
+you're using.
 
 Either DB_INFO or DB_NAME must be set.
 
@@ -124,8 +130,8 @@ our $DB_NAME;
 =item DB_HOST
 
 If DB_INFO is not set, specifies the database host.  C<;host=DB_HOST> will
-be appended to the DBI connect string.  For more information, see DBI(3) and
-the documentation for the database driver you're using.
+be appended to the DBI connect string.  For more information, see DBI(3)
+and the documentation for the database driver you're using.
 
 =cut
 
@@ -135,8 +141,8 @@ our $DB_HOST;
 
 If DB_PORT is not set, specifies the database port.  C<;port=DB_PORT> will
 be appended to the DBI connect string.  If this variable is set, DB_HOST
-should also be set.  For more information, see DBI(3) and the documentation
-for the database driver you're using.
+should also be set.  For more information, see DBI(3) and the
+documentation for the database driver you're using.
 
 =cut
 
@@ -153,8 +159,8 @@ our $DB_USER;
 
 =item DB_PASSWORD
 
-Specifies the password for database authentication.  Some database backends,
-particularly SQLite, do not need this.
+Specifies the password for database authentication.  Some database
+backends, particularly SQLite, do not need this.
 
 =cut
 
@@ -205,9 +211,10 @@ C<keytab> object type (the Wallet::Object::Keytab class).
 =item KEYTAB_FILE
 
 Specifies the keytab to use to authenticate to B<kadmind>.  The principal
-whose key is stored in this keytab must have the ability to create, modify,
-inspect, and delete any principals that should be managed by the wallet.
-(In MIT Kerberos F<kadm5.acl> parlance, this is C<admci> privileges.)
+whose key is stored in this keytab must have the ability to create,
+modify, inspect, and delete any principals that should be managed by the
+wallet.  (In MIT Kerberos F<kadm5.acl> parlance, this is C<admci>
+privileges.)
 
 KEYTAB_FILE must be set to use keytab objects.
 
@@ -218,12 +225,13 @@ our $KEYTAB_FILE;
 =item KEYTAB_FLAGS
 
 These flags, if any, are passed to the C<addprinc> command when creating a
-new principal in the Kerberos KDC.  To not pass any flags, set KEYTAB_FLAGS
-to the empty string.  The default value is C<-clearpolicy>, which clears any
-password strength policy from principals created by the wallet.  (Since the
-wallet randomizes the keys, password strength checking is generally
-pointless and may interact poorly with the way C<addprinc -randkey> works
-when third-party add-ons for password strength checking are used.)
+new principal in the Kerberos KDC.  To not pass any flags, set
+KEYTAB_FLAGS to the empty string.  The default value is C<-clearpolicy>,
+which clears any password strength policy from principals created by the
+wallet.  (Since the wallet randomizes the keys, password strength checking
+is generally pointless and may interact poorly with the way C<addprinc
+-randkey> works when third-party add-ons for password strength checking
+are used.)
 
 =cut
 
@@ -264,9 +272,9 @@ our $KEYTAB_KRBTYPE;
 The principal whose key is stored in KEYTAB_FILE.  The wallet will
 authenticate as this principal to the kadmin service.
 
-KEYTAB_PRINCIPAL must be set to use keytab objects, at least until B<kadmin>
-is smart enough to use the first principal found in the keytab it's using
-for authentication.
+KEYTAB_PRINCIPAL must be set to use keytab objects, at least until
+B<kadmin> is smart enough to use the first principal found in the keytab
+it's using for authentication.
 
 =cut
 
@@ -289,11 +297,11 @@ our $KEYTAB_REALM;
 =item KEYTAB_TMP
 
 A directory into which the wallet can write keytabs temporarily while
-processing C<get> commands from clients.  The keytabs are written into this
-directory with predictable names, so this should not be a system temporary
-directory such as F</tmp> or F</var/tmp>.  It's best to create a directory
-solely for this purpose that's owned by the user the wallet server will run
-as.
+processing C<get> commands from clients.  The keytabs are written into
+this directory with predictable names, so this should not be a system
+temporary directory such as F</tmp> or F</var/tmp>.  It's best to create a
+directory solely for this purpose that's owned by the user the wallet
+server will run as.
 
 KEYTAB_TMP must be set to use keytab objects.
 
@@ -305,20 +313,20 @@ our $KEYTAB_TMP;
 
 =head2 Retrieving Existing Keytabs
 
-The keytab object backend optionally supports retrieving existing keys, and
-hence keytabs, for Kerberos principals by contacting the KDC via remctl and
-talking to B<keytab-backend>.  This is enabled by setting the C<unchanging>
-flag on keytab objects.  To configure that support, set the following
-variables.
+The keytab object backend optionally supports retrieving existing keys,
+and hence keytabs, for Kerberos principals by contacting the KDC via
+remctl and talking to B<keytab-backend>.  This is enabled by setting the
+C<unchanging> flag on keytab objects.  To configure that support, set the
+following variables.
 
 =over 4
 
 =item KEYTAB_REMCTL_CACHE
 
-Specifies the ticket cache to use when retrieving existing keytabs from the
-KDC.  This is only used to implement support for the C<unchanging> flag.
-The ticket cache must be for a principal with access to run C<keytab
-retrieve> via remctl on KEYTAB_REMCTL_HOST.
+Specifies the ticket cache to use when retrieving existing keytabs from
+the KDC.  This is only used to implement support for the C<unchanging>
+flag.  The ticket cache must be for a principal with access to run
+C<keytab retrieve> via remctl on KEYTAB_REMCTL_HOST.
 
 =cut
 
@@ -326,10 +334,10 @@ our $KEYTAB_REMCTL_CACHE;
 
 =item KEYTAB_REMCTL_HOST
 
-The host to which to connect with remctl to retrieve existing keytabs.  This
-is only used to implement support for the C<unchanging> flag.  This host
-must provide the C<keytab retrieve> command and KEYTAB_REMCTL_CACHE must
-also be set to a ticket cache for a principal with access to run that
+The host to which to connect with remctl to retrieve existing keytabs.
+This is only used to implement support for the C<unchanging> flag.  This
+host must provide the C<keytab retrieve> command and KEYTAB_REMCTL_CACHE
+must also be set to a ticket cache for a principal with access to run that
 command.
 
 =cut
@@ -339,9 +347,10 @@ our $KEYTAB_REMCTL_HOST;
 =item KEYTAB_REMCTL_PRINCIPAL
 
 The service principal to which to authenticate when retrieving existing
-keytabs.  This is only used to implement support for the C<unchanging> flag.
-If this variable is not set, the default is formed by prepending C<host/> to
-KEYTAB_REMCTL_HOST.  (Note that KEYTAB_REMCTL_HOST is not lowercased first.)
+keytabs.  This is only used to implement support for the C<unchanging>
+flag.  If this variable is not set, the default is formed by prepending
+C<host/> to KEYTAB_REMCTL_HOST.  (Note that KEYTAB_REMCTL_HOST is not
+lowercased first.)
 
 =cut
 
@@ -365,18 +374,18 @@ our $KEYTAB_REMCTL_PORT;
 These configuration variables are only needed if you intend to use the
 C<netdb> ACL type (the Wallet::ACL::NetDB class).  They specify the remctl
 connection information for retrieving user roles from NetDB and the local
-realm to remove from principals (since NetDB normally expects unscoped local
-usernames).
+realm to remove from principals (since NetDB normally expects unscoped
+local usernames).
 
 =over 4
 
 =item NETDB_REALM
 
 The wallet uses fully-qualified principal names (including the realm), but
-NetDB normally expects local usernames without the realm.  If this variable
-is set, the given realm will be stripped from any principal names before
-passing them to NetDB.  Principals in other realms will be passed to NetDB
-without modification.
+NetDB normally expects local usernames without the realm.  If this
+variable is set, the given realm will be stripped from any principal names
+before passing them to NetDB.  Principals in other realms will be passed
+to NetDB without modification.
 
 =cut
 
@@ -385,9 +394,9 @@ our $NETDB_REALM;
 =item NETDB_REMCTL_CACHE
 
 Specifies the ticket cache to use when querying the NetDB remctl interface
-for user roles.  The ticket cache must be for a principal with access to run
-C<netdb node-roles> via remctl on KEYTAB_REMCTL_HOST.  This variable must be
-set to use NetDB ACLs.
+for user roles.  The ticket cache must be for a principal with access to
+run C<netdb node-roles> via remctl on KEYTAB_REMCTL_HOST.  This variable
+must be set to use NetDB ACLs.
 
 =cut
 
@@ -406,10 +415,10 @@ our $NETDB_REMCTL_HOST;
 
 =item NETDB_REMCTL_PRINCIPAL
 
-The service principal to which to authenticate when querying NetDB for user
-roles.  If this variable is not set, the default is formed by prepending
-C<host/> to NETDB_REMCTL_HOST.  (Note that NETDB_REMCTL_HOST is not
-lowercased first.)
+The service principal to which to authenticate when querying NetDB for
+user roles.  If this variable is not set, the default is formed by
+prepending C<host/> to NETDB_REMCTL_HOST.  (Note that NETDB_REMCTL_HOST is
+not lowercased first.)
 
 =cut
 
@@ -417,9 +426,9 @@ our $NETDB_REMCTL_PRINCIPAL;
 
 =item NETDB_REMCTL_PORT
 
-The port on NETDB_REMCTL_HOST to which to connect with remctl to query NetDB
-for user roles.  If this variable is not set, the default remctl port will
-be used.
+The port on NETDB_REMCTL_HOST to which to connect with remctl to query
+NetDB for user roles.  If this variable is not set, the default remctl
+port will be used.
 
 =cut
 
@@ -430,17 +439,18 @@ our $NETDB_REMCTL_PORT;
 =head1 DEFAULT OWNERS
 
 By default, only users in the ADMIN ACL can create new objects in the
-wallet.  To allow other users to create new objects, define a Perl function
-named default_owner.  This function will be called whenever a non-ADMIN user
-tries to create a new object and will be passed the type and name of the
-object.  It should return undef if there is no default owner for that
-object.  If there is, it should return a list containing the name to use for
-the ACL and then zero or more anonymous arrays of two elements each giving
-the type and identifier for each ACL entry.
+wallet.  To allow other users to create new objects, define a Perl
+function named default_owner.  This function will be called whenever a
+non-ADMIN user tries to create a new object and will be passed the type
+and name of the object.  It should return undef if there is no default
+owner for that object.  If there is, it should return a list containing
+the name to use for the ACL and then zero or more anonymous arrays of two
+elements each giving the type and identifier for each ACL entry.
 
-For example, the following simple function says to use a default owner named
-C<default> with one entry of type C<krb5> and identifier C<rra@example.com>
-for the object with type C<keytab> and name C<host/example.com>:
+For example, the following simple function says to use a default owner
+named C<default> with one entry of type C<krb5> and identifier
+C<rra@example.com> for the object with type C<keytab> and name
+C<host/example.com>:
 
     sub default_owner {
         my ($type, $name) = @_;
@@ -453,8 +463,8 @@ for the object with type C<keytab> and name C<host/example.com>:
 
 Of course, normally this function is used for more complex mappings.  Here
 is a more complete example.  For objects of type keytab corresponding to
-various types of per-machine principals, return a default owner that sets as
-owner anyone with a NetDB role for that system and the system's host
+various types of per-machine principals, return a default owner that sets
+as owner anyone with a NetDB role for that system and the system's host
 principal.  This permits authorization management using NetDB while also
 allowing the system to bootstrap itself once the host principal has been
 downloaded and rekey itself using the old host principal.
@@ -474,17 +484,19 @@ downloaded and rekey itself using the old host principal.
         return ($acl_name, @acl);
     }
 
-The auto-created ACL used for the owner of the new object will, in the above
-example, be named C<host/I<system>> where I<system> is the fully-qualified
-name of the system as derived from the keytab being requested.
+The auto-created ACL used for the owner of the new object will, in the
+above example, be named C<host/I<system>> where I<system> is the
+fully-qualified name of the system as derived from the keytab being
+requested.
 
-If the name of the ACL returned by the default_owner function matches an ACL
-that already exists in the wallet database, the existing ACL will be
-compared to the default ACL returned by the default_owner function.  If the
-existing ACL has the same entries as the one returned by default_owner,
-creation continues if the user is authorized by that ACL.  If they don't
-match, creation of the object is rejected, since the presence of an existing
-ACL may indicate that something different is being done with this object.
+If the name of the ACL returned by the default_owner function matches an
+ACL that already exists in the wallet database, the existing ACL will be
+compared to the default ACL returned by the default_owner function.  If
+the existing ACL has the same entries as the one returned by
+default_owner, creation continues if the user is authorized by that ACL.
+If they don't match, creation of the object is rejected, since the
+presence of an existing ACL may indicate that something different is being
+done with this object.
 
 =head1 NAMING ENFORCEMENT
 

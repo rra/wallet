@@ -133,6 +133,10 @@ __DATA__
 
 Wallet::Schema - Database schema for the wallet system
 
+=for stopwords
+SQL ACL API APIs enums Enums Keytab Backend keytab backend enctypes
+enctype Allbery
+
 =head1 SYNOPSIS
 
     use Wallet::Schema;
@@ -157,30 +161,30 @@ MySQL and may require some modifications for other databases.
 
 =item new()
 
-Instantiates a new Wallet::Schema object.  This parses the documentation and
-extracts the schema, but otherwise doesn't do anything.
+Instantiates a new Wallet::Schema object.  This parses the documentation
+and extracts the schema, but otherwise doesn't do anything.
 
 =item create(DBH)
 
-Given a connected database handle, runs the SQL commands necessary to create
-the wallet database in an otherwise empty database.  This method will not
-drop any existing tables and will therefore fail if a wallet database has
-already been created.  On any error, this method will throw a database
-exception.
+Given a connected database handle, runs the SQL commands necessary to
+create the wallet database in an otherwise empty database.  This method
+will not drop any existing tables and will therefore fail if a wallet
+database has already been created.  On any error, this method will throw a
+database exception.
 
 =item drop(DBH)
 
 Given a connected database handle, drop all of the wallet tables from that
-database if any of those tables exist.  This method will only remove tables
-that are part of the current schema or one of the previous known schema and
-won't remove other tables.  On any error, this method will throw a database
-exception.
+database if any of those tables exist.  This method will only remove
+tables that are part of the current schema or one of the previous known
+schema and won't remove other tables.  On any error, this method will
+throw a database exception.
 
 =item sql()
 
-Returns the schema and the population of the normalization tables as a list
-of SQL commands to run to create the wallet database in an otherwise empty
-database.
+Returns the schema and the population of the normalization tables as a
+list of SQL commands to run to create the wallet database in an otherwise
+empty database.
 
 =back
 
@@ -188,8 +192,8 @@ database.
 
 =head2 Normalization Tables
 
-The following are normalization tables used to constrain the values in other
-tables.
+The following are normalization tables used to constrain the values in
+other tables.
 
 Holds the supported flag names:
 
@@ -221,16 +225,16 @@ Holds the supported ACL schemes and their corresponding Perl classes:
       values ('netdb-root', 'Wallet::ACL::NetDB::Root');
 
 If you have extended the wallet to support additional object types or
-additional ACL schemes, you will want to add additional rows to these tables
-mapping those types or schemes to Perl classes that implement the object or
-ACL verifier APIs.
+additional ACL schemes, you will want to add additional rows to these
+tables mapping those types or schemes to Perl classes that implement the
+object or ACL verifier APIs.
 
 =head2 ACL Tables
 
-A wallet ACL consists of zero or more ACL entries, each of which is a scheme
-and an identifier.  The scheme identifies the check that should be performed
-and the identifier is additional scheme-specific information.  Each ACL
-references entries in the following table:
+A wallet ACL consists of zero or more ACL entries, each of which is a
+scheme and an identifier.  The scheme identifies the check that should be
+performed and the identifier is additional scheme-specific information.
+Each ACL references entries in the following table:
 
   create table acls
      (ac_id               integer auto_increment primary key,
@@ -249,8 +253,9 @@ in:
   create index ae_id on acl_entries (ae_id);
 
 ACLs may be referred to in the API via either the numeric ID or the
-human-readable name, but internally ACLs are always referenced by numeric ID
-so that they can be renamed without requiring complex data modifications.
+human-readable name, but internally ACLs are always referenced by numeric
+ID so that they can be renamed without requiring complex data
+modifications.
 
 Currently, the ACL named C<ADMIN> (case-sensitive) is special-cased in the
 Wallet::Server code and granted global access.
@@ -269,17 +274,18 @@ table.
       ah_on               datetime not null);
   create index ah_acl on acl_history (ah_acl);
 
-ah_action must be one of C<create>, C<destroy>, C<add>, or C<remove> (enums
-aren't used for compatibility with databases other than MySQL).  For a
-change of type create or destroy, only the action and the trace records (by,
-from, and on) are stored.  For a change to the lines of an ACL, the scheme
-and identifier of the line that was added or removed is included.  Note that
-changes to the ACL name are not recorded; ACLs are always tracked by
-system-generated ID, so name changes are purely cosmetic.
+ah_action must be one of C<create>, C<destroy>, C<add>, or C<remove>
+(enums aren't used for compatibility with databases other than MySQL).
+For a change of type create or destroy, only the action and the trace
+records (by, from, and on) are stored.  For a change to the lines of an
+ACL, the scheme and identifier of the line that was added or removed is
+included.  Note that changes to the ACL name are not recorded; ACLs are
+always tracked by system-generated ID, so name changes are purely
+cosmetic.
 
-ah_by stores the authenticated identity that made the change, ah_from stores
-the host from which they made the change, and ah_on stores the time the
-change was made.
+ah_by stores the authenticated identity that made the change, ah_from
+stores the host from which they made the change, and ah_on stores the time
+the change was made.
 
 =head2 Object Tables
 
@@ -311,13 +317,13 @@ table:
   create index ob_expires on objects (ob_expires);
 
 Object names are not globally unique but only unique within their type, so
-the table has a joint primary key.  Each object has an owner and then up to
-five more specific ACLs.  The owner provides permission for get, store, and
-show operations if no more specific ACL is set.  It does not provide
+the table has a joint primary key.  Each object has an owner and then up
+to five more specific ACLs.  The owner provides permission for get, store,
+and show operations if no more specific ACL is set.  It does not provide
 permission for destroy or flags.
 
-The ob_acl_flags ACL controls who can set flags on this object.  Each object
-may have zero or more flags associated with it:
+The ob_acl_flags ACL controls who can set flags on this object.  Each
+object may have zero or more flags associated with it:
 
   create table flags
      (fl_type             varchar(16)
@@ -348,27 +354,28 @@ this table:
       oh_on               datetime not null);
   create index oh_object on object_history (oh_type, oh_name);
 
-oh_action must be one of C<create>, C<destroy>, C<get>, C<store>, or C<set>.
-oh_field must be one of C<owner>, C<acl_get>, C<acl_store>, C<acl_show>,
-C<acl_destroy>, C<acl_flags>, C<expires>, C<flags>, or C<type_data>.  Enums
-aren't used for compatibility with databases other than MySQL.
+oh_action must be one of C<create>, C<destroy>, C<get>, C<store>, or
+C<set>.  oh_field must be one of C<owner>, C<acl_get>, C<acl_store>,
+C<acl_show>, C<acl_destroy>, C<acl_flags>, C<expires>, C<flags>, or
+C<type_data>.  Enums aren't used for compatibility with databases other
+than MySQL.
 
-For a change of type create, get, store, or destroy, only the action and the
-trace records (by, from, and on) are stored.  For changes to columns or to
-the flags table, oh_field takes what attribute is changed, oh_from takes the
-previous value converted to a string and oh_to takes the next value
-similarly converted to a string.  The special field value "type_data" is
-used when type-specific data is changed, and in that case (and only that
-case) some type-specific name for the data being changed is stored in
-oh_type_field.
+For a change of type create, get, store, or destroy, only the action and
+the trace records (by, from, and on) are stored.  For changes to columns
+or to the flags table, oh_field takes what attribute is changed, oh_from
+takes the previous value converted to a string and oh_to takes the next
+value similarly converted to a string.  The special field value
+"type_data" is used when type-specific data is changed, and in that case
+(and only that case) some type-specific name for the data being changed is
+stored in oh_type_field.
 
 When clearing a flag, oh_old will have the name of the flag and oh_new
 will be null.  When setting a flag, oh_old will be null and oh_new will
 have the name of the flag.
 
-oh_by stores the authenticated identity that made the change, oh_from stores
-the host from which they made the change, and oh_on stores the time the
-change was made.
+oh_by stores the authenticated identity that made the change, oh_from
+stores the host from which they made the change, and oh_on stores the time
+the change was made.
 
 =head2 Keytab Backend Data
 
@@ -406,16 +413,16 @@ and then the restrictions for a given keytab are stored in this table:
       primary key (ke_name, ke_enctype));
   create index ke_name on keytab_enctypes (ke_name);
 
-To use this functionality, you will need to populate the enctypes table with
-the enctypes that a keytab may be restricted to.  Currently, there is no
-automated mechanism to do this.
+To use this functionality, you will need to populate the enctypes table
+with the enctypes that a keytab may be restricted to.  Currently, there is
+no automated mechanism to do this.
 
 =head1 SEE ALSO
 
 wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

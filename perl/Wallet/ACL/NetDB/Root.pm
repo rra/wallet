@@ -1,7 +1,7 @@
 # Wallet::ACL::NetDB::Root -- Wallet NetDB role ACL verifier (root instances).
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -23,7 +23,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Interface
@@ -48,6 +48,9 @@ sub check {
 # Documentation
 ##############################################################################
 
+=for stopwords
+ACL NetDB DNS DHCP Allbery
+
 =head1 NAME
 
 Wallet::ACL::NetDB::Root - Wallet ACL verifier for NetDB roles (root instances)
@@ -66,13 +69,14 @@ Wallet::ACL::NetDB::Root - Wallet ACL verifier for NetDB roles (root instances)
 
 =head1 DESCRIPTION
 
-Wallet::ACL::NetDB::Root works identically to Wallet::ACL::NetDB except that
-it requires the principal to be a root instance (in other words, to be in
-the form <principal>/root@<realm>) and strips the C</root> portion from the
-principal before checking against NetDB roles.  As with the base NetDB ACL
-verifier, the value of a netdb-root ACL is a node, and the ACL grants access
-to a given principal if and only if the that principal (with C</root>
-stripped) has one of the roles user, admin, or team for that node.
+Wallet::ACL::NetDB::Root works identically to Wallet::ACL::NetDB except
+that it requires the principal to be a root instance (in other words, to
+be in the form <principal>/root@<realm>) and strips the C</root> portion
+from the principal before checking against NetDB roles.  As with the base
+NetDB ACL verifier, the value of a C<netdb-root> ACL is a node, and the
+ACL grants access to a given principal if and only if the that principal
+(with C</root> stripped) has one of the roles user, admin, or team for
+that node.
 
 To use this object, the same configuration parameters must be set as for
 Wallet::ACL::NetDB.  See Wallet::Config(3) for details on those
@@ -85,11 +89,11 @@ configuration.
 
 =item check(PRINCIPAL, ACL)
 
-Returns true if PRINCIPAL is granted access according to ACL, false if not,
-and undef on an error (see L<"DIAGNOSTICS"> below).  ACL is a node, and
-PRINCIPAL will be granted access if it has an instance of C<root> and if
-(with C</root> stripped off and the realm stripped off if configured) has
-the user, admin, or team role for that node.
+Returns true if PRINCIPAL is granted access according to ACL, false if
+not, and undef on an error (see L<"DIAGNOSTICS"> below).  ACL is a node,
+and PRINCIPAL will be granted access if it has an instance of C<root> and
+if (with C</root> stripped off and the realm stripped off if configured)
+has the user, admin, or team role for that node.
 
 =back
 
@@ -106,15 +110,15 @@ grant access is not currently configurable.
 
 =head1 SEE ALSO
 
-Net::Remctl(3), Wallet::ACL(3), Wallet::ACL::Base(3), Wallet::ACL::NetDB(3),
-Wallet::Config(3), wallet-backend(8)
+Net::Remctl(3), Wallet::ACL(3), Wallet::ACL::Base(3),
+Wallet::ACL::NetDB(3), Wallet::Config(3), wallet-backend(8)
 
-NetDB is a free software system for managing DNS, DHCP, and related machine
-information for large organizations.  For more information on NetDB, see
-L<http://www.stanford.edu/group/networking/netdb/>.
+NetDB is a free software system for managing DNS, DHCP, and related
+machine information for large organizations.  For more information on
+NetDB, see L<http://www.stanford.edu/group/networking/netdb/>.
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

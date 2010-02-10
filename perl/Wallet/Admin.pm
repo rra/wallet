@@ -1,7 +1,7 @@
 # Wallet::Admin -- Wallet system administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -413,6 +413,9 @@ __DATA__
 
 Wallet::Admin - Wallet system administrative interface
 
+=for stopwords
+ACL hostname ACLs SQL wildcard Allbery
+
 =head1 SYNOPSIS
 
     use Wallet::Admin;
@@ -429,9 +432,9 @@ thin wrapper around this object that provides a command-line interface to
 its actions.
 
 To use this object, several configuration variables must be set (at least
-the database configuration).  For information on those variables and how to
-set them, see Wallet::Config(3).  For more information on the normal user
-interface to the wallet server, see Wallet::Server(3).
+the database configuration).  For information on those variables and how
+to set them, see Wallet::Config(3).  For more information on the normal
+user interface to the wallet server, see Wallet::Server(3).
 
 =head1 CLASS METHODS
 
@@ -491,11 +494,11 @@ at least one ACL, but an error can be distinguished from the odd case of a
 database with no ACLs by calling error().  error() is guaranteed to return
 the error message if there was an error and undef if there was no error.
 
-There are currently two search types.  'empty' takes no arguments, and will
-return only those acls that have no entries within them.  'entry' takes two
-arguments -- an entry scheme and an entry identifier -- and will return
-any ACLs with an entry that matches the given scheme and contains the
-given identifier.
+There are currently two search types.  C<empty> takes no arguments and
+will return only those ACLs that have no entries within them.  C<entry>
+takes two arguments, an entry scheme and an entry identifier, and will
+return any ACLs with an entry that matches the given scheme and contains
+the given identifier.
 
 =item list_objects(TYPE, SEARCH)
 
@@ -503,7 +506,7 @@ Returns a list of all objects matching a search type and string in the
 database, or all objects in the database if no search information is
 given.  The return value is a list of references to pairs of type and
 name.  For example, if two objects existed in the database, both of type
-"keytab" and with values "host/example.com" and "foo", list_objects()
+C<keytab> and with values C<host/example.com> and C<foo>, list_objects()
 with no arguments would return:
 
     ([ 'keytab', 'host/example.com' ], [ 'keytab', 'foo' ])
@@ -513,13 +516,13 @@ database containing no objects, the caller should call error().  error()
 is guaranteed to return the error message if there was an error and undef
 if there was no error.
 
-There are four types of searches currently.  'type' (with a given type)
+There are four types of searches currently.  C<type> (with a given type)
 will return only those entries where the type matches the given type.
-'owner', with a given owner, will only return those objects owned by the
-given acl name.  'flag', with a given flag name, will only return those
-items with a flag set to the given value.  'acl' operates like 'owner',
-but will return only those objects that have the given acl name on any
-of the possible acl settings, not just owner.
+C<owner>, with a given owner, will only return those objects owned by the
+given ACL name.  C<flag>, with a given flag name, will only return those
+items with a flag set to the given value.  C<acl> operates like C<owner>,
+but will return only those objects that have the given ACL name on any of
+the possible ACL settings, not just owner.
 
 =item register_object (TYPE, CLASS)
 
@@ -559,8 +562,8 @@ the error message if there was an error and undef if there was no error.
 
 wallet-admin(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

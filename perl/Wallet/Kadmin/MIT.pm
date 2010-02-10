@@ -226,6 +226,9 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+keytabs keytab kadmin enctype enctypes API ENCTYPES Allbery
+
 =head1 NAME
 
 Wallet::Kadmin::MIT - MIT admin interactions for wallet keytabs
@@ -240,18 +243,18 @@ Wallet::Kadmin::MIT - MIT admin interactions for wallet keytabs
 
 =head1 DESCRIPTION
 
-Wallet::Kadmin::MIT is an interface for keytab integration with the wallet,
-specifically for using kadmin to create, delete, and add enctypes to keytabs.
-It implments the wallet kadmin API and provides the necessary glue to MIT
-Kerberos installs for each of these functions, while allowing the wallet
-to keep the details of what type of Kerberos installation is being used
-abstracted.
+Wallet::Kadmin::MIT is an interface for keytab integration with the
+wallet, specifically for using kadmin to create, delete, and add enctypes
+to keytabs.  It implements the wallet kadmin API and provides the
+necessary glue to MIT Kerberos installs for each of these functions, while
+allowing the wallet to keep the details of what type of Kerberos
+installation is being used abstracted.
 
 A keytab is an on-disk store for the key or keys for a Kerberos principal.
-Keytabs are used by services to verify incoming authentication from clients
-or by automated processes that need to authenticate to Kerberos.  To create
-a keytab, the principal has to be created in Kerberos and then a keytab is
-generated and stored in a file on disk.
+Keytabs are used by services to verify incoming authentication from
+clients or by automated processes that need to authenticate to Kerberos.
+To create a keytab, the principal has to be created in Kerberos and then a
+keytab is generated and stored in a file on disk.
 
 To use this object, several configuration parameters must be set.  See
 Wallet::Config(3) for details on those configuration parameters and
@@ -264,17 +267,17 @@ information about how to set wallet configuration.
 =item addprinc(PRINCIPAL)
 
 Adds a new principal with a given name.  The principal is created with a
-random password, and any other flags set by Wallet::Config.  Returns true on
-success, or throws an error if there was a failure in adding the principal.
-If the principal already exists, return true as we are bringing our
-expectations in line with reality.
+random password, and any other flags set by Wallet::Config.  Returns true
+on success, or throws an error if there was a failure in adding the
+principal.  If the principal already exists, return true as we are
+bringing our expectations in line with reality.
 
-=item addprinc(PRINCIPAL)
+=item delprinc(PRINCIPAL)
 
-Removes a principal with the given name.  Returns true on success, or throws
-an error if there was a failure in removing the principal.  If the principal
-does not exist, return true as we are bringing our expectations in line with
-reality.
+Removes a principal with the given name.  Returns true on success, or
+throws an error if there was a failure in removing the principal.  If the
+principal does not exist, return true as we are bringing our expectations
+in line with reality.
 
 =item ktadd(PRINCIPAL, FILE, ENCTYPES)
 
@@ -297,8 +300,8 @@ output of B<kadmin> ever changes.
 
 kadmin(8), Wallet::Config(3), Wallet::Object::Keytab(3), wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 

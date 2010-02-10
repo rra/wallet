@@ -382,6 +382,10 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+keytab API KDC keytabs HOSTNAME DATETIME enctypes enctype DBH metadata
+unmanaged kadmin Allbery
+
 =head1 NAME
 
 Wallet::Object::Keytab - Keytab object implementation for wallet
@@ -396,17 +400,17 @@ Wallet::Object::Keytab - Keytab object implementation for wallet
 
 =head1 DESCRIPTION
 
-Wallet::Object::Keytab is a representation of Kerberos keytab objects in the
-wallet.  It implements the wallet object API and provides the necessary
-glue to create principals in a Kerberos KDC, create and return keytabs for
-those principals, and delete them out of Kerberos when the wallet object is
-destroyed.
+Wallet::Object::Keytab is a representation of Kerberos keytab objects in
+the wallet.  It implements the wallet object API and provides the
+necessary glue to create principals in a Kerberos KDC, create and return
+keytabs for those principals, and delete them out of Kerberos when the
+wallet object is destroyed.
 
 A keytab is an on-disk store for the key or keys for a Kerberos principal.
-Keytabs are used by services to verify incoming authentication from clients
-or by automated processes that need to authenticate to Kerberos.  To create
-a keytab, the principal has to be created in Kerberos and then a keytab is
-generated and stored in a file on disk.
+Keytabs are used by services to verify incoming authentication from
+clients or by automated processes that need to authenticate to Kerberos.
+To create a keytab, the principal has to be created in Kerberos and then a
+keytab is generated and stored in a file on disk.
 
 This implementation generates a new random key (and hence invalidates all
 existing keytabs) each time the keytab is retrieved with the get() method.
@@ -418,8 +422,9 @@ information about how to set wallet configuration.
 =head1 METHODS
 
 This object mostly inherits from Wallet::Object::Base.  See the
-documentation for that class for all generic methods.  Below are only those
-methods that are overridden or behave specially for this implementation.
+documentation for that class for all generic methods.  Below are only
+those methods that are overridden or behave specially for this
+implementation.
 
 =over 4
 
@@ -453,12 +458,12 @@ enctypes than those requested by this attribute.
 
 If no other arguments besides ATTRIBUTE are given, returns the values of
 that attribute, if any, as a list.  On error, returns the empty list.  To
-distinguish between an error and an empty return, call error() afterwards.
+distinguish between an error and an empty return, call error() afterward.
 It is guaranteed to return undef unless there was an error.
 
 If other arguments are given, sets the given ATTRIBUTE values to VALUES,
-which must be a reference to an array (even if only one value is being set).
-Pass a reference to an empty array to clear the attribute values.
+which must be a reference to an array (even if only one value is being
+set).  Pass a reference to an empty array to clear the attribute values.
 PRINCIPAL, HOSTNAME, and DATETIME are stored as history information.
 PRINCIPAL should be the user who is destroying the object.  If DATETIME
 isn't given, the current time is used.
@@ -467,12 +472,12 @@ isn't given, the current time is used.
 
 This is a class method and should be called on the Wallet::Object::Keytab
 class.  It creates a new object with the given TYPE and NAME (TYPE is
-normally C<keytab> and must be for the rest of the wallet system to use the
-right class, but this module doesn't check for ease of subclassing), using
-DBH as the handle to the wallet metadata database.  PRINCIPAL, HOSTNAME, and
-DATETIME are stored as history information.  PRINCIPAL should be the user
-who is creating the object.  If DATETIME isn't given, the current time is
-used.
+normally C<keytab> and must be for the rest of the wallet system to use
+the right class, but this module doesn't check for ease of subclassing),
+using DBH as the handle to the wallet metadata database.  PRINCIPAL,
+HOSTNAME, and DATETIME are stored as history information.  PRINCIPAL
+should be the user who is creating the object.  If DATETIME isn't given,
+the current time is used.
 
 When a new keytab object is created, the Kerberos principal designated by
 NAME is also created in the Kerberos realm determined from the wallet
@@ -515,9 +520,9 @@ used.
 
 =item KEYTAB_TMP/keytab.<pid>
 
-The keytab is created in this file using C<ktadd> and then read into memory.
-KEYTAB_TMP is set in the wallet configuration, and <pid> is the process ID
-of the current process.  The file is unlinked after being read.
+The keytab is created in this file using C<ktadd> and then read into
+memory.  KEYTAB_TMP is set in the wallet configuration, and <pid> is the
+process ID of the current process.  The file is unlinked after being read.
 
 =back
 
@@ -536,8 +541,8 @@ wallet database do not have realm information.
 
 kadmin(8), Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
