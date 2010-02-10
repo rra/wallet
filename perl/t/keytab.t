@@ -370,7 +370,7 @@ EOO
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
     is ($object, undef, ' and one set to an invalid value');
-    is ($@, "keytab krb server type not set to a valid value\n",
+    is ($@, "unknown KEYTAB_KRBTYPE setting: Active Directory\n",
         ' with the right error');
     $Wallet::Config::KEYTAB_KRBTYPE = contents ('t/data/test.krbtype');
 }
