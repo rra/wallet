@@ -73,11 +73,12 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # Remove some additional files.
-DISTCLEANFILES = perl/Makefile
-MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	     \
-	configure client/wallet.1 server/keytab-backend.8		     \
-	server/wallet-backend.8 tools/compile tools/depcomp tools/install-sh \
-	tools/missing
+DISTCLEANFILES = perl/Makefile tests/data/.placeholder
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		\
+	build-aux/depcomp build-aux/install-sh build-aux/missing	\
+	client/wallet.1 config.h.in config.h.in~ configure		\
+	contrib/wallet-report.8 server/keytab-backend.8			\
+	server/wallet-backend.8
 
 # Take appropriate actions in the Perl directory as well.  We don't want to
 # always build the Perl directory in all-local, since otherwise Automake does
@@ -112,7 +113,7 @@ clean-local:
 # Remove the files that we copy over if and only if builddir != srcdir.
 distclean-local:
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    rm -f $(PERL_FILES) $(TEST_FILES) ; \
+	    rm -f $(PERL_FILES) ; \
 	fi
 
 # The bits below are for the test suite, not for the main package.
