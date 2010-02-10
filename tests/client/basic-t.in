@@ -9,43 +9,10 @@
 # See LICENSE for licensing terms.
 
 # Load the test library.
-. "@abs_top_srcdir@/tests/libtest.sh"
-
-# Print the number of tests.
-total=31
-count=1
-echo "$total"
-
-# Find the client program.
-chdir_data '../client/wallet'
-if [ ! -f 'data/test.keytab' ] || [ -z '@REMCTLD@' ] ; then
-    skip 1 "$total" 'no Kerberos configuration'
-    exit 0
-fi
-wallet='../client/wallet'
-
-# Start the remctld daemon and wait for it to start.
-principal=`cat data/test.principal`
-rm -f data/pid
-( @REMCTLD@ -m -p 14373 -s "$principal" -P data/pid -f data/basic.conf \
-  -S -F -k data/test.keytab &)
-KRB5CCNAME=data/test.cache; export KRB5CCNAME
-kinit -k -t data/test.keytab "$principal" > /dev/null 2>&1
-if [ $? != 0 ] ; then
-    kinit -t data/test.keytab "$principal" > /dev/null 2>&1
-fi
-if [ $? != 0 ] ; then
-    kinit -T /bin/true -k -K data/test.keytab "$principal" > /dev/null 2>&1
-fi
-if [ $? != 0 ] ; then
-    echo 'Unable to obtain Kerberos tickets' >&2
-    exit 1
-fi
-[ -f data/pid ] || sleep 1
-if [ ! -f data/pid ] ; then
-    echo 'remctld did not start' >&2
-    exit 1
-fi
+. "$SOURCE/tap/libtap.sh"
+. "$SOURCE/tap/kerberos.sh"
+. "$SOURCE/tap/remctl.sh"
+cd "$BUILD"
 
 # We need a modified krb5.conf file to test wallet configuration settings in
 # krb5.conf.  Despite the hard-coding of test-k5.stanford.edu, this test isn't
@@ -73,43 +40,39 @@ EOF
     fi
 done
 if [ -z "$krb5conf" ] ; then
-    echo 'No krb5.conf found -- put one in tests/data/krb5.conf' >&2
-    exit 1
+    skip_all 'no krb5.conf found, put one in tests/data/krb5.conf'
 fi
+
+# Test setup.
+kerberos_setup
+if [ $? != 0 ] ; then
+    skip_all 'Kerberos tests not configured'
+elif [ -z '@REMCTLD@' ] ; then
+    skip_all 'No remctld found'
+else
+    plan 34
+fi
+remctld_start '@REMCTLD@' "$SOURCE/data/basic.conf"
+wallet="$BUILD/../client/wallet"
 
 # Make sure everything's clean.
 rm -f output output.bak keytab keytab.bak srvtab srvtab.bak autocreated
 
 # Now, we can finally run our tests.  First, basic operations.
-runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
-    -f output get file fake-test
-if cmp output data/fake-data >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
-if [ -f output.bak ] || [ -f output.new ] ; then
-    printcount "not ok"
-else
-    printcount "ok"
-fi
-if [ -f autocreated ] ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
-runsuccess "" "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet \
-    -f output get file fake-test
-if cmp output data/fake-data >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
-if [ -f output.new ] || [ ! -f output.bak ] ; then
-    printcount "not ok"
-else
-    printcount "ok"
-fi
+ok_program 'get file' 0 '' \
+    "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet -f output \
+    get file fake-test
+ok '...and file is correct' cmp output data/fake-data
+ok '...and no backup files' [ ! -f output.bak ]
+ok '...and no new files' [ ! -f output.new ]
+ok '...and we tried autocreation' [ -f autocreated ]
+ok_program 'get file again' 0 '' \
+   "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet -f output \
+    get file fake-test
+ok '...and file is correct' cmp output data/fake-data
+ok '...and now there is a backup file' [ -f output.bak ]
+ok '...which has the right contents' cmp output.bak data/fake-data
+ok '...but there is no new file' [ ! -f output.new ]
 
 # Now, append configuration to krb5.conf and test getting configuration from
 # there.
@@ -123,116 +86,79 @@ cat >> krb5.conf <<EOF
         wallet_principal = $principal
     }
 EOF
-runsuccess "" "$wallet" -f output get file fake-test
-if cmp output data/fake-data >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
+ok_program 'get file with configuration' 0 '' \
+    "$wallet" -f output get file fake-test
+ok '...and file is correct' cmp output data/fake-data
 rm -f output output.bak
 
 # Test keytab support.
-runsuccess "" "$wallet" -f keytab get keytab service/fake-srvtab
-if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
-    printcount "ok"
-    rm keytab
-else
-    printcount "not ok"
-fi
+ok_program 'get keytab' 0 '' \
+    "$wallet" -f keytab get keytab service/fake-srvtab
+ok '...and keytab is correct' cmp keytab data/fake-keytab
+rm -f keytab
 
 # Test srvtab support.
-runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
-if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
-rm keytab
-runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
-if cmp keytab data/fake-keytab >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
-if cmp srvtab data/fake-srvtab >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
-if cmp srvtab.bak data/fake-srvtab >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
+ok_program 'get srvtab' 0 '' \
+    "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
+ok '...and keytab is correct' cmp keytab data/fake-keytab
+rm -f keytab
+ok_program 'get srvtab again' 0 '' \
+    "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
+ok '...and keytab is correct' cmp keytab data/fake-keytab
+ok '...and srvtab is correct' cmp srvtab data/fake-srvtab
+ok '...and srvtab backup is correct' cmp srvtab.bak data/fake-srvtab
 rm -f srvtab srvtab.bak
 
 # Test keytab merging.
-runsuccess "" "$wallet" -f keytab get keytab service/fake-keytab
+ok_program 'keytab merging' 0 '' \
+    "$wallet" -f keytab get keytab service/fake-keytab
 (klist -keK keytab 2>&1) | sed '/Keytab name:/d' > klist-seen
 (klist -keK data/fake-keytab-merge 2>&1) | sed '/Keytab name:/d' > klist-good
-if cmp klist-seen klist-good >/dev/null 2>&1 ; then
-    printcount "ok"
-    rm -f keytab klist-seen klist-good
-else
-    printcount "not ok"
-fi
+ok '...and the merged keytab is correct' cmp klist-seen klist-good
+rm -f keytab klist-seen klist-good
 
 # Test srvtab download into a merged keytab with an older version.
 cp data/fake-keytab-old keytab
-runsuccess "" "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
-if cmp srvtab data/fake-srvtab >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
+ok_program 'keytab merging with srvtab creation' 0 '' \
+    "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
+ok '...and the srvtab is correct' cmp srvtab data/fake-srvtab
 rm -f keytab srvtab
 
 # Test store from standard input.
-echo "This is a test of store" | runsuccess "" "$wallet" store file fake-test
-count=`expr $count + 1`
+echo "This is a test of store" > input
+ok_program 'store from stdin' 0 '' "$wallet" store file fake-test < input
+rm -f input
 echo "file fake-test" > store-correct
 echo "This is a test of store" >> store-correct
-if cmp store-output store-correct >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-    echo == store-output ==
-    cat store-output
-    echo == store-correct ==
-    cat store-correct
-fi
+ok '...and the correct data was stored' diff store-output store-correct
 rm -f store-output store-correct
 
 # Test store with -f.
 echo "This is more store input" > store-input
 echo "file fake-test" > store-correct
 cat store-input >> store-correct
-runsuccess "" "$wallet" -f store-input store file fake-test
-if cmp store-output store-correct >/dev/null 2>&1 ; then
-    printcount "ok"
-else
-    printcount "not ok"
-fi
+ok_program 'store from a file' 0 '' \
+    "$wallet" -f store-input store file fake-test
+ok '...and the correct data was stored' cmp store-output store-correct
 rm -f store-input store-output store-correct
 
 # Test various other client functions and errors.
-runsuccess "This is a fake keytab." "$wallet" get keytab service/fake-output
-runsuccess "Some stuff about file fake-test" \
+ok_program 'get output to stdout' 0 'This is a fake keytab.' \
+    "$wallet" get keytab service/fake-output
+ok_program 'show output' 0 'Some stuff about file fake-test' \
     "$wallet" show file fake-test
-runfailure 1 "wallet: Unknown object type srvtab" \
+ok_program 'unknown object type' 1 'wallet: Unknown object type srvtab' \
     "$wallet" get srvtab service/fake-test
-runfailure 1 "wallet: Unknown keytab service/unknown" \
+ok_program 'unknown keytab name in show' 1 \
+    'wallet: Unknown keytab service/unknown' \
     "$wallet" show keytab service/unknown
-runfailure 1 "wallet: Unknown keytab service/unknown" \
+ok_program 'unknown keytab name in get' 1 \
+    'wallet: Unknown keytab service/unknown' \
     "$wallet" get keytab service/unknown
-runsuccess "Expiration date of keytab service/fake-test" \
+ok_program 'expiration date' 0 'Expiration date of keytab service/fake-test' \
     "$wallet" expires keytab service/fake-test
 
 # Clean up.
-KRB5_CONFIG=
-rm krb5.conf
-rm -f autocreated data/test.cache
-if [ -f data/pid ] ; then
-    kill `cat data/pid`
-    rm -f data/pid
-fi
+rm -f autocreated krb5.conf
+remctld_stop
+kerberos_cleanup

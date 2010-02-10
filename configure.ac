@@ -70,5 +70,4 @@ AC_CONFIG_FILES([tests/server/admin-t], [chmod +x tests/server/admin-t])
 AC_CONFIG_FILES([tests/server/backend-t], [chmod +x tests/server/backend-t])
 AC_CONFIG_FILES([tests/server/keytab-t], [chmod +x tests/server/keytab-t])
 AC_CONFIG_FILES([tests/server/pod-t], [chmod +x tests/server/pod-t])
-AC_CONFIG_FILES([tests/util/xmalloc-t], [chmod +x tests/util/xmalloc-t])
 AC_OUTPUT

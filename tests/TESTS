@@ -3,6 +3,8 @@ client/full
 client/pod
 client/prompt
 portable/asprintf
+portable/mkstemp
+portable/setenv
 portable/snprintf
 portable/strlcat
 portable/strlcpy
@@ -12,4 +14,5 @@ server/keytab
 server/pod
 util/concat
 util/messages
+util/messages-krb5
 util/xmalloc

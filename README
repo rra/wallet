@@ -233,8 +233,12 @@ TESTING
   not available, but this has not yet been fully tested in all of its
   possible permutations.
 
-  If a test case fails, please run that individual test program directly
-  and send me the output when reporting the problem.
+  If a test fails, you can run a single test with verbose output via:
+
+      tests/runtests -o <name-of-test>
+
+  Do this instead of running the test program directly since it will
+  ensure that necessary environment variables are set up.
 
 CONFIGURATION
 
