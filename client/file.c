@@ -2,7 +2,7 @@
  * File handling for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
@@ -15,7 +15,9 @@
 #include <sys/stat.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/concat.h>
+#include <util/messages.h>
+#include <util/xmalloc.h>
 
 /*
  * Given a filename, some data, and a length, write that data to the given

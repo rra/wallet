@@ -2,7 +2,7 @@
  * remctl interface for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2010 Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
@@ -13,7 +13,8 @@
 #include <remctl.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/messages.h>
+#include <util/xmalloc.h>
 
 
 /*

@@ -15,7 +15,8 @@
 #include <krb5.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/messages-krb5.h>
+#include <util/messages.h>
 
 
 /*
@@ -29,7 +30,7 @@ kinit(krb5_context ctx, const char *principal)
     krb5_principal princ;
     krb5_ccache ccache;
     krb5_creds creds;
-    krb5_get_init_creds_opt opts;
+    krb5_get_init_creds_opt *opts;
     krb5_error_code status;
     char cache_name[] = "/tmp/krb5cc_wallet_XXXXXX";
     int fd;
@@ -38,17 +39,21 @@ kinit(krb5_context ctx, const char *principal)
     status = krb5_parse_name(ctx, principal, &princ);
     if (status != 0)
         die_krb5(ctx, status, "invalid Kerberos principal %s", principal);
-    krb5_get_init_creds_opt_init(&opts);
+    status = krb5_get_init_creds_opt_alloc(ctx, &opts);
+    if (status != 0)
+        die_krb5(ctx, status, "cannot allocate credential options");
+    krb5_get_init_creds_opt_set_default_flags(ctx, "wallet", princ->realm,
+                                              opts);
     memset(&creds, 0, sizeof(creds));
     status = krb5_get_init_creds_password(ctx, &creds, princ, NULL,
-                 krb5_prompter_posix, NULL, 0, NULL, &opts);
+                 krb5_prompter_posix, NULL, 0, NULL, opts);
     if (status != 0)
         die_krb5(ctx, status, "authentication failed");
 
     /* Put the new credentials into a ticket cache. */
     fd = mkstemp(cache_name);
     if (fd < 0)
-        sysdie("cannot create temporary ticket cache", cache_name);
+        sysdie("cannot create temporary ticket cache %s", cache_name);
     status = krb5_cc_resolve(ctx, cache_name, &ccache);
     if (status != 0)
         die_krb5(ctx, status, "cannot create cache %s", cache_name);

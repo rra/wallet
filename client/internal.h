@@ -2,7 +2,7 @@
  * Internal support functions for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
@@ -11,8 +11,8 @@
 #define CLIENT_INTERNAL_H 1
 
 #include <portable/macros.h>
+#include <portable/krb5.h>
 
-#include <krb5.h>
 #include <sys/types.h>
 
 /* Forward declarations to avoid unnecessary includes. */

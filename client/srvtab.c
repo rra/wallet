@@ -8,12 +8,12 @@
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
 
-#include <krb5.h>
-
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/messages-krb5.h>
+#include <util/messages.h>
 
 #ifndef KRB5_KRB4_COMPAT
 # define ANAME_SZ 40
@@ -87,11 +87,7 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     memcpy(data + length, entry.key.contents, 8);
 #endif
     length += 8;
-#ifdef HAVE_KRB5_KT_FREE_ENTRY
     krb5_kt_free_entry(ctx, &entry);
-#else
-    krb5_free_keytab_entry_contents(ctx, &entry);
-#endif
 
     /* Write out the srvtab file. */
     write_file(srvtab, data, length);

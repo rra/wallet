@@ -39,11 +39,14 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract \
 	docs/setup examples/stanford.conf $(PERL_FILES) $(TEST_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
-portable_libportable_a_SOURCES = portable/dummy.c portable/macros.h \
-	portable/stdbool.h portable/system.h
+portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
+	portable/krb5.h portable/macros.h portable/stdbool.h		\
+	portable/system.h
+portable_libportable_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 portable_libportable_a_LIBADD = $(LIBOBJS)
-util_libutil_a_SOURCES = util/concat.c util/messages.c util/messages-krb5.c \
-	util/util.h util/xmalloc.c
+util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h	\
+	util/messages-krb5.c util/messages-krb5.h util/messages.c	\
+	util/messages.h util/xmalloc.c util/xmalloc.h
 util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
 bin_PROGRAMS = client/wallet

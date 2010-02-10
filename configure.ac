@@ -25,7 +25,9 @@ AC_PROG_RANLIB
 RRA_LIB_REMCTL
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
-AC_CHECK_FUNCS([krb5_kt_free_entry])
+AC_CHECK_FUNCS([krb5_get_init_creds_opt_alloc \
+    krb5_get_init_creds_opt_set_default_flags \
+    krb5_kt_free_entry])
 AC_CHECK_MEMBERS([krb5_keytab_entry.keyblock], , , [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
 

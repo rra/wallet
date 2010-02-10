@@ -2,21 +2,23 @@
  * The client program for the wallet system.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2008
+ * Copyright 2006, 2007, 2008, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
 
 #include <errno.h>
-#include <krb5.h>
 #include <remctl.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/messages-krb5.h>
+#include <util/messages.h>
+#include <util/xmalloc.h>
 
 /*
  * Basic wallet behavior options set either on the command line or via

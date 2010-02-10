@@ -8,12 +8,15 @@
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
 
 #include <remctl.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/concat.h>
+#include <util/messages-krb5.h>
+#include <util/messages.h>
 
 
 /*
@@ -47,11 +50,7 @@ merge_keytab(krb5_context ctx, const char *newfile, const char *file)
         status = krb5_kt_add_entry(ctx, old, &entry);
         if (status != 0)
             die_krb5(ctx, status, "cannot write to keytab %s", file);
-#ifdef HAVE_KRB5_KT_FREE_ENTRY
         krb5_kt_free_entry(ctx, &entry);
-#else
-        krb5_free_keytab_entry_contents(ctx, &entry);
-#endif
     }
     if (status != KRB5_KT_END)
         die_krb5(ctx, status, "error reading temporary keytab %s", newfile);
