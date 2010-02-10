@@ -1,9 +1,9 @@
 #!/usr/bin/perl -w
 #
-# wallet-admin -- Wallet server administrative commands.
+# wallet-backend -- Wallet server administrative commands.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -110,6 +110,9 @@ __END__
 
 wallet-admin - Wallet server administrative commands
 
+=for stopwords
+metadata ACL hostname backend acl acls wildcard SQL Allbery
+
 =head1 SYNOPSIS
 
 B<wallet-admin> I<command> [I<args> ...]
@@ -171,8 +174,8 @@ be listed in the form:
 
 In both cases, there will be one line per ACL or object.
 
-If no searchtype is given, all the ACLs or objects in the database will
-be returned.  If a searchtype (and possible search arguments) are given,
+If no search type is given, all the ACLs or objects in the database will
+be returned.  If a search type (and possible search arguments) are given,
 then the ACLs or objects will be limited to those that match the search.
 
 The currently supported object search types are:
@@ -206,7 +209,7 @@ The currently supported ACL search types are:
 =item list acls empty
 
 Returns all ACLs which have no entries, generally so that abandoned ACLs
-can be housekept.
+can be destroyed.
 
 =item list acls entry <schema> <identifier>
 
@@ -256,8 +259,8 @@ with duplicates suppressed.
 
 Wallet::Admin(3), Wallet::Config(3), wallet-backend(8)
 
-This program is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This program is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

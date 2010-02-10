@@ -3,7 +3,7 @@
 # wallet-backend -- Wallet server for storing and retrieving secure data.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -311,6 +311,11 @@ __END__
 # The commands section of this document is duplicated from the documentation
 # for wallet and should be kept in sync.
 
+=for stopwords
+wallet-backend backend backend-specific remctld ACL acl timestamp getacl
+setacl metadata nul keytab keytabs enctypes enctype ktadd KDC Allbery
+autocreate
+
 =head1 NAME
 
 wallet-backend - Wallet server for storing and retrieving secure data
@@ -321,20 +326,22 @@ B<wallet-backend> [B<-q>] I<command> [I<args> ...]
 
 =head1 DESCRIPTION
 
-B<wallet-backend> implements the interface between B<remctld> and the wallet
-system.  It is written to run under B<remctld> and expects the authenticated
-identity of the remote user in the REMOTE_USER environment variable.  It
-uses REMOTE_HOST or REMOTE_ADDR if REMOTE_HOST isn't set for additional
-trace information.  It accepts the command from B<remctld> on the command
-line, creates a Wallet::Server object, and calls the appropriate methods.
+B<wallet-backend> implements the interface between B<remctld> and the
+wallet system.  It is written to run under B<remctld> and expects the
+authenticated identity of the remote user in the REMOTE_USER environment
+variable.  It uses REMOTE_HOST or REMOTE_ADDR if REMOTE_HOST isn't set for
+additional trace information.  It accepts the command from B<remctld> on
+the command line, creates a Wallet::Server object, and calls the
+appropriate methods.
 
-This program is a fairly thin wrapper around Wallet::Server that translates
-command strings into method calls and returns the results.  It does check
-all arguments except for the <data> argument to the store command and
-rejects any argument not matching C<^[\w_/.-]+\z>; in other words, only
-alphanumerics, underscore (C<_>), slash (C</>), period (C<.>), and hyphen
-(C<->) are permitted in arguments.  This provides some additional security
-over and above the checking already done by the rest of the wallet code.
+This program is a fairly thin wrapper around Wallet::Server that
+translates command strings into method calls and returns the results.  It
+does check all arguments except for the <data> argument to the store
+command and rejects any argument not matching C<^[\w_/.-]+\z>; in other
+words, only alphanumerics, underscore (C<_>), slash (C</>), period (C<.>),
+and hyphen (C<->) are permitted in arguments.  This provides some
+additional security over and above the checking already done by the rest
+of the wallet code.
 
 =head1 OPTIONS
 
@@ -400,7 +407,7 @@ Display the history of the ACL <id>.  Each change to the ACL (not
 including changes to the name of the ACL) will be represented by two
 lines.  The first line will have a timestamp of the change followed by a
 description of the change, and the second line will give the user who made
-the change and the host from which the change was mde.
+the change and the host from which the change was made.
 
 =item acl remove <id> <scheme> <identifier>
 
@@ -447,8 +454,8 @@ The expiration will be displayed in seconds since epoch.
 
 If <date> is given, sets the expiration on the object identified by <type>
 and <name> to <date> and (if given) <time>.  <date> must be in the format
-C<YYYY-MM-DD> and <time> in the format C<HH:MM:SS>.  If <date> is the empty
-string, clears the expiration of the object.
+C<YYYY-MM-DD> and <time> in the format C<HH:MM:SS>.  If <date> is the
+empty string, clears the expiration of the object.
 
 Currently, the expiration of an object is not used.
 
@@ -460,16 +467,16 @@ Clears the flag <flag> on the object identified by <type> and <name>.
 
 Sets the flag <flag> on the object identified by <type> and <name>.
 Recognized flags are C<locked>, which prevents all further actions on that
-object until the flag is cleared, and C<unchanging>, which tells the object
-backend to not generate new data on get but instead return the same data as
-previously returned.  The C<unchanging> flag is not meaningful for objects
-that do not generate new data on the fly.
+object until the flag is cleared, and C<unchanging>, which tells the
+object backend to not generate new data on get but instead return the same
+data as previously returned.  The C<unchanging> flag is not meaningful for
+objects that do not generate new data on the fly.
 
 =item get <type> <name>
 
-Prints to standard output the data associated with the object identified by
-<type> and <name>.  This may trigger generation of new data and invalidate
-old data for that object depending on the object type.
+Prints to standard output the data associated with the object identified
+by <type> and <name>.  This may trigger generation of new data and
+invalidate old data for that object depending on the object type.
 
 =item getacl <type> <name> <acl>
 
@@ -485,17 +492,17 @@ or setting it.
 Prints the object attribute <attr> for the object identified by <type> and
 <name>.  Attributes are used to store backend-specific information for a
 particular object type, and <attr> must be an attribute type known to the
-underlying object implementation.  The attribute values, if any, are printed
-one per line.  If the attribute is not set on this object, nothing is
-printed.
+underlying object implementation.  The attribute values, if any, are
+printed one per line.  If the attribute is not set on this object, nothing
+is printed.
 
 =item history <type> <name>
 
-Displays the history for the object identified by <type> and <name>.
-This human-readable output will have two lines for each action that
-changes the object, plus for any get action.  The first line has the
-timestamp of the action and the action, and the second line gives the user
-who performed the action and the host from which they performed it.
+Displays the history for the object identified by <type> and <name>.  This
+human-readable output will have two lines for each action that changes the
+object, plus for any get action.  The first line has the timestamp of the
+action and the action, and the second line gives the user who performed
+the action and the host from which they performed it.
 
 =item owner <type> <name> [<owner>]
 
@@ -562,9 +569,9 @@ values of this attribute must be enctype strings recognized by Kerberos
 the salt should not be included; since the salt is irrelevant for keytab
 keys, it will always be set to C<normal> by the wallet.
 
-If this attribute is set, the specified enctype list will be passed to ktadd
-when get() is called for that keytab.  If it is not set, the default set in
-the KDC will be used.
+If this attribute is set, the specified enctype list will be passed to
+ktadd when get() is called for that keytab.  If it is not set, the default
+set in the KDC will be used.
 
 This attribute is ignored if the C<unchanging> flag is set on a keytab.
 Keytabs retrieved with C<unchanging> set will contain all keys present in
@@ -577,8 +584,8 @@ enctypes than those requested by this attribute.
 
 Wallet::Server(3), remctld(8)
 
-This program is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This program is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

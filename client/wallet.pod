@@ -2,6 +2,11 @@
 
 wallet - Client for retrieving secure data from a central server
 
+=for stopwords
+-hv srvtab arg keytabs metadata keytab ACL PTS kinit klist remctl PKINIT
+acl timestamp autocreate backend-specific setacl enctypes enctype ktadd
+KDC appdefaults remctld Allbery nul uuencode getacl backend
+
 =head1 SYNOPSIS
 
 B<wallet> [B<-hv>] [B<-c> I<command>] [B<-f> I<file>]
@@ -44,9 +49,7 @@ entries, each of which is a scheme and an identifier.  A scheme specifies
 a way of checking whether a user is authorized.  An identifier is some
 data specific to the scheme that specifies which users are authorized.
 For example, for the C<krb5> scheme, the identifier is a principal name
-and only that principal is authorized by that ACL entry.  For the C<pts>
-scheme, the identifier is a PTS group name, and all members of that PTS
-group are authorized by that ACL entry.
+and only that principal is authorized by that ACL entry.
 
 To run the wallet command-line client, you must already have a Kerberos
 ticket.  You can obtain a Kerberos ticket with B<kinit> and see your
@@ -201,7 +204,7 @@ Display the history of the ACL <id>.  Each change to the ACL (not
 including changes to the name of the ACL) will be represented by two
 lines.  The first line will have a timestamp of the change followed by a
 description of the change, and the second line will give the user who made
-the change and the host from which the change was mde.
+the change and the host from which the change was made.
 
 =item acl remove <id> <scheme> <identifier>
 

@@ -1,7 +1,8 @@
 client/basic
 client/full
-client/pod
 client/prompt
+docs/pod
+docs/pod-spelling
 portable/asprintf
 portable/mkstemp
 portable/setenv
@@ -11,7 +12,6 @@ portable/strlcpy
 server/admin
 server/backend
 server/keytab
-server/pod
 util/concat
 util/messages
 util/messages-krb5
