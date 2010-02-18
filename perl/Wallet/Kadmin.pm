@@ -26,6 +26,11 @@ $VERSION = '0.03';
 # Public methods
 ##############################################################################
 
+# Set a callback to be called for forked kadmin processes.  This does nothing
+# by default but may be overridden by subclasses that need special behavior
+# (such as the current Wallet::Kadmin::MIT module).
+sub fork_callback { }
+
 # Create a new kadmin object, by finding the type requested in the wallet
 # config and passing off to the proper module.  Returns the object directly
 # from the specific Wallet::Kadmin::* module.
@@ -78,9 +83,8 @@ specific type of Kerberos implementation, such as MIT Kerberos or Heimdal,
 and provide a standard set of API calls used to interact with that
 implementation's kadmin interface.
 
-The class simply uses Wallet::Config to find which type of kadmind we have
-requested to use, and then returns an object to use for interacting with
-that kadmind.
+The class uses Wallet::Config to find which type of kadmin interface is in
+use and then returns an object to use for interacting with that interface.
 
 A keytab is an on-disk store for the key or keys for a Kerberos principal.
 Keytabs are used by services to verify incoming authentication from
@@ -92,15 +96,28 @@ To use this object, several configuration parameters must be set.  See
 Wallet::Config(3) for details on those configuration parameters and
 information about how to set wallet configuration.
 
-=head1 METHODS
+=head1 CLASS METHODS
 
 =over 4
 
 =item new()
 
 Finds the proper Kerberos implementation and calls the new() constructor
-for that implementation's module, returning the result.  If the
+for that implementation's module, returning the resulting object.  If the
 implementation is not recognized or set, die with an error message.
+
+=back
+
+=head1 INSTANCE METHODS
+
+=over 4
+
+=item fork_callback(CALLBACK)
+
+If the module has to fork an external process for some reason, such as a
+kadmin command-line client, the sub CALLBACK will be called in the child
+process before running the program.  This can be used to, for example,
+properly clean up shared database handles.
 
 =back
 

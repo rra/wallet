@@ -13,10 +13,13 @@ package Wallet::Kadmin::Heimdal;
 require 5.006;
 
 use strict;
-use vars qw($VERSION);
+use vars qw(@ISA $VERSION);
 
 use Heimdal::Kadm5 qw(KRB5_KDB_DISALLOW_ALL_TIX);
 use Wallet::Config ();
+use Wallet::Kadmin ();
+
+@ISA = qw(Wallet::Kadmin);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
@@ -47,11 +50,6 @@ sub canonicalize_principal {
     }
     return $principal;
 }
-
-# Set a callback to be called for forked kadmin processes.  This does nothing
-# for Heimdal, as we're not forking anything, but remains for compatibility
-# with the MIT kadmin module.
-sub fork_callback { }
 
 ##############################################################################
 # kadmin Interaction

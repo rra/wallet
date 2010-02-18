@@ -15,9 +15,12 @@ package Wallet::Kadmin::MIT;
 require 5.006;
 
 use strict;
-use vars qw($VERSION);
+use vars qw(@ISA $VERSION);
 
 use Wallet::Config ();
+use Wallet::Kadmin ();
+
+@ISA = qw(Wallet::Kadmin);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
