@@ -83,7 +83,7 @@ sub kadmin {
         $self->error ("cannot fork: $!");
         return;
     } elsif ($pid == 0) {
-        $self->{fork_callback} ();
+        $self->{fork_callback} () if $self->{fork_callback};
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
             exit 1;
