@@ -39,6 +39,23 @@ sub canonicalize_principal {
     return $principal;
 }
 
+# Read the entirety of a possibly binary file and return the contents.  If
+# reading the file fails, set the error message and return undef.
+sub slurp_file {
+    my ($self, $file) = @_;
+    unless (open (TMPFILE, '<', $file)) {
+        $self->error ("cannot open temporary file $file: $!");
+        return;
+    }
+    local $/;
+    my $data = <TMPFILE>;
+    unless (close TMPFILE) {
+        $self->error ("cannot read temporary file $file: $!");
+        return;
+    }
+    return $data;
+}
+
 ##############################################################################
 # Public interfaces
 ##############################################################################
@@ -93,11 +110,38 @@ sub create {
     return 1;
 }
 
-# Create a keytab from a principal.  Takes the principal, the file, and
-# optionally a list of encryption types to which to limit the keytab.  Return
-# true if successful, false otherwise.  If the keytab creation fails, sets the
-# error.
+# Create a keytab for a principal.  Returns the keytab as binary data or undef
+# on failure, setting the error.
 sub keytab {
+    my ($self, $principal) = @_;
+    $principal = $self->canonicalize_principal ($principal);
+    my $kadmin = $self->{client};
+    my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
+    unlink $file;
+    my $princdata = eval { $kadmin->getPrincipal ($principal) };
+    if ($@) {
+        $self->error ("error creating keytab for $principal: $@");
+        return;
+    } elsif (!$princdata) {
+        $self->error ("error creating keytab for $principal: principal does"
+                      . " not exist");
+        return;
+    }
+    eval { $kadmin->extractKeytab ($princdata, $file) };
+    if ($@) {
+        $self->error ("error creating keytab for principal: $@");
+        return;
+    }
+    my $data = $self->slurp_file ($file);
+    unlink $file;
+    return $data;
+}
+
+# Create a keytab for a principal, randomizing the keys for that principal at
+# the same time.  Takes the principal, the file, and optionally a list of
+# encryption types to which to limit the keytab.  Return true if successful,
+# false otherwise.  If the keytab creation fails, sets the error.
+sub keytab_rekey {
     my ($self, $principal, $file, @enctypes) = @_;
     $principal = $self->canonicalize_principal ($principal);
 
@@ -213,10 +257,12 @@ Wallet::Kadmin::Heimdal - Wallet Kerberos administration API for Heimdal
 =head1 SYNOPSIS
 
     my $kadmin = Wallet::Kadmin::Heimdal->new;
-    $kadmin->create ("host/foo.example.com");
-    $kadmin->keytab ("host/foo.example.com", "aes256-cts-hmac-sha1-96");
-    my $exists = $kadmin->exists ("host/oldshell.example.com");
-    $kadmin->destroy ("host/oldshell.example.com") if $exists;
+    $kadmin->create ('host/foo.example.com');
+    $kadmin->keytab_rekey ('host/foo.example.com', 'keytab',
+                           'aes256-cts-hmac-sha1-96');
+    my $data = $kadmin->keytab ('host/foo.example.com');
+    my $exists = $kadmin->exists ('host/oldshell.example.com');
+    $kadmin->destroy ('host/oldshell.example.com') if $exists;
 
 =head1 DESCRIPTION
 
@@ -227,6 +273,18 @@ It provides the API documented in Wallet::Kadmin(3) for a Heimdal KDC.
 To use this object, several configuration parameters must be set.  See
 Wallet::Config(3) for details on those configuration parameters and
 information about how to set wallet configuration.
+
+=head1 FILES
+
+=over 4
+
+=item KEYTAB_TMP/keytab.<pid>
+
+The keytab is created in this file and then read into memory.  KEYTAB_TMP
+is set in the wallet configuration, and <pid> is the process ID of the
+current process.  The file is unlinked after being read.
+
+=back
 
 =head1 SEE ALSO
 

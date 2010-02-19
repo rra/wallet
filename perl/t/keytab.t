@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 125;
+use Test::More tests => 135;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -378,12 +378,7 @@ EOO
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
 # can't find remctld.
 SKIP: {
-    skip 'no keytab configuration', 17 unless -f 't/data/test.keytab';
-    my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
-    my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-    skip 'remctld not found', 17 unless $remctld;
-    eval { require Net::Remctl };
-    skip 'Net::Remctl not available', 17 if $@;
+    skip 'no keytab configuration', 27 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -406,47 +401,97 @@ SKIP: {
     ok (defined ($two), 'Creating wallet/two succeeds');
     is ($two->flag_set ('unchanging', @trace), 1, ' and setting unchanging');
 
-    # Now spawn our remctld server and get a ticket cache.
-    remctld_spawn ($remctld, $principal, 't/data/test.keytab',
-                   't/data/keytab.conf');
-    $ENV{KRB5CCNAME} = 'krb5cc_test';
-    getcreds ('t/data/test.keytab', $principal);
-    $ENV{KRB5CCNAME} = 'krb5cc_good';
+    # Finally we can test.  First the MIT Kerberos tests.
+  SKIP: {
+        skip 'skipping MIT unchanging tests for Heimdal', 12
+            if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'heimdal');
 
-    # Finally we can test.
-    is ($one->get (@trace), undef, 'Get without configuration fails');
-    is ($one->error, 'keytab unchanging support not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_REMCTL_CACHE = 'krb5cc_test';
-    is ($one->get (@trace), undef, ' and still fails without host');
-    is ($one->error, 'keytab unchanging support not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_REMCTL_HOST = 'localhost';
-    $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL = $principal;
-    $Wallet::Config::KEYTAB_REMCTL_PORT = 14373;
-    is ($one->get (@trace), undef, ' and still fails without ACL');
-    is ($one->error,
-        "cannot retrieve keytab for wallet/one\@$realm: Access denied",
-        ' with the right error');
-    open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
-    print ACL "$principal\n";
-    close ACL;
-    is ($one->get (@trace), 'Keytab for wallet/one', 'Now get works');
-    is ($ENV{KRB5CCNAME}, 'krb5cc_good',
-        ' and we did not nuke the cache name');
-    is ($two->get (@trace), undef, ' but get for wallet/two does not');
-    is ($two->error,
-        "cannot retrieve keytab for wallet/two\@$realm: bite me",
-        ' with the right error');
-    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
-    is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
-    remctld_stop;
+        # We need remctld and Net::Remctl.
+        my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
+        my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
+        skip 'remctld not found', 12 unless $remctld;
+        eval { require Net::Remctl };
+        skip 'Net::Remctl not available', 12 if $@;
+
+        # Now spawn our remctld server and get a ticket cache.
+        remctld_spawn ($remctld, $principal, 't/data/test.keytab',
+                       't/data/keytab.conf');
+        $ENV{KRB5CCNAME} = 'krb5cc_test';
+        getcreds ('t/data/test.keytab', $principal);
+        $ENV{KRB5CCNAME} = 'krb5cc_good';
+
+        # Do the unchanging tests for MIT Kerberos.
+        is ($one->get (@trace), undef, 'Get without configuration fails');
+        is ($one->error, 'keytab unchanging support not configured',
+            ' with the right error');
+        $Wallet::Config::KEYTAB_REMCTL_CACHE = 'krb5cc_test';
+        is ($one->get (@trace), undef, ' and still fails without host');
+        is ($one->error, 'keytab unchanging support not configured',
+            ' with the right error');
+        $Wallet::Config::KEYTAB_REMCTL_HOST = 'localhost';
+        $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL = $principal;
+        $Wallet::Config::KEYTAB_REMCTL_PORT = 14373;
+        is ($one->get (@trace), undef, ' and still fails without ACL');
+        is ($one->error,
+            "cannot retrieve keytab for wallet/one\@$realm: Access denied",
+            ' with the right error');
+        open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
+        print ACL "$principal\n";
+        close ACL;
+        is ($one->get (@trace), 'Keytab for wallet/one', 'Now get works');
+        is ($ENV{KRB5CCNAME}, 'krb5cc_good',
+            ' and we did not nuke the cache name');
+        is ($one->get (@trace), 'Keytab for wallet/one',
+            ' and we get the same thing the second time');
+        is ($one->flag_clear ('unchanging', @trace), 1,
+            'Clearing the unchanging flag works');
+        my $data = $object->get (@trace);
+        ok (defined ($data), ' and getting the keytab works');
+        ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+        is ($two->get (@trace), undef, 'Get for wallet/two does not work');
+        is ($two->error,
+            "cannot retrieve keytab for wallet/two\@$realm: bite me",
+            ' with the right error');
+        is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+        is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
+        remctld_stop;
+    }
+
+    # Now Heimdal.  Since the keytab contains timestamps, before testing for
+    # equality we have to substitute out the timestamps.
+  SKIP: {
+        skip 'skipping Heimdal unchanging tests for MIT', 10
+            if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'mit');
+        my $data = $one->get (@trace);
+        ok (defined $data, 'Get of unchanging keytab works');
+        ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+        my $second = $one->get (@trace);
+        ok (defined $second, ' and second retrieval also works');
+        $data =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
+        $second =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
+        is ($data, $second, ' and the keytab matches');
+        is ($one->flag_clear ('unchanging', @trace), 1,
+            'Clearing the unchanging flag works');
+        $data = $one->get (@trace);
+        ok (defined ($data), ' and getting the keytab works');
+        ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+        $data =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
+        ok ($data ne $second, ' and the new keytab is different');
+        is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+        is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
+    }
 
     # Check that history has been updated correctly.
     $history .= <<"EOO";
 $date  create
     by $user from $host
 $date  set flag unchanging
+    by $user from $host
+$date  get
+    by $user from $host
+$date  get
+    by $user from $host
+$date  clear flag unchanging
     by $user from $host
 $date  get
     by $user from $host

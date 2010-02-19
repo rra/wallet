@@ -91,7 +91,7 @@ SKIP: {
     is ($kadmin->create ('wallet/one'), 1, 'Creating wallet/one works');
     is ($kadmin->exists ('wallet/one'), 1, ' and it now exists');
     unlink ('./tmp.keytab');
-    is ($kadmin->keytab ('wallet/one', './tmp.keytab'), 1,
+    is ($kadmin->keytab_rekey ('wallet/one', './tmp.keytab'), 1,
         ' and retrieving a keytab works');
     ok (-s './tmp.keytab', ' and the resulting keytab is non-zero');
     is (getcreds ('./tmp.keytab', "wallet/one\@$Wallet::Config::KEYTAB_REALM"),
@@ -101,7 +101,7 @@ SKIP: {
     # Delete the principal and confirm behavior.
     is ($kadmin->destroy ('wallet/one'), 1, 'Deleting principal works');
     is ($kadmin->exists ('wallet/one'), 0, ' and now it does not exist');
-    is ($kadmin->keytab ('wallet/one', './tmp.keytab'), undef,
+    is ($kadmin->keytab_rekey ('wallet/one', './tmp.keytab'), undef,
         ' and retrieving the keytab does not work');
     ok (! -f './tmp.keytab', ' and no file was created');
     like ($kadmin->error, qr%^error creating keytab for wallet/one%,

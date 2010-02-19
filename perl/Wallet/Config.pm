@@ -26,7 +26,8 @@ Wallet::Config - Configuration handling for the wallet server
 =for stopwords
 DBI DSN SQLite subdirectories KEYTAB keytab kadmind KDC add-ons kadmin DNS
 SRV kadmin keytabs remctl backend lowercased NETDB ACL NetDB unscoped
-usernames rekey hostnames Allbery wallet-backend keytab-backend
+usernames rekey hostnames Allbery wallet-backend keytab-backend Heimdal
+rekeys
 
 =head1 SYNOPSIS
 
@@ -313,11 +314,19 @@ our $KEYTAB_TMP;
 
 =head2 Retrieving Existing Keytabs
 
-The keytab object backend optionally supports retrieving existing keys,
-and hence keytabs, for Kerberos principals by contacting the KDC via
-remctl and talking to B<keytab-backend>.  This is enabled by setting the
-C<unchanging> flag on keytab objects.  To configure that support, set the
-following variables.
+Heimdal provides the choice, over the network protocol, of either
+downloading the existing keys for a principal or generating new random
+keys.  MIT Kerberos does not; downloading a keytab over the kadmin
+protocol always rekeys the principal.
+
+For MIT Kerberos, the keytab object backend therefore optionally supports
+retrieving existing keys, and hence keytabs, for Kerberos principals by
+contacting the KDC via remctl and talking to B<keytab-backend>.  This is
+enabled by setting the C<unchanging> flag on keytab objects.  To configure
+that support, set the following variables.
+
+This is not required for Heimdal; for Heimdal, setting the C<unchanging>
+flag is all that's needed.
 
 =over 4
 

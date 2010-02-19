@@ -137,11 +137,52 @@ sub create {
     return 1;
 }
 
-# Create a keytab from a principal.  Takes the principal, the file, and
-# optionally a list of encryption types to which to limit the keytab.  Return
-# true if successful, false otherwise.  If the keytab creation fails, sets the
-# error.
+# Retrieve an existing keytab from the KDC via a remctl call.  The KDC needs
+# to be running the keytab-backend script and support the keytab retrieve
+# remctl command.  In addition, the user must have configured us with the path
+# to a ticket cache and the host to which to connect with remctl.  Returns the
+# keytab on success and undef on failure.
 sub keytab {
+    my ($self, $principal) = @_;
+    my $host = $Wallet::Config::KEYTAB_REMCTL_HOST;
+    unless ($host and $Wallet::Config::KEYTAB_REMCTL_CACHE) {
+        $self->error ('keytab unchanging support not configured');
+        return;
+    }
+    eval { require Net::Remctl };
+    if ($@) {
+        $self->error ("keytab unchanging support not available: $@");
+        return;
+    }
+    if ($principal !~ /\@/ && $Wallet::Config::KEYTAB_REALM) {
+        $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
+    }
+    local $ENV{KRB5CCNAME} = $Wallet::Config::KEYTAB_REMCTL_CACHE;
+    my $port = $Wallet::Config::KEYTAB_REMCTL_PORT || 0;
+    my $remctl_princ = $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL || '';
+    my @command = ('keytab', 'retrieve', $principal);
+    my $result = Net::Remctl::remctl ($host, $port, $remctl_princ, @command);
+    if ($result->error) {
+        $self->error ("cannot retrieve keytab for $principal: ",
+                      $result->error);
+        return;
+    } elsif ($result->status != 0) {
+        my $error = $result->stderr;
+        $error =~ s/\s+$//;
+        $error =~ s/\n/ /g;
+        $self->error ("cannot retrieve keytab for $principal: $error");
+        return;
+    } else {
+        return $result->stdout;
+    }
+}
+
+# Create a keytab for a principal, randomizing the keys for that principal
+# in the process.  Takes the principal, the file, and optionally a list of
+# encryption types to which to limit the keytab.  Return true if
+# successful, false otherwise.  If the keytab creation fails, sets the
+# error.
+sub keytab_rekey {
     my ($self, $principal, $file, @enctypes) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
@@ -210,7 +251,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-keytabs keytab kadmin KDC API Allbery
+rekeying rekeys remctl backend keytabs keytab kadmin KDC API Allbery
 
 =head1 NAME
 
@@ -219,10 +260,12 @@ Wallet::Kadmin::MIT - Wallet Kerberos administration API for MIT
 =head1 SYNOPSIS
 
     my $kadmin = Wallet::Kadmin::MIT->new;
-    $kadmin->create ("host/foo.example.com");
-    $kadmin->keytab ("host/foo.example.com", "aes256-cts-hmac-sha1-96");
-    my $exists = $kadmin->exists ("host/oldshell.example.com");
-    $kadmin->destroy ("host/oldshell.example.com") if $exists;
+    $kadmin->create ('host/foo.example.com');
+    $kadmin->keytab_rekey ('host/foo.example.com', 'keytab',
+                           'aes256-cts-hmac-sha1-96');
+    my $data = $kadmin->keytab ('host/foo.example.com');
+    my $exists = $kadmin->exists ('host/oldshell.example.com');
+    $kadmin->destroy ('host/oldshell.example.com') if $exists;
 
 =head1 DESCRIPTION
 
@@ -230,6 +273,13 @@ Wallet::Kadmin::MIT implements the Wallet::Kadmin API for MIT Kerberos,
 providing an interface to create and delete principals and create keytabs.
 It provides the API documented in Wallet::Kadmin(3) for an MIT Kerberos
 KDC.
+
+MIT Kerberos does not provide any method via the kadmin network protocol
+to retrieve a keytab for a principal without rekeying it, so the keytab()
+method (as opposed to keytab_rekey(), which rekeys the principal) is
+implemented using a remctl backend.  For that method (used for unchanging
+keytab objects) to work, the necessary wallet configuration and remctl
+interface on the KDC must be set up.
 
 To use this object, several configuration parameters must be set.  See
 Wallet::Config(3) for details on those configuration parameters and

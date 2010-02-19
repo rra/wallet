@@ -2,8 +2,6 @@
 
 Release 0.10:
 
-* Handle unchanging support for Heimdal.
-
 * Move reporting code from Wallet::Admin to Wallet::Report.
 
 * Check whether we can just drop the realm restriction on keytabs and

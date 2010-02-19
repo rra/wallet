@@ -83,10 +83,12 @@ Wallet::Kadmin - Kerberos administration API for wallet keytab backend
 =head1 SYNOPSIS
 
     my $kadmin = Wallet::Kadmin->new;
-    $kadmin->create ("host/foo.example.com");
-    $kadmin->keytab ("host/foo.example.com", "aes256-cts-hmac-sha1-96");
-    my $exists = $kadmin->exists ("host/oldshell.example.com");
-    $kadmin->destroy ("host/oldshell.example.com") if $exists;
+    $kadmin->create ('host/foo.example.com');
+    $kadmin->keytab_rekey ('host/foo.example.com', 'keytab',
+                           'aes256-cts-hmac-sha1-96');
+    my $data = $kadmin->keytab ('host/foo.example.com');
+    my $exists = $kadmin->exists ('host/oldshell.example.com');
+    $kadmin->destroy ('host/oldshell.example.com') if $exists;
 
 =head1 DESCRIPTION
 
@@ -162,19 +164,26 @@ kadmin command-line client, the sub CALLBACK will be called in the child
 process before running the program.  This can be used to, for example,
 properly clean up shared database handles.
 
-=item keytab(PRINCIPAL, FILE [, ENCTYPE ... ])
+=item keytab(PRINCIPAL)
 
-A keytab is an on-disk store for the key or keys for a Kerberos principal.
-Keytabs are used by services to verify incoming authentication from
-clients or by automated processes that need to authenticate to Kerberos.
-To create a keytab, the principal has to be created in Kerberos and then a
-keytab is generated and stored in a file on disk.
+keytab() creates a keytab for the given principal, storing it in the given
+file.  A keytab is an on-disk store for the key or keys for a Kerberos
+principal.  Keytabs are used by services to verify incoming authentication
+from clients or by automated processes that need to authenticate to
+Kerberos.  To create a keytab, the principal has to have previously been
+created in the Kerberos KDC.  Returns the keytab as binary data on success
+and undef on failure.
 
-ktadd() creates a new keytab for the given principal, storing it in the
-given file and limited to the enctypes supplied.  The enctype values must
-be enctype strings recognized by the Kerberos implementation (strings like
-C<aes256-cts-hmac-sha1-96> or C<des-cbc-crc>).  Returns true on success
-and false on failure.
+=item keytab_rekey(PRINCIPAL, FILE [, ENCTYPE ...])
+
+Like keytab(), but randomizes the key for the principal before generating
+the keytab and writes it to the given file.  This will invalidate any
+existing keytabs for that principal.  This method can also limit the
+encryption types of the keys for that principal via the optional ENCTYPE
+arguments.  The enctype values must be enctype strings recognized by the
+Kerberos implementation (strings like C<aes256-cts-hmac-sha1-96> or
+C<des-cbc-crc>).  If none are given, the KDC defaults will be used.
+Returns true on success and false on failure.
 
 =back
 
