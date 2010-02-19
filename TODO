@@ -6,9 +6,6 @@ Release 0.10:
 
 * Move reporting code from Wallet::Admin to Wallet::Report.
 
-* Refactor attribute handling code in Wallet::Object::Keytab, move to
-  Wallet::Object::Base.
-
 * Check whether we can just drop the realm restriction on keytabs and
   allow the name to contain the realm if the Kerberos type is Heimdal.
 

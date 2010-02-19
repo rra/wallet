@@ -111,6 +111,75 @@ sub enctypes_list {
 }
 
 ##############################################################################
+# Synchronization
+##############################################################################
+
+# Set a synchronization target or clear the targets if $targets is an
+# empty list.  Returns true on success and false on failure.
+#
+# Currently, no synchronization targets are supported, but we preserve the
+# ability to clear synchronization and the basic structure of the code so
+# that they can be added later.
+sub sync_set {
+    my ($self, $targets, $user, $host, $time) = @_;
+    $time ||= time;
+    my @trace = ($user, $host, $time);
+    if (@$targets > 1) {
+        $self->error ('only one synchronization target supported');
+        return;
+    } elsif (@$targets) {
+        my $target = $targets->[0];
+        $self->error ("unsupported synchronization target $target");
+        return;
+    } else {
+        eval {
+            my $sql = 'select ks_target from keytab_sync where ks_name = ?';
+            my $dbh = $self->{dbh};
+            my $name = $self->{name};
+            my ($result) = $dbh->selectrow_array ($sql, undef, $name);
+            if ($result) {
+                my $sql = 'delete from keytab_sync where ks_name = ?';
+                $self->{dbh}->do ($sql, undef, $name);
+                $self->log_set ('type_data sync', $result, undef, @trace);
+            }
+            $self->{dbh}->commit;
+        };
+        if ($@) {
+            $self->error ($@);
+            $self->{dbh}->rollback;
+            return;
+        }
+    }
+    return 1;
+}
+
+# Return a list of the current synchronization targets.  Returns the empty
+# list on failure or on an empty list of enctype restrictions, but sets
+# the object error on failure so the caller should use that to determine
+# success.
+sub sync_list {
+    my ($self) = @_;
+    my @targets;
+    eval {
+        my $sql = 'select ks_target from keytab_sync where ks_name = ?
+            order by ks_target';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute ($self->{name});
+        my $target;
+        while (defined ($target = $sth->fetchrow_array)) {
+            push (@targets, $target);
+        }
+        $self->{dbh}->commit;
+    };
+    if ($@) {
+        $self->error ($@);
+        $self->{dbh}->rollback;
+        return;
+    }
+    return @targets;
+}
+
+##############################################################################
 # Keytab retrieval
 ##############################################################################
 
@@ -173,54 +242,15 @@ sub attr {
     }
     if ($values) {
         if ($attribute eq 'enctypes') {
-            $self->enctypes_set ($values, $user, $host, $time);
+            return $self->enctypes_set ($values, $user, $host, $time);
         } elsif ($attribute eq 'sync') {
-            if (@$values > 1) {
-                $self->error ('only one synchronization target supported');
-                return;
-            } elsif (@$values) {
-                my $target = $values->[0];
-                $self->error ("unsupported synchronization target $target");
-                return;
-            } else {
-                eval {
-                    my $sql = 'select ks_target from keytab_sync where
-                        ks_name = ?';
-                    my $dbh = $self->{dbh};
-                    my $name = $self->{name};
-                    my ($result) = $dbh->selectrow_array ($sql, undef, $name);
-                    if ($result) {
-                        my $sql = 'delete from keytab_sync where ks_name = ?';
-                        $self->{dbh}->do ($sql, undef, $name);
-                        $self->log_set ('type_data sync', $result, undef,
-                                        @trace);
-                    }
-                    $self->{dbh}->commit;
-                }
-            }
+            return $self->sync_set ($values, $user, $host, $time);
         }
     } else {
         if ($attribute eq 'enctypes') {
             return $self->enctypes_list;
         } elsif ($attribute eq 'sync') {
-            my @targets;
-            eval {
-                my $sql = 'select ks_target from keytab_sync where ks_name = ?
-                    order by ks_target';
-                my $sth = $self->{dbh}->prepare ($sql);
-                $sth->execute ($self->{name});
-                my $target;
-                while (defined ($target = $sth->fetchrow_array)) {
-                    push (@targets, $target);
-                }
-                $self->{dbh}->commit;
-            };
-            if ($@) {
-                $self->error ($@);
-                $self->{dbh}->rollback;
-                return;
-            }
-            return @targets;
+            return $self->sync_list;
         }
     }
 }
@@ -453,6 +483,13 @@ This attribute is ignored if the C<unchanging> flag is set on a keytab.
 Keytabs retrieved with C<unchanging> set will contain all keys present in
 the KDC for that Kerberos principal and therefore may contain different
 enctypes than those requested by this attribute.
+
+=item sync
+
+This attribute is intended to set a list of external systems with which
+data about this keytab is synchronized, but there are no supported targets
+currently.  However, there is support for clearing this attribute or
+returning its current value.
 
 =back
 
