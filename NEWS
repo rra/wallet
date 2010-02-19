@@ -32,15 +32,22 @@ wallet 0.10 (unreleased)
     Fix logging in wallet-backend and the remctl configuration to not log
     the data passed to store.
 
-    Add additional reports for wallet-admin list: objects owned by a
-    specific ACL, objects owned by no one, objects of a specific type,
-    objects with a specific flag, objects for which a specific ACL has
-    privileges, ACLs with an entry with a given type and identifier, and
-    ACLs with no members.
+    Move all reporting from Wallet::Admin to Wallet::Report and simplify
+    the method names since they're now part of a dedicated reporting
+    class.  Similarly, create a new wallet-report script to wrap
+    Wallet::Report, moving all reporting commands to it from wallet-admin,
+    and simplify the commands since they're for a dedicated reporting
+    script.
 
-    Add a new report owners command to wallet-admin and corresponding
-    report_owners() method to Wallet::Admin, which returns all ACL lines
-    on owner ACLs for matching objects.
+    Add additional reports for wallet-report: objects owned by a specific
+    ACL, objects owned by no one, objects of a specific type, objects with
+    a specific flag, objects for which a specific ACL has privileges, ACLs
+    with an entry with a given type and identifier, and ACLs with no
+    members.
+
+    Add a new owners command to wallet-report and corresponding owners()
+    method to Wallet::Report, which returns all ACL lines on owner ACLs
+    for matching objects.
 
     Report ACL names as well as numbers in object history.
 
@@ -50,7 +57,7 @@ wallet 0.10 (unreleased)
     implementation than the wallet client.  This primarily helps with
     testing.
 
-    Update to rra-c-util 3.0:
+    Update to rra-c-util 2.3:
 
     * Use Kerberos portability layer to support Heimdal.
     * Avoid Kerberos API calls deprecated on Heimdal.

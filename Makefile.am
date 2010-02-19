@@ -16,9 +16,10 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
 	perl/Wallet/Config.pm perl/Wallet/Database.pm perl/Wallet/Kadmin.pm \
 	perl/Wallet/Kadmin/Heimdal.pm perl/Wallet/Kadmin/MIT.pm		    \
 	perl/Wallet/Object/Base.pm perl/Wallet/Object/File.pm		    \
-	perl/Wallet/Object/Keytab.pm perl/Wallet/Schema.pm		    \
-	perl/Wallet/Server.pm perl/t/acl.t perl/t/admin.t perl/t/config.t   \
-	perl/t/data/README perl/t/data/keytab-fake perl/t/data/keytab.conf  \
+	perl/Wallet/Object/Keytab.pm perl/Wallet/Report.pm		    \
+	perl/Wallet/Schema.pm perl/Wallet/Server.pm perl/t/acl.t	    \
+	perl/t/admin.t perl/t/config.t perl/t/data/README		    \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
 	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/init.t	    \
 	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t perl/t/pod.t	    \
 	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		    \
@@ -28,14 +29,17 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract	   \
 	config/keytab config/keytab.acl config/wallet docs/design	   \
-	contrib/README contrib/wallet-report contrib/wallet-report.8	   \
+	contrib/README contrib/wallet-summary contrib/wallet-summary.8	   \
 	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	   \
 	docs/setup examples/stanford.conf tests/TESTS tests/data/README	   \
 	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake \
 	tests/data/cmd-wrapper tests/data/fake-data tests/data/fake-kadmin \
 	tests/data/fake-keytab tests/data/fake-keytab-2			   \
 	tests/data/fake-keytab-merge tests/data/fake-keytab-old		   \
-	tests/data/fake-srvtab tests/data/wallet.conf $(PERL_FILES)
+	tests/data/fake-srvtab tests/data/wallet.conf			   \
+	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
+	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
+	$(PERL_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
@@ -74,11 +78,11 @@ warnings:
 
 # Remove some additional files.
 DISTCLEANFILES = perl/Makefile tests/data/.placeholder
-MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		\
-	build-aux/depcomp build-aux/install-sh build-aux/missing	\
-	client/wallet.1 config.h.in config.h.in~ configure		\
-	contrib/wallet-report.8 server/keytab-backend.8			\
-	server/wallet-backend.8
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
+	build-aux/depcomp build-aux/install-sh build-aux/missing	     \
+	client/wallet.1 config.h.in config.h.in~ configure		     \
+	contrib/wallet-report.8 server/keytab-backend.8			     \
+	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
 
 # Take appropriate actions in the Perl directory as well.  We don't want to
 # always build the Perl directory in all-local, since otherwise Automake does

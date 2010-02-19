@@ -1,9 +1,9 @@
 #!/usr/bin/perl -w
 #
-# wallet-report -- Report on keytabs in the wallet database.
+# wallet-summarize -- Summarize keytabs in the wallet database.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2003, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2003, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -54,10 +54,10 @@ use Wallet::Admin ();
 # Return a list of keytab objects in the wallet database.  Currently, we only
 # report on keytab objects; reports for other objects will be added later.
 sub list_keytabs {
-    my $admin = Wallet::Admin->new;
-    my @objects = $admin->list_objects;
-    if (!@objects and $admin->error) {
-        die $admin->error;
+    my $report = Wallet::Report->new;
+    my @objects = $report->objects;
+    if (!@objects and $report->error) {
+        die $report->error;
     }
     return map { $$_[1] } grep { $$_[0] eq 'keytab' } @objects;
 }
@@ -176,11 +176,11 @@ close REPORT;
 
 =head1 NAME
 
-wallet-report - Report on keytabs in the wallet database
+wallet-summary - Report on keytabs in the wallet database
 
 =head1 SYNOPSIS
 
-wallet-report [B<-hm>]
+B<wallet-summary> [B<-hm>]
 
 =head1 DESCRIPTION
 
@@ -189,8 +189,8 @@ report of the types of principals contained therein and the total number
 of principals registered.  This report is sent to standard output by
 default, but see B<-m> below.
 
-The classifications of srvtabs are determined by a set of patterns at the
-beginning of this script.  Modify it to add new classifications.
+The classifications of principals are determined by a set of patterns at
+the beginning of this script.  Modify it to add new classifications.
 
 =head1 OPTIONS
 
