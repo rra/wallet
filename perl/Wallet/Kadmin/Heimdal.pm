@@ -1,4 +1,4 @@
-# Wallet::Kadmin::Heimdal -- Heimdal Kadmin interactions for the wallet.
+# Wallet::Kadmin::Heimdal -- Wallet Kerberos administration API for Heimdal.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
@@ -204,15 +204,15 @@ __END__
 ##############################################################################
 
 =for stopwords
-keytabs keytab kadmin enctypes API ENCTYPES enctype Allbery Heimdal
+keytabs keytab kadmin KDC API Allbery Heimdal
 
 =head1 NAME
 
-Wallet::Kadmin::Heimdal - Heimdal admin interactions for wallet keytabs
+Wallet::Kadmin::Heimdal - Wallet Kerberos administration API for Heimdal
 
 =head1 SYNOPSIS
 
-    my $kadmin = Wallet::Kadmin::MIT->new ();
+    my $kadmin = Wallet::Kadmin::Heimdal->new;
     $kadmin->addprinc ("host/shell.example.com");
     $kadmin->ktadd ("host/shell.example.com", "aes256-cts-hmac-sha1-96");
     my $exists = $kadmin->exists ("host/oldshell.example.com");
@@ -220,55 +220,18 @@ Wallet::Kadmin::Heimdal - Heimdal admin interactions for wallet keytabs
 
 =head1 DESCRIPTION
 
-Wallet::Kadmin::Heimdal is an interface for keytab integration with the
-wallet, specifically for using kadmin to create, delete, and add enctypes
-to keytabs.  It implements the wallet kadmin API and provides the
-necessary glue to Heimdal installs for each of these functions, while
-allowing the wallet to keep the details of what type of Kerberos
-installation is being used abstracted.
-
-A keytab is an on-disk store for the key or keys for a Kerberos principal.
-Keytabs are used by services to verify incoming authentication from
-clients or by automated processes that need to authenticate to Kerberos.
-To create a keytab, the principal has to be created in Kerberos and then a
-keytab is generated and stored in a file on disk.
+Wallet::Kadmin::Heimdal implements the Wallet::Kadmin API for Heimdal,
+providing an interface to create and delete principals and create keytabs.
+It provides the API documented in Wallet::Kadmin(3) for a Heimdal KDC.
 
 To use this object, several configuration parameters must be set.  See
 Wallet::Config(3) for details on those configuration parameters and
 information about how to set wallet configuration.
 
-=head1 METHODS
-
-=over 4
-
-=item addprinc(PRINCIPAL)
-
-Adds a new principal with a given name.  The principal is created with a
-random password, and any other flags set by Wallet::Config.  Returns true
-on success, or throws an error if there was a failure in adding the
-principal.  If the principal already exists, return true as we are
-bringing our expectations in line with reality.
-
-=item addprinc(PRINCIPAL)
-
-Removes a principal with the given name.  Returns true on success, or
-throws an error if there was a failure in removing the principal.  If the
-principal does not exist, return true as we are bringing our expectations
-in line with reality.
-
-=item ktadd(PRINCIPAL, FILE, ENCTYPES)
-
-Creates a new keytab for the given principal, as the given file, limited
-to the enctypes supplied.  The enctype values must be enctype strings
-recognized by Kerberos (strings like C<aes256-cts-hmac-sha1-96> or
-C<des-cbc-crc>).  An error is thrown on failure or if the creation fails,
-otherwise true is returned.
-
-=back
-
 =head1 SEE ALSO
 
-kadmin(8), Wallet::Config(3), Wallet::Object::Keytab(3), wallet-backend(8)
+kadmin(8), Wallet::Config(3), Wallet::Kadmin(3),
+Wallet::Object::Keytab(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
 available from L<http://www.eyrie.org/~eagle/software/wallet/>.
