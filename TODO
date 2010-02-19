@@ -18,10 +18,6 @@ Release 1.0:
 
 * Add a help function to wallet-backend listing the commands.
 
-* The client may not compile against Heimdal due to changes in how the
-  krb5_keyblock structure is laid out, the freeing of keytab entries,
-  and the use of WRFILE for keytab merging.  Check and fix.
-
 * Rewrite the client test suite to use Perl and to make better use of
   shared code so that it can be broken into function components.
 
