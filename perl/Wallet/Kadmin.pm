@@ -31,7 +31,7 @@ $VERSION = '0.03';
 # from the specific Wallet::Kadmin::* module.
 sub new {
     my ($class) = @_;
-    my ($kadmin);
+    my $kadmin;
     if (not $Wallet::Config::KEYTAB_KRBTYPE) {
         die "keytab object implementation not configured\n";
     } elsif (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'mit') {
