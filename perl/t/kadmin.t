@@ -83,15 +83,15 @@ SKIP: {
     $kadmin = eval { Wallet::Kadmin->new };
     ok (defined $kadmin, 'Creating Wallet::Kadmin object succeeds');
     is ($@, '', ' and there is no error');
-    is ($kadmin->delprinc ('wallet/one'), 1, 'Deleting wallet/one works');
+    is ($kadmin->destroy ('wallet/one'), 1, 'Deleting wallet/one works');
     is ($kadmin->exists ('wallet/one'), 0, ' and it does not exist');
 
-    # Create the principal and check that ktadd returns something.  We'll
+    # Create the principal and check that keytab returns something.  We'll
     # check the details of the return in the keytab check.
-    is ($kadmin->addprinc ('wallet/one'), 1, 'Creating wallet/one works');
+    is ($kadmin->create ('wallet/one'), 1, 'Creating wallet/one works');
     is ($kadmin->exists ('wallet/one'), 1, ' and it now exists');
     unlink ('./tmp.keytab');
-    is ($kadmin->ktadd ('wallet/one', './tmp.keytab'), 1,
+    is ($kadmin->keytab ('wallet/one', './tmp.keytab'), 1,
         ' and retrieving a keytab works');
     ok (-s './tmp.keytab', ' and the resulting keytab is non-zero');
     is (getcreds ('./tmp.keytab', "wallet/one\@$Wallet::Config::KEYTAB_REALM"),
@@ -99,12 +99,12 @@ SKIP: {
     unlink ('./tmp.keytab');
 
     # Delete the principal and confirm behavior.
-    is ($kadmin->delprinc ('wallet/one'), 1, 'Deleting principal works');
+    is ($kadmin->destroy ('wallet/one'), 1, 'Deleting principal works');
     is ($kadmin->exists ('wallet/one'), 0, ' and now it does not exist');
-    is ($kadmin->ktadd ('wallet/one', './tmp.keytab'), undef,
+    is ($kadmin->keytab ('wallet/one', './tmp.keytab'), undef,
         ' and retrieving the keytab does not work');
     ok (! -f './tmp.keytab', ' and no file was created');
     like ($kadmin->error, qr%^error creating keytab for wallet/one%,
           ' and the right error message is set');
-    is ($kadmin->delprinc ('wallet/one'), 1, ' and deleting it again works');
+    is ($kadmin->destroy ('wallet/one'), 1, ' and deleting it again works');
 }

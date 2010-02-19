@@ -73,7 +73,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-backend Kadmin keytabs keytab Heimdal API kadmind kadmin KDC ENCTYPES
+backend Kadmin keytabs keytab Heimdal API kadmind kadmin KDC ENCTYPE
 enctypes enctype Allbery
 
 =head1 NAME
@@ -83,10 +83,10 @@ Wallet::Kadmin - Kerberos administration API for wallet keytab backend
 =head1 SYNOPSIS
 
     my $kadmin = Wallet::Kadmin->new;
-    $kadmin->addprinc ("host/shell.example.com");
-    $kadmin->ktadd ("host/shell.example.com", "aes256-cts-hmac-sha1-96");
+    $kadmin->create ("host/foo.example.com");
+    $kadmin->keytab ("host/foo.example.com", "aes256-cts-hmac-sha1-96");
     my $exists = $kadmin->exists ("host/oldshell.example.com");
-    $kadmin->delprinc ("host/oldshell.example.com") if $exists;
+    $kadmin->destroy ("host/oldshell.example.com") if $exists;
 
 =head1 DESCRIPTION
 
@@ -123,14 +123,14 @@ appropriate for the configured Kerberos implementation.
 
 =over 4
 
-=item addprinc(PRINCIPAL)
+=item create(PRINCIPAL)
 
 Adds a new principal with a given name.  The principal is created with a
 random password, and any other flags set by Wallet::Config.  Returns true
 on success and false on failure.  If the principal already exists, return
 true as we are bringing our expectations in line with reality.
 
-=item delprinc(PRINCIPAL)
+=item destroy(PRINCIPAL)
 
 Removes a principal with the given name.  Returns true on success or false
 on failure.  If the principal does not exist, return true as we are
@@ -162,7 +162,7 @@ kadmin command-line client, the sub CALLBACK will be called in the child
 process before running the program.  This can be used to, for example,
 properly clean up shared database handles.
 
-=item ktadd(PRINCIPAL, FILE, ENCTYPES)
+=item keytab(PRINCIPAL, FILE [, ENCTYPE ... ])
 
 A keytab is an on-disk store for the key or keys for a Kerberos principal.
 Keytabs are used by services to verify incoming authentication from

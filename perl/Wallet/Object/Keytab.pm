@@ -289,7 +289,7 @@ sub create {
     my $callback = sub { $self->{dbh}->{InactiveDestroy} = 1 };
     $kadmin->fork_callback ($callback);
 
-    if (not $kadmin->addprinc ($name)) {
+    if (not $kadmin->create ($name)) {
         die $kadmin->error, "\n";
     }
     $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
@@ -318,7 +318,7 @@ sub destroy {
         return;
     }
     my $kadmin = $self->{kadmin};
-    if (not $kadmin->delprinc ($self->{name})) {
+    if (not $kadmin->destroy ($self->{name})) {
         $self->error ($kadmin->error);
         return;
     }
@@ -350,7 +350,7 @@ sub get {
     unlink $file;
     my @enctypes = $self->attr ('enctypes');
     my $kadmin = $self->{kadmin};
-    if (not $kadmin->ktadd ($self->{name}, $file, @enctypes)) {
+    if (not $kadmin->keytab ($self->{name}, $file, @enctypes)) {
         $self->error ($kadmin->error);
         return;
     }
@@ -520,18 +520,13 @@ used.
 
 =item KEYTAB_TMP/keytab.<pid>
 
-The keytab is created in this file using C<ktadd> and then read into
-memory.  KEYTAB_TMP is set in the wallet configuration, and <pid> is the
-process ID of the current process.  The file is unlinked after being read.
+The keytab is created in this file and then read into memory.  KEYTAB_TMP
+is set in the wallet configuration, and <pid> is the process ID of the
+current process.  The file is unlinked after being read.
 
 =back
 
 =head1 LIMITATIONS
-
-Currently, when used with MIT Kerberos, this implementation calls an
-external B<kadmin> program rather than using a native Perl module and
-therefore requires B<kadmin> be installed and parses its output.  It may
-miss some error conditions if the output of B<kadmin> ever changes.
 
 Only one Kerberos realm is supported for a given wallet implementation and
 all keytab objects stored must be in that realm.  Keytab names in the

@@ -2,11 +2,7 @@
 
 Release 0.10:
 
-* Remove stub fork hook from Wallet::Kadmin::MIT.
-
 * Handle unchanging support for Heimdal.
-
-* Fix the Wallet::Kadmin API to use more generic function names.
 
 * Move reporting code from Wallet::Admin to Wallet::Report.
 

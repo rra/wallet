@@ -116,7 +116,7 @@ sub exists {
 
 # Create a principal in Kerberos.  Sets the error and returns undef on failure,
 # and returns 1 on either success or the principal already existing.
-sub addprinc {
+sub create {
     my ($self, $principal) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name $principal");
@@ -141,7 +141,7 @@ sub addprinc {
 # optionally a list of encryption types to which to limit the keytab.  Return
 # true if successful, false otherwise.  If the keytab creation fails, sets the
 # error.
-sub ktadd {
+sub keytab {
     my ($self, $principal, $file, @enctypes) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
@@ -168,7 +168,7 @@ sub ktadd {
 # Delete a principal from Kerberos.  Return true if successful, false
 # otherwise.  If the deletion fails, sets the error.  If the principal doesn't
 # exist, return success; we're bringing reality in line with our expectations.
-sub delprinc {
+sub destroy {
     my ($self, $principal) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
@@ -219,10 +219,10 @@ Wallet::Kadmin::MIT - Wallet Kerberos administration API for MIT
 =head1 SYNOPSIS
 
     my $kadmin = Wallet::Kadmin::MIT->new;
-    $kadmin->addprinc ("host/shell.example.com");
-    $kadmin->ktadd ("host/shell.example.com", "aes256-cts-hmac-sha1-96");
+    $kadmin->create ("host/foo.example.com");
+    $kadmin->keytab ("host/foo.example.com", "aes256-cts-hmac-sha1-96");
     my $exists = $kadmin->exists ("host/oldshell.example.com");
-    $kadmin->delprinc ("host/oldshell.example.com") if $exists;
+    $kadmin->destroy ("host/oldshell.example.com") if $exists;
 
 =head1 DESCRIPTION
 

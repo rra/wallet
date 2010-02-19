@@ -59,7 +59,7 @@ sub system_quiet {
 sub create {
     my ($principal) = @_;
     my $kadmin = Wallet::Kadmin->new;
-    return $kadmin->addprinc ($principal);
+    return $kadmin->create ($principal);
 }
 
 # Destroy a principal out of Kerberos.  Only usable once the configuration has
@@ -67,7 +67,7 @@ sub create {
 sub destroy {
     my ($principal) = @_;
     my $kadmin = Wallet::Kadmin->new;
-    return $kadmin->delprinc ($principal);
+    return $kadmin->destroy ($principal);
 }
 
 # Check whether a principal exists.  MIT uses kvno and Heimdal uses kgetcred.
