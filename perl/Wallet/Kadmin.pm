@@ -26,11 +26,6 @@ $VERSION = '0.03';
 # Public methods
 ##############################################################################
 
-# Set a callback to be called for forked kadmin processes.  This does nothing
-# by default but may be overridden by subclasses that need special behavior
-# (such as the current Wallet::Kadmin::MIT module).
-sub fork_callback { }
-
 # Create a new kadmin object, by finding the type requested in the wallet
 # config and passing off to the proper module.  Returns the object directly
 # from the specific Wallet::Kadmin::* module.
@@ -52,6 +47,23 @@ sub new {
 
     return $kadmin;
 }
+
+# Set or return the error stashed in the object.
+sub error {
+    my ($self, @error) = @_;
+    if (@error) {
+        my $error = join ('', @error);
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        $self->{error} = $error;
+    }
+    return $self->{error};
+}
+
+# Set a callback to be called for forked kadmin processes.  This does nothing
+# by default but may be overridden by subclasses that need special behavior
+# (such as the current Wallet::Kadmin::MIT module).
+sub fork_callback { }
 
 1;
 __END__
@@ -111,6 +123,19 @@ implementation is not recognized or set, die with an error message.
 =head1 INSTANCE METHODS
 
 =over 4
+
+=item error([ERROR ...])
+
+Returns the error of the last failing operation or undef if no operations
+have failed.  Callers should call this function to get the error message
+after an undef return from any other instance method.
+
+For the convenience of child classes, this method can also be called with
+one or more error strings.  If so, those strings are concatenated
+together, trailing newlines are removed, any text of the form S<C< at \S+
+line \d+\.?>> at the end of the message is stripped off, and the result is
+stored as the error.  Only child classes should call this method with an
+error string.
 
 =item fork_callback(CALLBACK)
 

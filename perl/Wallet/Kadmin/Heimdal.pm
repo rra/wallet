@@ -30,18 +30,6 @@ $VERSION = '0.03';
 # Utility functions
 ##############################################################################
 
-# Set or return the error stashed in the object.
-sub error {
-    my ($self, @error) = @_;
-    if (@error) {
-        my $error = join ('', @error);
-        chomp $error;
-        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
-        $self->{error} = $error;
-    }
-    return $self->{error};
-}
-
 # Add the realm to the end of the principal if no realm is currently present.
 sub canonicalize_principal {
     my ($self, $principal) = @_;

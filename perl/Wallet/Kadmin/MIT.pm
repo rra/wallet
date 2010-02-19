@@ -31,18 +31,6 @@ $VERSION = '0.02';
 # Utility functions
 ##############################################################################
 
-# Set or return the error stashed in the object.
-sub error {
-    my ($self, @error) = @_;
-    if (@error) {
-        my $error = join ('', @error);
-        chomp $error;
-        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
-        $self->{error} = $error;
-    }
-    return $self->{error};
-}
-
 # Set a callback to be called for forked kadmin processes.
 sub fork_callback {
     my ($self, $callback) = @_;
