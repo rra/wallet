@@ -39,23 +39,6 @@ sub canonicalize_principal {
     return $principal;
 }
 
-# Read the entirety of a possibly binary file and return the contents.  If
-# reading the file fails, set the error message and return undef.
-sub slurp_file {
-    my ($self, $file) = @_;
-    unless (open (TMPFILE, '<', $file)) {
-        $self->error ("cannot open temporary file $file: $!");
-        return;
-    }
-    local $/;
-    my $data = <TMPFILE>;
-    unless (close TMPFILE) {
-        $self->error ("cannot read temporary file $file: $!");
-        return;
-    }
-    return $data;
-}
-
 ##############################################################################
 # Public interfaces
 ##############################################################################
@@ -132,17 +115,15 @@ sub keytab {
         $self->error ("error creating keytab for principal: $@");
         return;
     }
-    my $data = $self->slurp_file ($file);
-    unlink $file;
-    return $data;
+    return $self->read_keytab ($file);
 }
 
 # Create a keytab for a principal, randomizing the keys for that principal at
-# the same time.  Takes the principal, the file, and optionally a list of
-# encryption types to which to limit the keytab.  Return true if successful,
-# false otherwise.  If the keytab creation fails, sets the error.
+# the same time.  Takes the principal and an optional list of encryption types
+# to which to limit the keytab.  Return the keytab data on success and undef
+# on failure.  If the keytab creation fails, sets the error.
 sub keytab_rekey {
-    my ($self, $principal, $file, @enctypes) = @_;
+    my ($self, $principal, @enctypes) = @_;
     $principal = $self->canonicalize_principal ($principal);
 
     # The way Heimdal works, you can only remove enctypes from a principal,
@@ -188,12 +169,14 @@ sub keytab_rekey {
     }
 
     # Create the keytab.
+    my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
+    unlink $file;
     eval { $kadmin->extractKeytab ($princdata, $file) };
     if ($@) {
         $self->error ("error creating keytab for principal: $@");
         return;
     }
-    return 1;
+    return $self->read_keytab ($file);
 }
 
 # Delete a principal from Kerberos.  Return true if successful, false
@@ -226,6 +209,9 @@ sub new {
             and defined ($Wallet::Config::KEYTAB_FILE)
             and defined ($Wallet::Config::KEYTAB_REALM)) {
         die "keytab object implementation not configured\n";
+    }
+    unless (defined ($Wallet::Config::KEYTAB_TMP)) {
+        die "KEYTAB_TMP configuration variable not set\n";
     }
     my @options = (RaiseError => 1,
                    Principal  => $Wallet::Config::KEYTAB_PRINCIPAL,
@@ -270,9 +256,8 @@ Wallet::Kadmin::Heimdal implements the Wallet::Kadmin API for Heimdal,
 providing an interface to create and delete principals and create keytabs.
 It provides the API documented in Wallet::Kadmin(3) for a Heimdal KDC.
 
-To use this object, several configuration parameters must be set.  See
-Wallet::Config(3) for details on those configuration parameters and
-information about how to set wallet configuration.
+To use this class, several configuration parameters must be set.  See
+L<Wallet::Config/"KEYTAB OBJECT CONFIGURATION"> for details.
 
 =head1 FILES
 

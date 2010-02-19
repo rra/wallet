@@ -323,43 +323,19 @@ sub get {
         return;
     }
     my $kadmin = $self->{kadmin};
+    my $result;
     if ($self->flag_check ('unchanging')) {
-        my $result = $kadmin->keytab ($self->{name});
-        if (defined $result) {
-            $self->log_action ('get', $user, $host, $time);
-        }
-        return $result;
+        $result = $kadmin->keytab ($self->{name});
+    } else {
+        my @enctypes = $self->attr ('enctypes');
+        $result = $kadmin->keytab_rekey ($self->{name}, @enctypes);
     }
-    unless (defined ($Wallet::Config::KEYTAB_TMP)) {
-        $self->error ('KEYTAB_TMP configuration variable not set');
-        return;
-    }
-    my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
-    unlink $file;
-    my @enctypes = $self->attr ('enctypes');
-    if (not $kadmin->keytab_rekey ($self->{name}, $file, @enctypes)) {
+    if (defined $result) {
+        $self->log_action ('get', $user, $host, $time);
+    } else {
         $self->error ($kadmin->error);
-        return;
     }
-    local *KEYTAB;
-    unless (open (KEYTAB, '<', $file)) {
-        my $princ = $self->{name};
-        $self->error ("error opening keytab for principal $princ: $!");
-        return;
-    }
-    local $/;
-    undef $!;
-    my $data = <KEYTAB>;
-    if ($!) {
-        my $princ = $self->{name};
-        $self->error ("error reading keytab for principal $princ: $!");
-        unlink $file;
-        return;
-    }
-    close KEYTAB;
-    unlink $file;
-    $self->log_action ('get', $user, $host, $time);
-    return $data;
+    return $result;
 }
 
 1;

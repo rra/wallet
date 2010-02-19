@@ -23,6 +23,33 @@ use Wallet::Config ();
 $VERSION = '0.03';
 
 ##############################################################################
+# Utility functions for child classes
+##############################################################################
+
+# Read the entirety of a possibly binary file and return the contents,
+# deleting the file after reading it.  If reading the file fails, set the
+# error message and return undef.
+sub read_keytab {
+    my ($self, $file) = @_;
+    local *TMPFILE;
+    unless (open (TMPFILE, '<', $file)) {
+        $self->error ("cannot open temporary file $file: $!");
+        return;
+    }
+    local $/;
+    undef $!;
+    my $data = <TMPFILE>;
+    if ($!) {
+        $self->error ("cannot read temporary file $file: $!");
+        unlink $file;
+        return;
+    }
+    close TMPFILE;
+    unlink $file;
+    return $data;
+}
+
+##############################################################################
 # Public methods
 ##############################################################################
 
@@ -84,9 +111,9 @@ Wallet::Kadmin - Kerberos administration API for wallet keytab backend
 
     my $kadmin = Wallet::Kadmin->new;
     $kadmin->create ('host/foo.example.com');
-    $kadmin->keytab_rekey ('host/foo.example.com', 'keytab',
-                           'aes256-cts-hmac-sha1-96');
-    my $data = $kadmin->keytab ('host/foo.example.com');
+    my $data = $kadmin->keytab_rekey ('host/foo.example.com',
+                                      'aes256-cts-hmac-sha1-96');
+    $data = $kadmin->keytab ('host/foo.example.com');
     my $exists = $kadmin->exists ('host/oldshell.example.com');
     $kadmin->destroy ('host/oldshell.example.com') if $exists;
 
@@ -101,9 +128,8 @@ interact with that implementation's kadmin interface.
 
 The class uses Wallet::Config to find which type of kadmin interface is in
 use and then returns an object to use for interacting with that interface.
-To use this object, several configuration parameters must be set.  See
-Wallet::Config(3) for details on those configuration parameters and
-information about how to set wallet configuration.
+See L<Wallet::Config/"KEYTAB OBJECT CONFIGURATION"> for details on how to
+configure this module.
 
 =head1 CLASS METHODS
 
@@ -174,7 +200,7 @@ Kerberos.  To create a keytab, the principal has to have previously been
 created in the Kerberos KDC.  Returns the keytab as binary data on success
 and undef on failure.
 
-=item keytab_rekey(PRINCIPAL, FILE [, ENCTYPE ...])
+=item keytab_rekey(PRINCIPAL [, ENCTYPE ...])
 
 Like keytab(), but randomizes the key for the principal before generating
 the keytab and writes it to the given file.  This will invalidate any
@@ -183,7 +209,19 @@ encryption types of the keys for that principal via the optional ENCTYPE
 arguments.  The enctype values must be enctype strings recognized by the
 Kerberos implementation (strings like C<aes256-cts-hmac-sha1-96> or
 C<des-cbc-crc>).  If none are given, the KDC defaults will be used.
-Returns true on success and false on failure.
+Returns the keytab as binary data on success and undef on failure.
+
+=back
+
+The following methods are utility methods to aid with child class
+implementation and should only be called by child classes.
+
+=over 4
+
+=item read_keytab(FILE)
+
+Reads the contents of the keytab stored in FILE into memory and returns it
+as binary data.  On failure, returns undef and sets the object error.
 
 =back
 

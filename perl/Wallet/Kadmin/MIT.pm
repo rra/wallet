@@ -178,12 +178,11 @@ sub keytab {
 }
 
 # Create a keytab for a principal, randomizing the keys for that principal
-# in the process.  Takes the principal, the file, and optionally a list of
-# encryption types to which to limit the keytab.  Return true if
-# successful, false otherwise.  If the keytab creation fails, sets the
-# error.
+# in the process.  Takes the principal and an optional list of encryption
+# types to which to limit the keytab.  Return the keytab data on success
+# and undef otherwise.  If the keytab creation fails, sets the error.
 sub keytab_rekey {
-    my ($self, $principal, $file, @enctypes) = @_;
+    my ($self, $principal, @enctypes) = @_;
     unless ($self->valid_principal ($principal)) {
         $self->error ("invalid principal name: $principal");
         return;
@@ -191,6 +190,8 @@ sub keytab_rekey {
     if ($Wallet::Config::KEYTAB_REALM) {
         $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     }
+    my $file = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
+    unlink $file;
     my $command = "ktadd -q -k $file";
     if (@enctypes) {
         @enctypes = map { /:/ ? $_ : "$_:normal" } @enctypes;
@@ -203,7 +204,7 @@ sub keytab_rekey {
         $self->error ("error creating keytab for $principal: $1");
         return;
     }
-    return 1;
+    return $self->read_keytab ($file);
 }
 
 # Delete a principal from Kerberos.  Return true if successful, false
@@ -238,6 +239,9 @@ sub destroy {
 # kadmin directly.
 sub new {
     my ($class) = @_;
+    unless (defined ($Wallet::Config::KEYTAB_TMP)) {
+        die "KEYTAB_TMP configuration variable not set\n";
+    }
     my $self = {};
     bless ($self, $class);
     return $self;
@@ -261,9 +265,9 @@ Wallet::Kadmin::MIT - Wallet Kerberos administration API for MIT
 
     my $kadmin = Wallet::Kadmin::MIT->new;
     $kadmin->create ('host/foo.example.com');
-    $kadmin->keytab_rekey ('host/foo.example.com', 'keytab',
-                           'aes256-cts-hmac-sha1-96');
-    my $data = $kadmin->keytab ('host/foo.example.com');
+    my $data = $kadmin->keytab_rekey ('host/foo.example.com',
+                                      'aes256-cts-hmac-sha1-96');
+    $data = $kadmin->keytab ('host/foo.example.com');
     my $exists = $kadmin->exists ('host/oldshell.example.com');
     $kadmin->destroy ('host/oldshell.example.com') if $exists;
 
@@ -281,9 +285,20 @@ implemented using a remctl backend.  For that method (used for unchanging
 keytab objects) to work, the necessary wallet configuration and remctl
 interface on the KDC must be set up.
 
-To use this object, several configuration parameters must be set.  See
-Wallet::Config(3) for details on those configuration parameters and
-information about how to set wallet configuration.
+To use this class, several configuration parameters must be set.  See
+L<Wallet::Config/"KEYTAB OBJECT CONFIGURATION"> for details.
+
+=head1 FILES
+
+=over 4
+
+=item KEYTAB_TMP/keytab.<pid>
+
+The keytab is created in this file and then read into memory.  KEYTAB_TMP
+is set in the wallet configuration, and <pid> is the process ID of the
+current process.  The file is unlinked after being read.
+
+=back
 
 =head1 LIMITATIONS
 

@@ -11,6 +11,8 @@
 use POSIX qw(strftime);
 use Test::More tests => 135;
 
+BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
+
 use Wallet::Admin;
 use Wallet::Config;
 use Wallet::Kadmin;
@@ -89,21 +91,6 @@ sub created {
     }
 }
 
-# Given keytab data and the principal, write it to a file and try
-# authenticating using kinit.
-sub valid {
-    my ($keytab, $principal) = @_;
-    open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
-    print KEYTAB $keytab;
-    close KEYTAB;
-    $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    my $result = getcreds ('keytab', $principal);
-    if ($result) {
-        unlink 'keytab';
-    }
-    return $result;
-}
-
 # Given keytab data, write it to a file and try to determine the enctypes of
 # the keys present in that file.  Returns the enctypes as a list, with UNKNOWN
 # for encryption types that weren't recognized.  This is an ugly way of doing
@@ -168,7 +155,6 @@ SKIP: {
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
     $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
-    $Wallet::Config::KEYTAB_TMP       = '.';
     my $realm = $Wallet::Config::KEYTAB_REALM;
 
     # Clean up the principals we're going to use.
@@ -177,6 +163,16 @@ SKIP: {
 
     # Don't destroy the user's Kerberos ticket cache.
     $ENV{KRB5CCNAME} = 'krb5cc_test';
+
+    # Test that object creation without KEYTAB_TMP fails.
+    undef $Wallet::Config::KEYTAB_TMP;
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, 'Creating keytab without KEYTAB_TMP fails');
+    is ($@, "KEYTAB_TMP configuration variable not set\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_TMP = '.';
 
     # Okay, now we can test.  First, create.
     $object = eval {
@@ -244,7 +240,7 @@ SKIP: {
         is ($object->error, '', ' and getting the keytab works');
     }
     ok (! -f "./keytab.$$", ' and the temporary file was cleaned up');
-    ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+    ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
 
     # For right now, this is the only backend type that we have for which we
     # can do a get, so test display of the last download information.
@@ -261,12 +257,6 @@ EOO
     is ($object->show, $expected, 'Show output is correct');
 
     # Test error handling on keytab retrieval.
-    undef $Wallet::Config::KEYTAB_TMP;
-    $data = $object->get (@trace);
-    is ($data, undef, 'Getting a keytab without a tmp directory fails');
-    is ($object->error, 'KEYTAB_TMP configuration variable not set',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_TMP = '.';
   SKIP: {
         skip 'no kadmin program test for Heimdal', 2
             if $Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal';
@@ -447,7 +437,7 @@ SKIP: {
             'Clearing the unchanging flag works');
         my $data = $object->get (@trace);
         ok (defined ($data), ' and getting the keytab works');
-        ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+        ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
         is ($two->get (@trace), undef, 'Get for wallet/two does not work');
         is ($two->error,
             "cannot retrieve keytab for wallet/two\@$realm: bite me",
@@ -464,7 +454,7 @@ SKIP: {
             if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'mit');
         my $data = $one->get (@trace);
         ok (defined $data, 'Get of unchanging keytab works');
-        ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+        ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
         my $second = $one->get (@trace);
         ok (defined $second, ' and second retrieval also works');
         $data =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
@@ -474,7 +464,7 @@ SKIP: {
             'Clearing the unchanging flag works');
         $data = $one->get (@trace);
         ok (defined ($data), ' and getting the keytab works');
-        ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+        ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
         $data =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
         ok ($data ne $second, ' and the new keytab is different');
         is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
