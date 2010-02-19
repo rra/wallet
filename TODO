@@ -12,8 +12,6 @@ Release 0.10:
 * Check whether we can just drop the realm restriction on keytabs and
   allow the name to contain the realm if the Kerberos type is Heimdal.
 
-* Make MIT and Heimdal case-insensitive in the configuration file.
-
 Release 1.0:
 
 * Fix case-insensitivity bug in unique keys with MySQL for objects.
