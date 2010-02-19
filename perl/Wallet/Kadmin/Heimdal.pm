@@ -40,30 +40,6 @@ sub canonicalize_principal {
 }
 
 ##############################################################################
-# kadmin Interaction
-##############################################################################
-
-# Create a Heimdal::Kadm5 client object and return it.  It should load
-# configuration from Wallet::Config.
-sub kadmin_client {
-    my ($self) = @_;
-    unless (defined ($Wallet::Config::KEYTAB_PRINCIPAL)
-            and defined ($Wallet::Config::KEYTAB_FILE)
-            and defined ($Wallet::Config::KEYTAB_REALM)) {
-        die "keytab object implementation not configured\n";
-    }
-    my @options = (RaiseError => 1,
-                   Principal  => $Wallet::Config::KEYTAB_PRINCIPAL,
-                   Realm      => $Wallet::Config::KEYTAB_REALM,
-                   Keytab     => $Wallet::Config::KEYTAB_FILE);
-    if ($Wallet::Config::KEYTAB_HOST) {
-        push (@options, Server => $Wallet::Config::KEYTAB_HOST);
-    }
-    my $client = Heimdal::Kadm5::Client->new (@options);
-    return $client;
-}
-
-##############################################################################
 # Public interfaces
 ##############################################################################
 
@@ -198,14 +174,25 @@ sub delprinc {
     return 1;
 }
 
-# Create a new Heimdal kadmin object.
+# Create a new Wallet::Kadmin::Heimdal object and its underlying
+# Heimdal::Kadm5 object.
 sub new {
     my ($class) = @_;
-    my $self = {
-        client => undef,
-    };
+    unless (defined ($Wallet::Config::KEYTAB_PRINCIPAL)
+            and defined ($Wallet::Config::KEYTAB_FILE)
+            and defined ($Wallet::Config::KEYTAB_REALM)) {
+        die "keytab object implementation not configured\n";
+    }
+    my @options = (RaiseError => 1,
+                   Principal  => $Wallet::Config::KEYTAB_PRINCIPAL,
+                   Realm      => $Wallet::Config::KEYTAB_REALM,
+                   Keytab     => $Wallet::Config::KEYTAB_FILE);
+    if ($Wallet::Config::KEYTAB_HOST) {
+        push (@options, Server => $Wallet::Config::KEYTAB_HOST);
+    }
+    my $client = Heimdal::Kadm5::Client->new (@options);
+    my $self = { client => $client };
     bless ($self, $class);
-    $self->{client} = $self->kadmin_client;
     return $self;
 }
 
