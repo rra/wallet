@@ -3,12 +3,12 @@
 # t/kadmin.t -- Tests for the kadmin object implementation.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 17;
+use Test::More tests => 33;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -19,7 +19,6 @@ use Wallet::Kadmin::MIT;
 my $heimdal_kadm5 = 0;
 eval 'use Heimdal::Kadm5';
 if (!$@) {
-    print "No error...\n";
     $heimdal_kadm5 = 1;
     require Wallet::Kadmin::Heimdal;
 }
@@ -27,12 +26,21 @@ if (!$@) {
 use lib 't/lib';
 use Util;
 
-# We test a Wallet::Kadmin::* module's actual workings in the keytab.t tests.
-# The only things we want to test here are that each module is found, that
-# Wallet::Kadmin itself delegates to them, and that the private MIT principal
-# validation works as it should.
-for my $bad (qw{service\* = host/foo+bar host/foo/bar /bar bar/
-                rcmd.foo}) {
+# Test creating an MIT object and seeing if the callback works.
+$Wallet::Config::KEYTAB_KRBTYPE = 'MIT';
+my $kadmin = Wallet::Kadmin->new;
+ok (defined ($kadmin), 'MIT kadmin object created');
+my $callback = sub { return 1 };
+$kadmin->fork_callback ($callback);
+is ($kadmin->{fork_callback} (), 1, ' and callback works');
+$callback = sub { return 2 };
+$kadmin->fork_callback ($callback);
+is ($kadmin->{fork_callback} (), 2, ' and changing it works');
+
+# Check principal validation in the Wallet::Kadmin::MIT module.  This is
+# specific to that module, since Heimdal doesn't require passing the principal
+# through the kadmin client.
+for my $bad (qw{service\* = host/foo+bar host/foo/bar /bar bar/ rcmd.foo}) {
     ok (! Wallet::Kadmin::MIT->valid_principal ($bad),
         "Invalid principal name $bad");
 }
@@ -42,28 +50,61 @@ for my $good (qw{service service/foo bar foo/bar host/example.org
         "Valid principal name $good");
 }
 
-# Test creating an MIT object and seeing if the callback works.
-$Wallet::Config::KEYTAB_KRBTYPE = 'MIT';
-my $kadmin = Wallet::Kadmin->new;
-ok (defined ($kadmin), 'MIT kadmin object created');
-my $callback = sub { return 1 };
-$kadmin->fork_callback ($callback);
-is ($kadmin->{fork_callback} (), 1, ' and callback works.');
-$callback = sub { return 2 };
-$kadmin->fork_callback ($callback);
-is ($kadmin->{fork_callback} (), 2, ' and changing it works.');
-
-# Test creating a Heimdal object.  For us to test a working Heimdal object,
-# we need a properly configured Heimdal KDC.  So instead, we deliberately
-# connect without configuration to get the error.  That at least tests that
-# we can find the Heimdal module and it dies how it should.
+# Test creating a Heimdal object.  We deliberately connect without
+# configuration to get the error.  That tests that we can find the Heimdal
+# module and it dies how it should.
 SKIP: {
-    skip 'Heimdal::Kadm5 not installed', 1 unless $heimdal_kadm5;
+    skip 'Heimdal::Kadm5 not installed', 3 unless $heimdal_kadm5;
     undef $Wallet::Config::KEYTAB_PRINCIPAL;
     undef $Wallet::Config::KEYTAB_FILE;
     undef $Wallet::Config::KEYTAB_REALM;
     undef $kadmin;
     $Wallet::Config::KEYTAB_KRBTYPE = 'Heimdal';
     $kadmin = eval { Wallet::Kadmin->new };
-    is ($kadmin, undef, 'Heimdal fails properly.');
+    is ($kadmin, undef, 'Heimdal fails properly');
+    is ($@, "keytab object implementation not configured\n",
+        ' with the right error');
+}
+
+# Now, check the generic API.  We can run this test no matter which
+# implementation is configured.  This retests some things that are also tested
+# by the keytab test, but specifically through the Wallet::Kadmin API.
+SKIP: {
+    skip 'no keytab configuration', 15 unless -f 't/data/test.keytab';
+
+    # Set up our configuration.
+    $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
+    $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
+    $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
+    $Wallet::Config::KEYTAB_TMP       = '.';
+
+    # Create the object and clean up the principal we're going to use.
+    $kadmin = eval { Wallet::Kadmin->new };
+    ok (defined $kadmin, 'Creating Wallet::Kadmin object succeeds');
+    is ($@, '', ' and there is no error');
+    is ($kadmin->delprinc ('wallet/one'), 1, 'Deleting wallet/one works');
+    is ($kadmin->exists ('wallet/one'), 0, ' and it does not exist');
+
+    # Create the principal and check that ktadd returns something.  We'll
+    # check the details of the return in the keytab check.
+    is ($kadmin->addprinc ('wallet/one'), 1, 'Creating wallet/one works');
+    is ($kadmin->exists ('wallet/one'), 1, ' and it now exists');
+    unlink ('./tmp.keytab');
+    is ($kadmin->ktadd ('wallet/one', './tmp.keytab'), 1,
+        ' and retrieving a keytab works');
+    ok (-s './tmp.keytab', ' and the resulting keytab is non-zero');
+    is (getcreds ('./tmp.keytab', "wallet/one\@$Wallet::Config::KEYTAB_REALM"),
+        1, ' and works for authentication');
+    unlink ('./tmp.keytab');
+
+    # Delete the principal and confirm behavior.
+    is ($kadmin->delprinc ('wallet/one'), 1, 'Deleting principal works');
+    is ($kadmin->exists ('wallet/one'), 0, ' and now it does not exist');
+    is ($kadmin->ktadd ('wallet/one', './tmp.keytab'), undef,
+        ' and retrieving the keytab does not work');
+    ok (! -f './tmp.keytab', ' and no file was created');
+    like ($kadmin->error, qr%^error creating keytab for wallet/one%,
+          ' and the right error message is set');
+    is ($kadmin->delprinc ('wallet/one'), 1, ' and deleting it again works');
 }
