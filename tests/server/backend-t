@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 1263;
+use Test::More tests => 1269;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -163,6 +163,7 @@ package main;
 $INC{'Wallet/Server.pm'} = 'FAKE';
 my $OUTPUT;
 our $SYSLOG = \$OUTPUT;
+my $INPUT = '';
 eval { do "$ENV{SOURCE}/../server/wallet-backend" };
 
 # Run the wallet backend.  This fun hack takes advantage of the fact that the
@@ -173,6 +174,8 @@ sub run_backend {
     my $result = '';
     open (OUTPUT, '>', \$result) or die "cannot create output string: $!\n";
     select OUTPUT;
+    close STDIN;
+    open (STDIN, '<', \$INPUT) or die "cannot change stdin: $!\n";
     local $| = 1;
     eval { command (@args) };
     my $error = $@;
@@ -224,7 +227,7 @@ my %commands = (autocreate => [2, 2],
                 setacl     => [4, 4],
                 setattr    => [4, 9],
                 show       => [2, 2],
-                store      => [3, 3]);
+                store      => [2, 3]);
 my %acl_commands = (add     => [3, 3],
                     create  => [1, 1],
                     destroy => [1, 1],
@@ -326,6 +329,7 @@ for my $command (qw/autocreate create destroy setacl setattr store/) {
     $method ||= $command;
     my @extra = ('foo') x ($commands{$command}[0] - 2);
     my $extra = @extra ? join (' ', '', @extra) : '';
+    $extra = ' ' if $command eq 'store';
     ($out, $err) = run_backend ($command, 'type', 'name', @extra);
     my $ran;
     if ($command eq 'store') {
@@ -413,7 +417,7 @@ for my $command (qw/check expires get getacl getattr history owner show/) {
             ' and ran the right method with output');
     }
     ($out, $err) = run_backend ($command, 'error', 'name', @extra);
-    my $ran = "$command error name" . (@extra ? " @extra" : '');
+    $ran = "$command error name" . (@extra ? " @extra" : '');
     is ($err, "error count $error\n", "Command $command ran with errors");
     is ($OUTPUT, "command $ran from admin (1.2.3.4) failed: error count"
         . " $error\n", ' and syslog correct');
@@ -467,6 +471,22 @@ for my $command (sort keys %flag_commands) {
         ' and ran the right method');
     $error++;
 }
+
+# Special check for store allowing nul characters on standard input.
+$INPUT = "Some data\000with a nul character";
+($out, $err) = run_backend ('store', 'type', 'name');
+is ($err, '', 'store with nul data ran with no errors');
+is ($OUTPUT, "command store type name from admin (1.2.3.4) succeeded\n",
+    ' and success logged');
+is ($out, "$new\nstore type name $INPUT\n",
+    ' and ran the right method');
+$INPUT = '';
+($out, $err) = run_backend ('store', 'type', 'name');
+is ($err, '', 'store with empty stdin data ran with no errors');
+is ($OUTPUT, "command store type name from admin (1.2.3.4) succeeded\n",
+    ' and success logged');
+is ($out, "$new\nstore type name \n",
+    ' and ran the right method');
 
 # Almost done.  All that remains is to test the robustness of the bad
 # character checks against every possible character and test permitting the

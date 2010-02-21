@@ -284,7 +284,11 @@ sub command {
             failure ($server->error, @_);
         }
     } elsif ($command eq 'store') {
-        check_args (3, 3, [3], @args);
+        check_args (2, 3, [3], @args);
+        if (@args == 2) {
+            local $/;
+            $args[2] = <STDIN>;
+        }
         splice (@_, 3);
         $server->store (@args) or failure ($server->error, @_);
     } else {
@@ -536,10 +540,11 @@ name, the owner, any specific ACLs set on the object, the expiration if
 any, and the user, remote host, and time when the object was created, last
 stored, and last downloaded.
 
-=item store <type> <name> <data>
+=item store <type> <name> [<data>]
 
 Stores <data> for the object identified by <type> and <name> for later
-retrieval with C<get>.  Not all object types support this.
+retrieval with C<get>.  Not all object types support this.  If <data> is
+not given as an argument, it will be read from standard input.
 
 Currently, <data> is limited to not containing nul characters and may
 therefore not be binary data, and is limited by the maximum command line
