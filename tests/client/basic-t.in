@@ -50,7 +50,7 @@ if [ $? != 0 ] ; then
 elif [ -z '@REMCTLD@' ] ; then
     skip_all 'No remctld found'
 else
-    plan 34
+    plan 36
 fi
 remctld_start '@REMCTLD@' "$SOURCE/data/basic.conf"
 wallet="$BUILD/../client/wallet"
@@ -139,6 +139,13 @@ echo "file fake-test" > store-correct
 cat store-input >> store-correct
 ok_program 'store from a file' 0 '' \
     "$wallet" -f store-input store file fake-test
+ok '...and the correct data was stored' cmp store-output store-correct
+rm -f store-input store-output store-correct
+printf 'This is store input\000with a nul character' > store-input
+echo 'file fake-nul' > store-correct
+cat store-input >> store-correct
+ok_program 'store from a file with a nul' 0 '' \
+    "$wallet" -f store-input store file fake-nul
 ok '...and the correct data was stored' cmp store-output store-correct
 rm -f store-input store-output store-correct
 

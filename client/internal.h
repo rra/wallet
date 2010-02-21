@@ -17,6 +17,7 @@
 
 /* Forward declarations to avoid unnecessary includes. */
 struct remctl;
+struct iovec;
 
 BEGIN_DECLS
 
@@ -29,14 +30,18 @@ void kinit(krb5_context, const char *principal);
 void kdestroy(void);
 
 /*
- * Given a remctl object, run a remctl command.  If data is non-NULL, saves
- * the standard output from the command into data with the length in length.
- * Otherwise, prints it to standard output.  Either way, prints standard error
- * output and errors to standard error and returns the exit status or 255 for
- * a remctl internal error.
+ * Given a remctl object, either a NULL-terminated array of strings or an
+ * array of iovecs and the number of elements in the array, and optional data
+ * and size output variables, run a remctl command.  If data is non-NULL,
+ * saves the standard output from the command into data with the length in
+ * length.  Otherwise, prints it to standard output.  Either way, prints
+ * standard error output and errors to standard error and returns the exit
+ * status or 255 for a remctl internal error.
  */
 int run_command(struct remctl *, const char **command, char **data,
                 size_t *length);
+int run_commandv(struct remctl *, const struct iovec *command, size_t count,
+                 char **data, size_t *length);
 
 /*
  * Check whether an object exists using the exists wallet interface.  Returns
@@ -91,12 +96,12 @@ void write_srvtab(krb5_context, const char *srvtab, const char *principal,
                   const char *keytab);
 
 /*
- * Read all of a file into memory and return the contents as a newly allocated
- * string.  Handles a file name of "-" to mean standard input.  Dies on any
- * failure.  This will need modification later when we want to handle nul
- * characters.
+ * Read all of a file into memory and return the contents in newly allocated
+ * memory.  Handles a file name of "-" to mean standard input.  Stores the
+ * length of the data in the second argument if it isn't NULL.  Dies on any
+ * failure.
  */
-char *read_file(const char *);
+void *read_file(const char *, size_t *);
 
 END_DECLS
 

@@ -115,14 +115,13 @@ get_file(struct remctl *r, const char *prefix, const char *type,
 
 
 /*
- * Read all of a file into memory and return the contents as a newly allocated
- * string.  Handles a file name of "-" to mean standard input.  Dies on any
- * failure.
- *
- * This will need modification later when we want to handle nul characters.
+ * Read all of a file into memory and return the contents in newly allocated
+ * memory.  Returns the size of the file contents in the second argument if
+ * it's not NULL.  Handles a file name of "-" to mean standard input.  Dies on
+ * any failure.
  */
-char *
-read_file(const char *name)
+void *
+read_file(const char *name, size_t *length)
 {
     char *contents;
     size_t size, offset;
@@ -140,7 +139,7 @@ read_file(const char *name)
             sysdie("cannot open file %s", name);
         if (fstat(fd, &st) < 0)
             sysdie("cannot stat file %s", name);
-        size = st.st_size + 1;
+        size = st.st_size;
         contents = xmalloc(size);
     }
     offset = 0;
@@ -157,8 +156,7 @@ read_file(const char *name)
         offset += status;
     } while (status > 0);
     close(fd);
-    contents[offset] = '\0';
-    if (memchr(contents, '\0', offset) != NULL)
-        die("cannot yet handle file data containing nul characters");
+    if (length != NULL)
+        *length = offset;
     return contents;
 }

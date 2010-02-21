@@ -82,10 +82,15 @@ get)
     ;;
 store)
     if [ -n "$3" ] ; then
-        echo "Too many arguments" >&2
+        echo 'Too many arguments' >&2
         exit 1
     fi
-    printf "$type $1\n$2" > store-output
+    if [ -n "$2" ] ; then
+        echo 'stdin remctld configuration not supported' >&2
+        exit 1
+    fi
+    printf "$type $1\n" > store-output
+    cat >> store-output
     ;;
 show)
     if [ -n "$2" ] ; then
