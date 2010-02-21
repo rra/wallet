@@ -39,7 +39,7 @@ EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract	   \
 	tests/data/fake-srvtab tests/data/wallet.conf			   \
 	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
 	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
-	$(PERL_FILES)
+	tests/tap/libtap.sh tests/tap/remctl.sh $(PERL_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
