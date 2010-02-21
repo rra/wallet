@@ -28,18 +28,19 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = LICENSE autogen client/wallet.pod config/allow-extract	   \
-	config/keytab config/keytab.acl config/wallet docs/design	   \
-	contrib/README contrib/convert-srvtab-db contrib/used-principals   \
-	contrib/wallet-contacts contrib/wallet-summary			   \
-	contrib/wallet-summary.8 docs/design-acl docs/design-api	   \
-	docs/netdb-role-api docs/notes docs/setup docs/stanford-naming	   \
-	examples/stanford.conf tests/TESTS tests/data/README		   \
-	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake \
-	tests/data/cmd-wrapper tests/data/fake-data tests/data/fake-kadmin \
-	tests/data/fake-keytab tests/data/fake-keytab-2			   \
-	tests/data/fake-keytab-merge tests/data/fake-keytab-old		   \
-	tests/data/fake-srvtab tests/data/full.conf tests/data/wallet.conf \
+EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
+	config/allow-extract config/keytab config/keytab.acl config/wallet \
+	docs/design contrib/README contrib/convert-srvtab-db		   \
+	contrib/used-principals contrib/wallet-contacts			   \
+	contrib/wallet-summary contrib/wallet-summary.8 docs/design-acl	   \
+	docs/design-api docs/netdb-role-api docs/notes docs/setup	   \
+	docs/stanford-naming examples/stanford.conf tests/TESTS		   \
+	tests/data/README tests/data/allow-extract tests/data/basic.conf   \
+	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	   \
+	tests/data/fake-kadmin tests/data/fake-keytab			   \
+	tests/data/fake-keytab-2 tests/data/fake-keytab-merge		   \
+	tests/data/fake-keytab-old tests/data/fake-srvtab		   \
+	tests/data/full.conf tests/data/wallet.conf			   \
 	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
 	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
 	tests/tap/kerberos.sh tests/tap/libtap.sh tests/tap/remctl.sh	   \
