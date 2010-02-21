@@ -11,6 +11,7 @@
 #include <config.h>
 #include <portable/krb5.h>
 #include <portable/system.h>
+#include <portable/uio.h>
 
 #include <errno.h>
 #include <remctl.h>

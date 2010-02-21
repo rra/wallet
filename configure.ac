@@ -33,7 +33,7 @@ AC_CHECK_MEMBERS([krb5_keytab_entry.keyblock], , , [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
 
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/bitypes.h syslog.h])
+AC_CHECK_HEADERS([sys/bitypes.h sys/uio.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 RRA_C_C99_VAMACROS
 RRA_C_GNU_VAMACROS
