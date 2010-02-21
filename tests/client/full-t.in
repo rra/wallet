@@ -11,7 +11,7 @@
 # is loaded, and it's pulled in as a prerequisite for Wallet::Admin.
 BEGIN { $ENV{WALLET_CONFIG} = "$ENV{SOURCE}/data/wallet.conf" }
 
-BEGIN { our $total = 53 }
+BEGIN { our $total = 59 }
 use Test::More tests => $total;
 
 use lib "$ENV{SOURCE}/../perl";
@@ -166,6 +166,22 @@ SKIP: {
     ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
     is ($status, 0, 'Object get succeeds');
     is ($out, '-q', ' with the right output');
+    is ($err, '', ' and no error');
+
+    # Store data containing nul characters.
+    my $data = "Some data\000with a nul";
+    open (IN, '>', 'tmp-file') or BAIL_OUT ("cannot create tmp-file: $!");
+    print IN $data;
+    close IN;
+    ($out, $err, $status) = wallet ($principal, '-f', 'tmp-file', 'store',
+                                    'file', 'auto');
+    unlink ('tmp-file');
+    is ($status, 0, 'Storing data with a nul succeeds');
+    is ($out, '', ' with no output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
+    is ($status, 0, 'Object get succeeds');
+    is ($out, $data, ' with the right output');
     is ($err, '', ' and no error');
 
     # All done.
