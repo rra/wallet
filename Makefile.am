@@ -54,7 +54,7 @@ util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
 bin_PROGRAMS = client/wallet
 dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
-	server/wallet-backend
+	server/wallet-backend server/wallet-report
 client_wallet_SOURCES = client/file.c client/internal.h client/keytab.c \
 	client/krb5.c client/remctl.c client/srvtab.c client/wallet.c
 client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
@@ -63,7 +63,7 @@ client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
 	$(KRB5_LIBS)
 
 dist_man_MANS = client/wallet.1 server/keytab-backend.8 \
-	server/wallet-admin.8 server/wallet-backend.8
+	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
 # without optimization turned on, and add -DDEBUG=1 so we'll also compile all
