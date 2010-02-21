@@ -54,13 +54,6 @@ DESCRIPTION
   interface to retrieve the current key if the unchanging flag is set on a
   Kerberos keytab object.
 
-  The Kerberos keytab object implementation also optionally supports
-  synchronization of keys with an AFS kaserver to aid in migration from
-  Kerberos v4 to Kerberos v5.  Included in the wallet distribution is the
-  kasetkey client, which can create, change the keys of, and delete
-  principals from an AFS kaserver, authenticating from a srvtab.  It is a
-  partial replacement for kas or a Kerberos v4 kadmin.
-
 REQUIREMENTS
 
   The wallet client is written in C and builds against the C remctl
@@ -123,9 +116,8 @@ REQUIREMENTS
   user's path or in /usr/local/sbin or /usr/sbin, that test cases can run
   services on and connect to ports 14373 and 14444 on 127.0.0.1, and that
   kinit and kvno (which come with Kerberos) be installed and available on
-  the user's path.  The full test suite also requires a local keytab, a
-  srvtab with ADMIN access to a test AFS kaserver, and some additional
-  configuration.
+  the user's path.  The full test suite also requires a local keytab and
+  some additional configuration.
 
   To bootstrap from a Git checkout, or if you change the Automake files
   and need to regenerate Makefile.in, you will need Automake 1.11 or
@@ -257,9 +249,8 @@ CONFIGURATION
   docuemntation (with man Wallet::Config or perldoc Wallet::Config).
   There are many customization options, some of which must be set.  You
   may also need to create a Kerberos keytab for the keytab object backend
-  and give it appropriate ACLs, set up keytab-backend and its remctld
-  configuration on your KDC if you want unchanging flag support, and set
-  up a srvtab if you want AFS kaserver synchronization support.
+  and give it appropriate ACLs, and set up keytab-backend and its remctld
+  configuration on your KDC if you want unchanging flag support.
 
   The wallet client supports reading configuration settings from the
   system krb5.conf file.  For more information, see the CONFIGURATION
