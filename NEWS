@@ -26,6 +26,12 @@ wallet 0.10 (unreleased)
     right thing for sites that use a KDC that serves both Kerberos v4 and
     Kerberos v5 from the same database.
 
+    The wallet client can now store data containing nul characters and
+    wallet-backend will accept it if passed on standard input instead of
+    as a command-line argument.  See config/wallet for the new required
+    remctld configuration.  Storing data containing nul characters
+    requires remctl 2.14 or later.
+
     Correctly handle storing of data that begins with a dash and don't
     parse it as an argument to wallet-backend.
 

@@ -317,7 +317,7 @@ __END__
 
 =for stopwords
 wallet-backend backend backend-specific remctld ACL acl timestamp getacl
-setacl metadata nul keytab keytabs enctypes enctype ktadd KDC Allbery
+setacl metadata keytab keytabs enctypes enctype ktadd KDC Allbery
 autocreate
 
 =head1 NAME
@@ -545,11 +545,6 @@ stored, and last downloaded.
 Stores <data> for the object identified by <type> and <name> for later
 retrieval with C<get>.  Not all object types support this.  If <data> is
 not given as an argument, it will be read from standard input.
-
-Currently, <data> is limited to not containing nul characters and may
-therefore not be binary data, and is limited by the maximum command line
-length of the operating system of the wallet server.  These restrictions
-will be lifted in the future.
 
 =back
 

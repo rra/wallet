@@ -5,7 +5,7 @@ wallet - Client for retrieving secure data from a central server
 =for stopwords
 -hv srvtab arg keytabs metadata keytab ACL PTS kinit klist remctl PKINIT
 acl timestamp autocreate backend-specific setacl enctypes enctype ktadd
-KDC appdefaults remctld Allbery nul uuencode getacl backend
+KDC appdefaults remctld Allbery uuencode getacl backend
 
 =head1 SYNOPSIS
 
@@ -86,11 +86,6 @@ file I<output>.  Old keys are not removed; you may wish to run C<kadmin
 ktremove> or an equivalent later to clean up old keys.  F<I<output>.new>
 is still used as a temporary file and any existing file with that name
 will be deleted.
-
-C<store> does not yet support nul bytes in I<file> (or in any other way of
-specifying the data to be stored).  To store binary files in the wallet,
-you will need to encode them with uuencode, base64, or some similar scheme
-and then decode them after retrieval.
 
 =item B<-k> I<principal>
 
@@ -348,11 +343,6 @@ Stores <data> for the object identified by <type> and <name> for later
 retrieval with C<get>.  Not all object types support this.  If <data> is
 not specified on the command line, it will be read from the file specified
 with B<-f> (if given) or from standard input.
-
-Currently, the stored data must not contain nul characters and may
-therefore not be binary data.  Its length is also limited by the maximum
-command line length of the operating system of the wallet server.  These
-restrictions will be lifted in the future.
 
 If an object with type <type> and name <name> does not already exist when
 this command is issued (as checked with the check interface), B<wallet>

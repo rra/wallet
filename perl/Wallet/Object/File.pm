@@ -221,12 +221,11 @@ dashes replaced by C<%> and the hex code of the character.
 
 =head1 LIMITATIONS
 
-The wallet implementation itself can handle arbitrary file object names
-and arbitrary content.  However, due to limitations in the B<remctld>
-server usually used to run B<wallet-backend>, file object names and
-contents containing nul characters (ASCII 0) may not be permitted.  The
-file system used for storing file objects may impose a length limitation
-on the file object name.
+The wallet implementation itself can handle arbitrary file object names.
+However, due to limitations in the B<remctld> server usually used to run
+B<wallet-backend>, file object names containing nul characters (ASCII 0)
+may not be permitted.  The file system used for storing file objects may
+impose a length limitation on the file object name.
 
 =head1 SEE ALSO
 
