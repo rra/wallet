@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.10 (unreleased)
+wallet 0.10 (2010-02-21)
 
     Add support for Heimdal KDCs as well as MIT Kerberos KDCs.  There is
     now a mandatory new setting in Wallet::Config: $KEYTAB_KRBTYPE.  It

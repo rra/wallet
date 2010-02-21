@@ -9,7 +9,7 @@ dnl See LICENSE for licensing terms.
 dnl We cannot use -Wall -Werror with AM_INIT_AUTOMAKE since we override
 dnl distuninstallcheck (not supported by Perl).
 AC_PREREQ([2.64])
-AC_INIT([wallet], [0.9], [rra@stanford.edu])
+AC_INIT([wallet], [0.10], [rra@stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
