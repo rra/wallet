@@ -148,7 +148,7 @@ my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 
 # Basic keytab creation and manipulation tests.
 SKIP: {
-    skip 'no keytab configuration', 49 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 52 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -495,7 +495,7 @@ EOO
 # since no synchronization targets are supported, but we want to still test
 # the basic stub code.
 SKIP: {
-    skip 'no keytab configuration', 106 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 18 unless -f 't/data/test.keytab';
 
     # Test setting synchronization attributes, which can also be done without
     # configuration.
@@ -563,9 +563,7 @@ EOO
 
 # Tests for enctype restriction.
 SKIP: {
-    unless (-f 't/data/test.keytab') {
-        skip 'no keytab configuration', 36;
-    }
+    skip 'no keytab configuration', 36 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -648,6 +646,7 @@ EOO
     # Now, try testing limiting the enctypes to just one.
   SKIP: {
         skip 'insufficient recognized enctypes', 14 unless @enctypes > 1;
+
         is ($one->attr ('enctypes', [ $enctypes[0] ], @trace), 1,
             'Setting a single enctype works');
         for my $enctype (@enctypes) {

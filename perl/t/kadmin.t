@@ -72,7 +72,7 @@ SKIP: {
 # implementation is configured.  This retests some things that are also tested
 # by the keytab test, but specifically through the Wallet::Kadmin API.
 SKIP: {
-    skip 'no keytab configuration', 15 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 14 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
