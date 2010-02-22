@@ -4,7 +4,7 @@
 	dh $@
 
 override_dh_auto_configure:
-	dh_auto_econfigure -- --enable-reduced-depends
+	dh_auto_configure -- --enable-reduced-depends
 
 # We rebuild the perl directory Makefile to encode the correct installation
 # paths, since otherwise it defaults to using the local site module path.
