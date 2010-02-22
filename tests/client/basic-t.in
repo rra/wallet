@@ -46,8 +46,10 @@ fi
 # Test setup.
 kerberos_setup
 if [ $? != 0 ] ; then
+    rm krb5.conf
     skip_all 'Kerberos tests not configured'
 elif [ -z '@REMCTLD@' ] ; then
+    rm krb5.conf
     skip_all 'No remctld found'
 else
     plan 36

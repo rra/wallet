@@ -45,14 +45,16 @@ DESCRIPTION
   infrastructure.  Currently, the only ACL type supported matches a single
   Kerberos principal name, but this will be extended in future releases.
 
-  Currently, the only object type supported is a Kerberos keytab.  By
-  default, whenever a Kerberos keytab object is retrieved from the wallet,
-  the key is changed in the Kerberos KDC and the wallet returns a keytab
-  for the new key.  However, also included in the wallet distribution is a
-  script that can be run via remctl on the Kerberos KDC to extract the
-  existing key for a principal, and the wallet system will use that
-  interface to retrieve the current key if the unchanging flag is set on a
-  Kerberos keytab object.
+  Currently, the object types supported are simple files and Kerberos
+  keytabs.  By default, whenever a Kerberos keytab object is retrieved
+  from the wallet, the key is changed in the Kerberos KDC and the wallet
+  returns a keytab for the new key.  However, a keytab object can also be
+  configured to preserve the existing keys when retrieved.  Included in
+  the wallet distribution is a script that can be run via remctl on an MIT
+  Kerberos KDC to extract the existing key for a principal, and the wallet
+  system will use that interface to retrieve the current key if the
+  unchanging flag is set on a Kerberos keytab object for MIT Kerberos.
+  (Heimdal doesn't require any special support.)
 
 REQUIREMENTS
 
@@ -90,15 +92,15 @@ REQUIREMENTS
   to create, modify, and delete principals from the KDC (as configured in
   kadm5.acl on an MIT Kerberos KDC).
 
-  To support the unchanging flag on keytab objects, the Net::Remctl Perl
-  module (shipped with remctl) must be installed on the server and the
-  keytab-backend script must be runnable via remctl on the KDC.  This
-  script also requires an MIT Kerberos kadmin.local binary that supports
-  the -norandkey option to ktadd.  This option will be included in MIT
-  Kerberos 1.7 and later.
+  To support the unchanging flag on keytab objects with an MIT Kerberos
+  KDC, the Net::Remctl Perl module (shipped with remctl) must be installed
+  on the server and the keytab-backend script must be runnable via remctl
+  on the KDC.  This script also requires an MIT Kerberos kadmin.local
+  binary that supports the -norandkey option to ktadd.  This option is
+  included in MIT Kerberos 1.7 and later.
 
   To support the NetDB ACL verifier (only of interest at sites using NetDB
-  to manage DNS), the Net::Remctl Perl  module must be installed on the
+  to manage DNS), the Net::Remctl Perl module must be installed on the
   server.
 
   To run the test suite, you must have Perl 5.8 or later and the Perl DBI
@@ -114,10 +116,10 @@ REQUIREMENTS
   checked.  The full test suite also requires the Test::Pod Perl module
   (available from CPAN), that remctld be installed and available on the
   user's path or in /usr/local/sbin or /usr/sbin, that test cases can run
-  services on and connect to ports 14373 and 14444 on 127.0.0.1, and that
-  kinit and kvno (which come with Kerberos) be installed and available on
-  the user's path.  The full test suite also requires a local keytab and
-  some additional configuration.
+  services on and connect to port 14373 on 127.0.0.1, and that kinit and
+  either kvno or kgetcred (which come with Kerberos) be installed and
+  available on the user's path.  The full test suite also requires a local
+  keytab and some additional configuration.
 
   To bootstrap from a Git checkout, or if you change the Automake files
   and need to regenerate Makefile.in, you will need Automake 1.11 or
