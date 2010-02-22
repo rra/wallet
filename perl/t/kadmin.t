@@ -56,7 +56,7 @@ for my $good (qw{service service/foo bar foo/bar host/example.org
 # configuration to get the error.  That tests that we can find the Heimdal
 # module and it dies how it should.
 SKIP: {
-    skip 'Heimdal::Kadm5 not installed', 3 unless $heimdal_kadm5;
+    skip 'Heimdal::Kadm5 not installed', 2 unless $heimdal_kadm5;
     undef $Wallet::Config::KEYTAB_PRINCIPAL;
     undef $Wallet::Config::KEYTAB_FILE;
     undef $Wallet::Config::KEYTAB_REALM;
