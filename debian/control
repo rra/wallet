@@ -2,13 +2,14 @@ Source: wallet
 Section: net
 Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 5), libdbi-perl, libdbd-sqlite3-perl,
+Build-Depends: debhelper (>= 7.0.50~), libdbi-perl, libdbd-sqlite3-perl,
  libkrb5-dev, libremctl-dev, libtest-pod-perl, perl
 Standards-Version: 3.7.3
 
 Package: keytab-backend
 Architecture: all
-Depends: krb5-admin-server, perl, remctl-server
+Depends: ${misc:Depends}, ${perl:Depends}, krb5-admin-server, perl,
+ remctl-server
 Description: Provide existing Kerberos keytabs via remctl
  keytab-backend is a service that runs under remctld and allows
  authenticated clients to download Kerberos keytabs without changing the
@@ -19,7 +20,7 @@ Description: Provide existing Kerberos keytabs via remctl
 
 Package: wallet-client
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Kerberos-authenticated secure data management client
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions
@@ -35,8 +36,8 @@ Description: Kerberos-authenticated secure data management client
 
 Package: wallet-server
 Architecture: all
-Depends: krb5-user, libdbi-perl, libdbd-sqlite3-perl | libdbd-mysql-perl,
- remctl-server, ${perl:Depends}
+Depends: ${misc:Depends}, ${perl:Depends}, krb5-user, libdbi-perl,
+ libdbd-sqlite3-perl | libdbd-mysql-perl, remctl-server
 Suggests: libauthen-krb5-perl, libnet-remctl-perl
 Description: Kerberos-authenticated secure data management server
  The wallet is a system for managing secure data, authorization rules to

@@ -15,6 +15,9 @@ wallet (0.10-1) UNRELEASED; urgency=low
     - Do not log the data passed to store.
     - New wallet-report script and multiple additional database reports.
     - Report ACL names as well as numbers in object history.
+  * Update debhelper compatibility level to V7.
+    - Use debhelper rule minimization with overrides.
+    - Add ${misc:Depends} to dependencies.
 
  -- Russ Allbery <rra@debian.org>  Sun, 21 Feb 2010 17:49:43 -0800
 

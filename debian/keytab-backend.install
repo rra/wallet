@@ -1,3 +1,4 @@
+debian/tmp/etc/remctl/acl/keytab
 debian/tmp/usr/sbin/keytab-backend
 debian/tmp/usr/share/man/man8/keytab-backend.8
 
