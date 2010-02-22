@@ -36,7 +36,7 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	CFLAGS="$(CFLAGS)" ./configure $(SYSTEM) --prefix=/usr \
-	    --mandir=\$${prefix}/share/man --with-kaserver \
+	    --mandir=\$${prefix}/share/man \
 	    --enable-reduced-depends
 	touch $@
 
