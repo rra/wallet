@@ -24,6 +24,7 @@ wallet (0.10-1) UNRELEASED; urgency=low
     only needed for keytab support, and allow libheimdal-kadm5-perl as an
     alternative.
   * Recommend remctl-server 2.14 or later for improved store support.
+  * Add Homepage, Vcs-Git, and Vcs-Browser control fields.
 
  -- Russ Allbery <rra@debian.org>  Sun, 21 Feb 2010 17:49:43 -0800
 
