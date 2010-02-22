@@ -1,8 +1,7 @@
 # Wallet::ACL::Krb5 -- Wallet Kerberos v5 principal ACL verifier.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -23,7 +22,7 @@ use Wallet::ACL::Base;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Interface
@@ -51,6 +50,9 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+ACL krb5 Allbery
+
 =head1 NAME
 
 Wallet::ACL::Krb5 - Simple wallet ACL verifier for Kerberos principals
@@ -70,7 +72,7 @@ Wallet::ACL::Krb5 - Simple wallet ACL verifier for Kerberos principals
 =head1 DESCRIPTION
 
 Wallet::ACL::Krb5 is the simplest wallet ACL verifier, used to verify ACL
-lines of type krb5.  The value of such an ACL is a simple Kerberos
+lines of type C<krb5>.  The value of such an ACL is a simple Kerberos
 principal in its text display form, and the ACL grants access to a given
 principal if and only if the principal exactly matches the ACL.
 
@@ -112,8 +114,8 @@ The PRINCIPAL parameter to check() was undefined or the empty string.
 
 Wallet::ACL(3), Wallet::ACL::Base(3), wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

@@ -1,20 +1,19 @@
-/* $Id$
- *
+/*
  * Implementation of srvtab handling for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
 
-#include <krb5.h>
-
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/messages-krb5.h>
+#include <util/messages.h>
 
 #ifndef KRB5_KRB4_COMPAT
 # define ANAME_SZ 40
@@ -28,10 +27,6 @@
  * string), and a keytab file name, extract the des-cbc-crc key from that
  * keytab and write it to the newly created srvtab file as a srvtab.  Convert
  * the principal from Kerberos v5 form to Kerberos v4 form.
- *
- * We always force the kvno to 0 for the srvtab.  This works with how the
- * wallet synchronizes keys with kasetkey, even though it's not particularly
- * correct.
  *
  * On any failure, print an error message to standard error and then exit.
  */
@@ -59,8 +54,13 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     ret = krb5_kt_get_entry(ctx, kt, princ, 0, ENCTYPE_DES_CBC_CRC, &entry);
     if (ret != 0)
         die_krb5(ctx, ret, "error reading DES key from keytab %s", keytab);
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
+    if (entry.keyblock.keyvalue.length != 8)
+        die("invalid DES key length in keytab");
+#else
     if (entry.key.length != 8)
         die("invalid DES key length in keytab");
+#endif
     krb5_kt_close(ctx, kt);
 
     /* Convert the principal to a Kerberos v4 principal. */
@@ -80,10 +80,14 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     strcpy(data + length, realm);
     length += strlen(realm);
     data[length++] = '\0';
-    data[length++] = '\0';
+    data[length++] = (unsigned char) entry.vno;
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
+    memcpy(data + length, entry.keyblock.keyvalue.data, 8);
+#else
     memcpy(data + length, entry.key.contents, 8);
+#endif
     length += 8;
-    krb5_free_keytab_entry_contents(ctx, &entry);
+    krb5_kt_free_entry(ctx, &entry);
 
     /* Write out the srvtab file. */
     write_file(srvtab, data, length);

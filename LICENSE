@@ -74,8 +74,9 @@ license:
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 The files portable/asprintf.c, portable/dummy.c, portable/macros.h,
-portable/stdbool.h, portable/strlcat.c, portable/strlcpy.c, and
-util/concat.c have been placed in the public domain by their author.
+portable/stdbool.h, portable/strlcat.c, portable/strlcpy.c,
+portable/uio.h, and util/concat.c have been placed in the public domain by
+their author.
 
 The file portable/snprintf.c is released under the following license:
 

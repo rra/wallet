@@ -1,14 +1,13 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/config.t -- Tests for the wallet server configuration.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 7;
+use Test::More tests => 6;
 
 # Silence warnings since we're not using use.
 package Wallet::Config;
@@ -26,8 +25,6 @@ is ($Wallet::Config::KEYTAB_FLAGS, '-clearpolicy',
     ' and KEYTAB_FLAGS is correct');
 is ($Wallet::Config::KEYTAB_KADMIN, 'kadmin',
     ' and KEYTAB_KADMIN is correct');
-is ($Wallet::Config::KEYTAB_AFS_KASETKEY, 'kasetkey',
-    ' and KEYTAB_AFS_KASETKEY is correct');
 is ($Wallet::Config::DB_DRIVER, undef, ' and DB_DRIVER is unset');
 
 # Create a configuration file with a single setting.

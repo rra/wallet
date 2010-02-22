@@ -1,11 +1,12 @@
-                            wallet release 0.9
+                           wallet release 0.10
                      (secure data management system)
 
                 Written by Russ Allbery <rra@stanford.edu>
 
-  Copyright 2006, 2007, 2008 Board of Trustees, Leland Stanford Jr.
-  University.  This software is distributed under a BSD-style license.
-  Please see the file LICENSE in the distribution for more information.
+  Copyright 2006, 2007, 2008, 2009, 2010 Board of Trustees, Leland
+  Stanford Jr. University.  This software is distributed under a BSD-style
+  license.  Please see the file LICENSE in the distribution for more
+  information.
 
   This software is beta-quality and should be treated with caution.  It is
   currently being tested for production deployment at Stanford.
@@ -53,13 +54,6 @@ DESCRIPTION
   interface to retrieve the current key if the unchanging flag is set on a
   Kerberos keytab object.
 
-  The Kerberos keytab object implementation also optionally supports
-  synchronization of keys with an AFS kaserver to aid in migration from
-  Kerberos v4 to Kerberos v5.  Included in the wallet distribution is the
-  kasetkey client, which can create, change the keys of, and delete
-  principals from an AFS kaserver, authenticating from a srvtab.  It is a
-  partial replacement for kas or a Kerberos v4 kadmin.
-
 REQUIREMENTS
 
   The wallet client is written in C and builds against the C remctl
@@ -88,12 +82,13 @@ REQUIREMENTS
   Perl module, which comes with recent versions of Perl and is available
   on CPAN for older versions.
 
-  The keytab support in the wallet server requires the kadmin client
-  program be installed and currently assumes that it follows the syntax of
-  the MIT Kerberos kadmin client.  It also requires that the wallet server
-  have a keytab for a principal with appropriate access to create, modify,
-  and delete principals from the KDC (as configured in kadm5.acl on an MIT
-  Kerberos KDC).
+  The keytab support in the wallet server supports either Heimdal or MIT
+  Kerberos KDCs.  The Heimdal support requires the Heimdal::Kadm5 Perl
+  module.  The MIT Kerberos support requires the MIT Kerberos kadmin
+  client program be installed.  In either case, wallet also requires that
+  the wallet server have a keytab for a principal with appropriate access
+  to create, modify, and delete principals from the KDC (as configured in
+  kadm5.acl on an MIT Kerberos KDC).
 
   To support the unchanging flag on keytab objects, the Net::Remctl Perl
   module (shipped with remctl) must be installed on the server and the
@@ -105,11 +100,6 @@ REQUIREMENTS
   To support the NetDB ACL verifier (only of interest at sites using NetDB
   to manage DNS), the Net::Remctl Perl  module must be installed on the
   server.
-
-  To support synchronization with an AFS kaserver, the server must have
-  the Authen::Krb5 Perl module installed.  AFS kaserver synchronization
-  support also requires building kasetkey, which requires AFS and Kerberos
-  v4 libraries.
 
   To run the test suite, you must have Perl 5.8 or later and the Perl DBI
   module installed.  You will also need a DBD module installed for the
@@ -126,14 +116,14 @@ REQUIREMENTS
   user's path or in /usr/local/sbin or /usr/sbin, that test cases can run
   services on and connect to ports 14373 and 14444 on 127.0.0.1, and that
   kinit and kvno (which come with Kerberos) be installed and available on
-  the user's path.  The full test suite also requires a local keytab, a
-  srvtab with ADMIN access to a test AFS kaserver, and some additional
-  configuration.
+  the user's path.  The full test suite also requires a local keytab and
+  some additional configuration.
 
-  If you change the Automake files and need to regenerate Makefile.in, you
-  will need Automake 1.10 or later.  If you change configure.ac or any of
-  the m4 files it includes and need to regenerate configure or
-  config.h.in, you will need Autoconf 2.61 or later.
+  To bootstrap from a Git checkout, or if you change the Automake files
+  and need to regenerate Makefile.in, you will need Automake 1.11 or
+  later.  For bootstrap or if you change configure.ac or any of the m4
+  files it includes and need to regenerate configure or config.h.in, you
+  will need Autoconf 2.64 or later.
 
 BUILD AND INSTALLATION
 
@@ -142,6 +132,10 @@ BUILD AND INSTALLATION
       ./configure
       make
       make install
+
+  Pass --enable-silent-rules to configure for a quieter build (similar to
+  the Linux kernel).  Use make warnings instead of make to build with full
+  GCC compiler warnings (requires a relatively current version of GCC).
 
   The last step will probably have to be done as root.  Currently, this
   always installs both the client and the server.
@@ -163,9 +157,9 @@ BUILD AND INSTALLATION
 
   If remctl was installed in a path not normally searched by your
   compiler, you must specify its installation prefix to configure with the
-  --with-remctl=DIR option.  If the GSS-API libraries used by remctl
-  aren't in a path normally searched by your compiler, you must generally
-  also specify its installation prefix with the --with-gssapi=DIR option.
+  --with-remctl=DIR option, or alternately set the path to the include
+  files and libraries separately with --with-remctl-include=DIR and
+  --with-remctl-lib=DIR.
 
   Normally, configure will use krb5-config to determine the flags to use
   to compile with your Kerberos libraries.  If krb5-config isn't found, it
@@ -174,9 +168,16 @@ BUILD AND INSTALLATION
   path is not the one corresponding to the Kerberos libraries you want to
   use or if your Kerberos libraries and includes aren't in a location
   searched by default by your compiler, you need to specify
-  --with-krb5=PATH:
+  --with-krb5=PATH and --with-gssapi=PATH:
 
-      ./configure --with-krb5=/usr/pubsw
+      ./configure --with-krb5=/usr/pubsw --with-gssapi=/usr/pubsw
+
+  You can also individually set the paths to the include directory and the
+  library directory with --with-krb5-include, --with-krb5-lib,
+  --with-gssapi-include, and --with-gssapi-lib.  You may need to do this
+  if Autoconf can't figure out whether to use lib, lib32, or lib64 on your
+  platform.  Note that these settings aren't used if a krb5-config script
+  is found.
 
   To specify a particular krb5-config script to use, either set the
   KRB5_CONFIG environment variable or pass it to configure like:
@@ -187,18 +188,6 @@ BUILD AND INSTALLATION
   krb5-config script on your path, set KRB5_CONFIG to a nonexistent path:
 
       ./configure KRB5_CONFIG=/nonexistent
-
-  To build with AFS kaserver synchronization support, pass --with-kaserver
-  to configure.  You may need to include the path to the AFS include files
-  and libraries, such as:
-
-      ./configure --with-kaserver=/usr/afsws
-
-  The AFS kaserver support also requires Kerberos v4 libraries and tries
-  to use krb5-config to find such libraries.  If your Kerberos v4
-  libraries aren't somewhere found by your compiler and the krb5-config
-  script doesn't produce correct results, you need to specify
-  --with-krb4=PATH giving the root path of the Kerberos v4 installation.
 
   You can build wallet in a different directory from the source if you
   wish.  To do this, create a new empty directory, cd to that directory,
@@ -232,10 +221,7 @@ TESTING
       perl/t/data/README
 
   and follow the instructions in those files to enable the full test
-  suite.  Note that testing the AFS kaserver requires creating a srvtab
-  with ADMIN access to a running AFS kaserver; if you don't care about AFS
-  kaserver synchronization, you may want to skip that part of the test
-  suite configuration.
+  suite.
 
   The test suite also requires some additional software be installed that
   isn't otherwise used by the wallet.  See REQUIREMENTS above for the full
@@ -244,8 +230,12 @@ TESTING
   not available, but this has not yet been fully tested in all of its
   possible permutations.
 
-  If a test case fails, please run that individual test program directly
-  and send me the output when reporting the problem.
+  If a test fails, you can run a single test with verbose output via:
+
+      tests/runtests -o <name-of-test>
+
+  Do this instead of running the test program directly since it will
+  ensure that necessary environment variables are set up.
 
 CONFIGURATION
 
@@ -259,9 +249,8 @@ CONFIGURATION
   docuemntation (with man Wallet::Config or perldoc Wallet::Config).
   There are many customization options, some of which must be set.  You
   may also need to create a Kerberos keytab for the keytab object backend
-  and give it appropriate ACLs, set up keytab-backend and its remctld
-  configuration on your KDC if you want unchanging flag support, and set
-  up a srvtab if you want AFS kaserver synchronization support.
+  and give it appropriate ACLs, and set up keytab-backend and its remctld
+  configuration on your KDC if you want unchanging flag support.
 
   The wallet client supports reading configuration settings from the
   system krb5.conf file.  For more information, see the CONFIGURATION
@@ -283,3 +272,6 @@ THANKS
   To Huaqing Zheng, Paul Pavelko, David Hoffman, and Paul Keser for their
   reviews of the wallet system design and comments on design decisions and
   security models.
+
+  To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
+  and many of the wallet server-side reports.

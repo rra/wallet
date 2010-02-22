@@ -1,8 +1,7 @@
 # Wallet::Server -- Wallet system server implementation.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -24,7 +23,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 ##############################################################################
 # Utility methods
@@ -715,6 +714,10 @@ __END__
 
 Wallet::Server - Wallet system server implementation
 
+=for stopwords
+keytabs metadata backend HOSTNAME ACL timestamp ACL's nul Allbery
+backend-specific wallet-backend
+
 =head1 SYNOPSIS
 
     use Wallet::Server;
@@ -726,8 +729,8 @@ Wallet::Server - Wallet system server implementation
 Wallet::Server is the top-level class that implements the wallet server.
 The wallet is a system for storing, generating, and retrieving secure
 information such as Kerberos keytabs.  The server maintains metadata about
-the objects, checks access against ACLs, and dispatches requests for objects
-to backend implementations for that object type.
+the objects, checks access against ACLs, and dispatches requests for
+objects to backend implementations for that object type.
 
 Wallet::Server is normally instantiated and used by B<wallet-backend>, a
 thin wrapper around this object that determines the authenticated remote
@@ -735,8 +738,8 @@ user and gets user input and then calls the appropriate method of this
 object.
 
 To use this object, several configuration variables must be set (at least
-the database configuration).  For information on those variables and how to
-set them, see Wallet::Config(3).
+the database configuration).  For information on those variables and how
+to set them, see Wallet::Config(3).
 
 =head1 CLASS METHODS
 
@@ -766,11 +769,12 @@ failure to get the error message.
 
 Gets or sets the ACL type ACL to ID for the object identified by TYPE and
 NAME.  ACL should be one of C<get>, C<store>, C<show>, C<destroy>, or
-C<flags>.  If ID is not given, returns the current setting of that ACL as a
-numeric ACL ID or undef if that ACL isn't set or on failure.  To distinguish
-between an ACL that isn't set and a failure to retrieve the ACL, the caller
-should call error() after an undef return.  If error() also returns undef,
-that ACL wasn't set; otherwise, error() will return the error message.
+C<flags>.  If ID is not given, returns the current setting of that ACL as
+a numeric ACL ID or undef if that ACL isn't set or on failure.  To
+distinguish between an ACL that isn't set and a failure to retrieve the
+ACL, the caller should call error() after an undef return.  If error()
+also returns undef, that ACL wasn't set; otherwise, error() will return
+the error message.
 
 If ID is given, sets the specified ACL to ID, which can be either the name
 of an ACL or a numeric ACL ID.  To set an ACL, the current user must be
@@ -799,64 +803,65 @@ failure.
 
 Destroys the ACL identified by ID, which may be either the ACL name or its
 numeric ID.  This call will fail if the ACL is still referenced by any
-object.  The ADMIN ACL may not be destroyed.  To destroy an ACL, the current
-user must be authorized by the ADMIN ACL.  Returns true on success and false
-on failure.
+object.  The ADMIN ACL may not be destroyed.  To destroy an ACL, the
+current user must be authorized by the ADMIN ACL.  Returns true on success
+and false on failure.
 
 =item acl_history(ID)
 
-Returns the history of the ACL identified by ID, which may be either the ACL
-name or its numeric ID.  To see the history of an ACL, the current user must
-be authorized by the ADMIN ACL.  Each change that modifies the ACL (not
-counting changes in the name of the ACL) will be represented by two lines.
-The first line will have a timestamp of the change followed by a description
-of the change, and the second line will give the user who made the change
-and the host from which the change was made.  Returns undef on failure.
+Returns the history of the ACL identified by ID, which may be either the
+ACL name or its numeric ID.  To see the history of an ACL, the current
+user must be authorized by the ADMIN ACL.  Each change that modifies the
+ACL (not counting changes in the name of the ACL) will be represented by
+two lines.  The first line will have a timestamp of the change followed by
+a description of the change, and the second line will give the user who
+made the change and the host from which the change was made.  Returns
+undef on failure.
 
 =item acl_remove(ID, SCHEME, IDENTIFIER)
 
 Removes from the ACL identified by ID the entry matching SCHEME and
 IDENTIFIER.  ID may be either the name of the ACL or its numeric ID.  The
 last entry in the ADMIN ACL cannot be removed.  To remove an entry from an
-ACL, the current user must be authorized by the ADMIN ACL.  Returns true on
-success and false on failure.
+ACL, the current user must be authorized by the ADMIN ACL.  Returns true
+on success and false on failure.
 
 =item acl_rename(OLD, NEW)
 
 Renames the ACL identified by OLD to NEW.  This changes the human-readable
-name, not the underlying numeric ID, so the ACL's associations with objects
-will be unchanged.  The ADMIN ACL may not be renamed.  OLD may be either the
-current name or the numeric ID.  NEW must not be all-numeric.  To rename an
-ACL, the current user must be authorized by the ADMIN ACL.  Returns true on
-success and false on failure.
+name, not the underlying numeric ID, so the ACL's associations with
+objects will be unchanged.  The ADMIN ACL may not be renamed.  OLD may be
+either the current name or the numeric ID.  NEW must not be all-numeric.
+To rename an ACL, the current user must be authorized by the ADMIN ACL.
+Returns true on success and false on failure.
 
 =item acl_show(ID)
 
 Returns a human-readable description, including membership, of the ACL
 identified by ID, which may be either the ACL name or its numeric ID.  To
-show an ACL, the current user must be authorized by the ADMIN ACL (although
-be aware that anyone with show access to an object can see the membership of
-ACLs associated with that object through the show() method).  Returns the
-human-readable description on success and undef on failure.
+show an ACL, the current user must be authorized by the ADMIN ACL
+(although be aware that anyone with show access to an object can see the
+membership of ACLs associated with that object through the show() method).
+Returns the human-readable description on success and undef on failure.
 
 =item attr(TYPE, NAME, ATTRIBUTE [, VALUE ...])
 
 Sets or retrieves a given object attribute.  Attributes are used to store
-backend-specific information for a particular object type and ATTRIBUTE must
-be an attribute type known to the underlying object implementation.
+backend-specific information for a particular object type and ATTRIBUTE
+must be an attribute type known to the underlying object implementation.
 
 If VALUE is not given, returns the values of that attribute, if any, as a
 list.  On error, returns the empty list.  To distinguish between an error
-and an empty return, call error() afterwards.  It is guaranteed to return
-undef unless there was an error.  To retrieve an attribute setting, the user
-must be authorized by the ADMIN ACL, the show ACL if set, or the owner ACL
-if the show ACL is not set.
+and an empty return, call error() afterward.  It is guaranteed to return
+undef unless there was an error.  To retrieve an attribute setting, the
+user must be authorized by the ADMIN ACL, the show ACL if set, or the
+owner ACL if the show ACL is not set.
 
-If VALUE is given, sets the given ATTRIBUTE values to VALUE, which is one or
-more attribute values.  Pass the empty string as the only VALUE to clear the
-attribute values.  Returns true on success and false on failure.  To set an
-attribute value, the user must be authorized by the ADMIN ACL, the store ACL
-if set, or the owner ACL if the store ACL is not set.
+If VALUE is given, sets the given ATTRIBUTE values to VALUE, which is one
+or more attribute values.  Pass the empty string as the only VALUE to
+clear the attribute values.  Returns true on success and false on failure.
+To set an attribute value, the user must be authorized by the ADMIN ACL,
+the store ACL if set, or the owner ACL if the store ACL is not set.
 
 =item autocreate(TYPE, NAME)
 
@@ -878,9 +883,9 @@ for the existence of the object.
 
 =item create(TYPE, NAME)
 
-Creates a new object of type TYPE and name NAME.  TYPE must be a recognized
-type for which the wallet system has a backend implementation.  Returns true
-on success and false on failure.
+Creates a new object of type TYPE and name NAME.  TYPE must be a
+recognized type for which the wallet system has a backend implementation.
+Returns true on success and false on failure.
 
 To create an object using this method, the current user must be authorized
 by the ADMIN ACL.  Use autocreate() to create objects based on the default
@@ -889,18 +894,18 @@ owner as determined by the wallet configuration.
 =item destroy(TYPE, NAME)
 
 Destroys the object identified by TYPE and NAME.  This destroys any data
-that the wallet had saved about the object, may remove the underlying object
-from other external systems, and destroys the wallet database entry for the
-object.  To destroy an object, the current user must be authorized by the
-ADMIN ACL or the destroy ACL on the object; the owner ACL is not sufficient.
-Returns true on success and false on failure.
+that the wallet had saved about the object, may remove the underlying
+object from other external systems, and destroys the wallet database entry
+for the object.  To destroy an object, the current user must be authorized
+by the ADMIN ACL or the destroy ACL on the object; the owner ACL is not
+sufficient.  Returns true on success and false on failure.
 
 =item dbh()
 
-Returns the database handle of a Wallet::Server object.  This is used mostly
-for testing; normally, clients should perform all actions through the
-Wallet::Server object to ensure that authorization and history logging is
-done properly.
+Returns the database handle of a Wallet::Server object.  This is used
+mostly for testing; normally, clients should perform all actions through
+the Wallet::Server object to ensure that authorization and history logging
+is done properly.
 
 =item error()
 
@@ -910,12 +915,12 @@ after an undef return from any other instance method.
 
 =item expires(TYPE, NAME [, EXPIRES])
 
-Gets or sets the expiration for the object identified by TYPE and NAME.  If
-EXPIRES is not given, returns the current expiration or undef if no
-expiration is set or on an error.  To distinguish between an expiration that
-isn't set and a failure to retrieve the expiration, the caller should call
-error() after an undef return.  If error() also returns undef, that ACL
-wasn't set; otherwise, error() will return the error message.
+Gets or sets the expiration for the object identified by TYPE and NAME.
+If EXPIRES is not given, returns the current expiration or undef if no
+expiration is set or on an error.  To distinguish between an expiration
+that isn't set and a failure to retrieve the expiration, the caller should
+call error() after an undef return.  If error() also returns undef, that
+ACL wasn't set; otherwise, error() will return the error message.
 
 If EXPIRES is given, sets the expiration to EXPIRES.  EXPIRES must be in
 the format C<YYYY-MM-DD +HH:MM:SS>, although the time portion may be
@@ -925,23 +930,23 @@ ADMIN ACL.  Returns true for success and false for failure.
 
 =item flag_clear(TYPE, NAME, FLAG)
 
-Clears the flag FLAG on the object identified by TYPE and NAME.  To clear a
-flag, the current user must be authorized by the ADMIN ACL or the flags ACL
-on the object.
+Clears the flag FLAG on the object identified by TYPE and NAME.  To clear
+a flag, the current user must be authorized by the ADMIN ACL or the flags
+ACL on the object.
 
 =item flag_set(TYPE, NAME, FLAG)
 
 Sets the flag FLAG on the object identified by TYPE and NAME.  To set a
-flag, the current user must be authorized by the ADMIN ACL or the flags ACL
-on the object.
+flag, the current user must be authorized by the ADMIN ACL or the flags
+ACL on the object.
 
 =item get(TYPE, NAME)
 
 Returns the data associated with the object identified by TYPE and NAME.
-Depending on the object TYPE, this may generate new data and invalidate any
-existing data or it may return data previously stored or generated.  Note
-that this data may be binary and may contain nul characters.  To get an
-object, the current user must either be authorized by the owner ACL or
+Depending on the object TYPE, this may generate new data and invalidate
+any existing data or it may return data previously stored or generated.
+Note that this data may be binary and may contain nul characters.  To get
+an object, the current user must either be authorized by the owner ACL or
 authorized by the get ACL; however, if the get ACL is set, the owner ACL
 will not be checked.  Being a member of the ADMIN ACL does not provide any
 special privileges to get objects.
@@ -951,48 +956,49 @@ between undef and the empty string, which is valid object data.
 
 =item history(TYPE, NAME)
 
-Returns (as a string) the human-readable history of the object identified by
-TYPE and NAME, or undef on error.  To see the object history, the current
-user must be a member of the ADMIN ACL, authorized by the show ACL, or
-authorized by the owner ACL; however, if the show ACL is set, the owner ACL
-will not be checked.
+Returns (as a string) the human-readable history of the object identified
+by TYPE and NAME, or undef on error.  To see the object history, the
+current user must be a member of the ADMIN ACL, authorized by the show
+ACL, or authorized by the owner ACL; however, if the show ACL is set, the
+owner ACL will not be checked.
 
 =item owner(TYPE, NAME [, OWNER])
 
-Gets or sets the owner for the object identified by TYPE and NAME.  If OWNER
-is not given, returns the current owner as a numeric ACL ID or undef if no
-owner is set or on an error.  To distinguish between an owner that isn't set
-and a failure to retrieve the owner, the caller should call error() after an
-undef return.  If error() also returns undef, that ACL wasn't set;
-otherwise, error() will return the error message.
+Gets or sets the owner for the object identified by TYPE and NAME.  If
+OWNER is not given, returns the current owner as a numeric ACL ID or undef
+if no owner is set or on an error.  To distinguish between an owner that
+isn't set and a failure to retrieve the owner, the caller should call
+error() after an undef return.  If error() also returns undef, that ACL
+wasn't set; otherwise, error() will return the error message.
 
-If OWNER is given, sets the owner to OWNER, which may be either the name of
-an ACL or a numeric ACL ID.  To set an owner, the current user must be
+If OWNER is given, sets the owner to OWNER, which may be either the name
+of an ACL or a numeric ACL ID.  To set an owner, the current user must be
 authorized by the ADMIN ACL.  Returns true for success and false for
 failure.
 
-The owner of an object is permitted to get, store, and show that object, but
-cannot destroy or set flags on that object without being listed on those
-ACLs as well.
+The owner of an object is permitted to get, store, and show that object,
+but cannot destroy or set flags on that object without being listed on
+those ACLs as well.
 
 =item show(TYPE, NAME)
 
-Returns (as a string) a human-readable representation of the metadata stored
-for the object identified by TYPE and NAME, or undef on error.  Included is
-the metadata and entries of any ACLs associated with the object.  To show an
-object, the current user must be a member of the ADMIN ACL, authorized by
-the show ACL, or authorized by the owner ACL; however, if the show ACL is
-set, the owner ACL will not be checked.
+Returns (as a string) a human-readable representation of the metadata
+stored for the object identified by TYPE and NAME, or undef on error.
+Included is the metadata and entries of any ACLs associated with the
+object.  To show an object, the current user must be a member of the ADMIN
+ACL, authorized by the show ACL, or authorized by the owner ACL; however,
+if the show ACL is set, the owner ACL will not be checked.
 
 =item store(TYPE, NAME, DATA)
 
-Stores DATA for the object identified with TYPE and NAME for later retrieval
-with get.  Not all object types support this.  Note that DATA may be binary
-and may contain nul characters.  To store an object, the current user must
-either be authorized by the owner ACL or authorized by the store ACL;
-however, if the store ACL is set, the owner ACL is not checked.  Being a
-member of the ADMIN ACL does not provide any special privileges to store
-objects.  Returns true on success and false on failure.
+Stores DATA for the object identified with TYPE and NAME for later
+retrieval with get.  Not all object types support this.  Note that DATA
+may be binary and may contain nul characters.  To store an object, the
+current user must either be authorized by the owner ACL or authorized by
+the store ACL; however, if the store ACL is set, the owner ACL is not
+checked.  Being a member of the ADMIN ACL does not provide any special
+privileges to store objects.  Returns true on success and false on
+failure.
 
 =back
 
@@ -1000,8 +1006,8 @@ objects.  Returns true on success and false on failure.
 
 wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

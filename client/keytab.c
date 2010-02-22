@@ -1,20 +1,22 @@
-/* $Id$
- *
+/*
  * Implementation of keytab handling for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
 
 #include <remctl.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/concat.h>
+#include <util/messages-krb5.h>
+#include <util/messages.h>
 
 
 /*
@@ -48,7 +50,7 @@ merge_keytab(krb5_context ctx, const char *newfile, const char *file)
         status = krb5_kt_add_entry(ctx, old, &entry);
         if (status != 0)
             die_krb5(ctx, status, "cannot write to keytab %s", file);
-        krb5_free_keytab_entry_contents(ctx, &entry);
+        krb5_kt_free_entry(ctx, &entry);
     }
     if (status != KRB5_KT_END)
         die_krb5(ctx, status, "error reading temporary keytab %s", newfile);
@@ -57,39 +59,6 @@ merge_keytab(krb5_context ctx, const char *newfile, const char *file)
         krb5_kt_close(ctx, old);
     if (temp != NULL)
         krb5_kt_close(ctx, temp);
-}
-
-
-/*
- * Configure a given keytab to be synchronized with an AFS kaserver if it
- * isn't already.  Returns true on success, false on failure.
- */
-static int
-set_sync(struct remctl *r, const char *type, const char *name)
-{
-    const char *command[7];
-    char *data = NULL;
-    size_t length = 0;
-    int status;
-
-    command[0] = type;
-    command[1] = "getattr";
-    command[2] = "keytab";
-    command[3] = name;
-    command[4] = "sync";
-    command[5] = NULL;
-    status = run_command(r, command, &data, &length);
-    if (status != 0)
-        return 0;
-    if (data == NULL || strstr(data, "kaserver\n") == NULL) {
-        command[1] = "setattr";
-        command[5] = "kaserver";
-        command[6] = NULL;
-        status = run_command(r, command, NULL, NULL);
-        if (status != 0)
-            return 0;
-    }
-    return 1;
 }
 
 
@@ -108,9 +77,6 @@ get_keytab(struct remctl *r, krb5_context ctx, const char *type,
     size_t length = 0;
     int status;
 
-    if (srvtab != NULL)
-        if (!set_sync(r, type, name))
-            return 255;
     command[0] = type;
     command[1] = "get";
     command[2] = "keytab";

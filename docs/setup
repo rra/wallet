@@ -64,10 +64,10 @@ Wallet Configuration
 
     On the wallet server, install remctld.  Then, install the
     configuration fragment in config/wallet in the remctld configuration.
-    You can do this either by adding the one non-comment line of that file
-    to your remctl.conf or, if your remctl.conf includes a directory of
-    configuration fragments, drop config/wallet into that directory.  You
-    may need to change the path to wallet-backend.
+    You can do this either by adding the two non-comment lines of that
+    file to your remctl.conf or, if your remctl.conf includes a directory
+    of configuration fragments, drop config/wallet into that directory.
+    You may need to change the path to wallet-backend.
 
     Note that the default wallet configuration allows any authenticated
     user to run the wallet backend and relies on the wallet's ACLs for all

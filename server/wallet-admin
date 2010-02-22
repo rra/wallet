@@ -1,10 +1,9 @@
 #!/usr/bin/perl -w
-our $ID = q$Id$;
 #
-# wallet-admin -- Wallet server administrative commands.
+# wallet-backend -- Wallet server administrative commands.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -43,11 +42,11 @@ sub command {
             unless $args[0] =~ /^[^\@\s]+\@\S+$/;
         $admin->initialize (@args) or die $admin->error, "\n";
     } elsif ($command eq 'list') {
-        die "too many arguments to list\n" if @args > 1;
+        die "too many arguments to list\n" if @args > 4;
         die "too few arguments to list\n" if @args < 1;
-        my ($type) = @args;
+        my ($type, $subtype, @search) = @args;
         if ($type eq 'objects') {
-            my @objects = $admin->list_objects;
+            my @objects = $admin->list_objects ($subtype, @search);
             if (!@objects and $admin->error) {
                 die $admin->error, "\n";
             }
@@ -55,7 +54,7 @@ sub command {
                 print join (' ', @$object), "\n";
             }
         } elsif ($type eq 'acls') {
-            my @acls = $admin->list_acls;
+            my @acls = $admin->list_acls ($subtype, @search);
             if (!@acls and $admin->error) {
                 die $admin->error, "\n";
             }
@@ -64,6 +63,22 @@ sub command {
             }
         } else {
             die "only objects or acls are supported for list\n";
+        }
+    } elsif ($command eq 'report') {
+        die "too few arguments to report\n" if @args < 1;
+        my $report = shift @args;
+        if ($report eq 'owners') {
+            die "too many arguments to report owners\n" if @args > 2;
+            die "too few arguments to report owners\n" if @args < 2;
+            my @lines = $admin->report_owners (@args);
+            if (!@lines and $admin->error) {
+                die $admin->error, "\n";
+            }
+            for my $line (@lines) {
+                print join (' ', @$line), "\n";
+            }
+        } else {
+            die "unknown report type $report\n";
         }
     } elsif ($command eq 'register') {
         die "too many arguments to register\n" if @args > 3;
@@ -94,6 +109,9 @@ __END__
 =head1 NAME
 
 wallet-admin - Wallet server administrative commands
+
+=for stopwords
+metadata ACL hostname backend acl acls wildcard SQL Allbery
 
 =head1 SYNOPSIS
 
@@ -141,10 +159,10 @@ Before running C<initialize>, the wallet system has to be configured.  See
 Wallet::Config(3) for more details.  Depending on the database backend
 used, the database may also have to be created in advance.
 
-=item list (acls | objects)
+=item list (acls | objects) [ <searchtype> [ <arg> ... ] ]
 
-Returns a list of all ACLs or objects in the database.  ACLs will be
-listed in the form:
+Returns a list of ACLs or objects in the database.  ACLs will be listed
+in the form:
 
     <name> (ACL ID: <id>)
 
@@ -155,6 +173,51 @@ be listed in the form:
     <type> <name>
 
 In both cases, there will be one line per ACL or object.
+
+If no search type is given, all the ACLs or objects in the database will
+be returned.  If a search type (and possible search arguments) are given,
+then the ACLs or objects will be limited to those that match the search.
+
+The currently supported object search types are:
+
+=over 4
+
+=item list objects type <type>
+
+Returns all objects of the given type.
+
+=item list objects flag <flag>
+
+Returns all objects which have the given flag set.
+
+=item list objects owner <acl name>
+
+Returns all objects owned by the given ACL name.
+
+=item list objects acl <acl name>
+
+Returns all objects for which the given ACL name has any permissions.
+This includes those objects owned by the ACL, but also those for which the
+ACL has get permissions, for example.
+
+=back
+
+The currently supported ACL search types are:
+
+=over 4
+
+=item list acls empty
+
+Returns all ACLs which have no entries, generally so that abandoned ACLs
+can be destroyed.
+
+=item list acls entry <schema> <identifier>
+
+Returns all ACLs containing an entry with given schema and identifier.
+The schema is used for an exact search, while the identifier given will
+match any identifier containing that text, for flexibility.
+
+=back
 
 =item register (object | verifier) <type> <class>
 
@@ -169,14 +232,35 @@ default as part of database initialization, so this command is used
 primarily to register local implementations of additional object types or
 ACL schemes.
 
+=item report <type> [ <arg> ... ]
+
+Runs a wallet report.  The currently supported report types are:
+
+=over 4
+
+=item report owners <type-pattern> <name-pattern>
+
+Returns a list of all ACL lines in owner ACLs for all objects matching
+both <type-pattern> and <name-pattern>.  These can be the type or name of
+objects or they can be patterns using C<%> as the wildcard character
+following the normal rules of SQL patterns.
+
+The output will be one line per ACL line in the form:
+
+    <scheme> <identifier>
+
+with duplicates suppressed.
+
+=back
+
 =back
 
 =head1 SEE ALSO
 
 Wallet::Admin(3), Wallet::Config(3), wallet-backend(8)
 
-This program is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This program is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

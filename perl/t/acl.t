@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/api.t -- Tests for the wallet ACL API.
 #

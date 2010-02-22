@@ -21,6 +21,7 @@ following files:
     test.keytab         Keytab for an authorized user
     test.principal      Principal of the authorized user
     test.realm          Kerberos realm in which to do testing
+    test.krbtype        Type of Kerberos server (Heimdal or MIT)
 
 This realm will also need to be configured in your local krb5.conf,
 including the admin_server for the realm.

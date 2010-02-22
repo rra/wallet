@@ -1,9 +1,8 @@
-/* $Id$
- *
+/*
  * remctl interface for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+ * Copyright 2007, 2010 Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
@@ -14,19 +13,19 @@
 #include <remctl.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/messages.h>
+#include <util/xmalloc.h>
 
 
 /*
- * Given a remctl connection and a command, run the command.
- *
- * If data is non-NULL, save the output in it and return the length in length.
- * Otherwise, send any output to stdout.  Either way, send error output to
- * stderr, and return the exit status (or 255 if there is an error).
+ * Retrieve the results of a remctl command, which should be issued prior to
+ * calling this function.  If data is non-NULL, save the output in it and
+ * return the length in length.  Otherwise, send any output to stdout.  Either
+ * way, send error output to stderr, and return the exit status (or 255 if
+ * there is an error).
  */
-int
-run_command(struct remctl *r, const char **command, char **data,
-            size_t *length)
+static int
+command_results(struct remctl *r, char **data, size_t *length)
 {
     struct remctl_output *output;
     int status = 255;
@@ -35,10 +34,6 @@ run_command(struct remctl *r, const char **command, char **data,
         *data = NULL;
     if (length != NULL)
         *length = 0;
-    if (!remctl_command(r, command)) {
-        warn("%s", remctl_error(r));
-        return 255;
-    }
     do {
         output = remctl_output(r);
         switch (output->type) {
@@ -70,6 +65,40 @@ run_command(struct remctl *r, const char **command, char **data,
         }
     } while (output->type != REMCTL_OUT_DONE);
     return status;
+}
+
+
+/*
+ * Given a remctl connection and a NULL-terminated array of strings, run the
+ * command and return the results using command_results, optionally putting
+ * output into the data variable.
+ */
+int
+run_command(struct remctl *r, const char **command, char **data,
+            size_t *length)
+{
+    if (!remctl_command(r, command)) {
+        warn("%s", remctl_error(r));
+        return 255;
+    }
+    return command_results(r, data, length);
+}
+
+
+/*
+ * Given a remctl connection, an array of iovecs, and the length of the array,
+ * run the command and return the results using command_results, optionally
+ * putting output into the data variable.
+ */
+int
+run_commandv(struct remctl *r, const struct iovec *command, size_t count,
+             char **data, size_t *length)
+{
+    if (!remctl_commandv(r, command, count)) {
+        warn("%s", remctl_error(r));
+        return 255;
+    }
+    return command_results(r, data, length);
 }
 
 

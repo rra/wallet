@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/verifier.t -- Tests for the basic wallet ACL verifiers.
 #

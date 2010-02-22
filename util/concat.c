@@ -1,5 +1,4 @@
-/* $Id$
- *
+/*
  * Concatenate strings with dynamic memory allocation.
  *
  * Usage:
@@ -26,7 +25,8 @@
 #include <config.h>
 #include <portable/system.h>
 
-#include <util/util.h>
+#include <util/concat.h>
+#include <util/xmalloc.h>
 
 /* Abbreviation for cleaner code. */
 #define VA_NEXT(var, type) ((var) = (type) va_arg(args, type))

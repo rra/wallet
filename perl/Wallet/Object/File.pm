@@ -1,8 +1,7 @@
 # Wallet::Object::File -- File object implementation for the wallet.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -25,7 +24,7 @@ use Wallet::Object::Base;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # File naming
@@ -137,6 +136,9 @@ __END__
 
 Wallet::Object::File - File object implementation for wallet
 
+=for stopwords
+API HOSTNAME DATETIME keytab remctld backend nul Allbery wallet-backend
+
 =head1 SYNOPSIS
 
     my @name = qw(file mysql-lsdb)
@@ -164,17 +166,18 @@ set wallet configuration.
 =head1 METHODS
 
 This object mostly inherits from Wallet::Object::Base.  See the
-documentation for that class for all generic methods.  Below are only those
-methods that are overridden or behave specially for this implementation.
+documentation for that class for all generic methods.  Below are only
+those methods that are overridden or behave specially for this
+implementation.
 
 =over 4
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
 Destroys a file object by removing it from the database and deleting the
-corresonding file on the wallet server.  Returns true on success and false
-on failure.  The caller should call error() to get the error message after
-a failure.  PRINCIPAL, HOSTNAME, and DATETIME are stored as history
+corresponding file on the wallet server.  Returns true on success and
+false on failure.  The caller should call error() to get the error message
+after a failure.  PRINCIPAL, HOSTNAME, and DATETIME are stored as history
 information.  PRINCIPAL should be the user who is destroying the object.
 If DATETIME isn't given, the current time is used.
 
@@ -218,12 +221,11 @@ dashes replaced by C<%> and the hex code of the character.
 
 =head1 LIMITATIONS
 
-The wallet implementation itself can handle arbitrary file object names
-and arbitrary content.  However, due to limitations in the B<remctld>
-server usually used to run B<wallet-backend>, file object names and
-contents containing nul characters (ASCII 0) may not be permitted.  The
-file system used for storing file objects may impose a length limitation
-on the file object name.
+The wallet implementation itself can handle arbitrary file object names.
+However, due to limitations in the B<remctld> server usually used to run
+B<wallet-backend>, file object names containing nul characters (ASCII 0)
+may not be permitted.  The file system used for storing file objects may
+impose a length limitation on the file object name.
 
 =head1 SEE ALSO
 

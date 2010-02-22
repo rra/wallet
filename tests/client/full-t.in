@@ -1,24 +1,23 @@
 #!/usr/bin/perl -w
-# $Id$
 #
-# tests/client/full-t -- End-to-end tests for the wallet client.
+# End-to-end tests for the wallet client.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 # Point to our server configuration.  This must be done before Wallet::Config
 # is loaded, and it's pulled in as a prerequisite for Wallet::Admin.
-BEGIN { $ENV{WALLET_CONFIG} = '@abs_top_srcdir@/tests/data/wallet.conf' }
+BEGIN { $ENV{WALLET_CONFIG} = "$ENV{SOURCE}/data/wallet.conf" }
 
-BEGIN { our $total = 53 }
+BEGIN { our $total = 59 }
 use Test::More tests => $total;
 
-use lib '@abs_top_srcdir@/perl';
+use lib "$ENV{SOURCE}/../perl";
 use Wallet::Admin;
 
-use lib '@abs_top_srcdir@/perl/t/lib';
+use lib "$ENV{SOURCE}/../perl/t/lib";
 use Util;
 
 # Make a call to the wallet client.  Takes the principal used by the server
@@ -34,9 +33,9 @@ sub wallet {
             or die "cannot create wallet.out: $!\n";
         open (STDERR, '>', 'wallet.err')
             or die "cannot create wallet.err: $!\n";
-        exec ('@abs_top_builddir@/client/wallet', '-k', $principal, '-p',
+        exec ("$ENV{BUILD}/../client/wallet", '-k', $principal, '-p',
               '14373', '-s', 'localhost', @command)
-            or die "cannot run @abs_top_builddir@/client/wallet: $!\n";
+            or die "cannot run $ENV{BUILD}/client/wallet: $!\n";
     } else {
         waitpid ($pid, 0);
     }
@@ -52,21 +51,24 @@ sub wallet {
     return ($output, $error, $status);
 }
 
+# cd to the correct directory.
+chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
+
 SKIP: {
     skip 'no keytab configuration', $total
-        unless -f '@abs_top_builddir@/tests/data/test.keytab';
+        unless -f "$ENV{BUILD}/data/test.keytab";
     my $remctld = '@REMCTLD@';
     skip 'remctld not found', $total unless $remctld;
 
     # Spawn remctld and get local tickets.  Don't destroy the user's Kerberos
     # ticket cache.
     unlink ('krb5cc_test', 'test-pid');
-    my $principal = contents ('@abs_top_builddir@/tests/data/test.principal');
+    my $principal = contents ("$ENV{BUILD}/data/test.principal");
     remctld_spawn ($remctld, $principal,
-                   '@abs_top_builddir@/tests/data/test.keytab',
-                   '@abs_top_builddir@/tests/data/full.conf');
+                   "$ENV{BUILD}/data/test.keytab",
+                   "$ENV{SOURCE}/data/full.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
-    getcreds ('@abs_top_builddir@/tests/data/test.keytab', $principal);
+    getcreds ("$ENV{BUILD}/data/test.keytab", $principal);
 
     # Use Wallet::Admin to set up the database.
     db_setup;
@@ -164,6 +166,22 @@ SKIP: {
     ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
     is ($status, 0, 'Object get succeeds');
     is ($out, '-q', ' with the right output');
+    is ($err, '', ' and no error');
+
+    # Store data containing nul characters.
+    my $data = "Some data\000with a nul";
+    open (IN, '>', 'tmp-file') or BAIL_OUT ("cannot create tmp-file: $!");
+    print IN $data;
+    close IN;
+    ($out, $err, $status) = wallet ($principal, '-f', 'tmp-file', 'store',
+                                    'file', 'auto');
+    unlink ('tmp-file');
+    is ($status, 0, 'Storing data with a nul succeeds');
+    is ($out, '', ' with no output');
+    is ($err, '', ' and no error');
+    ($out, $err, $status) = wallet ($principal, 'get', 'file', 'auto');
+    is ($status, 0, 'Object get succeeds');
+    is ($out, $data, ' with the right output');
     is ($err, '', ' and no error');
 
     # All done.

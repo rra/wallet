@@ -1,8 +1,7 @@
 # Wallet::ACL::NetDB -- Wallet NetDB role ACL verifier.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -24,7 +23,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ##############################################################################
 # Interface
@@ -136,6 +135,9 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+ACL NetDB remctl DNS DHCP Allbery netdb
+
 =head1 NAME
 
 Wallet::ACL::NetDB - Wallet ACL verifier for NetDB roles
@@ -155,9 +157,10 @@ Wallet::ACL::NetDB - Wallet ACL verifier for NetDB roles
 =head1 DESCRIPTION
 
 Wallet::ACL::NetDB checks a principal against the NetDB roles for a given
-host.  It is used to verify ACL lines of type netdb.  The value of such an
-ACL is a node, and the ACL grants access to a given principal if and only
-if that principal has one of the roles user, admin, or team for that node.
+host.  It is used to verify ACL lines of type C<netdb>.  The value of such
+an ACL is a node, and the ACL grants access to a given principal if and
+only if that principal has one of the roles user, admin, or team for that
+node.
 
 To use this object, several configuration parameters must be set.  See
 Wallet::Config(3) for details on those configuration parameters and
@@ -228,7 +231,7 @@ error message or otherwise returned failure.
 The ACL parameter to check() was malformed.  Currently, this error is only
 given if ACL is undefined or the empty string.
 
-=item malformed NetDBL remctl token: %s
+=item malformed NetDB remctl token: %s
 
 The Net::Remctl Perl library returned a malformed token.  This should
 never happen and indicates a bug in Net::Remctl.
@@ -249,12 +252,12 @@ grant access is not currently configurable.
 Net::Remctl(3), Wallet::ACL(3), Wallet::ACL::Base(3), Wallet::Config(3),
 wallet-backend(8)
 
-NetDB is a free software system for managing DNS, DHCP, and related machine
-information for large organizations.  For more information on NetDB, see
-L<http://www.stanford.edu/group/networking/netdb/>.
+NetDB is a free software system for managing DNS, DHCP, and related
+machine information for large organizations.  For more information on
+NetDB, see L<http://www.stanford.edu/group/networking/netdb/>.
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
