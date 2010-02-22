@@ -18,6 +18,12 @@ wallet (0.10-1) UNRELEASED; urgency=low
   * Update debhelper compatibility level to V7.
     - Use debhelper rule minimization with overrides.
     - Add ${misc:Depends} to dependencies.
+  * Clarify in long description that keytab-backend is only needed for MIT
+    Kerberos.
+  * Move wallet-server's dependency on krb5-user to Recommends, since it's
+    only needed for keytab support, and allow libheimdal-kadm5-perl as an
+    alternative.
+  * Recommend remctl-server 2.14 or later for improved store support.
 
  -- Russ Allbery <rra@debian.org>  Sun, 21 Feb 2010 17:49:43 -0800
 

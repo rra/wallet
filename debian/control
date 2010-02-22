@@ -10,13 +10,13 @@ Package: keytab-backend
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends}, krb5-admin-server, perl,
  remctl-server
-Description: Provide existing Kerberos keytabs via remctl
+Description: Provide existing MIT Kerberos keytabs via remctl
  keytab-backend is a service that runs under remctld and allows
- authenticated clients to download Kerberos keytabs without changing the
- key stored in the Kerberos KDC.  It must run on the same host as the
- Kerberos KDC and uses kadmin.local to extract the existing key.  It
- applies additional ACLs to limit which keys may be extracted in this
- way.
+ authenticated clients to download Kerberos keytabs from an MIT Kerberos
+ KDC without changing the key stored in the Kerberos KDC.  It must run on
+ the same host as the Kerberos KDC and uses kadmin.local to extract the
+ existing key.  It applies additional ACLs to limit which keys may be
+ extracted in this way.  This interface is not needed for Heimdal.
 
 Package: wallet-client
 Architecture: any
@@ -36,9 +36,10 @@ Description: Kerberos-authenticated secure data management client
 
 Package: wallet-server
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, krb5-user, libdbi-perl,
+Depends: ${misc:Depends}, ${perl:Depends}, libdbi-perl,
  libdbd-sqlite3-perl | libdbd-mysql-perl, remctl-server
-Suggests: libauthen-krb5-perl, libnet-remctl-perl
+Recommends: krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
+Suggests: libnet-remctl-perl
 Description: Kerberos-authenticated secure data management server
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions
