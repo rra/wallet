@@ -1,3 +1,23 @@
+wallet (0.10-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Add support for Heimdal KDCs as well as MIT Kerberos KDCs.  New
+      mandatory configuration setting KEYTAB_KRBTYPE which must be set to
+      either MIT or Heimdal.
+    - Remove kaserver synchronization support and kasetkey.
+    - wallet -S now generates a srvtab based on the DES key of the keytab
+      and does not enable synchronization.  No synchronization targets are
+      supported now.
+    - The wallet client and wallet-backend server can now handle store of
+      files containing nuls provided that the server uses remctl 2.14 and
+      the remctl configuration is updated to use stdin=last.
+    - Correctly store data that begins with a dash.
+    - Do not log the data passed to store.
+    - New wallet-report script and multiple additional database reports.
+    - Report ACL names as well as numbers in object history.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 21 Feb 2010 17:49:43 -0800
+
 wallet (0.9-1) unstable; urgency=low
 
   * New upstream release.
