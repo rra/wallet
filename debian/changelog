@@ -25,6 +25,7 @@ wallet (0.10-1) UNRELEASED; urgency=low
     alternative.
   * Recommend remctl-server 2.14 or later for improved store support.
   * Add Homepage, Vcs-Git, and Vcs-Browser control fields.
+  * Update standards version to 3.8.4 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Sun, 21 Feb 2010 17:49:43 -0800
 
