@@ -28,7 +28,7 @@ wallet (0.10-1) unstable; urgency=low
   * Add a watch file.
   * Update standards version to 3.8.4 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Sun, 21 Feb 2010 21:11:58 -0800
+ -- Russ Allbery <rra@debian.org>  Sun, 21 Feb 2010 21:13:40 -0800
 
 wallet (0.9-1) unstable; urgency=low
 
