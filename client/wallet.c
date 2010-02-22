@@ -1,23 +1,25 @@
-/* $Id$
- *
+/*
  * The client program for the wallet system.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2008
+ * Copyright 2006, 2007, 2008, 2010
  *     Board of Trustees, Leland Stanford Jr. University
  *
  * See LICENSE for licensing terms.
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
+#include <portable/uio.h>
 
 #include <errno.h>
-#include <krb5.h>
 #include <remctl.h>
 
 #include <client/internal.h>
-#include <util/util.h>
+#include <util/messages-krb5.h>
+#include <util/messages.h>
+#include <util/xmalloc.h>
 
 /*
  * Basic wallet behavior options set either on the command line or via
@@ -134,7 +136,8 @@ main(int argc, char *argv[])
     krb5_error_code retval;
     struct options options;
     int option, i, status;
-    const char **command;
+    struct iovec *command;
+    size_t count, length;
     const char *file = NULL;
     const char *srvtab = NULL;
     struct remctl *r;
@@ -240,26 +243,31 @@ main(int argc, char *argv[])
             status = get_file(r, options.type, argv[1], argv[2], file);
         }
     } else {
+        count = argc + 1;
         if (strcmp(argv[0], "store") == 0) {
             if (argc > 4)
                 die("too many arguments");
-            else if (argc == 4)
-                command = xmalloc(sizeof(char *) * (argc + 2));
-            else
-                command = xmalloc(sizeof(char *) * (argc + 3));
-        } else
-            command = xmalloc(sizeof(char *) * (argc + 2));
-        command[0] = options.type;
-        for (i = 0; i < argc; i++)
-            command[i + 1] = argv[i];
+            else if (argc < 4)
+                count++;
+        }
+        command = xmalloc(sizeof(struct iovec) * count);
+        command[0].iov_base = (char *) options.type;
+        command[0].iov_len = strlen(options.type);
+        for (i = 0; i < argc; i++) {
+            command[i + 1].iov_base = argv[i];
+            command[i + 1].iov_len = strlen(argv[i]);
+        }
         if (strcmp(argv[0], "store") == 0 && argc < 4) {
-            command[argc + 1] = read_file(file == NULL ? "-" : file);
-            command[argc + 2] = NULL;
-        } else
-            command[argc + 1] = NULL;
-        status = run_command(r, command, NULL, NULL);
+            if (file == NULL)
+                file = "-";
+            command[argc + 1].iov_base = read_file(file, &length);
+            command[argc + 1].iov_len = length;
+        }
+        status = run_commandv(r, command, count, NULL, NULL);
     }
     remctl_close(r);
     krb5_free_context(ctx);
+    if (options.user != NULL)
+        kdestroy();
     exit(status);
 }

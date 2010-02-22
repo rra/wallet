@@ -1,217 +1,200 @@
                             wallet To-Do List
 
-Release 1.0:
+Client:
 
-* Fix case-insensitivity bug in unique keys with MySQL for objects.
+ * Handle duplicate kvnos in a newly returned keytab and an existing
+   keytab (such as when downloading an unchanging keytab and merging it
+   into an existing one) in some reasonable fashion.
 
-* Add POD coverage testing using Test::POD::Coverage for the server
-  modules.
+ * Support removing old kvnos from a merged keytab (similar to kadmin
+   ktremove old).
 
-* Provide a way to get history for deleted objects and ACLs.
+ * When reading configuration from krb5.conf, we should first try to
+   determine our principal from any existing K5 ticket cache (after
+   obtaining tickets if -u was given) and extract the realm from that
+   principal, using it as the default realm when reading configuration
+   information.
 
-* Display ACL names rather than index numbers when displaying history of
-  owner and acl_* settings.
+ * Add readline support to the wallet client to make it easier to issue
+   multiple commands.
 
-* Provide a way to list all objects by type, by owner (including null), or
-  by all uses of an ACL.
+ * Add support for rekeying in the wallet client.  Need to resolve how to
+   get a list of principals to rekey and which keytabs to work on.  This
+   possibly should be a separate binary from the regular wallet client
+   binary.
 
-* Provide an interface to list all empty ACLs.
+ * Support authenticating with a keytab.
 
-* Provide an interface to find all ACLs with a particular line.
+ * Allow store data to contain nuls.  Requires rewriting the command
+   processing for store to use iovecs.
 
-* Provide an interface to mass-change all instances of one ACL to another.
+ * When obtaining tickets in the wallet client with -u, should we get a
+   TGT as we do now or just directly obtain the service ticket we're going
+   to use for remctl?
 
-* Add a help function to wallet-backend listing the commands.
+Server Interface:
 
-* The client may not compile against Heimdal due to changes in how the
-  krb5_keyblock structure is laid out, the freeing of keytab entries,
-  and the use of WRFILE for keytab merging.  Check and fix.
+ * Provide a way to get history for deleted objects and ACLs.
 
-* Rewrite the client test suite to use Perl and to make better use of
-  shared code so that it can be broken into function components.
+ * Provide an interface to mass-change all instances of one ACL to another.
 
-* Catch exceptions on object creation in wallet-backend so that we can log
-  those as well.
+ * Add a help function to wallet-backend listing the commands.
 
-* Error messages from ACL operations should refer to the ACLs by name
-  instead of by ID.
+ * Catch exceptions on object creation in wallet-backend so that we can
+   log those as well.
 
-* History records should list both ACL ID and ACL name if the name is
-  still found in the database.
+ * Provide a way to list all objects for which the connecting user has
+   ACLs.
 
-* Add the database schema version to a global table so that we can use it
-  to support schema upgrades in the future.
+ * Support limiting returned history information by timestamp.
 
-* On upgrades, support adding new object types and ACL verifiers to the
-  class tables.
+ * Add a comment field for objects that can be set by the owner.
 
-* Write the LDAP entitlement ACL verifier.
+ * Provide a REST implementation of the wallet server.
 
-* Write the PTS ACL verifier.
+ * Provide a CGI implementation of the wallet server.
 
-* Write a WebAuth keyring object store.  It should support attributes
-  saying how long to keep old keys and how far in advance to create new
-  keys and update the keyring as needed on object download.
+ * Support setting flags and attributes on autocreate.  In general, work
+   out a Wallet::Object::Template Perl object that I can return that
+   specifies things other than just the ACL.
 
-* Rename Wallet::ACL::* to Wallet::Verifier::*.  Add Wallet::ACL as a
-  generic interface with Wallet::ACL::Database and Wallet::ACL::List
-  implementations (or some similar name) so that we can create and check
-  an ACL without having to write it into the database.  Redo default ACL
-  creation using that functionality.
+ * Remove the hard-coded ADMIN ACL in the server with something more
+   configurable, perhaps a global ACL table or something.
 
-* The wallet client currently sets sync kaserver whenever writing a keytab
-  to a srvtab.  This is correct for sites using kaserver and wrong for
-  everyone else.  Remove or rethink this once Stanford's kaserver
-  migration is over.
+ACLs:
 
-* The wallet client currently hard-codes a kvno of 0 in srvtabs, which is
-  correct for how kasetkey works but probably isn't correct for people
-  using Heimdal or MIT to serve both K4 and K5 from the same KDC.  Rethink
-  once Stanford's kaserver migration is over.
+ * Error messages from ACL operations should refer to the ACLs by name
+   instead of by ID.
 
-* Add a hook to enforce ACL naming standards.
+ * Write the LDAP entitlement ACL verifier.
 
-Future work:
+ * Write the PTS ACL verifier.
 
-* Provide a way to list all objects for which the connecting user has ACLs.
+ * Rename Wallet::ACL::* to Wallet::Verifier::*.  Add Wallet::ACL as a
+   generic interface with Wallet::ACL::Database and Wallet::ACL::List
+   implementations (or some similar name) so that we can create and check
+   an ACL without having to write it into the database.  Redo default ACL
+   creation using that functionality.
 
-* Write a conventions document for ACL naming, object naming, and similar
-  issues.
+ * Add a hook to enforce ACL naming standards.
 
-* Write a future design and roadmap document to collect notes about how
-  unimplemented features should be handled.
+ * Pass a reference to the object for which the ACL is interpreted to the
+   ACL API so that ACL APIs can make more complex decisions.
 
-* Support limiting returned history information by timestamp.
+ * Support for pattern matching in ACLs.
 
-* Improve the error message for Kerberos authentication failures.
+ * A group-in-groups ACL schema.
 
-* Handle duplicate kvnos in a newly returned keytab and an existing keytab
-  (such as when downloading an unchanging keytab and merging it into an
-  existing one) in some reasonable fashion.
+ * Provide an API for verifiers to syntax-check the values before an ACL
+   is set and implement syntax checking for the Krb5 verifier.
 
-* Support removing old kvnos from a merged keytab (similar to kadmin
-  ktremove old).
+Database:
 
-* There is a lot of duplicate code in wallet-backend.  Convert that to
-  use some sort of data-driven model with argument count and flags so
-  that the method calls can be written only once.  Convert wallet-admin to
-  use the same code.
+ * Fix case-insensitivity bug in unique keys with MySQL for objects.
 
-* There's a lot of code duplication in the dispatch functions in the
-  Wallet::Server class.  Find a way to rewrite that so that the dispatch
-  doesn't duplicate the same code patterns.
+ * Add the database schema version to a global table so that we can use it
+   to support schema upgrades in the future.
 
-* Refactor the test suite for the wallet backend to try to reduce the
-  duplicated code.
+ * On upgrades, support adding new object types and ACL verifiers to the
+   class tables.
 
-* Pull common test suite code into a Perl library that can be reused.
+Objects:
 
-* Add a function to wallet-admin to purge expired entries.  Possibly also
-  check expiration before allowing anyone to get or store objects.
+ * Check whether we can just drop the realm restriction on keytabs and
+   allow the name to contain the realm if the Kerberos type is Heimdal.
 
-* Add a comment field for objects that can be set by the owner.
+ * Write a WebAuth keyring object store.  It should support attributes
+   saying how long to keep old keys and how far in advance to create new
+   keys and update the keyring as needed on object download.
 
-* The keytab backend currently only supports MIT Kerberos.  Add support
-  for Heimdal.  This should probably be done by writing a separate class
-  that handles the kadmin operations that can be subclassed and that
-  dynamically chooses its implementation based on run-time configuration.
+ * Use the Perl Authen::Krb5::Admin module instead of rolling our own
+   kadmin code with Expect now that MIT Kerberos has made the kadmin API
+   public.
 
-* Use the Perl Authen::Krb5::Admin module instead of rolling our own
-  kadmin code with Expect now that MIT Kerberos has made the kadmin API
-  public.
+ * Implement an ssh keypair wallet object.  The server can run ssh-keygen
+   to generate a public/private key pair and return both to the client,
+   which would split them apart.  Used primarily for host keys.  May need
+   a side table to store key types, or a naming convention.
 
-* When reading configuration from krb5.conf, we should first try to
-  determine our principal from any existing K5 ticket cache (after
-  obtaining tickets if -u was given) and extract the realm from that
-  principal, using it as the default realm when reading configuration
-  information.
+ * Implement an X.509 certificate object.  I expect this would store the
+   public and private key as a single file in the same format that Apache
+   can read for combined public and private keys.  There were requests for
+   storing the CSR, but I don't see why you'd want to do that.  Start with
+   store support.  The file code is mostly sufficient here, but it would
+   be nice to automatically support object expiration based on the
+   expiration time for the certificate.
 
-* Implement an ssh keypair wallet object.  The server can run ssh-keygen
-  to generate a public/private key pair and return both to the client,
-  which would split them apart.  Used primarily for host keys.  May need a
-  side table to store key types, or a naming convention.
+ * Implement an X.509 CA so that you can get certificate objects without
+   storing them first.  Need to resolve naming conventions if you want to
+   run multiple CAs on the same wallet server (but why?).  Should this be
+   a different type than stored certificates?
 
-* Implement an X.509 certificate object.  I expect this would store the
-  public and private key as a single file in the same format that Apache
-  can read for combined public and private keys.  There were requests for
-  storing the CSR, but I don't see why you'd want to do that.  Start with
-  store support.
+Reports:
 
-* Implement an X.509 CA so that you can get certificate objects without
-  storing them first.  Need to resolve naming conventions if you want to
-  run multiple CAs on the same wallet server (but why?).  Should this be a
-  different type than stored certificates?
+ * Make contrib/wallet-summary generic and include it in wallet-admin,
+   with additional configuration in Wallet::Config.  Enhance it to report
+   on any sort of object, not just on keytabs, and to give numbers on
+   downloaded versus not downloaded objects.
 
-* Add details to design-api on how to write one's own ACL verifiers and
-  object implementations and register them.
+Administrative Interface:
 
-* Add readline support to the wallet client to make it easier to issue
-  multiple commands.
+ * Add a function to wallet-admin to purge expired entries.  Possibly also
+   check expiration before allowing anyone to get or store objects.
 
-* The wallet-backend and wallet documentation share the COMMANDS section.
-  Work out some means to assemble the documentation without duplicating
-  content.
+Documentation:
 
-* Add support for rekeying in the wallet client.  Need to resolve how to
-  get a list of principals to rekey and which keytabs to work on.  This
-  possibly should be a separate binary from the regular wallet client
-  binary.
+ * Write a conventions document for ACL naming, object naming, and similar
+   issues.
 
-* Document using the wallet system over something other than remctl.
+ * Write a future design and roadmap document to collect notes about how
+   unimplemented features should be handled.
 
-* Provide a REST implementation of the wallet server.
+ * Add details to design-api on how to write one's own ACL verifiers and
+   object implementations and register them.
 
-* Provide a CGI implementation of the wallet server.
+ * Document using the wallet system over something other than remctl.
 
-* Document all diagnostics for all wallet APIs.
+ * Document all diagnostics for all wallet APIs.
 
-* Write a test suite to scan all wallet code looking for diagnostics that
-  aren't in the documentation and warn about them.
+Code Style and Cleanup:
 
-* The Wallet::Config class is very ugly and could use some better internal
-  API to reference the variables in it.
+ * There is a lot of duplicate code in wallet-backend.  Convert that to
+   use some sort of data-driven model with argument count and flags so
+   that the method calls can be written only once.  Convert wallet-admin
+   to use the same code.
 
-* Use Class::DBI and Class::Trigger to handle the data access layer rather
-  than writing SQL directly, and implement the logging requirements with
-  triggers rather than explicit SQL.  This may also replace
-  Wallet::Schema.
+ * There's a lot of code duplication in the dispatch functions in the
+   Wallet::Server class.  Find a way to rewrite that so that the dispatch
+   doesn't duplicate the same code patterns.
 
-* Make contrib/wallet-report generic and include it in wallet-admin, with
-  additional configuration in Wallet::Config.  Enhance it to report on any
-  sort of object, not just on keytabs, and to give numbers on downloaded
-  versus not downloaded objects.
+ * The wallet-backend and wallet documentation share the COMMANDS section.
+   Work out some means to assemble the documentation without duplicating
+   content.
 
-* Support setting flags and attributes on autocreate.  In general, work out
-  a Wallet::Object::Template Perl object that I can return that specifies
-  things other than just the ACL.
+ * The Wallet::Config class is very ugly and could use some better
+   internal API to reference the variables in it.
 
-* Pass a reference to the object for which the ACL is interpreted to the
-  ACL API so that ACL APIs can make more complex decisions.
+ * Use Class::DBI and Class::Trigger to handle the data access layer
+   rather than writing SQL directly, and implement the logging
+   requirements with triggers rather than explicit SQL.  This may also
+   replace Wallet::Schema.
 
-* Support for pattern matching in ACLs.
+ * Consider using Class::Accessor to get rid of the scaffolding code to
+   access object data, and a Wallet::Base class to handle things like the
+   error() method common to many classes.
 
-* A group-in-groups ACL schema.
+Test Suite:
 
-* Modify Authen::Krb5 to export krb5_524_conv_principal so that I can use
-  it to determine the K4 equivalent of a K5 principal name.
+ * Add POD coverage testing using Test::POD::Coverage for the server
+   modules.
 
-* Provide an API for verifiers to syntax-check the values before an
-  ACL is set and implement syntax checking for the Krb5 verifier.
+ * Rewrite the client test suite to use Perl and to make better use of
+   shared code so that it can be broken into function components.
 
-* Support authenticating with a keytab.
+ * Refactor the test suite for the wallet backend to try to reduce the
+   duplicated code.
 
-* Allow store data to contain nuls.  Requires rewriting the command
-  processing for store to use iovecs.
+ * Pull common test suite code into a Perl library that can be reused.
 
-May or may not be good ideas:
-
-* Consider using Class::Accessor to get rid of the scaffolding code to
-  access object data, and a Wallet::Base class to handle things like the
-  error() method common to many classes.
-
-* Remove the hard-coded ADMIN ACL in the server with something more
-  configurable, perhaps a global ACL table or something.
-
-* When obtaining tickets in the wallet client with -u, should we get a TGT
-  as we do now or just directly obtain the service ticket we're going to
-  use for remctl?
+ * Write a test suite to scan all wallet code looking for diagnostics that
+   aren't in the documentation and warn about them.

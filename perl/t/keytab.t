@@ -1,18 +1,21 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/keytab.t -- Tests for the keytab object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2009, 2010
+#     Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 223;
+use Test::More tests => 135;
+
+BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
 use Wallet::Admin;
 use Wallet::Config;
+use Wallet::Kadmin;
 use Wallet::Object::Keytab;
 
 use lib 't/lib';
@@ -25,7 +28,7 @@ my %enctype =
     ('triple des cbc mode with hmac/sha1'      => 'des3-cbc-sha1',
      'des cbc mode with crc-32'                => 'des-cbc-crc',
      'des cbc mode with rsa-md5'               => 'des-cbc-md5',
-     'aes-256 cts mode with 96-bit sha-1 hmac' => 'aes256-cts',
+     'aes-256 cts mode with 96-bit sha-1 hmac' => 'aes256-cts-hmac-sha1-96',
      'arcfour with hmac/md5'                   => 'rc4-hmac');
 
 # Some global defaults to use.
@@ -57,60 +60,51 @@ sub system_quiet {
 # been set up.
 sub create {
     my ($principal) = @_;
-    my @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
-                '-t', $Wallet::Config::KEYTAB_FILE,
-                '-r', $Wallet::Config::KEYTAB_REALM,
-                '-q', "addprinc -clearpolicy -randkey $principal");
-    system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args);
+    my $kadmin = Wallet::Kadmin->new;
+    return $kadmin->create ($principal);
 }
 
 # Destroy a principal out of Kerberos.  Only usable once the configuration has
 # been set up.
 sub destroy {
     my ($principal) = @_;
-    my @args = ('-p', $Wallet::Config::KEYTAB_PRINCIPAL, '-k',
-                '-t', $Wallet::Config::KEYTAB_FILE,
-                '-r', $Wallet::Config::KEYTAB_REALM,
-                '-q', "delprinc -force $principal");
-    system_quiet ($Wallet::Config::KEYTAB_KADMIN, @args);
+    my $kadmin = Wallet::Kadmin->new;
+    return $kadmin->destroy ($principal);
 }
 
-# Check whether a principal exists.
+# Check whether a principal exists.  MIT uses kvno and Heimdal uses kgetcred.
+# Note that the Kerberos type may be different than our local userspace, so
+# don't use the Kerberos type to decide here.  Instead, check for which
+# program is available on the path.
 sub created {
     my ($principal) = @_;
     $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
     local $ENV{KRB5CCNAME} = 'krb5cc_temp';
     getcreds ('t/data/test.keytab', $Wallet::Config::KEYTAB_PRINCIPAL);
-    return (system_quiet ('kvno', $principal) == 0);
-}
-
-# Given keytab data and the principal, write it to a file and try
-# authenticating using kinit.
-sub valid {
-    my ($keytab, $principal) = @_;
-    open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
-    print KEYTAB $keytab;
-    close KEYTAB;
-    $principal .= '@' . $Wallet::Config::KEYTAB_REALM;
-    my $result = getcreds ('keytab', $principal);
-    if ($result) {
-        unlink 'keytab';
+    if (grep { -x "$_/kvno" } split (':', $ENV{PATH})) {
+        return (system_quiet ('kvno', $principal) == 0);
+    } elsif (grep { -x "$_/kgetcred" } split (':', $ENV{PATH})) {
+        return (system_quiet ('kgetcred', $principal) == 0);
+    } else {
+        warn "# No kvno or kgetcred found\n";
+        return;
     }
-    return $result;
 }
 
 # Given keytab data, write it to a file and try to determine the enctypes of
 # the keys present in that file.  Returns the enctypes as a list, with UNKNOWN
 # for encryption types that weren't recognized.  This is an ugly way of doing
-# this.
+# this for MIT.  Heimdal is much more straightforward, but MIT ktutil doesn't
+# have the needed abilities.
 sub enctypes {
     my ($keytab) = @_;
     open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
     print KEYTAB $keytab;
     close KEYTAB;
+
+    my @enctypes;
     open (KLIST, '-|', 'klist', '-ke', 'keytab')
         or die "cannot run klist: $!\n";
-    my @enctypes;
     local $_;
     while (<KLIST>) {
         next unless /^ *\d+ /;
@@ -120,26 +114,24 @@ sub enctypes {
         push (@enctypes, $enctype);
     }
     close KLIST;
+
+    # If that failed, we may have a Heimdal user space instead, so try ktutil.
+    # If we try this directly, it will just hang with MIT ktutil.
+    if ($? != 0) {
+        @enctypes = ();
+        open (KTUTIL, '-|', 'ktutil', '-k', 'keytab', 'list')
+            or die "cannot run ktutil: $!\n";
+        local $_;
+        while (<KTUTIL>) {
+            next unless /^ *\d+ /;
+            my ($string) = /^\s*\d+\s+(\S+)/;
+            next unless $string;
+            push (@enctypes, $string);
+        }
+        close KTUTIL;
+    }
     unlink 'keytab';
     return sort @enctypes;
-}
-
-# Given a Wallet::Object::Keytab object, the keytab data, the Kerberos v5
-# principal, and the Kerberos v4 principal, write the keytab to a file,
-# generate a srvtab, and try authenticating using k4start.
-sub valid_srvtab {
-    my ($object, $keytab, $k5, $k4) = @_;
-    open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
-    print KEYTAB $keytab;
-    close KEYTAB;
-    unless ($object->kaserver_srvtab ('keytab', $k5, 'srvtab', $k4)) {
-        warn "cannot write srvtab: ", $object->error, "\n";
-        return 0;
-    }
-    $ENV{KRBTKFILE} = 'krb4cc_temp';
-    system ("k4start -f srvtab $k4 2>&1 >/dev/null </dev/null");
-    unlink 'keytab', 'srvtab', 'krb4cc_temp';
-    return ($? == 0) ? 1 : 0;
 }
 
 # Use Wallet::Admin to set up the database.
@@ -154,27 +146,15 @@ my $dbh = $admin->dbh;
 my $history = '';
 my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 
-# Do some white-box testing of the principal validation regex.
-for my $bad (qw{service\* = host/foo+bar host/foo/bar /bar bar/
-                rcmd.foo}) {
-    ok (! Wallet::Object::Keytab->valid_principal ($bad),
-        "Invalid principal name $bad");
-}
-for my $good (qw{service service/foo bar foo/bar host/example.org
-                 aservice/foo}) {
-    ok (Wallet::Object::Keytab->valid_principal ($good),
-        "Valid principal name $good");
-}
-
 # Basic keytab creation and manipulation tests.
 SKIP: {
-    skip 'no keytab configuration', 49 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 52 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
-    $Wallet::Config::KEYTAB_TMP       = '.';
+    $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     my $realm = $Wallet::Config::KEYTAB_REALM;
 
     # Clean up the principals we're going to use.
@@ -184,17 +164,36 @@ SKIP: {
     # Don't destroy the user's Kerberos ticket cache.
     $ENV{KRB5CCNAME} = 'krb5cc_test';
 
+    # Test that object creation without KEYTAB_TMP fails.
+    undef $Wallet::Config::KEYTAB_TMP;
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, 'Creating keytab without KEYTAB_TMP fails');
+    is ($@, "KEYTAB_TMP configuration variable not set\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_TMP = '.';
+
     # Okay, now we can test.  First, create.
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', "wallet\nf", $dbh, @trace)
       };
     is ($object, undef, 'Creating malformed principal fails');
-    is ($@, "invalid principal name wallet\nf\n", ' with the right error');
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+        is ($@, "invalid principal name wallet\nf\n", ' with the right error');
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+        like ($@, qr/^error adding principal wallet\nf/,
+              ' with the right error');
+    }
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', '', $dbh, @trace)
       };
     is ($object, undef, 'Creating empty principal fails');
-    is ($@, "invalid principal name \n", ' with the right error');
+    if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
+        is ($@, "invalid principal name \n", ' with the right error');
+    } elsif ($Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal') {
+        like ($@, qr/^error adding principal \@/, ' with the right error');
+    }
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
@@ -209,9 +208,14 @@ SKIP: {
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/two', $dbh, @trace)
       };
-    ok (defined ($object), 'Creating an existing principal succeeds');
+    if (defined ($object)) {
+        ok (defined ($object), 'Creating an existing principal succeeds');
+    } else {
+        is ($@, '', 'Creating an existing principal succeeds');
+    }
     ok ($object->isa ('Wallet::Object::Keytab'), ' and is the right class');
     is ($object->destroy (@trace), 1, ' and destroying it succeeds');
+    is ($object->error, undef, ' with no error message');
     ok (! created ('wallet/two'), ' and now it does not exist');
     my @name = qw(keytab wallet-test/one);
     $object = eval { Wallet::Object::Keytab->create (@name, $dbh, @trace) };
@@ -236,7 +240,7 @@ SKIP: {
         is ($object->error, '', ' and getting the keytab works');
     }
     ok (! -f "./keytab.$$", ' and the temporary file was cleaned up');
-    ok (valid ($data, 'wallet/one'), ' and the keytab is valid');
+    ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
 
     # For right now, this is the only backend type that we have for which we
     # can do a get, so test display of the last download information.
@@ -253,18 +257,16 @@ EOO
     is ($object->show, $expected, 'Show output is correct');
 
     # Test error handling on keytab retrieval.
-    undef $Wallet::Config::KEYTAB_TMP;
-    $data = $object->get (@trace);
-    is ($data, undef, 'Getting a keytab without a tmp directory fails');
-    is ($object->error, 'KEYTAB_TMP configuration variable not set',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_TMP = '.';
-    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
-    $data = $object->get (@trace);
-    is ($data, undef, 'Cope with a failure to run kadmin');
-    like ($object->error, qr{^cannot run /some/nonexistent/file: },
-          ' with the right error');
-    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+  SKIP: {
+        skip 'no kadmin program test for Heimdal', 2
+            if $Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal';
+        $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+        $data = $object->get (@trace);
+        is ($data, undef, 'Cope with a failure to run kadmin');
+        like ($object->error, qr{^cannot run /some/nonexistent/file: },
+              ' with the right error');
+        $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+    }
     destroy ('wallet/one');
     $data = $object->get (@trace);
     is ($data, undef, 'Getting a keytab for a nonexistent principal fails');
@@ -279,12 +281,16 @@ EOO
       };
     ok (defined ($object), 'Creating good principal succeeds');
     ok (created ('wallet/one'), ' and the principal was created');
-    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
-    is ($object->destroy (@trace), undef,
-        ' and destroying it with bad kadmin fails');
-    like ($object->error, qr{^cannot run /some/nonexistent/file: },
-          ' with the right error');
-    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+  SKIP: {
+        skip 'no kadmin program test for Heimdal', 2
+            if $Wallet::Config::KEYTAB_KRBTYPE eq 'Heimdal';
+        $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+        is ($object->destroy (@trace), undef,
+            ' and destroying it with bad kadmin fails');
+        like ($object->error, qr{^cannot run /some/nonexistent/file: },
+              ' with the right error');
+        $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+    }
     is ($object->flag_set ('locked', @trace), 1, ' and setting locked works');
     is ($object->destroy (@trace), undef, ' and destroying it fails');
     is ($object->error, "cannot destroy keytab:wallet/one: object is locked",
@@ -342,30 +348,33 @@ EOO
     is ($@, "keytab object implementation not configured\n",
         ' with the right error');
     $Wallet::Config::KEYTAB_REALM = contents ('t/data/test.realm');
-    $Wallet::Config::KEYTAB_KADMIN = '/some/nonexistent/file';
+    undef $Wallet::Config::KEYTAB_KRBTYPE;
     $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
-    is ($object, undef, 'Cope with a failure to run kadmin');
-    like ($@, qr{^cannot run /some/nonexistent/file: },
-          ' with the right error');
-    $Wallet::Config::KEYTAB_KADMIN = 'kadmin';
+    is ($object, undef, ' and another');
+    is ($@, "keytab object implementation not configured\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_KRBTYPE = 'Active Directory';
+    $object = eval {
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+      };
+    is ($object, undef, ' and one set to an invalid value');
+    is ($@, "unknown KEYTAB_KRBTYPE setting: Active Directory\n",
+        ' with the right error');
+    $Wallet::Config::KEYTAB_KRBTYPE = contents ('t/data/test.krbtype');
 }
 
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
 # can't find remctld.
 SKIP: {
-    skip 'no keytab configuration', 17 unless -f 't/data/test.keytab';
-    my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
-    my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-    skip 'remctld not found', 17 unless $remctld;
-    eval { require Net::Remctl };
-    skip 'Net::Remctl not available', 17 if $@;
+    skip 'no keytab configuration', 27 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP       = '.';
     my $realm = $Wallet::Config::KEYTAB_REALM;
     my $principal = $Wallet::Config::KEYTAB_PRINCIPAL;
@@ -382,41 +391,85 @@ SKIP: {
     ok (defined ($two), 'Creating wallet/two succeeds');
     is ($two->flag_set ('unchanging', @trace), 1, ' and setting unchanging');
 
-    # Now spawn our remctld server and get a ticket cache.
-    remctld_spawn ($remctld, $principal, 't/data/test.keytab',
-                   't/data/keytab.conf');
-    $ENV{KRB5CCNAME} = 'krb5cc_test';
-    getcreds ('t/data/test.keytab', $principal);
-    $ENV{KRB5CCNAME} = 'krb5cc_good';
+    # Finally we can test.  First the MIT Kerberos tests.
+  SKIP: {
+        skip 'skipping MIT unchanging tests for Heimdal', 12
+            if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'heimdal');
 
-    # Finally we can test.
-    is ($one->get (@trace), undef, 'Get without configuration fails');
-    is ($one->error, 'keytab unchanging support not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_REMCTL_CACHE = 'krb5cc_test';
-    is ($one->get (@trace), undef, ' and still fails without host');
-    is ($one->error, 'keytab unchanging support not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_REMCTL_HOST = 'localhost';
-    $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL = $principal;
-    $Wallet::Config::KEYTAB_REMCTL_PORT = 14373;
-    is ($one->get (@trace), undef, ' and still fails without ACL');
-    is ($one->error,
-        "cannot retrieve keytab for wallet/one\@$realm: Access denied",
-        ' with the right error');
-    open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
-    print ACL "$principal\n";
-    close ACL;
-    is ($one->get (@trace), 'Keytab for wallet/one', 'Now get works');
-    is ($ENV{KRB5CCNAME}, 'krb5cc_good',
-        ' and we did not nuke the cache name');
-    is ($two->get (@trace), undef, ' but get for wallet/two does not');
-    is ($two->error,
-        "cannot retrieve keytab for wallet/two\@$realm: bite me",
-        ' with the right error');
-    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
-    is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
-    remctld_stop;
+        # We need remctld and Net::Remctl.
+        my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
+        my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
+        skip 'remctld not found', 12 unless $remctld;
+        eval { require Net::Remctl };
+        skip 'Net::Remctl not available', 12 if $@;
+
+        # Now spawn our remctld server and get a ticket cache.
+        remctld_spawn ($remctld, $principal, 't/data/test.keytab',
+                       't/data/keytab.conf');
+        $ENV{KRB5CCNAME} = 'krb5cc_test';
+        getcreds ('t/data/test.keytab', $principal);
+        $ENV{KRB5CCNAME} = 'krb5cc_good';
+
+        # Do the unchanging tests for MIT Kerberos.
+        is ($one->get (@trace), undef, 'Get without configuration fails');
+        is ($one->error, 'keytab unchanging support not configured',
+            ' with the right error');
+        $Wallet::Config::KEYTAB_REMCTL_CACHE = 'krb5cc_test';
+        is ($one->get (@trace), undef, ' and still fails without host');
+        is ($one->error, 'keytab unchanging support not configured',
+            ' with the right error');
+        $Wallet::Config::KEYTAB_REMCTL_HOST = 'localhost';
+        $Wallet::Config::KEYTAB_REMCTL_PRINCIPAL = $principal;
+        $Wallet::Config::KEYTAB_REMCTL_PORT = 14373;
+        is ($one->get (@trace), undef, ' and still fails without ACL');
+        is ($one->error,
+            "cannot retrieve keytab for wallet/one\@$realm: Access denied",
+            ' with the right error');
+        open (ACL, '>', 'test-acl') or die "cannot create test-acl: $!\n";
+        print ACL "$principal\n";
+        close ACL;
+        is ($one->get (@trace), 'Keytab for wallet/one', 'Now get works');
+        is ($ENV{KRB5CCNAME}, 'krb5cc_good',
+            ' and we did not nuke the cache name');
+        is ($one->get (@trace), 'Keytab for wallet/one',
+            ' and we get the same thing the second time');
+        is ($one->flag_clear ('unchanging', @trace), 1,
+            'Clearing the unchanging flag works');
+        my $data = $object->get (@trace);
+        ok (defined ($data), ' and getting the keytab works');
+        ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
+        is ($two->get (@trace), undef, 'Get for wallet/two does not work');
+        is ($two->error,
+            "cannot retrieve keytab for wallet/two\@$realm: bite me",
+            ' with the right error');
+        is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+        is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
+        remctld_stop;
+    }
+
+    # Now Heimdal.  Since the keytab contains timestamps, before testing for
+    # equality we have to substitute out the timestamps.
+  SKIP: {
+        skip 'skipping Heimdal unchanging tests for MIT', 10
+            if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'mit');
+        my $data = $one->get (@trace);
+        ok (defined $data, 'Get of unchanging keytab works');
+        ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
+        my $second = $one->get (@trace);
+        ok (defined $second, ' and second retrieval also works');
+        $data =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
+        $second =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
+        is ($data, $second, ' and the keytab matches');
+        is ($one->flag_clear ('unchanging', @trace), 1,
+            'Clearing the unchanging flag works');
+        $data = $one->get (@trace);
+        ok (defined ($data), ' and getting the keytab works');
+        ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
+        $data =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
+        ok ($data ne $second, ' and the new keytab is different');
+        is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
+        is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
+    }
 
     # Check that history has been updated correctly.
     $history .= <<"EOO";
@@ -426,61 +479,30 @@ $date  set flag unchanging
     by $user from $host
 $date  get
     by $user from $host
+$date  get
+    by $user from $host
+$date  clear flag unchanging
+    by $user from $host
+$date  get
+    by $user from $host
 $date  destroy
     by $user from $host
 EOO
     is ($one->history, $history, 'History is correct to this point');
 }
 
-# Tests for kaserver synchronization support.
+# Tests for synchronization support.  This code is deactivated at present
+# since no synchronization targets are supported, but we want to still test
+# the basic stub code.
 SKIP: {
-    skip 'no keytab configuration', 106 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 18 unless -f 't/data/test.keytab';
 
-    # Test the principal mapping.  We can do this without having a kaserver
-    # configuration.  We only need a basic keytab object configuration.  Do
-    # this as white-box testing since we don't want to fill the test realm
-    # with a bunch of random principals.
+    # Test setting synchronization attributes, which can also be done without
+    # configuration.
     my $one = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
       };
     ok (defined ($one), 'Creating wallet/one succeeds');
-    my %princs =
-        (foo                     => 'foo',
-         host                    => 'host',
-         rcmd                    => 'rcmd',
-         'rcmd.foo'              => 'rcmd.foo',
-         'host/foo.example.org'  => 'rcmd.foo',
-         'ident/foo.example.org' => 'ident.foo',
-         'imap/foo.example.org'  => 'imap.foo',
-         'pop/foo.example.org'   => 'pop.foo',
-         'smtp/foo.example.org'  => 'smtp.foo',
-         'service/foo'           => 'service.foo',
-         'foo/bar'               => 'foo.bar');
-    for my $princ (sort keys %princs) {
-        my $result = $princs{$princ};
-        is ($one->kaserver_name ($princ), $result, "Name mapping: $princ");
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), $result,
-            ' with K5 realm');
-        $Wallet::Config::KEYTAB_AFS_REALM = 'AFS.EXAMPLE.ORG';
-        is ($one->kaserver_name ($princ), "$result\@AFS.EXAMPLE.ORG",
-            ' with K4 realm');
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"),
-            "$result\@AFS.EXAMPLE.ORG", ' with K5 and K4 realm');
-        undef $Wallet::Config::KEYTAB_AFS_REALM;
-    }
-    for my $princ (qw{service/foo/bar foo/bar/baz}) {
-        is ($one->kaserver_name ($princ), undef, "Name mapping: $princ");
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), undef,
-            ' with K5 realm');
-        $Wallet::Config::KEYTAB_AFS_REALM = 'AFS.EXAMPLE.ORG';
-        is ($one->kaserver_name ($princ), undef, ' with K4 realm');
-        is ($one->kaserver_name ("$princ\@EXAMPLE.ORG"), undef,
-            ' with K5 and K4 realm');
-        undef $Wallet::Config::KEYTAB_AFS_REALM;
-    }
-
-    # Test setting synchronization attributes, which can also be done without
-    # configuration.
     my $expected = <<"EOO";
            Type: keytab
            Name: wallet/one
@@ -495,16 +517,20 @@ EOO
     my @targets = $one->attr ('foo');
     is (scalar (@targets), 0, ' and getting an unknown attribute fails');
     is ($one->error, 'unknown attribute foo', ' with the right error');
-    is ($one->attr ('sync', [ 'foo' ], @trace), undef,
+    is ($one->attr ('sync', [ 'kaserver' ], @trace), undef,
         ' and setting an unknown sync target fails');
-    is ($one->error, 'unsupported synchronization target foo',
+    is ($one->error, 'unsupported synchronization target kaserver',
         ' with the right error');
     is ($one->attr ('sync', [ 'kaserver', 'bar' ], @trace), undef,
         ' and setting two targets fails');
     is ($one->error, 'only one synchronization target supported',
         ' with the right error');
-    is ($one->attr ('sync', [ 'kaserver' ], @trace), 1,
-        ' but setting only kaserver works');
+
+    # Create a synchronization manually so that we can test the display and
+    # removal code.
+    my $sql = "insert into keytab_sync (ks_name, ks_target) values
+        ('wallet/one', 'kaserver')";
+    $dbh->do ($sql);
     @targets = $one->attr ('sync');
     is (scalar (@targets), 1, ' and now one target is set');
     is ($targets[0], 'kaserver', ' and it is correct');
@@ -521,15 +547,10 @@ EOO
     $history .= <<"EOO";
 $date  create
     by $user from $host
-$date  add kaserver to attribute sync
-    by $user from $host
 EOO
     is ($one->history, $history, ' and history is correct for attributes');
-    is ($one->destroy (@trace), undef, 'Destroying wallet/one fails');
-    is ($one->error, 'kaserver synchronization not configured',
-        ' because kaserver support is not configured');
     is ($one->attr ('sync', [], @trace), 1,
-        ' but removing the kaserver sync attribute works');
+        'Removing the kaserver sync attribute works');
     is ($one->destroy (@trace),1, ' and then destroying wallet/one works');
     $history .= <<"EOO";
 $date  remove kaserver from attribute sync
@@ -537,135 +558,7 @@ $date  remove kaserver from attribute sync
 $date  destroy
     by $user from $host
 EOO
-
-    # Set up our configuration.
-    skip 'no AFS kaserver configuration', 34 unless -f 't/data/test.srvtab';
-    skip 'no kaserver support', 34 unless -x '../kasetkey/kasetkey';
-    $Wallet::Config::KEYTAB_FILE         = 't/data/test.keytab';
-    $Wallet::Config::KEYTAB_PRINCIPAL    = contents ('t/data/test.principal');
-    $Wallet::Config::KEYTAB_REALM        = contents ('t/data/test.realm');
-    $Wallet::Config::KEYTAB_TMP          = '.';
-    $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
-    my $realm = $Wallet::Config::KEYTAB_REALM;
-    my $k5 = "wallet/one\@$realm";
-
-    # Recreate and reconfigure the object.
-    $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
-      };
-    ok (defined ($one), 'Creating wallet/one succeeds');
-    is ($one->attr ('sync', [ 'kaserver' ], @trace), 1,
-        ' and setting the kaserver sync attribute works');
-
-    # Finally, we can test.
-    is ($one->get (@trace), undef, 'Get without configuration fails');
-    is ($one->error, 'kaserver synchronization not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_AFS_ADMIN = contents ('t/data/test.admin');
-    my $k4_realm = $Wallet::Config::KEYTAB_AFS_ADMIN;
-    $k4_realm =~ s/^[^\@]+\@//;
-    $Wallet::Config::KEYTAB_AFS_REALM = $k4_realm;
-    my $k4 = "wallet.one\@$k4_realm";
-    is ($one->get (@trace), undef, ' and still fails with just admin');
-    is ($one->error, 'kaserver synchronization not configured',
-        ' with the right error');
-    $Wallet::Config::KEYTAB_AFS_SRVTAB = 't/data/test.srvtab';
-    my $keytab = $one->get (@trace);
-    if (defined ($keytab)) {
-        ok (1, ' and now get works');
-    } else {
-        is ($one->error, '', ' and now get works');
-    }
-    ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the srvtab is valid');
-    ok (! -f "./srvtab.$$", ' and the temporary file was cleaned up');
-
-    # Now remove the sync attribute and make sure things aren't synced.
-    is ($one->attr ('sync', [], @trace), 1, 'Clearing sync works');
-    @targets = $one->attr ('sync');
-    is (scalar (@targets), 0, ' and now there is no attribute');
-    is ($one->error, undef, ' and no error');
-    my $new_keytab = $one->get (@trace);
-    ok (defined ($new_keytab), ' and get still works');
-    ok (! valid_srvtab ($one, $new_keytab, $k5, $k4),
-        ' but the srvtab does not');
-    ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the old one does');
-    is ($one->destroy (@trace), 1, ' and destroying wallet/one works');
-    ok (valid_srvtab ($one, $keytab, $k5, $k4),
-        ' and the principal is still there');
-
-    # Test KEYTAB_AFS_DESTROY.
-    $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
-      };
-    ok (defined ($one), 'Creating wallet/one succeeds');
-    $Wallet::Config::KEYTAB_AFS_DESTROY = 1;
-    $new_keytab = $one->get (@trace);
-    ok (defined ($new_keytab), ' and get works');
-    ok (! valid_srvtab ($one, $new_keytab, $k5, $k4),
-        ' but the srvtab does not');
-    ok (! valid_srvtab ($one, $keytab, $k5, $k4),
-        ' and now neither does the old one');
-    $Wallet::Config::KEYTAB_AFS_DESTROY = 0;
-
-    # Put it back and make sure it works again.
-    is ($one->attr ('sync', [ 'kaserver' ], @trace), 1, 'Setting sync works');
-    $keytab = $one->get (@trace);
-    ok (defined ($keytab), ' and get works');
-    ok (valid_srvtab ($one, $keytab, $k5, $k4), ' and the srvtab is valid');
-    $Wallet::Config::KEYTAB_AFS_KASETKEY = '/path/to/nonexistent/file';
-    $new_keytab = $one->get (@trace);
-    ok (! defined ($new_keytab),
-        ' but it fails if we mess up the kasetkey path');
-    like ($one->error, qr{^cannot synchronize key with kaserver: },
-          ' with the right error message');
-    ok (! -f "keytab.$$", ' and the temporary file was cleaned up');
-    $Wallet::Config::KEYTAB_AFS_KASETKEY = '../kasetkey/kasetkey';
-
-    # Destroy the principal and recreate it and make sure we cleaned up.
-    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
-    ok (! valid_srvtab ($one, $keytab, $k5, $k4),
-        ' and the principal is gone');
-    $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
-      };
-    ok (defined ($one), ' and recreating it succeeds');
-    @targets = $one->attr ('sync');
-    is (scalar (@targets), 0, ' and now there is no attribute');
-    is ($one->error, undef, ' and no error');
-
-    # Now destroy it for good.
-    is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
-
-    # Check that history is still correct.
-    $history .= <<"EOO";
-$date  create
-    by $user from $host
-$date  add kaserver to attribute sync
-    by $user from $host
-$date  get
-    by $user from $host
-$date  remove kaserver from attribute sync
-    by $user from $host
-$date  get
-    by $user from $host
-$date  destroy
-    by $user from $host
-$date  create
-    by $user from $host
-$date  get
-    by $user from $host
-$date  add kaserver to attribute sync
-    by $user from $host
-$date  get
-    by $user from $host
-$date  destroy
-    by $user from $host
-$date  create
-    by $user from $host
-$date  destroy
-    by $user from $host
-EOO
-    is ($one->history, $history, 'History is correct to this point');
+    is ($one->history, $history, ' and history is correct for removal');
 }
 
 # Tests for enctype restriction.
@@ -676,6 +569,7 @@ SKIP: {
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
+    $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP       = '.';
     my $realm = $Wallet::Config::KEYTAB_REALM;
     my $principal = $Wallet::Config::KEYTAB_PRINCIPAL;
@@ -742,8 +636,7 @@ EOO
         'Setting an unrecognized enctype fails');
     is ($one->error, 'unknown encryption type foo-bar',
         ' with the right error message');
-    @values = enctypes ($keytab);
-    is ("@values", "@enctypes", ' and we did rollback properly');
+    is ($one->show, $expected, ' and we did rollback properly');
     $history .= <<"EOO";
 $date  get
     by $user from $host
@@ -753,6 +646,7 @@ EOO
     # Now, try testing limiting the enctypes to just one.
   SKIP: {
         skip 'insufficient recognized enctypes', 14 unless @enctypes > 1;
+
         is ($one->attr ('enctypes', [ $enctypes[0] ], @trace), 1,
             'Setting a single enctype works');
         for my $enctype (@enctypes) {
@@ -764,8 +658,12 @@ EOO
         is ("@values", $enctypes[0], ' and we get back the right value');
         $keytab = $one->get (@trace);
         ok (defined ($keytab), ' and retrieving the keytab still works');
-        @values = enctypes ($keytab);
-        is ("@values", $enctypes[0], ' and it has the right enctype');
+        if (defined ($keytab)) {
+            @values = enctypes ($keytab);
+            is ("@values", $enctypes[0], ' and it has the right enctype');
+        } else {
+            ok (0, ' and it has the right keytab');
+        }
         is ($one->attr ('enctypes', [ $enctypes[1] ], @trace), 1,
             'Setting a different single enctype works');
         @values = $one->attr ('enctypes');

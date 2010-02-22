@@ -1,5 +1,4 @@
 #!/bin/sh
-# $Id$
 #
 # netdb-fake -- Fake NetDB remctl interface.
 #

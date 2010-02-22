@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/object.t -- Tests for the basic object implementation.
 #
@@ -256,11 +255,11 @@ ok (defined ($object), 'Recreating the object succeeds');
 $output = <<"EOO";
 $date  create
     by $user from $host
-$date  set owner to 1
+$date  set owner to ADMIN (1)
     by $user from $host
-$date  unset owner (was 1)
+$date  unset owner (was ADMIN (1))
     by $user from $host
-$date  set owner to 1
+$date  set owner to ADMIN (1)
     by $user from $host
 $date  set expires to $now
     by $user from $host
@@ -268,35 +267,35 @@ $date  unset expires (was $now)
     by $user from $host
 $date  set expires to $now
     by $user from $host
-$date  set acl_get to 1
+$date  set acl_get to ADMIN (1)
     by $user from $host
-$date  unset acl_get (was 1)
+$date  unset acl_get (was ADMIN (1))
     by $user from $host
-$date  set acl_get to 1
+$date  set acl_get to ADMIN (1)
     by $user from $host
-$date  set acl_store to 1
+$date  set acl_store to ADMIN (1)
     by $user from $host
-$date  unset acl_store (was 1)
+$date  unset acl_store (was ADMIN (1))
     by $user from $host
-$date  set acl_store to 1
+$date  set acl_store to ADMIN (1)
     by $user from $host
-$date  set acl_show to 1
+$date  set acl_show to ADMIN (1)
     by $user from $host
-$date  unset acl_show (was 1)
+$date  unset acl_show (was ADMIN (1))
     by $user from $host
-$date  set acl_show to 1
+$date  set acl_show to ADMIN (1)
     by $user from $host
-$date  set acl_destroy to 1
+$date  set acl_destroy to ADMIN (1)
     by $user from $host
-$date  unset acl_destroy (was 1)
+$date  unset acl_destroy (was ADMIN (1))
     by $user from $host
-$date  set acl_destroy to 1
+$date  set acl_destroy to ADMIN (1)
     by $user from $host
-$date  set acl_flags to 1
+$date  set acl_flags to ADMIN (1)
     by $user from $host
-$date  unset acl_flags (was 1)
+$date  unset acl_flags (was ADMIN (1))
     by $user from $host
-$date  set acl_flags to 1
+$date  set acl_flags to ADMIN (1)
     by $user from $host
 $date  set flag locked
     by $user from $host

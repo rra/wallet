@@ -1,8 +1,7 @@
 # Wallet::ACL::Base -- Parent class for wallet ACL verifiers.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -19,7 +18,7 @@ use vars qw($VERSION);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Interface
@@ -60,6 +59,9 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+ACL Allbery
+
 =head1 NAME
 
 Wallet::ACL::Base - Generic parent class for wallet ACL verifiers
@@ -75,9 +77,9 @@ Wallet::ACL::Base - Generic parent class for wallet ACL verifiers
 
 =head1 DESCRIPTION
 
-Wallet::ACL::Base is the generic parent class for wallet ACL verifiers.  It
-provides default functions and behavior and all ACL verifiers should inherit
-from it.  It is not used directly.
+Wallet::ACL::Base is the generic parent class for wallet ACL verifiers.
+It provides default functions and behavior and all ACL verifiers should
+inherit from it.  It is not used directly.
 
 =head1 METHODS
 
@@ -85,8 +87,8 @@ from it.  It is not used directly.
 
 =item new()
 
-Creates a new ACL verifier.  The generic function provided here just creates
-and blesses an object.
+Creates a new ACL verifier.  The generic function provided here just
+creates and blesses an object.
 
 =item check(PRINCIPAL, ACL)
 
@@ -100,11 +102,11 @@ have failed.  Callers should call this function to get the error message
 after an undef return from any other instance method.
 
 For the convenience of child classes, this method can also be called with
-one or more error strings.  If so, those strings are concatenated together,
-trailing newlines are removed, any text of the form S<C< at \S+ line
-\d+\.?>> at the end of the message is stripped off, and the result is stored
-as the error.  Only child classes should call this method with an error
-string.
+one or more error strings.  If so, those strings are concatenated
+together, trailing newlines are removed, any text of the form S<C< at \S+
+line \d+\.?>> at the end of the message is stripped off, and the result is
+stored as the error.  Only child classes should call this method with an
+error string.
 
 =back
 
@@ -112,8 +114,8 @@ string.
 
 Wallet::ACL(3), wallet-backend(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

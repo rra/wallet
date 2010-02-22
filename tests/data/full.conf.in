@@ -1,4 +1,0 @@
-# remctl configuration for full wallet client tests.
-# $Id$
-
-wallet ALL @abs_top_builddir@/tests/data/cmd-wrapper ANYUSER

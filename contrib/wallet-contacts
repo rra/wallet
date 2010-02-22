@@ -1,0 +1,193 @@
+#!/usr/bin/perl -w
+#
+# wallet-contacts -- Report contact addresses for matching wallet objects.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2009 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+##############################################################################
+# Modules and declarations
+##############################################################################
+
+require 5.006;
+
+use strict;
+
+use Getopt::Long qw(GetOptions);
+use Wallet::Admin ();
+
+# Used to cache lookups of e-mail addresses by identifiers.
+our %EMAIL;
+
+##############################################################################
+# whois lookups
+##############################################################################
+
+# Given the directory handle of a user, look up their e-mail address.  This
+# assumes the Stanford-specific swhois program.
+sub person_email {
+    my ($identifier) = @_;
+    return $EMAIL{$identifier} if exists $EMAIL{$identifier};
+    my @output = `swhois '$identifier'`;
+    for my $line (@output) {
+        if ($line =~ /^\s*Email:\s*(\S+)/i) {
+            $EMAIL{$identifier} = $1;
+            return $1;
+        } elsif ($line =~ /^\s*SUNet IDs:\s*(\S+)/) {
+            my $email = $1 . '@stanford.edu';
+            $EMAIL{$identifier} = $email;
+            return $email;
+        }
+    }
+    warn "$0: unable to find email address for identifier $identifier\n";
+    $EMAIL{$identifier} = undef;
+    return;
+}
+
+# Look up a system in whois and return the e-mail address or addresses of the
+# administrator.
+sub whois_lookup {
+    my ($system) = @_;
+    my @output = `swhois '$system'`;
+    my ($inadmin, @users, @admins);
+    for (@output) {
+        if (/^\s*administrator:\s*(?:\S+\s+)+\((d\S+)\)\s*$/i) {
+            push (@admins, person_email ($1));
+            $inadmin = 1;
+        } elsif (/^\s*administrator:/i) {
+            $inadmin = 1;
+        } elsif (/^\s*group:/i) {
+            $inadmin = 0;
+        } elsif ($inadmin and /^\s*e-?mail: (\S+)/i) {
+            push (@admins, $1);
+        } elsif ($inadmin and /^\s*(?:\S+\s+)+\((d\S+)\)\s*$/i) {
+            push (@admins, person_email ($1));
+        } elsif (/^\s*user:\s*(?:\S+\s+)+\((d\S+)\)\s*$/i) {
+            push (@users, person_email ($1));
+        }
+    }
+    @admins = @users if !@admins;
+    warn "$0: unable to find administrator for $system\n" unless @admins;
+    return @admins;
+}
+
+##############################################################################
+# Main routine
+##############################################################################
+
+# Read in command-line options.
+my ($help);
+Getopt::Long::config ('no_ignore_case', 'bundling');
+GetOptions ('help|h' => \$help) or exit 1;
+if ($help) {
+    print "Feeding myself to perldoc, please wait....\n";
+    exec ('perldoc', '-t', $0);
+}
+my ($type, $name) = @ARGV;
+if (@ARGV > 2 or not defined $name) {
+    die "Usage: wallet-contacts <type> <name>\n";
+}
+
+# Clean up $0 for error reporting.
+$0 =~ s%.*/%%;
+
+# Gather the list of ACL lines.
+my $admin = Wallet::Admin->new;
+my @lines = $admin->report_owners ($type, $name);
+if (!@lines and $admin->error) {
+    die $admin->error, "\n";
+}
+
+# Now, for each line, turn it into an e-mail address.  krb5 ACLs go as-is if
+# they are regular user principals.  If they're other principals, ignore them
+# unless they're of the form host/*, in which case extract the host and treat
+# it the same as a netdb ACL.  netdb and netdb-root ACLs result in a whois
+# lookup on that host, extracting the e-mail address of the administrator
+# group.  If there is no e-mail address, extract the user and look up their
+# e-mail address.
+my @email;
+for (@lines) {
+    my ($scheme, $identifier) = @$_;
+    my $machine;
+    if ($scheme eq 'krb5') {
+        if ($identifier =~ m,^[^/]+\@,) {
+            push (@email, $identifier);
+        } elsif ($identifier =~ m,^host/([^/]+)\@,) {
+            $machine = $1;
+        }
+    } elsif ($scheme eq 'netdb' or $scheme eq 'netdb-root') {
+        $machine = $identifier;
+    }
+    if ($machine) {
+        push (@email, whois_lookup ($machine));
+    }
+}
+
+# We now have a list of e-mail addresses.  De-duplicate and then print them
+# out.
+my %seen;
+@email = grep { !$seen{$_}++ } sort @email;
+print join ("\n", @email, '');
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+wallet-contacts - Report contact addresses for matching wallet objects
+
+=head1 SYNOPSIS
+
+B<wallet-contacts> [B<-h>] I<type-pattern> I<name-pattern>
+
+=head1 DESCRIPTION
+
+B<wallet-contacts> returns a list of e-mail addresses corresponding to
+members of owner ACLs for all objects in the wallet database matching
+I<type-pattern> and I<name-pattern>.  The patterns can be wallet object
+types or names, or they can be SQL patterns using C<%> as a wildcard.
+
+C<krb5> ACL schemes will return the corresponding identifier as an e-mail
+address unless it contains a C</>.  If it contains C</>, it will be
+ignored except for principals of the form C<host/I<hostname>>, which will
+have I<hostname> treated as if it were the identifier in a C<netdb> ACL.
+
+C<netdb> and C<netdb-root> ACL schemes will return the e-mail address from
+a whois lookup of the corresponding NetDB object.  B<wallet-contacts> will
+run B<whois> on the system name and search the output for users and
+administrators.  E-mail addresses for admin groups will be returned as-is.
+Administrators will result in a second lookup via B<swhois> for their
+directory handle, returning the corresponding e-mail address if found in
+their whois record.  If there are no administrators or admin teams with
+e-mail addresses, the value of the user key, if any, will be looked up
+similar to an administrator.
+
+If B<wallet-contacts> is unable to find any contact for a host or any
+e-mail address for an administrator or user, it will warn but continue.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-h>, B<--help>
+
+Print out this documentation (which is done simply by feeding the script
+to C<perldoc -t>).
+
+=back
+
+=head1 CAVEATS
+
+Many of the assumptions made by this script are Stanford-specific, such as
+the ability to use Kerberos principals as-is as e-mail addresses, the
+B<swhois> program for looking up people, and the parsing of the B<whois>
+output format.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=cut

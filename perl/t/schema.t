@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 #
 # t/schema.t -- Tests for the wallet schema class.
 #
@@ -22,7 +21,7 @@ ok (defined $schema, 'Wallet::Schema creation');
 ok ($schema->isa ('Wallet::Schema'), ' and class verification');
 my @sql = $schema->sql;
 ok (@sql > 0, 'sql() returns something');
-is (scalar (@sql), 29, ' and returns the right number of statements');
+is (scalar (@sql), 28, ' and returns the right number of statements');
 
 # Connect to a database and test create.
 db_setup;

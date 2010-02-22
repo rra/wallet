@@ -1,5 +1,4 @@
 # Util -- Utility class for wallet tests.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
@@ -21,7 +20,8 @@ $VERSION = '0.02';
 
 use Exporter ();
 @ISA    = qw(Exporter);
-@EXPORT = qw(contents db_setup getcreds remctld_spawn remctld_stop);
+@EXPORT = qw(contents db_setup getcreds keytab_valid remctld_spawn
+             remctld_stop);
 
 ##############################################################################
 # General utility functions
@@ -67,7 +67,7 @@ sub db_setup {
 }
 
 ##############################################################################
-# Local ticket cache
+# Kerberos utility functions
 ##############################################################################
 
 # Given a keytab file and a principal, try authenticating with kinit.
@@ -84,6 +84,22 @@ sub getcreds {
         }
     }
     return 0;
+}
+
+# Given keytab data and the principal, write it to a file and try
+# authenticating using kinit.
+sub keytab_valid {
+    my ($keytab, $principal) = @_;
+    open (KEYTAB, '>', 'keytab') or die "cannot create keytab: $!\n";
+    print KEYTAB $keytab;
+    close KEYTAB;
+    $principal .= '@' . $Wallet::Config::KEYTAB_REALM
+        unless $principal =~ /\@/;
+    my $result = getcreds ('keytab', $principal);
+    if ($result) {
+        unlink 'keytab';
+    }
+    return $result;
 }
 
 ##############################################################################

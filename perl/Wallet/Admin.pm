@@ -1,8 +1,7 @@
 # Wallet::Admin -- Wallet system administrative interface.
-# $Id$
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -23,7 +22,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.05';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -112,67 +111,6 @@ sub destroy {
 }
 
 ##############################################################################
-# Reporting
-##############################################################################
-
-# Returns a list of all objects stored in the wallet database in the form of
-# type and name pairs.  On error and for an empty database, the empty list
-# will be returned.  To distinguish between an empty list and an error, call
-# error(), which will return undef if there was no error.
-sub list_objects {
-    my ($self) = @_;
-    undef $self->{error};
-    my @objects;
-    eval {
-        my $sql = 'select ob_type, ob_name from objects order by ob_type,
-            ob_name';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute;
-        my $object;
-        while (defined ($object = $sth->fetchrow_arrayref)) {
-            push (@objects, [ @$object ]);
-        }
-        $self->{dbh}->commit;
-    };
-    if ($@) {
-        $self->error ("cannot list objects: $@");
-        $self->{dbh}->rollback;
-        return;
-    } else {
-        return @objects;
-    }
-}
-
-# Returns a list of all ACLs stored in the wallet database as a list of pairs
-# of ACL IDs and ACL names.  On error and for an empty database, the empty
-# list will be returned; however, this is unlikely since any valid database
-# will have at least an ADMIN ACL.  Still, to distinguish between an empty
-# list and an error, call error(), which will return undef if there was no
-# error.
-sub list_acls {
-    my ($self) = @_;
-    undef $self->{error};
-    my @acls;
-    eval {
-        my $sql = 'select ac_id, ac_name from acls order by ac_id';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute;
-        my $object;
-        while (defined ($object = $sth->fetchrow_arrayref)) {
-            push (@acls, [ @$object ]);
-        }
-        $self->{dbh}->commit;
-    };
-    if ($@) {
-        $self->error ("cannot list ACLs: $@");
-        $self->{dbh}->rollback;
-        return;
-    } else {
-        return @acls;
-    }
-}
-
-##############################################################################
 # Object registration
 ##############################################################################
 
@@ -225,6 +163,9 @@ __DATA__
 
 Wallet::Admin - Wallet system administrative interface
 
+=for stopwords
+ACL hostname Allbery
+
 =head1 SYNOPSIS
 
     use Wallet::Admin;
@@ -241,9 +182,9 @@ thin wrapper around this object that provides a command-line interface to
 its actions.
 
 To use this object, several configuration variables must be set (at least
-the database configuration).  For information on those variables and how to
-set them, see Wallet::Config(3).  For more information on the normal user
-interface to the wallet server, see Wallet::Server(3).
+the database configuration).  For information on those variables and how
+to set them, see Wallet::Config(3).  For more information on the normal
+user interface to the wallet server, see Wallet::Server(3).
 
 =head1 CLASS METHODS
 
@@ -287,34 +228,6 @@ initialize() uses C<localhost> as the hostname and PRINCIPAL as the user
 when logging the history of the ADMIN ACL creation and for any subsequent
 actions on the object it returns.
 
-=item list_acls()
-
-Returns a list of all ACLs in the database.  The return value is a list of
-references to pairs of ACL ID and name.  For example, if there are two
-ACLs in the database, one with name "ADMIN" and ID 1 and one with name
-"group/admins" and ID 3, list_acls() would return:
-
-    ([ 1, 'ADMIN' ], [ 3, 'group/admins' ])
-
-Returns the empty list on failure.  Any valid wallet database should have
-at least one ACL, but an error can be distinguished from the odd case of a
-database with no ACLs by calling error().  error() is guaranteed to return
-the error message if there was an error and undef if there was no error.
-
-=item list_objects()
-
-Returns a list of all objects in the database.  The return value is a list
-of references to pairs of type and name.  For example, if two objects
-existed in the database, both of type "keytab" and with values
-"host/example.com" and "foo", list_objects() would return:
-
-    ([ 'keytab', 'host/example.com' ], [ 'keytab', 'foo' ])
-
-Returns the empty list on failure.  To distinguish between this and a
-database containing no objects, the caller should call error().  error()
-is guaranteed to return the error message if there was an error and undef
-if there was no error.
-
 =item register_object (TYPE, CLASS)
 
 Register in the database a mapping from the object type TYPE to the class
@@ -342,8 +255,8 @@ Returns true on success and false on failure.
 
 wallet-admin(8)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

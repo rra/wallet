@@ -1,12 +1,93 @@
                        User-Visible wallet Changes
 
-wallet 0.10 (unreleased)
+wallet 0.10 (2010-02-21)
+
+    Add support for Heimdal KDCs as well as MIT Kerberos KDCs.  There is
+    now a mandatory new setting in Wallet::Config: $KEYTAB_KRBTYPE.  It
+    should be set to either "MIT" or "Heimdal" depending on the Kerberos
+    KDC implementation used.  The Heimdal support requires the
+    Heimdal::Kadm5 Perl module.
+
+    Remove kaserver synchronization support.  It is no longer tested, and
+    retaining the code was increasing the complexity of wallet, and some
+    specific requirements (such as different realm names between kaserver
+    and Kerberos v5 and the kvno handling) were Stanford-specific.  Rather
+    than using this support, AFS sites running kaserver will probably find
+    deploying Heimdal with its internal kaserver compatibility is probably
+    an easier transition approach.
+
+    Remove the kasetkey client for setting keys in an AFS kaserver.
+
+    The wallet client no longer enables kaserver synchronization when a
+    srvtab is requested with -S.  Instead, it just extracts the DES key
+    from the keytab and writes it to a srvtab.  It no longer forces the
+    kvno of the srvtab to 0 (a Stanford-specific action) and instead
+    preserves the kvno from the key in the keytab.  This should now do the
+    right thing for sites that use a KDC that serves both Kerberos v4 and
+    Kerberos v5 from the same database.
+
+    The wallet client can now store data containing nul characters and
+    wallet-backend will accept it if passed on standard input instead of
+    as a command-line argument.  See config/wallet for the new required
+    remctld configuration.  Storing data containing nul characters
+    requires remctl 2.14 or later.
 
     Correctly handle storing of data that begins with a dash and don't
     parse it as an argument to wallet-backend.
 
     Fix logging in wallet-backend and the remctl configuration to not log
     the data passed to store.
+
+    Move all reporting from Wallet::Admin to Wallet::Report and simplify
+    the method names since they're now part of a dedicated reporting
+    class.  Similarly, create a new wallet-report script to wrap
+    Wallet::Report, moving all reporting commands to it from wallet-admin,
+    and simplify the commands since they're for a dedicated reporting
+    script.
+
+    Add additional reports for wallet-report: objects owned by a specific
+    ACL, objects owned by no one, objects of a specific type, objects with
+    a specific flag, objects for which a specific ACL has privileges, ACLs
+    with an entry with a given type and identifier, and ACLs with no
+    members.
+
+    Add a new owners command to wallet-report and corresponding owners()
+    method to Wallet::Report, which returns all ACL lines on owner ACLs
+    for matching objects.
+
+    Report ACL names as well as numbers in object history.
+
+    The wallet client now uses a temporary disk ticket cache when
+    obtaining tickets with the -u option rather than an in-memory cache,
+    allowing for a libremctl built against a different Kerberos
+    implementation than the wallet client.  This primarily helps with
+    testing.
+
+    Update to rra-c-util 2.3:
+
+    * Use Kerberos portability layer to support Heimdal.
+    * Avoid Kerberos API calls deprecated on Heimdal.
+    * Sanity-check the results of krb5-config before proceeding.
+    * Fall back on manual probing if krb5-config results don't work.
+    * Add --with-krb5-include and --with-krb5-lib configure options.
+    * Add --with-remctl-include and --with-remctl-lib configure options.
+    * Add --with-gssapi-include and --with-gssapi-lib configure options.
+    * Don't break if the user clobbers CPPFLAGS at build time.
+    * Suppress error output from krb5-config probes.
+    * Prefer KRB5_CONFIG over a path constructed from --with-*.
+    * Update GSS-API probes for Solaris 10's native implementation.
+    * Change AC_TRY_* to AC_*_IFELSE as recommended by Autoconf.
+    * Use AC_TYPE_LONG_LONG_INT instead of AC_CHECK_TYPES([long long]).
+    * Provide a proper bool type with Sun Studio 12 on Solaris 10.
+    * Break util/util.h into separate header files per module.
+    * Update portable and util tests for C TAP Harness 1.1.
+
+    Update to C TAP Harness 1.1:
+
+    * Remove the need for Autoconf substitution in test programs.
+    * Support running a single test program with runtests -o.
+    * Properly handle test cases that are skipped in their entirety.
+    * Much improved C TAP library more closely matching Test::More.
 
 wallet 0.9 (2008-04-24)
 

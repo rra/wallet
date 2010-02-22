@@ -1,5 +1,4 @@
 # Makefile.PL for the Wallet Perl library.  -*- perl -*-
-# $Id$
 
 use ExtUtils::MakeMaker;
 

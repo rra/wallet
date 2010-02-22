@@ -1,5 +1,4 @@
 # Wallet::Database -- Wallet system database connection management.
-# $Id$
 #
 # This module is a thin wrapper around DBI to handle determination of the
 # database driver and configuration settings automatically on connect.  The
@@ -7,7 +6,7 @@
 # like DBI objects in the rest of the code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -40,7 +39,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Core overrides
@@ -85,6 +84,9 @@ __END__
 
 Wallet::Dabase - Wrapper module for wallet database connections
 
+=for stopwords
+DBI RaiseError PrintError AutoCommit Allbery
+
 =head1 SYNOPSIS
 
     use Wallet::Database;
@@ -94,9 +96,9 @@ Wallet::Dabase - Wrapper module for wallet database connections
 
 Wallet::Database is a thin wrapper module around DBI that takes care of
 building a connect string and setting database options based on wallet
-configuration.  The only overriden method is connect().  All other methods
-should work the same as in DBI and Wallet::Database objects should be
-usable exactly as if they were DBI objects.
+configuration.  The only overridden method is connect().  All other
+methods should work the same as in DBI and Wallet::Database objects should
+be usable exactly as if they were DBI objects.
 
 connect() will obtain the database connection information from the wallet
 configuration; see Wallet::Config(3) for more details.  It will also
@@ -121,8 +123,8 @@ configuration.
 
 DBI(3), Wallet::Config(3)
 
-This module is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+This module is part of the wallet system.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
