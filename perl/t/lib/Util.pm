@@ -1,4 +1,4 @@
-# Util -- Utility class for wallet tests.
+# Utility class for wallet tests.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
@@ -16,7 +16,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 use Exporter ();
 @ISA    = qw(Exporter);

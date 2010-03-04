@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/keytab.t -- Tests for the keytab object implementation.
+# Tests for the keytab object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008, 2009, 2010

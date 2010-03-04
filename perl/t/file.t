@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/file.t -- Tests for the file object implementation.
+# Tests for the file object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008 Board of Trustees, Leland Stanford Jr. University

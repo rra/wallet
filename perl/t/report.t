@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/report.t -- Tests for the wallet reporting interface.
+# Tests for the wallet reporting interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University

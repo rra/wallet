@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/kadmin.t -- Tests for the kadmin object implementation.
+# Tests for the kadmin object implementation.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University

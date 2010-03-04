@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/config.t -- Tests for the wallet server configuration.
+# Tests for the wallet server configuration.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University

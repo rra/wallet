@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/admin.t -- Tests for wallet administrative interface.
+# Tests for wallet administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
