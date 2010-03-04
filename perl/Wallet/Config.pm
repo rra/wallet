@@ -14,7 +14,7 @@ use vars qw($PATH $VERSION);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 # Path to the config file to load.
 $PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
@@ -518,6 +518,15 @@ object, the object name, and the identity of the person doing the
 creation.  If it returns undef or the empty string, object creation will
 be allowed.  If it returns anything else, object creation is rejected and
 the return value is used as the error message.
+
+This function is also called for naming audits done via Wallet::Report
+to find any existing objects that violate a (possibly updated) naming
+policy.  In this case, the third argument (the identity of the person
+creating the object) will be undef.  As a general rule, if the third
+argument is undef, the function should apply the most liberal accepted
+naming policy so that the audit returns only objects that violate all
+naming policies, but some sites may wish different results for their audit
+reports.
 
 Please note that this return status is backwards from what one would
 normally expect.  A false value is success; a true value is failure with

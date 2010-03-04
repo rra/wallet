@@ -8,7 +8,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 32;
+use Test::More tests => 42;
 
 # Create a dummy class for Wallet::Report that prints what method was called
 # with its arguments and returns data for testing.
@@ -36,6 +36,13 @@ sub acls {
     print "acls @_\n";
     return if ($error or $empty);
     return ([ 1, 'ADMIN' ], [ 2, 'group/admins' ], [ 4, 'group/users' ]);
+}
+
+sub audit {
+    shift;
+    print "audit @_\n";
+    return if ($error or $empty);
+    return ([ file => 'unix-wallet-password' ]);
 }
 
 sub objects {
@@ -81,6 +88,7 @@ is ($out, "new\n", ' and nothing ran');
 
 # Check too few and too many arguments for every command.
 my %commands = (acls    => [0, 3],
+                audit   => [2, 2],
                 objects => [0, 2],
                 owners  => [2, 2]);
 for my $command (sort keys %commands) {
@@ -110,6 +118,10 @@ is ($err, '', 'List succeeds for ACLs');
 is ($out, "new\nacls entry foo foo\n"
     . "ADMIN (ACL ID: 1)\ngroup/admins (ACL ID: 2)\ngroup/users (ACL ID: 4)\n",
     ' and returns the right output');
+($out, $err) = run_report ('audit', 'objects', 'name');
+is ($err, '', 'Audit report succeeds');
+is ($out, "new\naudit objects name\nfile unix-wallet-password\n",
+    ' and returns the right output');
 ($out, $err) = run_report ('objects');
 is ($err, '', 'List succeeds for objects');
 is ($out, "new\nobjects \n"
@@ -128,24 +140,30 @@ is ($out, "new\nowners % %\nkrb5 admin\@EXAMPLE.COM\n",
 # Test error handling.
 $Wallet::Report::error = 1;
 ($out, $err) = run_report ('acls');
-is ($err, "some error\n", 'Error handling succeeds for list acls');
+is ($err, "some error\n", 'Error handling succeeds for acls');
 is ($out, "new\nacls \n", ' and calls the right methods');
+($out, $err) = run_report ('audit', 'objects', 'name');
+is ($err, "some error\n", 'Error handling succeeds for audit');
+is ($out, "new\naudit objects name\n", ' and calls the right methods');
 ($out, $err) = run_report ('objects');
-is ($err, "some error\n", 'Error handling succeeds for list objects');
+is ($err, "some error\n", 'Error handling succeeds for objects');
 is ($out, "new\nobjects \n", ' and calls the right methods');
 ($out, $err) = run_report ('owners', 'foo', 'bar');
-is ($err, "some error\n", 'Error handling succeeds for report owners');
+is ($err, "some error\n", 'Error handling succeeds for owners');
 is ($out, "new\nowners foo bar\n", ' and calls the right methods');
 
 # Test empty lists.
 $Wallet::Report::error = 0;
 $Wallet::Report::empty = 1;
 ($out, $err) = run_report ('acls');
-is ($err, '', 'list acls runs with an empty list and no errors');
+is ($err, '', 'acls runs with an empty list and no errors');
 is ($out, "new\nacls \n", ' and calls the right methods');
+($out, $err) = run_report ('audit', 'objects', 'name');
+is ($err, '', 'audit runs with an empty list and no errors');
+is ($out, "new\naudit objects name\n", ' and calls the right methods');
 ($out, $err) = run_report ('objects');
-is ($err, '', 'list objects runs with an empty list with no errors');
+is ($err, '', 'objects runs with an empty list with no errors');
 is ($out, "new\nobjects \n", ' and calls the right methods');
 ($out, $err) = run_report ('owners', 'foo', 'bar');
-is ($err, '', 'report owners runs with an empty list and no errors');
+is ($err, '', 'owners runs with an empty list and no errors');
 is ($out, "new\nowners foo bar\n", ' and calls the right methods');

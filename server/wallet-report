@@ -35,6 +35,16 @@ sub command {
         for my $acl (sort { $$a[1] cmp $$b[1] } @acls) {
             print "$$acl[1] (ACL ID: $$acl[0])\n";
         }
+    } elsif ($command eq 'audit') {
+        die "too many arguments to audit\n" if @args > 2;
+        die "too few arguments to audit\n" if @args < 2;
+        my @objects = $report->audit (@args);
+        if (!@objects and $report->error) {
+            die $report->error, "\n";
+        }
+        for my $object (@objects) {
+            print join (' ', @$object), "\n";
+        }
     } elsif ($command eq 'objects') {
         die "too many arguments to objects\n" if @args > 2;
         my @objects = $report->objects (@args);
@@ -128,6 +138,15 @@ The scheme must be an exact match, but the <identifier> string will match
 any identifier containing that string.
 
 =back
+
+=item audit objects name
+
+Returns all objects that violate the current site naming policy.  Objects
+will be listed in the form:
+
+    <type> <name>
+
+There will be one line per object.
 
 =item objects
 

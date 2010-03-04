@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 83;
+use Test::More tests => 88;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -165,6 +165,29 @@ is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
 @lines = $report->objects ('flag', 'unchanging');
 is (scalar (@lines), 0, ' and now there are no objects in the report');
 is ($report->error, undef, ' with no error');
+
+# The naming audit returns nothing if there's no naming policy.
+@lines = $report->audit ('objects', 'name');
+is (scalar (@lines), 0, 'Searching for naming violations finds none');
+is ($report->error, undef, ' with no error');
+
+# Set a naming policy and then look for objects that fail that policy.  We
+# have to deactivate this policy until now so that it doesn't prevent the
+# creation of that name originally, which is the reason for the variable
+# reference.
+our $naming_active = 1;
+package Wallet::Config;
+sub verify_name {
+    my ($type, $name) = @_;
+    return unless $naming_active;
+    return 'admin not allowed' if $name eq 'service/admin';
+    return;
+}
+package main;
+@lines = $report->audit ('objects', 'name');
+is (scalar (@lines), 1, 'Searching for naming violations finds one');
+is ($lines[0][0], 'base', ' and the first has the right type');
+is ($lines[0][1], 'service/admin', ' and the right name');
 
 # Clean up.
 $admin->destroy;

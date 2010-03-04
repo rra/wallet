@@ -20,7 +20,7 @@ use Wallet::Database;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -290,6 +290,43 @@ sub owners {
     return @lines;
 }
 
+##############################################################################
+# Auditing
+##############################################################################
+
+# Audit the database for violations of local policy.  Returns a list of
+# objects (as type and name pairs) or a list of ACLs.  On error and for no
+# matching entries, the empty list will be returned.  To distinguish between
+# an empty return and an error, call error(), which will return undef if there
+# was no error.
+sub audit {
+    my ($self, $type, $audit) = @_;
+    undef $self->{error};
+    unless (defined ($type) and defined ($audit)) {
+        $self->error ("type and audit not specified");
+        return;
+    }
+    if ($type eq 'objects') {
+        if ($audit eq 'name') {
+            return unless defined &Wallet::Config::verify_name;
+            my @objects = $self->objects;
+            my @results;
+            for my $object (@objects) {
+                my ($type, $name) = @$object;
+                my $error = Wallet::Config::verify_name ($type, $name);
+                push (@results, $object) if $error;
+            }
+            return @results;
+        } else {
+            $self->error ("unknown object audit: $audit");
+            return;
+        }
+    } else {
+        $self->error ("unknown audit type: $type");
+        return;
+    }
+}
+
 1;
 __DATA__
 
@@ -312,6 +349,7 @@ ACL ACLs wildcard Allbery SQL tuples
     for my $object (@objects) {
         print "@$object\n";
     }
+    @objects = $report->audit ('objects', 'name');
 
 =head1 DESCRIPTION
 
@@ -361,6 +399,20 @@ ID 1 and one with name C<group/admins> and ID 3, acls() with no arguments
 would return:
 
     ([ 1, 'ADMIN' ], [ 3, 'group/admins' ])
+
+Returns the empty list on failure.  An error can be distinguished from
+empty search results by calling error().  error() is guaranteed to return
+the error message if there was an error and undef if there was no error.
+
+=item audit(TYPE, AUDIT)
+
+Audits the wallet database for violations of local policy.  TYPE is the
+general class of thing to audit, and AUDIT is the specific audit to
+perform.  Currently, the only implemented type is C<objects> and the only
+audit is C<name>.  This returns a list of all objects, as references to
+pairs of type and name, that are not accepted by the verify_name()
+function defined in the wallet configuration.  See L<Wallet::Config> for
+more information.
 
 Returns the empty list on failure.  An error can be distinguished from
 empty search results by calling error().  error() is guaranteed to return
