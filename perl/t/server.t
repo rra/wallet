@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 341;
+use Test::More tests => 349;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -922,6 +922,21 @@ is ($server->autocreate ('base', 'host/default.stanford.edu'), undef,
 is ($server->error, 'base:host/default.stanford.edu rejected: host'
     . ' default.stanford.edu not in .example.edu domain',
     ' with the right error');
+
+# Ensure that we can't destroy an ACL that's in use.
+is ($server->acl_create ('test-destroy'), 1, 'Creating an ACL works');
+is ($server->create ('base', 'service/acl-user'), 1, 'Creating object works');
+is ($server->owner ('base', 'service/acl-user', 'test-destroy'), 1,
+    ' and setting owner');
+is ($server->acl_destroy ('test-destroy'), undef,
+    ' and now we cannot destroy that ACL');
+is ($server->error,
+    'cannot destroy ACL 9: ACL in use by base:service/acl-user',
+    ' with the right error');
+is ($server->owner ('base', 'service/acl-user', ''), 1,
+    ' but after we clear the owner');
+is ($server->acl_destroy ('test-destroy'), 1, ' now we can destroy the ACL');
+is ($server->destroy ('base', 'service/acl-user'), 1, ' and the object');
 
 # Clean up.
 $setup->destroy;

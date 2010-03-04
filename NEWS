@@ -2,6 +2,12 @@
 
 wallet 0.11 (unreleased)
 
+    When deleting an ACL on the server, verify that the ACL is not
+    referenced by any object first.  Database referential integrity should
+    also catch this, but not all database backends may enforce referential
+    integrity.  This also allows us to return a better error message
+    naming an object that's still using that ACL.
+
     Fix portability to older Kerberos libraries without
     krb5_free_error_message.
 
