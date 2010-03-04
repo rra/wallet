@@ -24,7 +24,7 @@ use Wallet::Kadmin ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ##############################################################################
 # Utility functions
@@ -254,7 +254,7 @@ Wallet::Kadmin::Heimdal - Wallet Kerberos administration API for Heimdal
 
 Wallet::Kadmin::Heimdal implements the Wallet::Kadmin API for Heimdal,
 providing an interface to create and delete principals and create keytabs.
-It provides the API documented in Wallet::Kadmin(3) for a Heimdal KDC.
+It provides the API documented in L<Wallet::Kadmin> for a Heimdal KDC.
 
 To use this class, several configuration parameters must be set.  See
 L<Wallet::Config/"KEYTAB OBJECT CONFIGURATION"> for details.

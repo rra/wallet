@@ -183,8 +183,8 @@ its actions.
 
 To use this object, several configuration variables must be set (at least
 the database configuration).  For information on those variables and how
-to set them, see Wallet::Config(3).  For more information on the normal
-user interface to the wallet server, see Wallet::Server(3).
+to set them, see L<Wallet::Config>.  For more information on the normal
+user interface to the wallet server, see L<Wallet::Server>.
 
 =head1 CLASS METHODS
 

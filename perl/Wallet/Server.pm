@@ -739,7 +739,7 @@ object.
 
 To use this object, several configuration variables must be set (at least
 the database configuration).  For information on those variables and how
-to set them, see Wallet::Config(3).
+to set them, see L<Wallet::Config>.
 
 =head1 CLASS METHODS
 

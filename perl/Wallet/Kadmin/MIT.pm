@@ -25,7 +25,7 @@ use Wallet::Kadmin ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # kadmin Interaction
@@ -275,7 +275,7 @@ Wallet::Kadmin::MIT - Wallet Kerberos administration API for MIT
 
 Wallet::Kadmin::MIT implements the Wallet::Kadmin API for MIT Kerberos,
 providing an interface to create and delete principals and create keytabs.
-It provides the API documented in Wallet::Kadmin(3) for an MIT Kerberos
+It provides the API documented in L<Wallet::Kadmin> for an MIT Kerberos
 KDC.
 
 MIT Kerberos does not provide any method via the kadmin network protocol

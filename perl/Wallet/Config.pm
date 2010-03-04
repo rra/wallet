@@ -90,7 +90,7 @@ Sets the Perl database driver to use for the wallet database.  Common
 values would be C<SQLite> or C<MySQL>.  Less common values would be
 C<Oracle>, C<Sybase>, or C<ODBC>.  The appropriate DBD::* Perl module for
 the chosen driver must be installed and will be dynamically loaded by the
-wallet.  For more information, see DBI(3).
+wallet.  For more information, see L<DBI>.
 
 This variable must be set.
 
@@ -104,7 +104,7 @@ Sets the remaining contents for the DBI DSN (everything after the driver).
 Using this variable provides full control over the connect string passed
 to DBI.  When using SQLite, set this variable to the path to the SQLite
 database.  If this variable is set, DB_NAME, DB_HOST, and DB_PORT are
-ignored.  For more information, see DBI(3) and the documentation for the
+ignored.  For more information, see L<DBI> and the documentation for the
 database driver you're using.
 
 Either DB_INFO or DB_NAME must be set.  If you don't need to pass any
@@ -119,7 +119,7 @@ our $DB_INFO;
 If DB_INFO is not set, specifies the database name.  The third part of the
 DBI connect string will be set to C<database=DB_NAME>, possibly with a
 host and port appended if DB_HOST and DB_PORT are set.  For more
-information, see DBI(3) and the documentation for the database driver
+information, see L<DBI> and the documentation for the database driver
 you're using.
 
 Either DB_INFO or DB_NAME must be set.
@@ -131,7 +131,7 @@ our $DB_NAME;
 =item DB_HOST
 
 If DB_INFO is not set, specifies the database host.  C<;host=DB_HOST> will
-be appended to the DBI connect string.  For more information, see DBI(3)
+be appended to the DBI connect string.  For more information, see L<DBI>
 and the documentation for the database driver you're using.
 
 =cut
@@ -142,7 +142,7 @@ our $DB_HOST;
 
 If DB_PORT is not set, specifies the database port.  C<;port=DB_PORT> will
 be appended to the DBI connect string.  If this variable is set, DB_HOST
-should also be set.  For more information, see DBI(3) and the
+should also be set.  For more information, see L<DBI> and the
 documentation for the database driver you're using.
 
 =cut
@@ -179,7 +179,7 @@ C<file> object type (the Wallet::Object::File class).
 =item FILE_BUCKET
 
 The directory into which to store file objects.  File objects will be
-stored in subdirectories of this directory.  See Wallet::Object::File(3)
+stored in subdirectories of this directory.  See L<Wallet::Object::File>
 for the full details of the naming scheme.  This directory must be
 writable by the wallet server and the wallet server must be able to create
 subdirectories of it.
