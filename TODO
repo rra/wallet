@@ -38,7 +38,8 @@ Server Interface:
 
  * Provide an interface to mass-change all instances of one ACL to another.
 
- * Add a help function to wallet-backend listing the commands.
+ * Add help functions to wallet-backend, wallet-report, and wallet-admin
+   listing the commands.
 
  * Catch exceptions on object creation in wallet-backend so that we can
    log those as well.
