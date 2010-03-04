@@ -173,21 +173,21 @@ The currently supported object search types are:
 
 =over 4
 
-=item list objects acl <acl>
+=item objects acl <acl>
 
 Returns all objects for which the given ACL name or ID has any
 permissions.  This includes those objects owned by the ACL as well as
 those where that ACL has any other, more limited permissions.
 
-=item list objects flag <flag>
+=item objects flag <flag>
 
 Returns all objects which have the given flag set.
 
-=item list objects owner <acl>
+=item objects owner <acl>
 
 Returns all objects owned by the given ACL name or ID.
 
-=item list objects type <type>
+=item objects type <type>
 
 Returns all objects of the given type.
 
