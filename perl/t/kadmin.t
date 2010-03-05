@@ -81,6 +81,9 @@ SKIP: {
     $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP       = '.';
 
+    # Don't destroy the user's Kerberos ticket cache.
+    $ENV{KRB5CCNAME} = 'krb5cc_test';
+
     # Create the object and clean up the principal we're going to use.
     $kadmin = eval { Wallet::Kadmin->new };
     ok (defined $kadmin, 'Creating Wallet::Kadmin object succeeds');
