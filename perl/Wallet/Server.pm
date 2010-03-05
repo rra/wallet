@@ -777,9 +777,9 @@ also returns undef, that ACL wasn't set; otherwise, error() will return
 the error message.
 
 If ID is given, sets the specified ACL to ID, which can be either the name
-of an ACL or a numeric ACL ID.  To set an ACL, the current user must be
-authorized by the ADMIN ACL.  Returns true for success and false for
-failure.
+of an ACL or a numeric ACL ID.  To clear the ACL, pass in an empty string
+as the ID.  To set or clear an ACL, the current user must be authorized by
+the ADMIN ACL.  Returns true for success and false for failure.
 
 ACL settings are checked before the owner and override the owner setting.
 
