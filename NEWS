@@ -12,6 +12,9 @@ wallet 0.11 (unreleased)
     which returns all objects that do not pass the local naming policy.
     The corresponding Wallet::Report method is audit().
 
+    Add the acls unused report to wallet-report and Wallet::Report,
+    returning all ACLs not referenced by any database objects.
+
     Wallet::Config::verify_name may now be called with an undefined third
     argument (normally the user attempting to create an object).  This
     calling convention is used when auditing, and the local policy

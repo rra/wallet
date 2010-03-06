@@ -110,6 +110,8 @@ B<wallet-report> takes no traditional options.
 
 =item acls entry <scheme> <identifier>
 
+=item acls unused
+
 Returns a list of ACLs in the database.  ACLs will be listed in the form:
 
     <name> (ACL ID: <id>)
@@ -136,6 +138,11 @@ can be destroyed.
 Returns all ACLs containing an entry with given scheme and identifier.
 The scheme must be an exact match, but the <identifier> string will match
 any identifier containing that string.
+
+=item acls unused
+
+Returns all ACLs that are not referenced by any of the objects in the
+wallet database, either as an owner or on one of the more specific ACLs.
 
 =back
 

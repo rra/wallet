@@ -195,7 +195,8 @@ sub acls_all {
 sub acls_empty {
     my ($self) = @_;
     my $sql = 'select ac_id, ac_name from acls left join acl_entries
-        on (acls.ac_id = acl_entries.ae_id) where ae_id is null';
+        on (acls.ac_id = acl_entries.ae_id) where ae_id is null order by
+        ac_id';
     return ($sql);
 }
 
@@ -208,6 +209,18 @@ sub acls_entry {
         on (ae_id = ac_id) where ae_scheme = ? and ae_identifier like ? order
         by ac_id';
     return ($sql, $type, '%' . $identifier . '%');
+}
+
+# Returns the SQL statement required to find unused ACLs.
+sub acls_unused {
+    my ($self) = @_;
+    my $sql = 'select ac_id, ac_name from acls where not ac_id in (select
+        ob_owner from objects where ob_owner = ac_id)';
+    for my $acl (qw/get store show destroy flags/) {
+        $sql .= " and not ac_id in (select ob_acl_$acl from objects where
+            ob_acl_$acl = ac_id)";
+    }
+    return ($sql);
 }
 
 # Returns a list of all ACLs stored in the wallet database as a list of pairs
@@ -234,8 +247,10 @@ sub acls {
             }
         } elsif ($type eq 'empty') {
             ($sql) = $self->acls_empty;
+        } elsif ($type eq 'unused') {
+            ($sql) = $self->acls_unused;
         } else {
-            $self->error ("do not know search type: $type");
+            $self->error ("unknown search type: $type");
             return;
         }
     }
@@ -387,11 +402,12 @@ between an empty report and an error.
 
 Returns a list of all ACLs matching a search type and string in the
 database, or all ACLs if no search information is given.  There are
-currently two search types.  C<empty> takes no arguments and will return
+currently three search types.  C<empty> takes no arguments and will return
 only those ACLs that have no entries within them.  C<entry> takes two
 arguments, an entry scheme and a (possibly partial) entry identifier, and
 will return any ACLs containing an entry with that scheme and with an
-identifier containing that value.
+identifier containing that value.  C<unused> returns all ACLs that are not
+referenced by any object.
 
 The return value is a list of references to pairs of ACL ID and name.  For
 example, if there are two ACLs in the database, one with name C<ADMIN> and

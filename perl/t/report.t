@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 88;
+use Test::More tests => 148;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -165,6 +165,41 @@ is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
 @lines = $report->objects ('flag', 'unchanging');
 is (scalar (@lines), 0, ' and now there are no objects in the report');
 is ($report->error, undef, ' with no error');
+
+# All of our ACLs should be in use.
+@lines = $report->acls ('unused');
+is (scalar (@lines), 0, 'Searching for unused ACLs returns nothing');
+is ($report->error, undef, ' with no error');
+
+# Create some unused ACLs that should show up in the report.
+is ($server->acl_create ('third'), 1, 'Creating an empty ACL succeeds');
+is ($server->acl_create ('fourth'), 1, ' and creating another succeeds');
+@lines = $report->acls ('unused');
+is (scalar (@lines), 2, ' and now we see two unused ACLs');
+is ($server->error, undef, ' with no error');
+is ($lines[0][0], 4, ' and the first has the right ID');
+is ($lines[0][1], 'third', ' and the right name');
+is ($lines[1][0], 5, ' and the second has the right ID');
+is ($lines[1][1], 'fourth', ' and the right name');
+
+# Use one of those ACLs and ensure it drops out of the report.  Test that we
+# try all of the possible ACL types.
+for my $type (qw/get store show destroy flags/) {
+    is ($server->acl ('base', 'service/admin', $type, 'fourth'), 1,
+        "Setting ACL $type to fourth succeeds");
+    @lines = $report->acls ('unused');
+    is (scalar (@lines), 1, ' and now we see only one unused ACL');
+    is ($lines[0][0], 4, ' with the right ID');
+    is ($lines[0][1], 'third', ' and the right name');
+    is ($server->acl ('base', 'service/admin', $type, ''), 1,
+        ' and clearing the ACL succeeds');
+    @lines = $report->acls ('unused');
+    is (scalar (@lines), 2, ' and now we see two unused ACLs');
+    is ($lines[0][0], 4, ' and the first has the right ID');
+    is ($lines[0][1], 'third', ' and the right name');
+    is ($lines[1][0], 5, ' and the second has the right ID');
+    is ($lines[1][1], 'fourth', ' and the right name');
+}
 
 # The naming audit returns nothing if there's no naming policy.
 @lines = $report->audit ('objects', 'name');
