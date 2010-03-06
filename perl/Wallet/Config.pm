@@ -513,8 +513,8 @@ By default, wallet permits administrators to create objects of any name
 (unless the object backend rejects the name).  However, naming standards
 for objects can be enforced, even for administrators, by defining a Perl
 function in the configuration file named verify_name.  If such a function
-exists, it will be called for any object creation and given the type of
-object, the object name, and the identity of the person doing the
+exists, it will be called for any object creation and will be passed the
+type of object, the object name, and the identity of the person doing the
 creation.  If it returns undef or the empty string, object creation will
 be allowed.  If it returns anything else, object creation is rejected and
 the return value is used as the error message.
@@ -549,7 +549,42 @@ keytab objects for particular principals have fully-qualified hostnames:
     }
 
 Objects that aren't of type C<keytab> or which aren't for a host-based key
-have no naming requirements enforced.
+have no naming requirements enforced by this example.
+
+=head1 ACL NAMING ENFORCEMENT
+
+Similar to object names, by default wallet permits administrators to
+create ACLs with any name.  However, naming standards for ACLs can be
+enforced by defining a Perl function in the configuration file named
+verify_acl_name.  If such a function exists, it will be called for any ACL
+creation or rename and will be passed given the new ACL name and the
+identity of the person doing the creation.  If it returns undef or the
+empty string, object creation will be allowed.  If it returns anything
+else, object creation is rejected and the return value is used as the
+error message.
+
+Please note that this return status is backwards from what one would
+normally expect.  A false value is success; a true value is failure with
+an error message.
+
+For example, the following verify_acl_name function would ensure that any
+ACLs created contain a slash and the part before the slash be one of
+C<host>, C<group>, C<user>, or C<service>.
+
+    sub verify_acl_name {
+        my ($name, $user) = @_;
+        return 'ACL names must contain a slash' unless $name =~ m,/,;
+        my ($first, $rest) = split ('/', $name, 2);
+        my %types = map { $_ => 1 } qw(host group user service);
+        unless ($types{$first}) {
+            return "unknown ACL type $first";
+        }
+        return;
+    }
+
+Obvious improvements could be made, such as checking that the part after
+the slash for a C<host/> ACL looked like a host name and the part after a
+slash for a C<user/> ACL look like a user name.
 
 =head1 ENVIRONMENT
 

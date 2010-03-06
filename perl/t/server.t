@@ -3,11 +3,11 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 349;
+use Test::More tests => 355;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -937,6 +937,26 @@ is ($server->owner ('base', 'service/acl-user', ''), 1,
     ' but after we clear the owner');
 is ($server->acl_destroy ('test-destroy'), 1, ' now we can destroy the ACL');
 is ($server->destroy ('base', 'service/acl-user'), 1, ' and the object');
+
+# Test ACL naming enforcement.  Require that ACL names not contain a slash.
+package Wallet::Config;
+sub verify_acl_name {
+    my ($name, $user) = @_;
+    return 'ACL names may not contain slash' if $name =~ m,/,;
+    return;
+}
+package main;
+is ($server->acl_create ('test/naming'), undef,
+    'Creating an ACL with a disallowed name fails');
+is ($server->error, 'test/naming rejected: ACL names may not contain slash',
+    ' with the right error message');
+is ($server->acl_create ('test-naming'), 1,
+    'Creating test-naming succeeds');
+is ($server->acl_rename ('test-naming', 'test/naming'), undef,
+    ' but renaming it fails');
+is ($server->error, 'test/naming rejected: ACL names may not contain slash',
+    ' with the right error message');
+is ($server->acl_destroy ('test-naming'), 1, 'Destroying it succeeds');
 
 # Clean up.
 $setup->destroy;

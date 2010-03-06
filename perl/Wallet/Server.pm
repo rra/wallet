@@ -23,7 +23,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 ##############################################################################
 # Utility methods
@@ -536,9 +536,16 @@ sub acl_create {
         $self->error ("$self->{user} not authorized to create ACL");
         return;
     }
-    my $dbh = $self->{dbh};
     my $user = $self->{user};
     my $host = $self->{host};
+    if (defined (&Wallet::Config::verify_acl_name)) {
+        my $error = Wallet::Config::verify_acl_name ($name, $user);
+        if ($error) {
+            $self->error ("$name rejected: $error");
+            return;
+        }
+    }
+    my $dbh = $self->{dbh};
     my $acl = eval { Wallet::ACL->create ($name, $dbh, $user, $host) };
     if ($@) {
         $self->error ($@);
@@ -619,6 +626,13 @@ sub acl_rename {
     if ($acl->name eq 'ADMIN') {
         $self->error ('cannot rename the ADMIN ACL');
         return;
+    }
+    if (defined (&Wallet::Config::verify_acl_name)) {
+        my $error = Wallet::Config::verify_acl_name ($name, $self->{user});
+        if ($error) {
+            $self->error ("$name rejected: $error");
+            return;
+        }
     }
     unless ($acl->rename ($name)) {
         $self->error ($acl->error);

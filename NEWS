@@ -8,6 +8,11 @@ wallet 0.11 (unreleased)
     integrity.  This also allows us to return a better error message
     naming an object that's still using that ACL.
 
+    Wallet::Config now supports an additional local function,
+    verify_acl_name, which can be used to enforce ACL naming policies.  If
+    set, it is called for any ACL creation or rename and can reject the
+    new ACL name.
+
     Add an audit command to wallet-report and one audit: objects name,
     which returns all objects that do not pass the local naming policy.
     The corresponding Wallet::Report method is audit().
