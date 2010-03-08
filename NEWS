@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.11 (unreleased)
+wallet 0.11 (2010-03-08)
 
     When deleting an ACL on the server, verify that the ACL is not
     referenced by any object first.  Database referential integrity should
