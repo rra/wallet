@@ -310,10 +310,10 @@ sub owners {
 ##############################################################################
 
 # Audit the database for violations of local policy.  Returns a list of
-# objects (as type and name pairs) or a list of ACLs.  On error and for no
-# matching entries, the empty list will be returned.  To distinguish between
-# an empty return and an error, call error(), which will return undef if there
-# was no error.
+# objects (as type and name pairs) or a list of ACLs (as ID and name pairs).
+# On error and for no matching entries, the empty list will be returned.  To
+# distinguish between an empty return and an error, call error(), which will
+# return undef if there was no error.
 sub audit {
     my ($self, $type, $audit) = @_;
     undef $self->{error};
@@ -334,6 +334,20 @@ sub audit {
             return @results;
         } else {
             $self->error ("unknown object audit: $audit");
+            return;
+        }
+    } elsif ($type eq 'acls') {
+        if ($audit eq 'name') {
+            return unless defined &Wallet::Config::verify_acl_name;
+            my @acls = $self->acls;
+            my @results;
+            for my $acl (@acls) {
+                my $error = Wallet::Config::verify_acl_name ($acl->[1]);
+                push (@results, $acl) if $error;
+            }
+            return @results;
+        } else {
+            $self->error ("unknown acl audit: $audit");
             return;
         }
     } else {
@@ -424,11 +438,12 @@ the error message if there was an error and undef if there was no error.
 
 Audits the wallet database for violations of local policy.  TYPE is the
 general class of thing to audit, and AUDIT is the specific audit to
-perform.  Currently, the only implemented type is C<objects> and the only
-audit is C<name>.  This returns a list of all objects, as references to
-pairs of type and name, that are not accepted by the verify_name()
-function defined in the wallet configuration.  See L<Wallet::Config> for
-more information.
+perform.  TYPE may be either C<objects> or C<acls>.  Currently, the only
+implemented audit is C<name>.  This returns a list of all objects, as
+references to pairs of type and name, or ACLs, as references to pairs of
+ID and name, that are not accepted by the verify_name() or
+verify_acl_name() function defined in the wallet configuration.  See
+L<Wallet::Config> for more information.
 
 Returns the empty list on failure.  An error can be distinguished from
 empty search results by calling error().  error() is guaranteed to return

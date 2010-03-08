@@ -563,6 +563,14 @@ empty string, object creation will be allowed.  If it returns anything
 else, object creation is rejected and the return value is used as the
 error message.
 
+This function is also called for naming audits done via Wallet::Report to
+find any existing objects that violate a (possibly updated) naming policy.
+In this case, the second argument (the identity of the person creating the
+ACL) will be undef.  As a general rule, if the second argument is undef,
+the function should apply the most liberal accepted naming policy so that
+the audit returns only ACLs that violate all naming policies, but some
+sites may wish different results for their audit reports.
+
 Please note that this return status is backwards from what one would
 normally expect.  A false value is success; a true value is failure with
 an error message.

@@ -8,7 +8,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 42;
+use Test::More tests => 44;
 
 # Create a dummy class for Wallet::Report that prints what method was called
 # with its arguments and returns data for testing.
@@ -42,7 +42,13 @@ sub audit {
     shift;
     print "audit @_\n";
     return if ($error or $empty);
-    return ([ file => 'unix-wallet-password' ]);
+    if ($_[0] eq 'objects') {
+        return ([ file => 'unix-wallet-password' ]);
+    } elsif ($_[0] eq 'acls') {
+        return ([ 2, 'group/admins' ]);
+    } else {
+        return;
+    }
 }
 
 sub objects {
@@ -119,8 +125,12 @@ is ($out, "new\nacls entry foo foo\n"
     . "ADMIN (ACL ID: 1)\ngroup/admins (ACL ID: 2)\ngroup/users (ACL ID: 4)\n",
     ' and returns the right output');
 ($out, $err) = run_report ('audit', 'objects', 'name');
-is ($err, '', 'Audit report succeeds');
+is ($err, '', 'Object audit report succeeds');
 is ($out, "new\naudit objects name\nfile unix-wallet-password\n",
+    ' and returns the right output');
+($out, $err) = run_report ('audit', 'acls', 'name');
+is ($err, '', 'ACL audit report succeeds');
+is ($out, "new\naudit acls name\ngroup/admins (ACL ID: 2)\n",
     ' and returns the right output');
 ($out, $err) = run_report ('objects');
 is ($err, '', 'List succeeds for objects');

@@ -38,12 +38,16 @@ sub command {
     } elsif ($command eq 'audit') {
         die "too many arguments to audit\n" if @args > 2;
         die "too few arguments to audit\n" if @args < 2;
-        my @objects = $report->audit (@args);
-        if (!@objects and $report->error) {
+        my @result = $report->audit (@args);
+        if (!@result and $report->error) {
             die $report->error, "\n";
         }
-        for my $object (@objects) {
-            print join (' ', @$object), "\n";
+        for my $item (@result) {
+            if ($args[0] eq 'acls') {
+                print "$$item[1] (ACL ID: $$item[0])\n";
+            } else {
+                print join (' ', @$item), "\n";
+            }
         }
     } elsif ($command eq 'objects') {
         die "too many arguments to objects\n" if @args > 2;
@@ -146,14 +150,22 @@ wallet database, either as an owner or on one of the more specific ACLs.
 
 =back
 
+=item audit acls name
+
 =item audit objects name
 
-Returns all objects that violate the current site naming policy.  Objects
-will be listed in the form:
+Returns all ACLs or objects that violate the current site naming policy.
+Objects will be listed in the form:
 
     <type> <name>
 
-There will be one line per object.
+and ACLs in the form:
+
+    <name> (ACL ID: <id>)
+
+where <name> is the human-readable name and <id> is the numeric ID.  The
+numeric ID is what's used internally by the wallet system.  There will be
+one line per object or ACL.
 
 =item objects
 

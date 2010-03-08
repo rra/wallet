@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 148;
+use Test::More tests => 151;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -223,6 +223,21 @@ package main;
 is (scalar (@lines), 1, 'Searching for naming violations finds one');
 is ($lines[0][0], 'base', ' and the first has the right type');
 is ($lines[0][1], 'service/admin', ' and the right name');
+
+# Set an ACL naming policy and then look for objects that fail that policy.
+# Use the same deactivation trick as above.
+package Wallet::Config;
+sub verify_acl_name {
+    my ($name) = @_;
+    return unless $naming_active;
+    return 'second not allowed' if $name eq 'second';
+    return;
+}
+package main;
+@lines = $report->audit ('acls', 'name');
+is (scalar (@lines), 1, 'Searching for ACL naming violations finds one');
+is ($lines[0][0], 3, ' and the first has the right ID');
+is ($lines[0][1], 'second', ' and the right name');
 
 # Clean up.
 $admin->destroy;

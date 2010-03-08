@@ -13,9 +13,10 @@ wallet 0.11 (unreleased)
     set, it is called for any ACL creation or rename and can reject the
     new ACL name.
 
-    Add an audit command to wallet-report and one audit: objects name,
-    which returns all objects that do not pass the local naming policy.
-    The corresponding Wallet::Report method is audit().
+    Add an audit command to wallet-report and two audits: acls name, which
+    returns all ACLs that do not pass the local naming policy, and objects
+    name, which does the same for objects.  The corresponding
+    Wallet::Report method is audit().
 
     Add the acls unused report to wallet-report and Wallet::Report,
     returning all ACLs not referenced by any database objects.
