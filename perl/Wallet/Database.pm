@@ -39,7 +39,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Core overrides
@@ -101,7 +101,7 @@ methods should work the same as in DBI and Wallet::Database objects should
 be usable exactly as if they were DBI objects.
 
 connect() will obtain the database connection information from the wallet
-configuration; see Wallet::Config(3) for more details.  It will also
+configuration; see L<Wallet::Config> for more details.  It will also
 automatically set the RaiseError attribute to true and the PrintError and
 AutoCommit attributes to false, matching the assumptions made by the
 wallet database code.

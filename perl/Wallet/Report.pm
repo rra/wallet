@@ -20,7 +20,7 @@ use Wallet::Database;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -195,7 +195,8 @@ sub acls_all {
 sub acls_empty {
     my ($self) = @_;
     my $sql = 'select ac_id, ac_name from acls left join acl_entries
-        on (acls.ac_id = acl_entries.ae_id) where ae_id is null';
+        on (acls.ac_id = acl_entries.ae_id) where ae_id is null order by
+        ac_id';
     return ($sql);
 }
 
@@ -208,6 +209,18 @@ sub acls_entry {
         on (ae_id = ac_id) where ae_scheme = ? and ae_identifier like ? order
         by ac_id';
     return ($sql, $type, '%' . $identifier . '%');
+}
+
+# Returns the SQL statement required to find unused ACLs.
+sub acls_unused {
+    my ($self) = @_;
+    my $sql = 'select ac_id, ac_name from acls where not ac_id in (select
+        ob_owner from objects where ob_owner = ac_id)';
+    for my $acl (qw/get store show destroy flags/) {
+        $sql .= " and not ac_id in (select ob_acl_$acl from objects where
+            ob_acl_$acl = ac_id)";
+    }
+    return ($sql);
 }
 
 # Returns a list of all ACLs stored in the wallet database as a list of pairs
@@ -234,8 +247,10 @@ sub acls {
             }
         } elsif ($type eq 'empty') {
             ($sql) = $self->acls_empty;
+        } elsif ($type eq 'unused') {
+            ($sql) = $self->acls_unused;
         } else {
-            $self->error ("do not know search type: $type");
+            $self->error ("unknown search type: $type");
             return;
         }
     }
@@ -290,6 +305,57 @@ sub owners {
     return @lines;
 }
 
+##############################################################################
+# Auditing
+##############################################################################
+
+# Audit the database for violations of local policy.  Returns a list of
+# objects (as type and name pairs) or a list of ACLs (as ID and name pairs).
+# On error and for no matching entries, the empty list will be returned.  To
+# distinguish between an empty return and an error, call error(), which will
+# return undef if there was no error.
+sub audit {
+    my ($self, $type, $audit) = @_;
+    undef $self->{error};
+    unless (defined ($type) and defined ($audit)) {
+        $self->error ("type and audit not specified");
+        return;
+    }
+    if ($type eq 'objects') {
+        if ($audit eq 'name') {
+            return unless defined &Wallet::Config::verify_name;
+            my @objects = $self->objects;
+            my @results;
+            for my $object (@objects) {
+                my ($type, $name) = @$object;
+                my $error = Wallet::Config::verify_name ($type, $name);
+                push (@results, $object) if $error;
+            }
+            return @results;
+        } else {
+            $self->error ("unknown object audit: $audit");
+            return;
+        }
+    } elsif ($type eq 'acls') {
+        if ($audit eq 'name') {
+            return unless defined &Wallet::Config::verify_acl_name;
+            my @acls = $self->acls;
+            my @results;
+            for my $acl (@acls) {
+                my $error = Wallet::Config::verify_acl_name ($acl->[1]);
+                push (@results, $acl) if $error;
+            }
+            return @results;
+        } else {
+            $self->error ("unknown acl audit: $audit");
+            return;
+        }
+    } else {
+        $self->error ("unknown audit type: $type");
+        return;
+    }
+}
+
 1;
 __DATA__
 
@@ -312,6 +378,7 @@ ACL ACLs wildcard Allbery SQL tuples
     for my $object (@objects) {
         print "@$object\n";
     }
+    @objects = $report->audit ('objects', 'name');
 
 =head1 DESCRIPTION
 
@@ -322,8 +389,8 @@ tuples identifying objects, ACLs, or ACL entries.
 
 To use this object, several configuration variables must be set (at least
 the database configuration).  For information on those variables and how
-to set them, see Wallet::Config(3).  For more information on the normal
-user interface to the wallet server, see Wallet::Server(3).
+to set them, see L<Wallet::Config>.  For more information on the normal
+user interface to the wallet server, see L<Wallet::Server>.
 
 =head1 CLASS METHODS
 
@@ -349,11 +416,12 @@ between an empty report and an error.
 
 Returns a list of all ACLs matching a search type and string in the
 database, or all ACLs if no search information is given.  There are
-currently two search types.  C<empty> takes no arguments and will return
+currently three search types.  C<empty> takes no arguments and will return
 only those ACLs that have no entries within them.  C<entry> takes two
 arguments, an entry scheme and a (possibly partial) entry identifier, and
 will return any ACLs containing an entry with that scheme and with an
-identifier containing that value.
+identifier containing that value.  C<unused> returns all ACLs that are not
+referenced by any object.
 
 The return value is a list of references to pairs of ACL ID and name.  For
 example, if there are two ACLs in the database, one with name C<ADMIN> and
@@ -361,6 +429,21 @@ ID 1 and one with name C<group/admins> and ID 3, acls() with no arguments
 would return:
 
     ([ 1, 'ADMIN' ], [ 3, 'group/admins' ])
+
+Returns the empty list on failure.  An error can be distinguished from
+empty search results by calling error().  error() is guaranteed to return
+the error message if there was an error and undef if there was no error.
+
+=item audit(TYPE, AUDIT)
+
+Audits the wallet database for violations of local policy.  TYPE is the
+general class of thing to audit, and AUDIT is the specific audit to
+perform.  TYPE may be either C<objects> or C<acls>.  Currently, the only
+implemented audit is C<name>.  This returns a list of all objects, as
+references to pairs of type and name, or ACLs, as references to pairs of
+ID and name, that are not accepted by the verify_name() or
+verify_acl_name() function defined in the wallet configuration.  See
+L<Wallet::Config> for more information.
 
 Returns the empty list on failure.  An error can be distinguished from
 empty search results by calling error().  error() is guaranteed to return

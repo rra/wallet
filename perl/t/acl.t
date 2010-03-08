@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/api.t -- Tests for the wallet ACL API.
+# Tests for the wallet ACL API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University

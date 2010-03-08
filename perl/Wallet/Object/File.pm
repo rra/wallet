@@ -24,7 +24,7 @@ use Wallet::Object::Base;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # File naming
@@ -159,7 +159,7 @@ it when the file object is deleted.  A file object must be stored before
 it can be retrieved with get.
 
 To use this object, the configuration option specifying where on the
-wallet server to store file objects must be set.  See Wallet::Config(3)
+wallet server to store file objects must be set.  See L<Wallet::Config>
 for details on this configuration parameter and information about how to
 set wallet configuration.
 

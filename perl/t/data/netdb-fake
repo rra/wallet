@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# netdb-fake -- Fake NetDB remctl interface.
+# Fake NetDB remctl interface.
 #
 # This netdb-fake script is meant to be run by remctld during testing of
 # the NetDB ACL verifier.  It returns known roles or errors for different

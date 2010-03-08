@@ -10,9 +10,8 @@
  */
 
 #include <config.h>
+#include <portable/krb5.h>
 #include <portable/system.h>
-
-#include <krb5.h>
 
 #include <client/internal.h>
 #include <util/messages-krb5.h>

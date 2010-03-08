@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/schema.t -- Tests for the wallet schema class.
+# Tests for the wallet schema class.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University

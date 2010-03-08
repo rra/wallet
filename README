@@ -1,4 +1,4 @@
-                           wallet release 0.10
+                           wallet release 0.11
                      (secure data management system)
 
                 Written by Russ Allbery <rra@stanford.edu>
@@ -64,8 +64,7 @@ REQUIREMENTS
 
       http://www.eyrie.org/~eagle/software/remctl/
 
-  The wallet client currently requires MIT Kerberos and will need some
-  minor portability modifications to build with Heimdal.
+  The wallet client will build with either MIT Kerberos or Heimdal.
 
   The wallet server is written in Perl and requires Perl 5.6.0 or later.
   It uses the Perl DBI layer to talk to a database, and therefore the DBI
