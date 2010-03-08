@@ -1,3 +1,13 @@
+wallet (0.11-1) unstable; urgency=low
+
+  * New upstream release.
+    - Verify that deleted ACLs are not referenced.
+    - Add Wallet::Config verify_acl_name function to check ACL names.
+    - Add audit command to wallet-report to check for naming violations.
+    - Add acl unused report to wallet-report.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 08 Mar 2010 10:59:00 -0800
+
 wallet (0.10-1) unstable; urgency=low
 
   * New upstream release.
