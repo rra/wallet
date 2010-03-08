@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/verifier.t -- Tests for the basic wallet ACL verifiers.
+# Tests for the basic wallet ACL verifiers.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
@@ -39,8 +39,8 @@ is ($verifier->error, 'no principal specified', ' and right error');
 is ($verifier->check ('rra@stanford.edu', ''), undef, 'Empty ACL');
 is ($verifier->error, 'malformed krb5 ACL', ' and right error');
 
-# Tests for unchanging support.  Skip these if we don't have a keytab or if we
-# can't find remctld.
+# Tests for the NetDB verifiers.  Skip these if we don't have a keytab or if
+# we can't find remctld.
 SKIP: {
     skip 'no keytab configuration', 34 unless -f 't/data/test.keytab';
     my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');

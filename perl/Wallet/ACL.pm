@@ -21,7 +21,7 @@ use POSIX qw(strftime);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 ##############################################################################
 # Constructors
@@ -191,11 +191,25 @@ sub rename {
 
 # Destroy the ACL, deleting it out of the database.  Returns true on success,
 # false on failure.
+#
+# Checks to ensure that the ACL is not referenced anywhere in the database,
+# since we may not have referential integrity enforcement.  It's not clear
+# that this is the right place to do this; it's a bit of an abstraction
+# violation, since it's a query against the object table.
 sub destroy {
     my ($self, $user, $host, $time) = @_;
     $time ||= time;
     eval {
-        my $sql = 'delete from acl_entries where ae_id = ?';
+        my $sql = 'select ob_type, ob_name from objects where ob_owner = ?
+            or ob_acl_get = ? or ob_acl_store = ? or ob_acl_show = ? or
+            ob_acl_destroy = ? or ob_acl_flags = ?';
+        my $sth = $self->{dbh}->prepare ($sql);
+        $sth->execute (($self->{id}) x 6);
+        my $entry = $sth->fetchrow_arrayref;
+        if (defined $entry) {
+            die "ACL in use by $entry->[0]:$entry->[1]";
+        }
+        $sql = 'delete from acl_entries where ae_id = ?';
         $self->{dbh}->do ($sql, undef, $self->{id});
         $sql = 'delete from acls where ac_id = ?';
         $self->{dbh}->do ($sql, undef, $self->{id});
@@ -525,13 +539,13 @@ array context and undef in scalar context.
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 
-Destroys this ACL from the database.  Note that this will fail due to
-integrity constraint errors if the ACL is still referenced by any object;
-the ACL must be removed from all objects first.  Returns true on success
-and false on failure.  On failure, the caller should call error() to get
-the error message.  PRINCIPAL, HOSTNAME, and DATETIME are stored as
-history information.  PRINCIPAL should be the user who is destroying the
-ACL.  If DATETIME isn't given, the current time is used.
+Destroys this ACL from the database.  Note that this will fail if the ACL
+is still referenced by any object; the ACL must be removed from all
+objects first.  Returns true on success and false on failure.  On failure,
+the caller should call error() to get the error message.  PRINCIPAL,
+HOSTNAME, and DATETIME are stored as history information.  PRINCIPAL
+should be the user who is destroying the ACL.  If DATETIME isn't given,
+the current time is used.
 
 =item error()
 

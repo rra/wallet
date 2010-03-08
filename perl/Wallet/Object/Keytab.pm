@@ -25,7 +25,7 @@ use Wallet::Kadmin;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 ##############################################################################
 # Enctype restriction
@@ -379,7 +379,7 @@ This implementation generates a new random key (and hence invalidates all
 existing keytabs) each time the keytab is retrieved with the get() method.
 
 To use this object, several configuration parameters must be set.  See
-Wallet::Config(3) for details on those configuration parameters and
+L<Wallet::Config> for details on those configuration parameters and
 information about how to set wallet configuration.
 
 =head1 METHODS
@@ -456,7 +456,7 @@ configuration.  If the principal already exists, create() still succeeds
 wallet).  Otherwise, if the Kerberos principal could not be created,
 create() fails.  The principal is created with the randomized keys.  NAME
 must not contain the realm; instead, the KEYTAB_REALM configuration
-variable should be set.  See Wallet::Config(3) for more information.
+variable should be set.  See L<Wallet::Config> for more information.
 
 If create() fails, it throws an exception.
 

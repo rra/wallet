@@ -1,15 +1,15 @@
 #!/usr/bin/perl -w
 #
-# t/verifier-netdb.t -- Tests for the NetDB wallet ACL verifiers.
+# Tests for the NetDB wallet ACL verifiers.
+#
+# This test can only be run by someone local to Stanford with appropriate
+# access to the NetDB role server and will be skipped in all other
+# environments.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2008 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
-#
-# This test can only be run by someone local to Stanford with appropriate
-# access to the NetDB role server and will be skipped in all other
-# environments.
 
 use Test::More tests => 4;
 

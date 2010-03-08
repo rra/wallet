@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/kadmin.t -- Tests for the kadmin object implementation.
+# Tests for the kadmin object implementation.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
@@ -80,6 +80,9 @@ SKIP: {
     $Wallet::Config::KEYTAB_REALM     = contents ('t/data/test.realm');
     $Wallet::Config::KEYTAB_KRBTYPE   = contents ('t/data/test.krbtype');
     $Wallet::Config::KEYTAB_TMP       = '.';
+
+    # Don't destroy the user's Kerberos ticket cache.
+    $ENV{KRB5CCNAME} = 'krb5cc_test';
 
     # Create the object and clean up the principal we're going to use.
     $kadmin = eval { Wallet::Kadmin->new };

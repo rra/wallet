@@ -1,5 +1,35 @@
                        User-Visible wallet Changes
 
+wallet 0.11 (2010-03-08)
+
+    When deleting an ACL on the server, verify that the ACL is not
+    referenced by any object first.  Database referential integrity should
+    also catch this, but not all database backends may enforce referential
+    integrity.  This also allows us to return a better error message
+    naming an object that's still using that ACL.
+
+    Wallet::Config now supports an additional local function,
+    verify_acl_name, which can be used to enforce ACL naming policies.  If
+    set, it is called for any ACL creation or rename and can reject the
+    new ACL name.
+
+    Add an audit command to wallet-report and two audits: acls name, which
+    returns all ACLs that do not pass the local naming policy, and objects
+    name, which does the same for objects.  The corresponding
+    Wallet::Report method is audit().
+
+    Add the acls unused report to wallet-report and Wallet::Report,
+    returning all ACLs not referenced by any database objects.
+
+    Wallet::Config::verify_name may now be called with an undefined third
+    argument (normally the user attempting to create an object).  This
+    calling convention is used when auditing, and the local policy
+    function should select the correct policy to apply for useful audit
+    results.
+
+    Fix portability to older Kerberos libraries without
+    krb5_free_error_message.
+
 wallet 0.10 (2010-02-21)
 
     Add support for Heimdal KDCs as well as MIT Kerberos KDCs.  There is

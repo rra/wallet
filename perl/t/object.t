@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# t/object.t -- Tests for the basic object implementation.
+# Tests for the basic object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University

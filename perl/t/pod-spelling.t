@@ -9,8 +9,7 @@
 #
 # Copyright 2008, 2009 Russ Allbery <rra@stanford.edu>
 #
-# This program is free software; you may redistribute it and/or modify it
-# under the same terms as Perl itself.
+# See LICENSE for licensing terms.
 
 use strict;
 use Test::More;

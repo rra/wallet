@@ -38,7 +38,8 @@ Server Interface:
 
  * Provide an interface to mass-change all instances of one ACL to another.
 
- * Add a help function to wallet-backend listing the commands.
+ * Add help functions to wallet-backend, wallet-report, and wallet-admin
+   listing the commands.
 
  * Catch exceptions on object creation in wallet-backend so that we can
    log those as well.
@@ -75,8 +76,6 @@ ACLs:
    implementations (or some similar name) so that we can create and check
    an ACL without having to write it into the database.  Redo default ACL
    creation using that functionality.
-
- * Add a hook to enforce ACL naming standards.
 
  * Pass a reference to the object for which the ACL is interpreted to the
    ACL API so that ACL APIs can make more complex decisions.
@@ -131,7 +130,7 @@ Objects:
 
 Reports:
 
- * Make contrib/wallet-summary generic and include it in wallet-admin,
+ * Make contrib/wallet-summary generic and include it in wallet-report,
    with additional configuration in Wallet::Config.  Enhance it to report
    on any sort of object, not just on keytabs, and to give numbers on
    downloaded versus not downloaded objects.
@@ -148,9 +147,6 @@ Documentation:
 
  * Write a future design and roadmap document to collect notes about how
    unimplemented features should be handled.
-
- * Add details to design-api on how to write one's own ACL verifiers and
-   object implementations and register them.
 
  * Document using the wallet system over something other than remctl.
 

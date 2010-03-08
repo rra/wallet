@@ -23,7 +23,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ##############################################################################
 # Interface
@@ -163,7 +163,7 @@ only if that principal has one of the roles user, admin, or team for that
 node.
 
 To use this object, several configuration parameters must be set.  See
-Wallet::Config(3) for details on those configuration parameters and
+L<Wallet::Config> for details on those configuration parameters and
 information about how to set wallet configuration.
 
 =head1 METHODS
