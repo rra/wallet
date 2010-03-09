@@ -130,6 +130,19 @@ Objects:
 
 Reports:
 
+ * Add audit for references to unknown ACLs, possibly introduced by
+   previous versions before ACL deletion was checked with database
+   backends that don't do referential integrity.
+
+ * Add report for all objects that have never been stored or downloaded.
+
+ * Add report of all ACLs with identical contents.
+
+ * For objects tied to hostnames, report on objects referring to hosts
+   which do not exist.  For the initial pass, this is probably only keytab
+   objects with names containing a slash where the part after the slash
+   looks like a hostname.  This may need some configuration help.
+
  * Make contrib/wallet-summary generic and include it in wallet-report,
    with additional configuration in Wallet::Config.  Enhance it to report
    on any sort of object, not just on keytabs, and to give numbers on
