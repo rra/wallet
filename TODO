@@ -87,6 +87,9 @@ ACLs:
  * Provide an API for verifiers to syntax-check the values before an ACL
    is set and implement syntax checking for the Krb5 verifier.
 
+ * Investigate how best to support client authentication using anonymous
+   PKINIT for things like initial system keying.
+
 Database:
 
  * Fix case-insensitivity bug in unique keys with MySQL for objects.
