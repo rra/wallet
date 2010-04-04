@@ -8,9 +8,6 @@
   license.  Please see the file LICENSE in the distribution for more
   information.
 
-  This software is beta-quality and should be treated with caution.  It is
-  currently being tested for production deployment at Stanford.
-
 BLURB
 
   The wallet is a system for managing secure data, authorization rules to
