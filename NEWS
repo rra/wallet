@@ -1,5 +1,11 @@
                        User-Visible wallet Changes
 
+wallet 0.12 (unreleased)
+
+    Add a objects unused report to wallet-report and Wallet::Report,
+    returning all objects that have never been downloaded (in other words,
+    have never been the target of a get command).
+
 wallet 0.11 (2010-03-08)
 
     When deleting an ACL on the server, verify that the ACL is not

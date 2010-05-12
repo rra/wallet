@@ -137,7 +137,7 @@ Reports:
    previous versions before ACL deletion was checked with database
    backends that don't do referential integrity.
 
- * Add report for all objects that have never been stored or downloaded.
+ * Add report for all objects that have never been stored.
 
  * Add report of all ACLs with identical contents.
 

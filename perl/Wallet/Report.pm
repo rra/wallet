@@ -20,7 +20,7 @@ use Wallet::Database;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -128,6 +128,15 @@ sub objects_acl {
     return ($sql, ($acl->id) x 6);
 }
 
+# Return the SQL statement to find all objects that have been created but
+# have never been retrieved (via get).
+sub objects_unused {
+    my ($self) = @_;
+    my $sql = 'select ob_type, ob_name from objects where ob_downloaded_on
+        is null order by objects.ob_type, objects.ob_name';
+    return ($sql);
+}
+
 # Returns a list of all objects stored in the wallet database in the form of
 # type and name pairs.  On error and for an empty database, the empty list
 # will be returned.  To distinguish between an empty list and an error, call
@@ -144,7 +153,7 @@ sub objects {
     if (!defined $type || $type eq '') {
         ($sql) = $self->objects_all;
     } else {
-        if (@args != 1) {
+        if ($type ne 'unused' && @args != 1) {
             $self->error ("object searches require one argument to search");
         } elsif ($type eq 'type') {
             ($sql, @search) = $self->objects_type (@args);
@@ -154,6 +163,8 @@ sub objects {
             ($sql, @search) = $self->objects_flag (@args);
         } elsif ($type eq 'acl') {
             ($sql, @search) = $self->objects_acl (@args);
+        } elsif ($type eq 'unused') {
+            ($sql) = $self->objects_unused (@args);
         } else {
             $self->error ("do not know search type: $type");
         }
@@ -461,13 +472,14 @@ Returns a list of all objects matching a search type and string in the
 database, or all objects in the database if no search information is
 given.
 
-There are four types of searches currently.  C<type>, with a given type,
+There are five types of searches currently.  C<type>, with a given type,
 will return only those entries where the type matches the given type.
 C<owner>, with a given owner, will only return those objects owned by the
 given ACL name or ID.  C<flag>, with a given flag name, will only return
 those items with a flag set to the given value.  C<acl> operates like
 C<owner>, but will return only those objects that have the given ACL name
-or ID on any of the possible ACL settings, not just owner.
+or ID on any of the possible ACL settings, not just owner.  C<unused> will
+return all entries for which a get command has never been issued.
 
 The return value is a list of references to pairs of type and name.  For
 example, if two objects existed in the database, both of type C<keytab>

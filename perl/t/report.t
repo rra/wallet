@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 151;
+use Test::More tests => 179;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -46,6 +46,12 @@ is ($server->create ('base', 'service/admin'), 1,
 # Now, we should see one object.
 @objects = $report->objects;
 is (scalar (@objects), 1, ' and now there is one object');
+is ($objects[0][0], 'base', ' with the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+
+# That object should be unused.
+@objects = $report->objects ('unused');
+is (scalar (@objects), 1, ' and that object is unused');
 is ($objects[0][0], 'base', ' with the right type');
 is ($objects[0][1], 'service/admin', ' and the right name');
 
@@ -96,6 +102,14 @@ is ($server->owner ('base', 'service/foo', 'ADMIN'), 1,
 is (scalar (@lines), 1, ' and there is still owner in the report');
 is ($lines[0][0], 'krb5', ' with the right scheme');
 is ($lines[0][1], 'admin@EXAMPLE.COM', ' and the right identifier');
+
+# Both objects should now show as unused.
+@objects = $report->objects ('unused');
+is (scalar (@objects), 2, 'There are now two unused objects');
+is ($objects[0][0], 'base', ' and the first has the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+is ($objects[1][0], 'base', ' and the second has the right type');
+is ($objects[1][1], 'service/foo', ' and the right name');
 
 # Change the owner of the second object to an empty ACL.
 is ($server->owner ('base', 'service/foo', 'second'), 1,
@@ -239,6 +253,41 @@ is (scalar (@lines), 1, 'Searching for ACL naming violations finds one');
 is ($lines[0][0], 3, ' and the first has the right ID');
 is ($lines[0][1], 'second', ' and the right name');
 
+# Set up a file bucket so that we can create an object we can retrieve.
+system ('rm -rf test-files') == 0 or die "cannot remove test-files\n";
+mkdir 'test-files' or die "cannot create test-files: $!\n";
+$Wallet::Config::FILE_BUCKET = 'test-files';
+
+# Create a file object and ensure that it shows up in the unused list.
+is ($server->create ('file', 'test'), 1, 'Creating file:test succeeds');
+is ($server->owner ('file', 'test', 'ADMIN'), 1,
+    ' and setting its owner works');
+@objects = $report->objects ('unused');
+is (scalar (@objects), 4, 'There are now four unused objects');
+is ($objects[0][0], 'base', ' and the first has the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+is ($objects[1][0], 'base', ' and the second has the right type');
+is ($objects[1][1], 'service/foo', ' and the right name');
+is ($objects[2][0], 'base', ' and the third has the right type');
+is ($objects[2][1], 'service/null', ' and the right name');
+is ($objects[3][0], 'file', ' and the fourth has the right type');
+is ($objects[3][1], 'test', ' and the right name');
+
+# Store something and retrieve it, and then check that the file object fell
+# off of the list.
+is ($server->store ('file', 'test', 'Some data'), 1,
+    'Storing data in file:test succeeds');
+is ($server->get ('file', 'test'), 'Some data', ' and retrieving it works');
+@objects = $report->objects ('unused');
+is (scalar (@objects), 3, ' and now there are three unused objects');
+is ($objects[0][0], 'base', ' and the first has the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+is ($objects[1][0], 'base', ' and the second has the right type');
+is ($objects[1][1], 'service/foo', ' and the right name');
+is ($objects[2][0], 'base', ' and the third has the right type');
+is ($objects[2][1], 'service/null', ' and the right name');
+
 # Clean up.
 $admin->destroy;
 unlink 'wallet-db';
+system ('rm -r test-files') == 0 or die "cannot remove test-files\n";

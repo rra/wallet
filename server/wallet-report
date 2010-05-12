@@ -177,6 +177,8 @@ one line per object or ACL.
 
 =item objects type <type>
 
+=item objects unused
+
 Returns a list of objects in the database.  Objects will be listed in the
 form:
 
@@ -209,6 +211,11 @@ Returns all objects owned by the given ACL name or ID.
 =item objects type <type>
 
 Returns all objects of the given type.
+
+=item objects unused
+
+Returns all objects that have never been downloaded (have never been the
+target of a get command).
 
 =back
 
