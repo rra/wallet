@@ -6,6 +6,9 @@ wallet 0.12 (unreleased)
     returning all objects that have never been downloaded (in other words,
     have never been the target of a get command).
 
+    Add an acls duplicate report to wallet-report and Wallet::Report,
+    returning sets of ACLs that have exactly the same entries.
+
 wallet 0.11 (2010-03-08)
 
     When deleting an ACL on the server, verify that the ACL is not

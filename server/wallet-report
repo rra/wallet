@@ -32,8 +32,14 @@ sub command {
         if (!@acls and $report->error) {
             die $report->error, "\n";
         }
-        for my $acl (sort { $$a[1] cmp $$b[1] } @acls) {
-            print "$$acl[1] (ACL ID: $$acl[0])\n";
+        if (@args && $args[0] eq 'duplicate') {
+            for my $group (@acls) {
+                print join (' ', @$group), "\n";
+            }
+        } else {
+            for my $acl (sort { $$a[1] cmp $$b[1] } @acls) {
+                print "$$acl[1] (ACL ID: $$acl[0])\n";
+            }
         }
     } elsif ($command eq 'audit') {
         die "too many arguments to audit\n" if @args > 2;
@@ -110,19 +116,26 @@ B<wallet-report> takes no traditional options.
 
 =item acls
 
+=item acls duplicate
+
 =item acls empty
 
 =item acls entry <scheme> <identifier>
 
 =item acls unused
 
-Returns a list of ACLs in the database.  ACLs will be listed in the form:
+Returns a list of ACLs in the database.  Except for the C<duplicate>
+report, ACLs will be listed in the form:
 
     <name> (ACL ID: <id>)
 
 where <name> is the human-readable name and <id> is the numeric ID.  The
 numeric ID is what's used internally by the wallet system.  There will be
 one line per ACL.
+
+For the C<duplicate> report, the output will instead be one duplicate set
+per line.  This will be a set of ACLs that all have the same entries.
+Only the names will be given, separated by spaces.
 
 If no search type is given, all the ACLs in the database will be returned.
 If a search type (and possible search arguments) are given, then the ACLs
@@ -131,6 +144,12 @@ will be limited to those that match the search.
 The currently supported ACL search types are:
 
 =over 4
+
+=item acls duplicate
+
+Returns all sets of ACLs that are duplicates, meaning that they contain
+exactly the same entries.  Each line will be the names of the ACLs in a
+set of duplicates, separated by spaces.
 
 =item acls empty
 

@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 179;
+use Test::More tests => 197;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -286,6 +286,40 @@ is ($objects[1][0], 'base', ' and the second has the right type');
 is ($objects[1][1], 'service/foo', ' and the right name');
 is ($objects[2][0], 'base', ' and the third has the right type');
 is ($objects[2][1], 'service/null', ' and the right name');
+
+# The third and fourth ACLs are both empty and should show up as duplicate.
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 1, 'There is one set of duplicate ACLs');
+is (scalar (@{ $acls[0] }), 2, ' with two members');
+is ($acls[0][0], 'fourth', ' and the first member is correct');
+is ($acls[0][1], 'third', ' and the second member is correct');
+
+# Add the same line to both ACLs.  They should still show up as duplicate.
+is ($server->acl_add ('fourth', 'base', 'bar'), 1,
+    'Adding a line to the fourth ACL works');
+is ($server->acl_add ('third', 'base', 'bar'), 1,
+    ' and adding a line to the third ACL works');
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 1, 'There is one set of duplicate ACLs');
+is (scalar (@{ $acls[0] }), 2, ' with two members');
+is ($acls[0][0], 'fourth', ' and the first member is correct');
+is ($acls[0][1], 'third', ' and the second member is correct');
+
+# Add another line to the third ACL.  Now we match second.
+is ($server->acl_add ('third', 'base', 'foo'), 1,
+    'Adding another line to the third ACL works');
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 1, 'There is one set of duplicate ACLs');
+is (scalar (@{ $acls[0] }), 2, ' with two members');
+is ($acls[0][0], 'second', ' and the first member is correct');
+is ($acls[0][1], 'third', ' and the second member is correct');
+
+# Add yet another line to the third ACL.  Now all ACLs are distinct.
+is ($server->acl_add ('third', 'base', 'baz'), 1,
+    'Adding another line to the third ACL works');
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 0, 'There are no duplicate ACLs');
+is ($report->error, undef, ' and no error');
 
 # Clean up.
 $admin->destroy;
