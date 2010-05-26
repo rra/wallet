@@ -210,6 +210,15 @@ accidental lockout, but administrators can remove themselves from the
 C<ADMIN> ACL and can leave only a non-functioning entry on the ACL.  Use
 caution when removing entries from the C<ADMIN> ACL.
 
+=item acl rename <id> <name>
+
+Renames the ACL identified by <id> to <name>.  This changes the
+human-readable name, not the underlying numeric ID, so the ACL's
+associations with objects will be unchanged.  The C<ADMIN> ACL may not be
+renamed.  <id> may be either the current name or the numeric ID.  <name>
+must not be all-numeric.  To rename an ACL, the current user must be
+authorized by the C<ADMIN> ACL.
+
 =item acl show <id>
 
 Display the name, numeric ID, and entries of the ACL <id>.
