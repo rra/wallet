@@ -127,6 +127,6 @@ available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Ian Durkacz
 
 =cut
