@@ -289,11 +289,19 @@ for my $command (sort keys %acl_commands) {
         my @args = @base;
         $args[$arg] = 'foo;bar';
         ($out, $err) = run_backend ('acl', $command, @args);
-        is ($err, "invalid characters in argument: foo;bar\n",
-            "Invalid arguments for acl $command $arg");
-        is ($OUTPUT, "error for admin (1.2.3.4): invalid characters in"
-            . " argument: foo;bar\n", ' and syslog correct');
-        is ($out, "$new\n", ' and nothing ran');
+        if (($command eq 'add' or $command eq 'remove') and $arg == 2) {
+            is ($err, '', 'Add/remove allows any characters');
+            is ($OUTPUT, "command acl $command @args[0..2] from admin"
+                . " (1.2.3.4) succeeded\n", ' and success logged');
+            is ($out, "$new\nacl_$command @args[0..2]\n",
+                ' and calls the right method');
+        } else {
+            is ($err, "invalid characters in argument: foo;bar\n",
+                "Invalid arguments for acl $command $arg");
+            is ($OUTPUT, "error for admin (1.2.3.4): invalid characters in"
+                . " argument: foo;bar\n", ' and syslog correct');
+            is ($out, "$new\n", ' and nothing ran');
+        }
     }
 }
 for my $command (sort keys %flag_commands) {
