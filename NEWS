@@ -2,6 +2,11 @@
 
 wallet 0.12 (unreleased)
 
+    A new ACL type, krb5-regex, is now supported.  This ACL type is the
+    same as krb5 except that the identifier is interpreted as a Perl
+    regular expression and matched against the authenticated identity
+    attempting to run a wallet command.  Patch from Ian Durkacz.
+
     Add a objects unused report to wallet-report and Wallet::Report,
     returning all objects that have never been downloaded (in other words,
     have never been the target of a get command).
