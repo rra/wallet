@@ -9,6 +9,9 @@ wallet 0.12 (unreleased)
     Add an acls duplicate report to wallet-report and Wallet::Report,
     returning sets of ACLs that have exactly the same entries.
 
+    Add a help command to wallet-report, which returns a summary of all
+    available commands.
+
 wallet 0.11 (2010-03-08)
 
     When deleting an ACL on the server, verify that the ACL is not

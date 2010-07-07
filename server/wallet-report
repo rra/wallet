@@ -8,11 +8,30 @@
 # See LICENSE for licensing terms.
 
 ##############################################################################
-# Declarations and site configuration
+# Declarations and globals
 ##############################################################################
 
 use strict;
 use Wallet::Report;
+
+# The help output, sent in reply to the help command.  Lists each supported
+# report command with a brief description of what it does.
+our $HELP = <<'EOH';
+Wallet reporting help:
+  acls                          All ACLs
+  acls duplicate                ACLs that duplicate another
+  acls empty                    All empty ACLs
+  acls <scheme> <identifier>    ACLs containing this entry (wildcarded)
+  acls unused                   ACLs that are not referenced by any object
+  audit acls name               ACLs failing the naming policy
+  audit objects name            Objects failing the naming policy
+  objects                       All objects
+  objects acl <acl>             Objects granting permissions to that ACL
+  objects flag <flag>           Objects with that flag set
+  objects owner <owner>         Objects owned by that owner
+  objects type <type>           Objects of that type
+  objects unused                Objects that have never been stored/gotten
+EOH
 
 ##############################################################################
 # Implementation
@@ -55,6 +74,8 @@ sub command {
                 print join (' ', @$item), "\n";
             }
         }
+    } elsif ($command eq 'help') {
+        print $HELP;
     } elsif ($command eq 'objects') {
         die "too many arguments to objects\n" if @args > 2;
         my @objects = $report->objects (@args);
@@ -185,6 +206,10 @@ and ACLs in the form:
 where <name> is the human-readable name and <id> is the numeric ID.  The
 numeric ID is what's used internally by the wallet system.  There will be
 one line per object or ACL.
+
+=item help
+
+Displays a summary of all available commands.
 
 =item objects
 
