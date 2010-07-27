@@ -46,6 +46,32 @@ overwrite_file(const char *name, const void *data, size_t length)
         sysdie("close of %s failed (file probably truncated)", name);
 }
 
+/*
+ * Given a filename, some data, and a length, write that data to the given
+ * file safely, but overwrite any existing file by that name.
+ */
+void
+append_file(const char *name, const void *data, size_t length)
+{
+    int fd;
+    ssize_t status;
+
+    if (access(name, F_OK) == 0)
+        if (unlink(name) < 0)
+            sysdie("unable to delete existing file %s", name);
+    fd = open(name, O_WRONLY | O_APPEND);
+    if (fd < 0)
+        sysdie("open of %s failed", name);
+    if (length > 0) {
+        status = write(fd, data, length);
+        if (status < 0)
+            sysdie("write to %s failed", name);
+        else if (status != (ssize_t) length)
+            die("write to %s truncated", name);
+    }
+    if (close(fd) < 0)
+        sysdie("close of %s failed (file probably truncated)", name);
+}
 
 /*
  * Given a filename, some data, and a length, write that data to the given
