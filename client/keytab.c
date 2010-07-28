@@ -29,7 +29,7 @@ struct principal_name {
  * Given a context, a keytab file, and a realm, return a list of all
  * principals in that file.
  */
-struct principal_name
+struct principal_name *
 keytab_principals(krb5_context ctx, const char *file, char *realm)
 {
     char *princname = NULL, *princrealm = NULL;
@@ -38,7 +38,7 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
     krb5_error_code status;
-    struct principal_name *names_seen = NULL, *current_seen = NULL;
+    struct principal_name *names = NULL, *current = NULL;
 
     memset(&entry, 0, sizeof(entry));
     status = krb5_kt_resolve(ctx, file, &keytab);
@@ -52,29 +52,29 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
         if (status != 0)
             sysdie("error, cannot unparse name for a principal");
 
+        /* Separate into principal and realm. */
+        princrealm = strchr(princname, '@');
+        if (princrealm != NULL) {
+            *princrealm = '\0';
+            princrealm++;
+        }
+        if (princrealm == NULL || strcmp(princrealm, realm) != 0)
+            break;
+
+        /* Check to see if the principal has already been listed. */
         found = false;
-        current_seen = names_seen;
-        while (current_seen != NULL) {
-            if (strcmp(current_seen->princ, princname)) {
+        for (current = names; current != NULL; current = current->next) {
+            if (strcmp(current->princ, princname) == 0) {
                 found = true;
                 break;
             }
-            current_seen = current_seen->next;
         }
 
-        /* Add any new principals in the correct realm to the list. */
         if (found == false) {
-            princrealm = strchr(princname, '@');
-            if (princrealm != NULL) {
-                *princrealm = '\0';
-                princrealm++;
-            }
-            if (princrealm != NULL && strcmp(princrealm, realm) == 0) {
-                current_seen = xmalloc(sizeof(struct principal_name));
-                current_seen->princ = xstrdup(princname);
-                current_seen->next = names_seen;
-                names_seen = current_seen;
-            }
+            current = xmalloc(sizeof(struct principal_name));
+            current->princ = xstrdup(princname);
+            current->next = names;
+            names = current;
         }
 
         krb5_kt_free_entry(ctx, &entry);
@@ -86,15 +86,7 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
     krb5_kt_end_seq_get(ctx, keytab, &cursor);
     krb5_kt_close(ctx, keytab);
 
-    /* TODO: Testing the principals correctly made, remove after. */
-    warn("Exiting keytab_principals");
-    current_seen = names_seen;
-    while (current_seen != NULL) {
-      warn("found principal %s", current_seen->princ);
-      current_seen = current_seen->next;
-     }
-
-    return *names_seen;
+    return names;
 }
 
 /*
@@ -225,38 +217,27 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
     size_t length = 0;
     int status;
     bool error = false, rekeyed = false;
-    struct principal_name *names_seen, *current_seen;
+    struct principal_name *names, *current;
 
     tempfile = concat(file, ".new", (char *) 0);
 
     krb5_get_default_realm(ctx, &realm);
-    *names_seen = keytab_principals(ctx, file, realm);
-    /* keytab_principals(ctx, file, realm); */
+    names = keytab_principals(ctx, file, realm);
 
-    /* TODO: Testing we got back the principals correctly, delete. */
-    warn("Finished keytab_principals");
-    current_seen = names_seen;
-    while (current_seen != NULL) {
-        warn("found principal %s", current_seen->princ);
-        current_seen = current_seen->next;
-    }
-    return 0;
-
-    current_seen = names_seen;
-    while (current_seen != NULL) {
-        status = download_keytab(r, type, current_seen->princ, &data,
-                                 &length);
+    for (current = names; current != NULL; current = current->next) {
+        status = download_keytab(r, type, current->princ, &data, &length);
         if (status != 0) {
-            warn("error rekeying for principal %s", current_seen->princ);
+            warn("error rekeying for principal %s", current->princ);
             error = true;
         } else {
             if (data != NULL) {
-                append_file(tempfile, data, length);
+                if (access(tempfile, F_OK) == 0)
+                    append_file(tempfile, data, length);
+                else
+                    write_file(tempfile, data, length);
                 rekeyed = true;
             }
         }
-        warn("seen principal %s", current_seen->princ);
-        current_seen = current_seen->next;
     }
 
     /* If no new keytab data, then leave the keytab as-is. */
@@ -278,7 +259,7 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
         write_file(file, data, length);
     }
     if (unlink(tempfile) < 0)
-      sysdie("unlink of temporary keytab file %s failed", tempfile);
+        sysdie("unlink of temporary keytab file %s failed", tempfile);
     free(tempfile);
     return 0;
 }

@@ -245,7 +245,7 @@ main(int argc, char *argv[])
     } else if (strcmp(argv[0], "rekey") == 0) {
         if (argc > 2)
             die("too many arguments");
-        status = rekey_keytab(r, ctx, "keytab", argv[1]);
+        status = rekey_keytab(r, ctx, options.type, argv[1]);
     } else {
         count = argc + 1;
         if (strcmp(argv[0], "store") == 0) {

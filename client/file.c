@@ -56,9 +56,6 @@ append_file(const char *name, const void *data, size_t length)
     int fd;
     ssize_t status;
 
-    if (access(name, F_OK) == 0)
-        if (unlink(name) < 0)
-            sysdie("unable to delete existing file %s", name);
     fd = open(name, O_WRONLY | O_APPEND);
     if (fd < 0)
         sysdie("open of %s failed", name);
