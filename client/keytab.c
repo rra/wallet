@@ -25,11 +25,12 @@ struct principal_name {
     struct principal_name* next;
 };
 
+
 /*
  * Given a context, a keytab file, and a realm, return a list of all
  * principals in that file.
  */
-struct principal_name *
+static struct principal_name *
 keytab_principals(krb5_context ctx, const char *file, char *realm)
 {
     char *princname = NULL, *princrealm = NULL;
@@ -69,31 +70,27 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
                 break;
             }
         }
-
         if (found == false) {
             current = xmalloc(sizeof(struct principal_name));
             current->princ = xstrdup(princname);
             current->next = names;
             names = current;
         }
-
         krb5_kt_free_entry(ctx, &entry);
         free(princname);
     }
-
     if (status != KRB5_KT_END)
         die_krb5(ctx, status, "error reading keytab %s", file);
     krb5_kt_end_seq_get(ctx, keytab, &cursor);
     krb5_kt_close(ctx, keytab);
-
     return names;
 }
 
+
 /*
- * Given keytab data as a pointer to memory and a length and the path of a
- * second keytab, merge the keys in the memory keytab into the file keytab.
- * Currently, this doesn't do any cleanup of old kvnos and doesn't handle
- * duplicate kvnos correctly.  Dies on any error.
+ * Given two files containing keytab data, second keytab, merge the keys into
+ * the new file.  Currently, this doesn't do any cleanup of old kvnos and
+ * doesn't handle duplicate kvnos correctly.  Dies on any error.
  */
 static void
 merge_keytab(krb5_context ctx, const char *newfile, const char *file)
@@ -131,13 +128,14 @@ merge_keytab(krb5_context ctx, const char *newfile, const char *file)
         krb5_kt_close(ctx, temp);
 }
 
+
 /*
  * Given a remctl object, the type and name of a keytab object, and
  * references to keytab data and data length, call the correct wallet
  * commands to download a keytab and return the keytab data.  Returns the
  * status of the remctl command.
  */
-int
+static int
 download_keytab(struct remctl *r, const char *type, const char *name,
                 char **data, size_t *length)
 {
@@ -156,6 +154,7 @@ download_keytab(struct remctl *r, const char *type, const char *name,
     }
     return status;
 }
+
 
 /*
  * Given a remctl object, the Kerberos context, the name of a keytab object,
@@ -201,13 +200,15 @@ get_keytab(struct remctl *r, krb5_context ctx, const char *type,
     return 0;
 }
 
+
 /*
- * Given a remctl object, the Kerberos context, the type and name of a keytab
- * object, and a file name, iterate through every existing principal in the
- * keytab, get fresh keys for those principals, and save the old and new
- * keys to that file.  Returns the status, or 255 on an internal error.
+ * Given a remctl object, the Kerberos context, the type for the wallet
+ * interface, and a file name of a keytab, iterate through every existing
+ * principal in the keytab in the local realm, get fresh keys for those
+ * principals, and save the old and new keys to that file.  Returns true on
+ * success and false on partial failure to retrieve all the keys.
  */
-int
+bool
 rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
              const char *file)
 {
@@ -220,46 +221,46 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
     struct principal_name *names, *current;
 
     tempfile = concat(file, ".new", (char *) 0);
-
     krb5_get_default_realm(ctx, &realm);
     names = keytab_principals(ctx, file, realm);
-
     for (current = names; current != NULL; current = current->next) {
         status = download_keytab(r, type, current->princ, &data, &length);
         if (status != 0) {
             warn("error rekeying for principal %s", current->princ);
             error = true;
-        } else {
-            if (data != NULL) {
-                if (access(tempfile, F_OK) == 0)
-                    append_file(tempfile, data, length);
-                else
-                    write_file(tempfile, data, length);
-                rekeyed = true;
-            }
+        } else if (data != NULL) {
+            if (access(tempfile, F_OK) == 0)
+                append_file(tempfile, data, length);
+            else
+                write_file(tempfile, data, length);
+            rekeyed = true;
         }
     }
 
     /* If no new keytab data, then leave the keytab as-is. */
-    if (rekeyed == false)
-        sysdie("no rekeyed principals found");
+    if (!rekeyed)
+        sysdie("no rekeyable principals found");
 
-    /* Now merge the original keytab file with the one containing the new. */
-    if (access(file, F_OK) == 0) {
-
-        /* If error, first copy the keytab file to filename.old */
-        if (error == true) {
+    /*
+     * Now merge the original keytab file with the one containing the new
+     * keys.  If there is an error, first make a backup of the current keytab
+     * file as keytab.old.
+     */
+    if (access(file, F_OK) != 0)
+        link(tempfile, file);
+    else {
+        if (error) {
             data = read_file(file, &length);
             backupfile = concat(file, ".old", (char *) 0);
             overwrite_file(backupfile, data, length);
+            warn("partial failure to rekey keytab %s, old keyab left in %s",
+                 file, backupfile);
+            free(backupfile);
         }
         merge_keytab(ctx, tempfile, file);
-    } else {
-        data = read_file(tempfile, &length);
-        write_file(file, data, length);
     }
     if (unlink(tempfile) < 0)
         sysdie("unlink of temporary keytab file %s failed", tempfile);
     free(tempfile);
-    return 0;
+    return !error;
 }

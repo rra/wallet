@@ -15,11 +15,41 @@
 
 #include <sys/types.h>
 
+/*
+ * Allow defaults to be set for a particular site with configure options if
+ * people don't want to use krb5.conf for some reason.
+ */
+#ifndef WALLET_SERVER
+# define WALLET_SERVER NULL
+#endif
+#ifndef WALLET_PORT
+# define WALLET_PORT 0
+#endif
+
 /* Forward declarations to avoid unnecessary includes. */
 struct remctl;
 struct iovec;
 
+/*
+ * Basic wallet behavior options set either on the command line or via
+ * krb5.conf.  If set via krb5.conf, we allocate memory for the strings, but
+ * we never free them.
+ */
+struct options {
+    char *type;
+    char *server;
+    char *principal;
+    char *user;
+    int port;
+};
+
 BEGIN_DECLS
+
+/*
+ * Set default options from the system krb5.conf or from compile-time
+ * defaults.
+ */
+void default_options(krb5_context ctx, struct options *options);
 
 /*
  * Given a Kerberos context and a principal name, obtain Kerberos credentials
@@ -75,10 +105,26 @@ int get_keytab(struct remctl *, krb5_context, const char *type,
                const char *name, const char *file, const char *srvtab);
 
 /*
+ * Given a remctl object, the Kerberos context, the type for the wallet
+ * interface, and a file name of a keytab, iterate through every existing
+ * principal in the keytab in the local realm, get fresh keys for those
+ * principals, and save the old and new keys to that file.  Returns true on
+ * success and false on partial failure to retrieve all the keys.
+ */
+bool rekey_keytab(struct remctl *, krb5_context, const char *type,
+                  const char *file);
+
+/*
  * Given a filename, some data, and a length, write that data to the given
  * file with error checking, overwriting any existing contents.
  */
 void overwrite_file(const char *name, const void *data, size_t length);
+
+/*
+ * Given a filename, some data, and a length, append that data to an existing
+ * file.  Dies on any failure.
+ */
+void append_file(const char *name, const void *data, size_t length);
 
 /*
  * Given a filename, some data, and a length, write that data to the given

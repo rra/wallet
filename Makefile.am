@@ -57,15 +57,22 @@ util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h	\
 	util/messages.h util/xmalloc.c util/xmalloc.h
 util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
-bin_PROGRAMS = client/wallet
+noinst_LIBRARIES += client/libwallet.a
+client_libwallet_a_SOURCES = client/file.c client/internal.h client/keytab.c \
+	client/krb5.c client/options.c client/remctl.c client/srvtab.c
+client_libwallet_a_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
+
+bin_PROGRAMS = client/wallet client/wallet-rekey
 dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
 	server/wallet-backend server/wallet-report
-client_wallet_SOURCES = client/file.c client/internal.h client/keytab.c \
-	client/krb5.c client/remctl.c client/srvtab.c client/wallet.c
 client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
 client_wallet_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
-client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
-	$(KRB5_LIBS)
+client_wallet_LDADD = client/libwallet.a util/libutil.a \
+	portable/libportable.a $(REMCTL_LIBS) $(KRB5_LIBS)
+client_wallet_rekey_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
+client_wallet_rekey_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
+client_wallet_rekey_LDADD = client/libwallet.a util/libutil.a \
+	portable/libportable.a $(REMCTL_LIBS) $(KRB5_LIBS)
 
 dist_man_MANS = client/wallet.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
