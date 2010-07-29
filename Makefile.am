@@ -74,7 +74,7 @@ client_wallet_rekey_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
 client_wallet_rekey_LDADD = client/libwallet.a util/libutil.a \
 	portable/libportable.a $(REMCTL_LIBS) $(KRB5_LIBS)
 
-dist_man_MANS = client/wallet.1 server/keytab-backend.8 \
+dist_man_MANS = client/wallet.1 client/wallet-rekey.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings

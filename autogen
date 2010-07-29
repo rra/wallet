@@ -11,6 +11,8 @@ rm -rf autom4te.cache
 version=`grep '^wallet' NEWS | head -1 | cut -d' ' -f2`
 pod2man --release="$version" --center=wallet client/wallet.pod \
     > client/wallet.1
+pod2man --release="$version" --center=wallet client/wallet-rekey.pod \
+    > client/wallet-rekey.1
 pod2man --release="$version" --center=wallet -s 8 contrib/wallet-summary \
     > contrib/wallet-summary.8
 pod2man --release="$version" --center=wallet -s 8 server/keytab-backend \
