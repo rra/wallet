@@ -56,7 +56,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-ACL krb5-regex Allbery
+ACL krb5-regex Durkacz Allbery
 
 =head1 NAME
 
