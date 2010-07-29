@@ -21,7 +21,7 @@ Wallet reporting help:
   acls                          All ACLs
   acls duplicate                ACLs that duplicate another
   acls empty                    All empty ACLs
-  acls <scheme> <identifier>    ACLs containing this entry (wildcarded)
+  acls entry <scheme> <id>      ACLs containing this entry (wildcarded)
   acls unused                   ACLs that are not referenced by any object
   audit acls name               ACLs failing the naming policy
   audit objects name            Objects failing the naming policy
