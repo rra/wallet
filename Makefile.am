@@ -39,8 +39,8 @@ EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	   \
 	tests/data/fake-kadmin tests/data/fake-keytab			   \
 	tests/data/fake-keytab-2 tests/data/fake-keytab-merge		   \
-	tests/data/fake-keytab-old tests/data/fake-srvtab		   \
-	tests/data/full.conf tests/data/wallet.conf			   \
+	tests/data/fake-keytab-old tests/data/fake-keytab-rekey		   \
+	tests/data/fake-srvtab tests/data/full.conf tests/data/wallet.conf \
 	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
 	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
 	tests/tap/kerberos.sh tests/tap/libtap.sh tests/tap/remctl.sh	   \

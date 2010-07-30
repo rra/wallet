@@ -68,4 +68,5 @@ AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
 AC_CONFIG_FILES([tests/client/full-t], [chmod +x tests/client/full-t])
 AC_CONFIG_FILES([tests/client/prompt-t], [chmod +x tests/client/prompt-t])
+AC_CONFIG_FILES([tests/client/rekey-t], [chmod +x tests/client/rekey-t])
 AC_OUTPUT

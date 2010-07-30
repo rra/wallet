@@ -1,6 +1,7 @@
 client/basic
 client/full
 client/prompt
+client/rekey
 docs/pod
 docs/pod-spelling
 portable/asprintf
