@@ -227,6 +227,8 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
         status = download_keytab(r, type, current->princ, &data, &length);
         if (status != 0) {
             warn("error rekeying for principal %s", current->princ);
+            if (!rekeyed)
+                die("aborting, keytab unchanged");
             error = true;
         } else if (data != NULL) {
             if (access(tempfile, F_OK) == 0)
