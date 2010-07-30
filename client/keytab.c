@@ -51,7 +51,7 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
     while ((status = krb5_kt_next_entry(ctx, keytab, &entry, &cursor)) == 0) {
         status = krb5_unparse_name(ctx, entry.principal, &princname);
         if (status != 0)
-            sysdie("error, cannot unparse name for a principal");
+            die_krb5(ctx, status, "cannot unparse name for a principal");
 
         /* Separate into principal and realm. */
         princrealm = strchr(princname, '@');
@@ -60,7 +60,7 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
             princrealm++;
         }
         if (princrealm == NULL || strcmp(princrealm, realm) != 0)
-            break;
+            continue;
 
         /* Check to see if the principal has already been listed. */
         found = false;
