@@ -18,11 +18,6 @@ Client:
  * Add readline support to the wallet client to make it easier to issue
    multiple commands.
 
- * Add support for rekeying in the wallet client.  Need to resolve how to
-   get a list of principals to rekey and which keytabs to work on.  This
-   possibly should be a separate binary from the regular wallet client
-   binary.
-
  * Support authenticating with a keytab.
 
  * Allow store data to contain nuls.  Requires rewriting the command

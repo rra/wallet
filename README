@@ -272,4 +272,5 @@ THANKS
   security models.
 
   To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
-  and many of the wallet server-side reports.
+  many of the wallet server-side reports, and the initial wallet-rekey
+  implementation.

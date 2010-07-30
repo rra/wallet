@@ -2,6 +2,12 @@
 
 wallet 0.12 (unreleased)
 
+    New client program wallet-rekey that, given a list of keytabs on the
+    command line, requests new keytab objects for each principal in the
+    local realm and then merges the new objects into that keytab.  The
+    current implementation only acquires new keys and doesn't purge any
+    old keys.
+
     A new ACL type, krb5-regex, is now supported.  This ACL type is the
     same as krb5 except that the identifier is interpreted as a Perl
     regular expression and matched against the authenticated identity
