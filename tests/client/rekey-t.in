@@ -45,19 +45,54 @@ elif [ -z '@REMCTLD@' ] ; then
     rm krb5.conf
     skip_all 'No remctld found'
 else
-    plan 2
+    plan 9
 fi
 remctld_start '@REMCTLD@' "$SOURCE/data/basic.conf"
 wallet="$BUILD/../client/wallet-rekey"
 
 # Rekeying should result in a merged keytab with both the old and new keys.
 cp data/fake-keytab-old keytab
-ok_program '' 0 '' \
+ok_program 'basic wallet-rekey' 0 '' \
     "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet keytab
 ktutil_list keytab klist-seen
 ktutil_list data/fake-keytab-rekey klist-good
 ok '...and the rekeyed keytab is correct' cmp klist-seen klist-good
 rm -f keytab klist-good klist-seen
+
+# Rekeying a keytab that contains no principals in the local domain should
+# produce an error message and do nothing.
+cp data/fake-keytab-foreign keytab
+ok_program 'foreign wallet-rekey' 1 'wallet: no rekeyable principals found' \
+    "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet keytab
+ok '...and the keytab was untouched' cmp keytab data/fake-keytab-foreign
+rm -f keytab
+
+# Rekeying a keytab where we can't retrieve the principal should produce an
+# error message and abort when it's the first principal.
+cp data/fake-keytab-unknown keytab
+ok_program 'unknown wallet-rekey' 1 \
+'wallet: Unknown keytab service/real-keytab
+wallet: error rekeying for principal service/real-keytab
+wallet: aborting, keytab unchanged' \
+    "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet keytab
+ok '...and the keytab was untouched' cmp keytab data/fake-keytab-unknown
+rm -f keytab
+
+# Rekeying a keytab where we can't retrieve a later principal should leave the
+# original keytab as keytab.old and store, in the new keytab, only the things
+# that it was able to rekey.
+cp data/fake-keytab-partial keytab
+ok_program 'partial wallet-rekey' 1 \
+'wallet: Unknown keytab service/real-keytab
+wallet: error rekeying for principal service/real-keytab
+wallet: partial failure to rekey keytab keytab, old keytab left in keytab.old'\
+    "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet keytab
+ktutil_list keytab klist-seen
+ktutil_list data/fake-keytab-partial-result klist-good
+ok '...and the rekeyed keytab is correct' cmp klist-seen klist-good
+ok '...and the backup keytab is correct' \
+    cmp keytab.old data/fake-keytab-partial
+rm -f keytab keytab.old klist-seen klist-good
 
 # Clean up.
 rm -f autocreated krb5.conf
