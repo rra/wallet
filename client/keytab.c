@@ -241,7 +241,7 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
 
     /* If no new keytab data, then leave the keytab as-is. */
     if (!rekeyed)
-        sysdie("no rekeyable principals found");
+        die("no rekeyable principals found");
 
     /*
      * Now merge the original keytab file with the one containing the new
