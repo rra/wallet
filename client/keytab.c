@@ -22,7 +22,7 @@
 /* List of principals we have already encountered. */
 struct principal_name {
     char *princ;
-    struct principal_name* next;
+    struct principal_name *next;
 };
 
 
@@ -39,7 +39,7 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
     krb5_error_code status;
-    struct principal_name *names = NULL, *current = NULL;
+    struct principal_name *names = NULL, *current = NULL, *last = NULL;
 
     memset(&entry, 0, sizeof(entry));
     status = krb5_kt_resolve(ctx, file, &keytab);
@@ -69,12 +69,16 @@ keytab_principals(krb5_context ctx, const char *file, char *realm)
                 found = true;
                 break;
             }
+            last = current;
         }
         if (found == false) {
             current = xmalloc(sizeof(struct principal_name));
             current->princ = xstrdup(princname);
-            current->next = names;
-            names = current;
+            current->next = NULL;
+            if (last == NULL)
+                names = current;
+            else
+                last->next = current;
         }
         krb5_kt_free_entry(ctx, &entry);
         free(princname);
@@ -148,7 +152,7 @@ download_keytab(struct remctl *r, const char *type, const char *name,
     command[3] = name;
     command[4] = NULL;
     status = run_command(r, command, data, length);
-    if (*data == NULL) {
+    if (*data == NULL && status == 0) {
         warn("no data returned by wallet server");
         return 255;
     }
@@ -255,7 +259,7 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
             data = read_file(file, &length);
             backupfile = concat(file, ".old", (char *) 0);
             overwrite_file(backupfile, data, length);
-            warn("partial failure to rekey keytab %s, old keyab left in %s",
+            warn("partial failure to rekey keytab %s, old keytab left in %s",
                  file, backupfile);
             free(backupfile);
         }
