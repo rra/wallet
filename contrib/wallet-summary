@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# wallet-summarize -- Summarize keytabs in the wallet database.
+# wallet-summary -- Summarize keytabs in the wallet database.
 #
 # Written by Russ Allbery <rra@stanford.edu>
 # Copyright 2003, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
@@ -45,7 +45,7 @@ use vars qw($ADDRESS $DUMPFILE @PATTERNS $REPORTS);
 use Getopt::Long qw(GetOptions);
 use File::Path qw(mkpath);
 use POSIX qw(strftime);
-use Wallet::Admin ();
+use Wallet::Report ();
 
 ##############################################################################
 # Database queries
