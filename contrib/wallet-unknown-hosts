@@ -1,0 +1,116 @@
+#!/usr/bin/perl -w
+#
+# wallet-unknown-hosts -- Report host keytabs in wallet for unknown hosts.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2010 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+##############################################################################
+# Site configuration
+##############################################################################
+
+# The path to the supplemental database used to store last seen times and
+# counts.  Keys are hostnames, and values are the number of times the hostname
+# was not seen in DNS, a comma, and the UNIX seconds since epoch of the first
+# run during which the host was not found.
+#
+# This should probably be in the wallet database, but let's try it here first
+# and hammer out the data and then add it there later.
+our $HISTORY = '/var/lib/wallet/hosts.db';
+
+# Set up a Net::DNS resolver that will be used by local_check_keytab.
+BEGIN {
+    use Net::DNS;
+    our $DNS = Net::DNS::Resolver->new;
+}
+
+# Pre-filter.  This is called for all host-based keytabs and is the place to
+# apply local exceptions for keytabs that should be retained even though
+# there's no corresponding DNS entry.  The first argument is the full
+# principal name and the second argument is the extracted host.
+#
+# This function should return 1 if the host is found or if the keytab should
+# otherwise not be a candidate for purging, 0 if the keytab should be a
+# candidate for purging, and undef if the normal DNS-based check should be
+# done.
+sub local_check_keytab {
+    my ($keytab, $host) = @_;
+
+    # Aliases of proxy.best.stanford.edu and www.best.stanford.edu should not
+    # have host-based keytabs of their own.
+    my %purge = map { $_ => 1 }
+        qw(proxy.best.stanford.edu www.best.stanford.edu);
+    my $query = $DNS->search ($host);
+    return unless $query;
+    for my $rr ($query->answer) {
+        next unless $rr->type eq 'CNAME';
+        return 0 if $purge{$rr->cname};
+    }
+
+    # Do normal processing by default.
+    return;
+}
+
+##############################################################################
+# Modules and declarations
+##############################################################################
+
+require 5.006;
+
+use strict;
+
+use DB_File ();
+use Wallet::Report ();
+
+##############################################################################
+# Database queries
+##############################################################################
+
+# Return a list of host-based keytab objects in the wallet database.  The
+# current heuristic is to look for any keytab object with a principal name
+# that includes a slash and at least one period.  This may be refined later.
+sub list_keytabs {
+    my $report = Wallet::Report->new;
+    my @objects = $report->objects ('type', 'keytab');
+    if (!@objects and $report->error) {
+        die $report->error, "\n";
+    }
+    return grep { m%/.+\..+% } map { $$_[1] } @objects;
+}
+
+##############################################################################
+# DNS queries
+##############################################################################
+
+# Given a host, look it up in DNS and see if it exists.  Returns true if the
+# host exists and false otherwise.
+sub check_host {
+    my ($host) = @_;
+    my $addr = gethostbyname $host;
+    return defined ($addr) ? 1 : 0;
+}
+
+##############################################################################
+# Main routine
+##############################################################################
+
+tie %history, 'DB_File', $HISTORY;
+my @keytabs = list_keytabs;
+for my $keytab (@keytabs) {
+    my ($host) = (split '/', $keytab)[1];
+    my $result = local_check_keytab ($keytab, $host);
+    unless (defined $result) {
+        $result = check_host ($host);
+    }
+    if ($result) {
+        delete $history{$keytab};
+    } elsif ($history{$keytab}) {
+        my ($count, $time) = split (',', $history{$keytab});
+        $count++;
+        $history{$keytab} = "$count,$time";
+    } else {
+        $history{$keytab} = '1,' . time;
+    }
+}
