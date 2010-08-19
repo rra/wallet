@@ -69,6 +69,7 @@ use strict;
 
 use DB_File ();
 use Wallet::Report ();
+use Wallet::Server ();
 
 ##############################################################################
 # Utility functions
