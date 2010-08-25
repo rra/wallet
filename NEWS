@@ -23,6 +23,20 @@ wallet 0.12 (unreleased)
     Add a help command to wallet-report, which returns a summary of all
     available commands.
 
+    Update to C TAP Harness 1.5:
+
+    * Better reporting of fatal errors in the test suite.
+    * Summarize results at the end of test execution.
+    * Add tests/HOWTO from docs/writing-tests in C TAP Harness.
+
+    Update to rra-c-util 2.6:
+
+    * Fix portability to bundled Heimdal on OpenBSD.
+    * Improve checking for krb5_kt_free_entry with older MIT Kerberos.
+    * Fix portability for missing krb5_get_init_creds_opt_free.
+    * Fix header guard for util/xwrite.h.
+    * Restore default compiler configuration after GSS-API library probe.
+
 wallet 0.11 (2010-03-08)
 
     When deleting an ACL on the server, verify that the ACL is not
