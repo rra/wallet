@@ -10,37 +10,38 @@
 # and are not generated or touched by configure.  They're listed here to be
 # added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
-	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/NetDB.pm		    \
-	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm		    \
-	perl/Wallet/Config.pm perl/Wallet/Database.pm perl/Wallet/Kadmin.pm \
-	perl/Wallet/Kadmin/Heimdal.pm perl/Wallet/Kadmin/MIT.pm		    \
-	perl/Wallet/Object/Base.pm perl/Wallet/Object/File.pm		    \
-	perl/Wallet/Object/Keytab.pm perl/Wallet/Report.pm		    \
-	perl/Wallet/Schema.pm perl/Wallet/Server.pm perl/t/acl.t	    \
-	perl/t/admin.t perl/t/config.t perl/t/data/README		    \
-	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/file.t	    \
-	perl/t/init.t perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm    \
-	perl/t/object.t perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t  \
-	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		    \
+PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			   \
+	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/Krb5/Regex.pm		   \
+	perl/Wallet/ACL/NetDB.pm perl/Wallet/ACL/NetDB/Root.pm		   \
+	perl/Wallet/Admin.pm perl/Wallet/Config.pm perl/Wallet/Database.pm \
+	perl/Wallet/Kadmin.pm perl/Wallet/Kadmin/Heimdal.pm		   \
+	perl/Wallet/Kadmin/MIT.pm perl/Wallet/Object/Base.pm		   \
+	perl/Wallet/Object/File.pm perl/Wallet/Object/Keytab.pm		   \
+	perl/Wallet/Report.pm perl/Wallet/Schema.pm perl/Wallet/Server.pm  \
+	perl/t/acl.t perl/t/admin.t perl/t/config.t perl/t/data/README	   \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf			   \
+	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/file.t	   \
+	perl/t/init.t perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm   \
+	perl/t/object.t perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t \
+	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		   \
 	perl/t/verifier.t
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
-	config/allow-extract config/keytab config/keytab.acl config/wallet \
-	docs/design contrib/README contrib/convert-srvtab-db		   \
-	contrib/used-principals contrib/wallet-contacts			   \
-	contrib/wallet-summary contrib/wallet-summary.8 docs/design-acl	   \
-	docs/design-api docs/netdb-role-api docs/notes docs/setup	   \
-	docs/stanford-naming examples/stanford.conf tests/TESTS		   \
-	tests/data/README tests/data/allow-extract tests/data/basic.conf   \
-	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	   \
-	tests/data/fake-kadmin tests/data/fake-keytab			   \
-	tests/data/fake-keytab-2 tests/data/fake-keytab-merge		   \
-	tests/data/fake-keytab-old tests/data/fake-keytab-rekey		   \
-	tests/data/fake-srvtab tests/data/full.conf tests/data/wallet.conf \
+	client/wallet-rekey.pod config/allow-extract config/keytab	   \
+	config/keytab.acl config/wallet docs/design contrib/README	   \
+	contrib/convert-srvtab-db contrib/used-principals		   \
+	contrib/wallet-contacts contrib/wallet-summary			   \
+	contrib/wallet-summary.8 docs/design-acl docs/design-api	   \
+	docs/netdb-role-api docs/notes docs/setup docs/stanford-naming	   \
+	examples/stanford.conf tests/TESTS tests/data/README		   \
+	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake \
+	tests/data/cmd-wrapper tests/data/fake-data tests/data/fake-kadmin \
+	tests/data/fake-keytab tests/data/fake-keytab-2			   \
+	tests/data/fake-keytab-merge tests/data/fake-keytab-old		   \
+	tests/data/fake-keytab-rekey tests/data/fake-srvtab		   \
+	tests/data/full.conf tests/data/wallet.conf			   \
 	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
 	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
 	tests/tap/kerberos.sh tests/tap/libtap.sh tests/tap/remctl.sh	   \
@@ -109,9 +110,9 @@ all-local: perl/blib/lib/Wallet/Config.pm
 
 perl/blib/lib/Wallet/Config.pm:
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/NetDB \
-		perl/Wallet/Kadmin perl/Wallet/Object perl/t perl/t/data \
-		perl/t/lib 2>/dev/null || true ; \
+	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5 \
+		perl/Wallet/ACL/NetDB perl/Wallet/Kadmin perl/Wallet/Object \
+		perl/t perl/t/data perl/t/lib 2>/dev/null || true ; \
 	    for f in $(PERL_FILES) ; do \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
 	    done \
