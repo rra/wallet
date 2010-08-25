@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 0.12 (unreleased)
+wallet 0.12 (2010-08-25)
 
     New client program wallet-rekey that, given a list of keytabs on the
     command line, requests new keytab objects for each principal in the
