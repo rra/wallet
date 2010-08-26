@@ -15,12 +15,13 @@ require 5.006;
 use strict;
 use vars qw($VERSION);
 
+use Wallet::ACL;
 use Wallet::Database;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -128,6 +129,15 @@ sub objects_acl {
     return ($sql, ($acl->id) x 6);
 }
 
+# Return the SQL statement to find all objects that have been created but
+# have never been retrieved (via get).
+sub objects_unused {
+    my ($self) = @_;
+    my $sql = 'select ob_type, ob_name from objects where ob_downloaded_on
+        is null order by objects.ob_type, objects.ob_name';
+    return ($sql);
+}
+
 # Returns a list of all objects stored in the wallet database in the form of
 # type and name pairs.  On error and for an empty database, the empty list
 # will be returned.  To distinguish between an empty list and an error, call
@@ -144,7 +154,7 @@ sub objects {
     if (!defined $type || $type eq '') {
         ($sql) = $self->objects_all;
     } else {
-        if (@args != 1) {
+        if ($type ne 'unused' && @args != 1) {
             $self->error ("object searches require one argument to search");
         } elsif ($type eq 'type') {
             ($sql, @search) = $self->objects_type (@args);
@@ -154,6 +164,8 @@ sub objects {
             ($sql, @search) = $self->objects_flag (@args);
         } elsif ($type eq 'acl') {
             ($sql, @search) = $self->objects_acl (@args);
+        } elsif ($type eq 'unused') {
+            ($sql) = $self->objects_unused (@args);
         } else {
             $self->error ("do not know search type: $type");
         }
@@ -223,6 +235,52 @@ sub acls_unused {
     return ($sql);
 }
 
+# Obtain a textual representation of the membership of an ACL, returning undef
+# on error and setting the internal error.
+sub acl_membership {
+    my ($self, $id) = @_;
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+    my @members = map { "$_->[0] $_->[1]" } $acl->list;
+    if (!@members && $acl->error) {
+        $self->error ($acl->error);
+        return;
+    }
+    return join ("\n", @members);
+}
+
+# Duplicate ACL detection unfortunately needs to do something more complex
+# than just return a SQL statement, so it's handled differently than other
+# reports.  All the work is done here and the results returned as a list of
+# sets of duplicates.
+sub acls_duplicate {
+    my ($self) = @_;
+    my @acls = sort map { $_->[1] } $self->acls;
+    return if (!@acls && $self->{error});
+    return if @acls < 2;
+    my %result;
+    for my $i (0 .. ($#acls - 1)) {
+        my $members = $self->acl_membership ($acls[$i]);
+        return unless defined $members;
+        for my $j (($i + 1) .. $#acls) {
+            my $check = $self->acl_membership ($acls[$j]);
+            return unless defined $check;
+            if ($check eq $members) {
+                $result{$acls[$i]} ||= [];
+                push (@{ $result{$acls[$i]} }, $acls[$j]);
+            }
+        }
+    }
+    my @result;
+    for my $acl (sort keys %result) {
+        push (@result, [ $acl, sort @{ $result{$acl} } ]);
+    }
+    return @result;
+}
+
 # Returns a list of all ACLs stored in the wallet database as a list of pairs
 # of ACL IDs and ACL names, possibly limited by some criteria.  On error and
 # for an empty database, the empty list will be returned.  To distinguish
@@ -238,7 +296,9 @@ sub acls {
     if (!defined $type || $type eq '') {
         ($sql) = $self->acls_all;
     } else {
-        if ($type eq 'entry') {
+        if ($type eq 'duplicate') {
+            return $self->acls_duplicate;
+        } elsif ($type eq 'entry') {
             if (@args == 0) {
                 $self->error ('ACL searches require an argument to search');
                 return;
@@ -416,19 +476,27 @@ between an empty report and an error.
 
 Returns a list of all ACLs matching a search type and string in the
 database, or all ACLs if no search information is given.  There are
-currently three search types.  C<empty> takes no arguments and will return
-only those ACLs that have no entries within them.  C<entry> takes two
-arguments, an entry scheme and a (possibly partial) entry identifier, and
-will return any ACLs containing an entry with that scheme and with an
-identifier containing that value.  C<unused> returns all ACLs that are not
-referenced by any object.
+currently four search types.  C<duplicate> returns sets of duplicate ACLs
+(ones with exactly the same entries).  C<empty> takes no arguments and
+will return only those ACLs that have no entries within them.  C<entry>
+takes two arguments, an entry scheme and a (possibly partial) entry
+identifier, and will return any ACLs containing an entry with that scheme
+and with an identifier containing that value.  C<unused> returns all ACLs
+that are not referenced by any object.
 
-The return value is a list of references to pairs of ACL ID and name.  For
-example, if there are two ACLs in the database, one with name C<ADMIN> and
-ID 1 and one with name C<group/admins> and ID 3, acls() with no arguments
-would return:
+The return value for everything except C<duplicate> is a list of
+references to pairs of ACL ID and name.  For example, if there are two
+ACLs in the database, one with name C<ADMIN> and ID 1 and one with name
+C<group/admins> and ID 3, acls() with no arguments would return:
 
     ([ 1, 'ADMIN' ], [ 3, 'group/admins' ])
+
+The return value for the C<duplicate> search is sets of ACL names that are
+duplicates (have the same entries).  For example, if C<d1>, C<d2>, and
+C<d3> are all duplicates, and C<o1> and C<o2> are also duplicates, the
+result would be:
+
+    ([ 'd1', 'd2', 'd3' ], [ 'o1', 'o2' ])
 
 Returns the empty list on failure.  An error can be distinguished from
 empty search results by calling error().  error() is guaranteed to return
@@ -461,13 +529,14 @@ Returns a list of all objects matching a search type and string in the
 database, or all objects in the database if no search information is
 given.
 
-There are four types of searches currently.  C<type>, with a given type,
+There are five types of searches currently.  C<type>, with a given type,
 will return only those entries where the type matches the given type.
 C<owner>, with a given owner, will only return those objects owned by the
 given ACL name or ID.  C<flag>, with a given flag name, will only return
 those items with a flag set to the given value.  C<acl> operates like
 C<owner>, but will return only those objects that have the given ACL name
-or ID on any of the possible ACL settings, not just owner.
+or ID on any of the possible ACL settings, not just owner.  C<unused> will
+return all entries for which a get command has never been issued.
 
 The return value is a list of references to pairs of type and name.  For
 example, if two objects existed in the database, both of type C<keytab>

@@ -48,6 +48,31 @@ overwrite_file(const char *name, const void *data, size_t length)
 
 
 /*
+ * Given a filename, some data, and a length, append that data to an existing
+ * file.  Dies on any failure.
+ */
+void
+append_file(const char *name, const void *data, size_t length)
+{
+    int fd;
+    ssize_t status;
+
+    fd = open(name, O_WRONLY | O_APPEND);
+    if (fd < 0)
+        sysdie("open of %s failed", name);
+    if (length > 0) {
+        status = write(fd, data, length);
+        if (status < 0)
+            sysdie("write to %s failed", name);
+        else if (status != (ssize_t) length)
+            die("write to %s truncated", name);
+    }
+    if (close(fd) < 0)
+        sysdie("close of %s failed (file probably truncated)", name);
+}
+
+
+/*
  * Given a filename, some data, and a length, write that data to the given
  * file safely and atomically by creating file.new, writing the data, linking
  * file to file.bak, and then renaming file.new to file.

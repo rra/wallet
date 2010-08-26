@@ -21,7 +21,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 dnl Save the current CPPFLAGS, LDFLAGS, and LIBS settings and switch to
-dnl versions that include the Kerberos v5 flags.  Used as a wrapper, with
+dnl versions that include the remctl flags.  Used as a wrapper, with
 dnl RRA_LIB_REMCTL_RESTORE, around tests.
 AC_DEFUN([RRA_LIB_REMCTL_SWITCH],
 [rra_remctl_save_CPPFLAGS="$CPPFLAGS"

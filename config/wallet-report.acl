@@ -1,0 +1,6 @@
+# /etc/remctl/acl/wallet-report -- ACL for wallet reporting.
+#
+# This is the ACL controlling who can run reports against the wallet
+# database using wallet-report via remctl.  This backend doesn't allow any
+# modification of data or retrieval of stored data, but does allow
+# examination of all of the metadata in the wallet database.

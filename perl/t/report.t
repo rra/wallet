@@ -7,7 +7,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 151;
+use Test::More tests => 197;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -46,6 +46,12 @@ is ($server->create ('base', 'service/admin'), 1,
 # Now, we should see one object.
 @objects = $report->objects;
 is (scalar (@objects), 1, ' and now there is one object');
+is ($objects[0][0], 'base', ' with the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+
+# That object should be unused.
+@objects = $report->objects ('unused');
+is (scalar (@objects), 1, ' and that object is unused');
 is ($objects[0][0], 'base', ' with the right type');
 is ($objects[0][1], 'service/admin', ' and the right name');
 
@@ -96,6 +102,14 @@ is ($server->owner ('base', 'service/foo', 'ADMIN'), 1,
 is (scalar (@lines), 1, ' and there is still owner in the report');
 is ($lines[0][0], 'krb5', ' with the right scheme');
 is ($lines[0][1], 'admin@EXAMPLE.COM', ' and the right identifier');
+
+# Both objects should now show as unused.
+@objects = $report->objects ('unused');
+is (scalar (@objects), 2, 'There are now two unused objects');
+is ($objects[0][0], 'base', ' and the first has the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+is ($objects[1][0], 'base', ' and the second has the right type');
+is ($objects[1][1], 'service/foo', ' and the right name');
 
 # Change the owner of the second object to an empty ACL.
 is ($server->owner ('base', 'service/foo', 'second'), 1,
@@ -239,6 +253,75 @@ is (scalar (@lines), 1, 'Searching for ACL naming violations finds one');
 is ($lines[0][0], 3, ' and the first has the right ID');
 is ($lines[0][1], 'second', ' and the right name');
 
+# Set up a file bucket so that we can create an object we can retrieve.
+system ('rm -rf test-files') == 0 or die "cannot remove test-files\n";
+mkdir 'test-files' or die "cannot create test-files: $!\n";
+$Wallet::Config::FILE_BUCKET = 'test-files';
+
+# Create a file object and ensure that it shows up in the unused list.
+is ($server->create ('file', 'test'), 1, 'Creating file:test succeeds');
+is ($server->owner ('file', 'test', 'ADMIN'), 1,
+    ' and setting its owner works');
+@objects = $report->objects ('unused');
+is (scalar (@objects), 4, 'There are now four unused objects');
+is ($objects[0][0], 'base', ' and the first has the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+is ($objects[1][0], 'base', ' and the second has the right type');
+is ($objects[1][1], 'service/foo', ' and the right name');
+is ($objects[2][0], 'base', ' and the third has the right type');
+is ($objects[2][1], 'service/null', ' and the right name');
+is ($objects[3][0], 'file', ' and the fourth has the right type');
+is ($objects[3][1], 'test', ' and the right name');
+
+# Store something and retrieve it, and then check that the file object fell
+# off of the list.
+is ($server->store ('file', 'test', 'Some data'), 1,
+    'Storing data in file:test succeeds');
+is ($server->get ('file', 'test'), 'Some data', ' and retrieving it works');
+@objects = $report->objects ('unused');
+is (scalar (@objects), 3, ' and now there are three unused objects');
+is ($objects[0][0], 'base', ' and the first has the right type');
+is ($objects[0][1], 'service/admin', ' and the right name');
+is ($objects[1][0], 'base', ' and the second has the right type');
+is ($objects[1][1], 'service/foo', ' and the right name');
+is ($objects[2][0], 'base', ' and the third has the right type');
+is ($objects[2][1], 'service/null', ' and the right name');
+
+# The third and fourth ACLs are both empty and should show up as duplicate.
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 1, 'There is one set of duplicate ACLs');
+is (scalar (@{ $acls[0] }), 2, ' with two members');
+is ($acls[0][0], 'fourth', ' and the first member is correct');
+is ($acls[0][1], 'third', ' and the second member is correct');
+
+# Add the same line to both ACLs.  They should still show up as duplicate.
+is ($server->acl_add ('fourth', 'base', 'bar'), 1,
+    'Adding a line to the fourth ACL works');
+is ($server->acl_add ('third', 'base', 'bar'), 1,
+    ' and adding a line to the third ACL works');
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 1, 'There is one set of duplicate ACLs');
+is (scalar (@{ $acls[0] }), 2, ' with two members');
+is ($acls[0][0], 'fourth', ' and the first member is correct');
+is ($acls[0][1], 'third', ' and the second member is correct');
+
+# Add another line to the third ACL.  Now we match second.
+is ($server->acl_add ('third', 'base', 'foo'), 1,
+    'Adding another line to the third ACL works');
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 1, 'There is one set of duplicate ACLs');
+is (scalar (@{ $acls[0] }), 2, ' with two members');
+is ($acls[0][0], 'second', ' and the first member is correct');
+is ($acls[0][1], 'third', ' and the second member is correct');
+
+# Add yet another line to the third ACL.  Now all ACLs are distinct.
+is ($server->acl_add ('third', 'base', 'baz'), 1,
+    'Adding another line to the third ACL works');
+@acls = $report->acls ('duplicate');
+is (scalar (@acls), 0, 'There are no duplicate ACLs');
+is ($report->error, undef, ' and no error');
+
 # Clean up.
 $admin->destroy;
 unlink 'wallet-db';
+system ('rm -r test-files') == 0 or die "cannot remove test-files\n";

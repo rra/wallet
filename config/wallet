@@ -1,7 +1,9 @@
 # /etc/remctl/conf.d/wallet -- Run wallet-backend for the wallet system.
 #
-# This is a remctld configuration fragment to run wallet-backend, which
-# implements the server side of the wallet system.
+# This is a remctld configuration fragment to run wallet-backend and
+# wallet-report, which implement the server side of the wallet system.
 
 wallet store /usr/sbin/wallet-backend stdin=4 ANYUSER
 wallet ALL /usr/sbin/wallet-backend ANYUSER
+
+wallet-report /usr/sbin/wallet-report /etc/remctl/acl/wallet-report

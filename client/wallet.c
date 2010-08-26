@@ -22,30 +22,9 @@
 #include <util/xmalloc.h>
 
 /*
- * Basic wallet behavior options set either on the command line or via
- * krb5.conf.  If set via krb5.conf, we allocate memory for the strings, but
- * we never free them.
+ * Usage message.  Use as a format and pass the port number and default server
+ * name.
  */
-struct options {
-    char *type;
-    char *server;
-    char *principal;
-    char *user;
-    int port;
-};
-
-/*
- * Allow defaults to be set for a particular site with configure options if
- * people don't want to use krb5.conf for some reason.
- */
-#ifndef WALLET_SERVER
-# define WALLET_SERVER NULL
-#endif
-#ifndef WALLET_PORT
-# define WALLET_PORT 0
-#endif
-
-/* Usage message.  Use as a format and pass the port number. */
 static const char usage_message[] = "\
 Usage: wallet [options] <command> <type> <name> [<arg> ...]\n\
        wallet [options] acl <command> <id> [<arg> ...]\n\
@@ -58,11 +37,12 @@ Options:\n\
     -p <port>       Port of server (default: %d, if zero, remctl default)\n\
     -S <srvtab>     For the get keytab command, srvtab output file\n\
     -s <server>     Server hostname (default: %s)\n\
+    -u <user>       Authenticate as <user> before running command\n\
     -v              Display the version of wallet\n";
 
 
 /*
- * Display the usage message for remctl.
+ * Display the usage message for wallet.
  */
 static void
 usage(int status)
@@ -70,59 +50,6 @@ usage(int status)
     fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT,
             (WALLET_SERVER == NULL) ? "<none>" : WALLET_SERVER);
     exit(status);
-}
-
-
-/*
- * Load a string option from Kerberos appdefaults.  This requires an annoying
- * workaround because one cannot specify a default value of NULL.
- */
-static void
-default_string(krb5_context ctx, const char *opt, const char *defval,
-               char **result)
-{
-    if (defval == NULL)
-        defval = "";
-    krb5_appdefault_string(ctx, "wallet", NULL, opt, defval, result);
-    if (*result != NULL && (*result)[0] == '\0') {
-        free(*result);
-        *result = NULL;
-    }
-}
-
-
-/*
- * Load a number option from Kerberos appdefaults.  The native interface
- * doesn't support numbers, so we actually read a string and then convert.
- */
-static void
-default_number(krb5_context ctx, const char *opt, int defval, int *result)
-{
-    char *tmp = NULL;
-
-    krb5_appdefault_string(ctx, "wallet", NULL, opt, "", &tmp);
-    if (tmp != NULL && tmp[0] != '\0')
-        *result = atoi(tmp);
-    else
-        *result = defval;
-    if (tmp != NULL)
-        free(tmp);
-}
-
-
-/*
- * Set option defaults and then get krb5.conf configuration, if any, and
- * override the defaults.  Later, command-line options will override those
- * defaults.
- */
-static void
-set_defaults(krb5_context ctx, struct options *options)
-{
-    default_string(ctx, "wallet_type", "wallet", &options->type);
-    default_string(ctx, "wallet_server", WALLET_SERVER, &options->server);
-    default_string(ctx, "wallet_principal", NULL, &options->principal);
-    default_number(ctx, "wallet_port", WALLET_PORT, &options->port);
-    options->user = NULL;
 }
 
 
@@ -151,7 +78,7 @@ main(int argc, char *argv[])
     retval = krb5_init_context(&ctx);
     if (retval != 0)
         die_krb5(ctx, retval, "cannot initialize Kerberos");
-    set_defaults(ctx, &options);
+    default_options(ctx, &options);
 
     while ((option = getopt(argc, argv, "c:f:k:hp:S:s:u:v")) != EOF) {
         switch (option) {
@@ -242,6 +169,10 @@ main(int argc, char *argv[])
         } else {
             status = get_file(r, options.type, argv[1], argv[2], file);
         }
+    } else if (strcmp(argv[0], "rekey") == 0) {
+        if (argc > 2)
+            die("too many arguments");
+        status = rekey_keytab(r, ctx, options.type, argv[1]);
     } else {
         count = argc + 1;
         if (strcmp(argv[0], "store") == 0) {

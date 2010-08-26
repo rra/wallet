@@ -57,7 +57,8 @@ AC_DEFUN([_RRA_LIB_GSSAPI_REDUCED],
  AC_CHECK_LIB([gssapi_krb5], [gss_import_name], [GSSAPI_LIBS="-lgssapi_krb5"],
      [AC_CHECK_LIB([gssapi], [gss_import_name], [GSSAPI_LIBS="-lgssapi"],
          [AC_CHECK_LIB([gss], [gss_import_name], [GSSAPI_LIBS="-lgss"],
-             [AC_MSG_ERROR([cannot find usable GSS-API library])])])])])
+             [AC_MSG_ERROR([cannot find usable GSS-API library])])])])
+ RRA_LIB_GSSAPI_RESTORE])
 
 dnl Does the appropriate library checks for GSS-API linkage when we don't
 dnl have krb5-config or reduced dependencies.  libgss is used as a last

@@ -147,7 +147,7 @@ sub command {
     if ($command eq 'acl') {
         my $action = shift @args;
         if ($action eq 'add') {
-            check_args (3, 3, [], @args);
+            check_args (3, 3, [3], @args);
             $server->acl_add (@args) or failure ($server->error, @_);
         } elsif ($action eq 'create') {
             check_args (1, 1, [], @args);
@@ -164,7 +164,7 @@ sub command {
                 failure ($server->error, @_);
             }
         } elsif ($action eq 'remove') {
-            check_args (3, 3, [], @args);
+            check_args (3, 3, [3], @args);
             $server->acl_remove (@args) or failure ($server->error, @_);
         } elsif ($action eq 'rename') {
             check_args (2, 2, [], @args);

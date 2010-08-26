@@ -1,0 +1,184 @@
+#!/usr/bin/perl -w
+#
+# wallet-unknown-hosts -- Report host keytabs in wallet for unknown hosts.
+#
+# Written by Russ Allbery <rra@stanford.edu>
+# Copyright 2010 Board of Trustees, Leland Stanford Jr. University
+#
+# See LICENSE for licensing terms.
+
+##############################################################################
+# Site configuration
+##############################################################################
+
+# The path to the supplemental database used to store last seen times and
+# counts.  Keys are hostnames, and values are the number of times the hostname
+# was not seen in DNS, a comma, and the UNIX seconds since epoch of the first
+# run during which the host was not found.
+#
+# This should probably be in the wallet database, but let's try it here first
+# and hammer out the data and then add it there later.
+our $HISTORY = '/var/lib/wallet/hosts.db';
+
+# Default thresholds for reporting or purging.  $MIN is the number of times we
+# see the keytab in a row eligible for purge, and $THRESHOLD is the newest
+# that the first time can be and still be eligible.
+our $MIN       = 3;
+our $THRESHOLD = time - 30 * 24 * 60 * 60;
+
+# Set up a Net::DNS resolver that will be used by local_check_keytab.
+BEGIN {
+    use Net::DNS;
+    our $DNS = Net::DNS::Resolver->new;
+}
+
+# Pre-filter.  This is called for all host-based keytabs and is the place to
+# apply local exceptions for keytabs that should be retained even though
+# there's no corresponding DNS entry.  The first argument is the full
+# principal name and the second argument is the extracted host.
+#
+# This function should return 1 if the host is found or if the keytab should
+# otherwise not be a candidate for purging, 0 if the keytab should be a
+# candidate for purging, and undef if the normal DNS-based check should be
+# done.
+sub local_check_keytab {
+    my ($keytab, $host) = @_;
+
+    # Aliases of proxy.best.stanford.edu and www.best.stanford.edu should not
+    # have host-based keytabs of their own.
+    my %purge = map { $_ => 1 }
+        qw(proxy.best.stanford.edu www.best.stanford.edu);
+    my $query = $DNS->search ($host);
+    return unless $query;
+    for my $rr ($query->answer) {
+        next unless $rr->type eq 'CNAME';
+        return 0 if $purge{$rr->cname};
+    }
+
+    # Do normal processing by default.
+    return;
+}
+
+##############################################################################
+# Modules and declarations
+##############################################################################
+
+require 5.006;
+
+use strict;
+
+use DB_File ();
+use Wallet::Report ();
+use Wallet::Server ();
+
+##############################################################################
+# Utility functions
+##############################################################################
+
+# Return a list of host-based keytab objects in the wallet database.  The
+# current heuristic is to look for any keytab object with a principal name
+# that includes a slash and at least one period.  This may be refined later.
+sub list_keytabs {
+    my $report = Wallet::Report->new;
+    my @objects = $report->objects ('type', 'keytab');
+    if (!@objects and $report->error) {
+        die $report->error, "\n";
+    }
+    return grep { m%/.+\..+% } map { $$_[1] } @objects;
+}
+
+# Given a host, look it up in DNS and see if it exists.  Returns true if the
+# host exists and false otherwise.
+sub check_host {
+    my ($host) = @_;
+    my $addr = gethostbyname $host;
+    return defined ($addr) ? 1 : 0;
+}
+
+##############################################################################
+# Main functions
+##############################################################################
+
+# Do a scan of all host-based keytabs in wallet and record those that are not
+# found in DNS or which should not be used according to site configuration.
+sub check {
+    tie %history, 'DB_File', $HISTORY;
+    my @keytabs = list_keytabs;
+    for my $keytab (@keytabs) {
+        my ($host) = (split '/', $keytab)[1];
+        my $result = local_check_keytab ($keytab, $host);
+        unless (defined $result) {
+            $result = check_host ($host);
+        }
+        if ($result) {
+            delete $history{$keytab};
+        } elsif ($history{$keytab}) {
+            my ($count, $time) = split (',', $history{$keytab});
+            $count++;
+            $history{$keytab} = "$count,$time";
+        } else {
+            $history{$keytab} = '1,' . time;
+        }
+    }
+    untie %history;
+}
+
+# Report on all keytabs that are eligible to be deleted.  Takes two values:
+# the threshold for the number of times the keytab had to show up as eligible
+# for purge, and the threshold for how long the keytab must have been on that
+# list (given as a threshold time in seconds since epoch).
+sub report {
+    my ($min, $threshold) = @_;
+    tie %history, 'DB_File', $HISTORY;
+    for my $keytab (sort keys %history) {
+        my ($count, $time) = split (',', $history{$keytab});
+        if ($count > $min && $time < $threshold) {
+            print $keytab, "\n";
+        }
+    }
+    untie %history;
+}
+
+# Purge eligible keytabs.  Takes three values: the user to authenticate as,
+# the threshold for the number of times the keytab had to show up as eligible
+# for purge, and the threshold for the first date when the keytab was seen
+# eligible for purge.  Rather than listing the keytabs, this deletes them
+# immediately.
+sub purge {
+    my ($user, $min, $threshold) = @_;
+    my $wallet = Wallet::Server->new ($user, 'localhost');
+    tie %history, 'DB_File', $HISTORY;
+    for my $keytab (sort keys %history) {
+        my ($count, $time) = split (',', $history{$keytab});
+        if ($count > $min && $time < $threshold) {
+            unless ($wallet->destroy ('keytab', $keytab)) {
+                warn "$0: cannot destroy keytab $keytab: ",
+                    $wallet->error, "\n";
+            }
+        }
+    }
+    untie %history;
+}
+
+##############################################################################
+# Main routine
+##############################################################################
+
+my $command = shift or die "Usage: $0 (check | report | purge)\n";
+if ($command eq 'check') {
+    check;
+} elsif ($command eq 'report') {
+    my ($min, $threshold) = @_;
+    $min = $MIN unless defined ($min);
+    die "$0: minimum count must be at least 1\n" if $min < 1;
+    $threshold = $THRESHOLD unless defined ($threshold);
+    report ($min, $threshold);
+} elsif ($command eq 'purge') {
+    my $user = $ENV{REMOTE_USER} or die "$0: REMOTE_USER must be set\n";
+    $min = $MIN unless defined ($min);
+    die "$0: minimum count must be at least 1\n" if $min < 1;
+    $threshold = $THRESHOLD unless defined ($threshold);
+    purge ($min, $threshold);
+} else {
+    die "$0: unknown command $command\n";
+}

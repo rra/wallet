@@ -220,6 +220,8 @@ Holds the supported ACL schemes and their corresponding Perl classes:
   insert into acl_schemes (as_name, as_class)
       values ('krb5', 'Wallet::ACL::Krb5');
   insert into acl_schemes (as_name, as_class)
+      values ('krb5-regex', 'Wallet::ACL::Krb5::Regex');
+  insert into acl_schemes (as_name, as_class)
       values ('netdb', 'Wallet::ACL::NetDB');
   insert into acl_schemes (as_name, as_class)
       values ('netdb-root', 'Wallet::ACL::NetDB::Root');

@@ -18,11 +18,6 @@ Client:
  * Add readline support to the wallet client to make it easier to issue
    multiple commands.
 
- * Add support for rekeying in the wallet client.  Need to resolve how to
-   get a list of principals to rekey and which keytabs to work on.  This
-   possibly should be a separate binary from the regular wallet client
-   binary.
-
  * Support authenticating with a keytab.
 
  * Allow store data to contain nuls.  Requires rewriting the command
@@ -87,6 +82,9 @@ ACLs:
  * Provide an API for verifiers to syntax-check the values before an ACL
    is set and implement syntax checking for the Krb5 verifier.
 
+ * Investigate how best to support client authentication using anonymous
+   PKINIT for things like initial system keying.
+
 Database:
 
  * Fix case-insensitivity bug in unique keys with MySQL for objects.
@@ -129,6 +127,19 @@ Objects:
    a different type than stored certificates?
 
 Reports:
+
+ * Add audit for references to unknown ACLs, possibly introduced by
+   previous versions before ACL deletion was checked with database
+   backends that don't do referential integrity.
+
+ * Add report for all objects that have never been stored.
+
+ * Add report of all ACLs with identical contents.
+
+ * For objects tied to hostnames, report on objects referring to hosts
+   which do not exist.  For the initial pass, this is probably only keytab
+   objects with names containing a slash where the part after the slash
+   looks like a hostname.  This may need some configuration help.
 
  * Make contrib/wallet-summary generic and include it in wallet-report,
    with additional configuration in Wallet::Config.  Enhance it to report

@@ -3,14 +3,15 @@
 # Tests for the basic wallet ACL verifiers.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 47;
+use Test::More tests => 57;
 
 use Wallet::ACL::Base;
 use Wallet::ACL::Krb5;
+use Wallet::ACL::Krb5::Regex;
 use Wallet::ACL::NetDB;
 use Wallet::ACL::NetDB::Root;
 use Wallet::Config;
@@ -38,6 +39,21 @@ is ($verifier->check (undef, 'rra@stanford.edu'), undef,
 is ($verifier->error, 'no principal specified', ' and right error');
 is ($verifier->check ('rra@stanford.edu', ''), undef, 'Empty ACL');
 is ($verifier->error, 'malformed krb5 ACL', ' and right error');
+
+$verifier = Wallet::ACL::Krb5::Regex->new;
+isa_ok ($verifier, 'Wallet::ACL::Krb5::Regex', 'krb5-regex verifier');
+is ($verifier->check ('rra@stanford.edu', '.*@stanford\.edu\z'), 1,
+    'Simple check');
+is ($verifier->check ('rra@stanford.edu', '^a.*@stanford\.edu'), 0,
+    'Simple failure');
+is ($verifier->error, undef, 'No error set');
+is ($verifier->check (undef, '^rra@stanford\.edu\z'), undef,
+    'Undefined principal');
+is ($verifier->error, 'no principal specified', ' and right error');
+is ($verifier->check ('rra@stanford.edu', ''), undef, 'Empty ACL');
+is ($verifier->error, 'no ACL specified', ' and right error');
+is ($verifier->check ('rra@stanford.edu', '(rra'), undef, 'Malformed regex');
+is ($verifier->error, 'malformed krb5-regex ACL', ' and right error');
 
 # Tests for the NetDB verifiers.  Skip these if we don't have a keytab or if
 # we can't find remctld.

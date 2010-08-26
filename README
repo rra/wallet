@@ -1,4 +1,4 @@
-                           wallet release 0.11
+                           wallet release 0.12
                      (secure data management system)
 
                 Written by Russ Allbery <rra@stanford.edu>
@@ -7,9 +7,6 @@
   Stanford Jr. University.  This software is distributed under a BSD-style
   license.  Please see the file LICENSE in the distribution for more
   information.
-
-  This software is beta-quality and should be treated with caution.  It is
-  currently being tested for production deployment at Stanford.
 
 BLURB
 
@@ -275,4 +272,5 @@ THANKS
   security models.
 
   To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
-  and many of the wallet server-side reports.
+  many of the wallet server-side reports, and the initial wallet-rekey
+  implementation.
