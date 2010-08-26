@@ -1,3 +1,4 @@
+debian/tmp/etc/remctl/acl/wallet-report
 debian/tmp/usr/sbin/wallet-admin
 debian/tmp/usr/sbin/wallet-backend
 debian/tmp/usr/sbin/wallet-report
