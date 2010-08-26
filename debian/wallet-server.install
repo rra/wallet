@@ -8,5 +8,3 @@ debian/tmp/usr/share/man/man8/wallet-report.8
 debian/tmp/usr/share/perl5
 
 config/wallet                   etc/remctl/conf.d
-contrib/wallet-summary          usr/sbin
-contrib/wallet-summary.8        usr/share/man/man8

@@ -1,3 +1,20 @@
+wallet (0.12-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - New wallet-rekey client program to rekey a keytab.
+    - New ACL type krb5-regex for the server.
+    - New objects unused wallet-report report.
+    - New acls duplicate wallet-report report.
+    - Add a help command to wallet-report.
+  * Don't install wallet-summary in /usr/sbin in the wallet-server package
+    and instead install it in /usr/share/doc/wallet-server/examples.  This
+    program is Stanford-specific and would require extensive changes for
+    other sites.
+  * Install the other contrib scripts except convert-srvtab-db to the
+    examples directory for wallet-server.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 25 Aug 2010 18:03:49 -0700
+
 wallet (0.11-1) unstable; urgency=low
 
   * New upstream release.
