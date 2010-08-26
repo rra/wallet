@@ -9,7 +9,7 @@ dnl See LICENSE for licensing terms.
 dnl We cannot use -Wall -Werror with AM_INIT_AUTOMAKE since we override
 dnl distuninstallcheck (not supported by Perl).
 AC_PREREQ([2.64])
-AC_INIT([wallet], [0.11], [rra@stanford.edu])
+AC_INIT([wallet], [0.12], [rra@stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -27,8 +27,10 @@ RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
 AC_CHECK_FUNCS([krb5_get_init_creds_opt_alloc \
     krb5_get_init_creds_opt_set_default_flags \
-    krb5_kt_free_entry \
     krb5_principal_get_realm])
+AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],
+    [RRA_FUNC_KRB5_GET_INIT_CREDS_OPT_FREE_ARGS])
+AC_CHECK_DECLS([krb5_kt_free_entry])
 AC_CHECK_MEMBERS([krb5_keytab_entry.keyblock], , , [#include <krb5.h>])
 RRA_LIB_KRB5_RESTORE
 
@@ -68,4 +70,5 @@ AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
 AC_CONFIG_FILES([tests/client/full-t], [chmod +x tests/client/full-t])
 AC_CONFIG_FILES([tests/client/prompt-t], [chmod +x tests/client/prompt-t])
+AC_CONFIG_FILES([tests/client/rekey-t], [chmod +x tests/client/rekey-t])
 AC_OUTPUT

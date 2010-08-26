@@ -47,8 +47,8 @@ my @pod = map {
     my $pod = "$ENV{SOURCE}/../" . $_;
     $pod =~ s,[^/.][^/]*/../,,g;
     $pod;
-} qw(client/wallet.pod server/keytab-backend server/wallet-admin
-     server/wallet-backend server/wallet-report);
+} qw(client/wallet.pod client/wallet-rekey.pod server/keytab-backend
+     server/wallet-admin server/wallet-backend server/wallet-report);
 plan tests => scalar @pod;
 
 # Finally, do the checks.

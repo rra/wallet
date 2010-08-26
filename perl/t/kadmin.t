@@ -109,4 +109,6 @@ SKIP: {
     like ($kadmin->error, qr%^error creating keytab for wallet/one%,
           ' and the right error message is set');
     is ($kadmin->destroy ('wallet/one'), 1, ' and deleting it again works');
+
+    unlink 'krb5cc_test';
 }

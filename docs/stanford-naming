@@ -104,11 +104,10 @@ Object Naming
 
     <group>-<server>-tivoli-key
 
-        The Tivoli backup encryption key for this server.  This is stored
-        in the same file as the password used to connect to the Tivoli
-        server, so both are stored together.  This file is found at
-        /etc/adsm/TSM.PWD.  It must be base64-encoded before being stored
-        in the wallet.
+        The Tivoli password or backup encryption key for this server.
+        Both the password and the encryption key, if used, are stored in
+        the same file, so both are stored together.  This file is found at
+        /etc/adsm/TSM.PWD.
 
     <group>-<service>-config-<name>
 

@@ -103,8 +103,14 @@ sub enctypes {
     close KEYTAB;
 
     my @enctypes;
-    open (KLIST, '-|', 'klist', '-ke', 'keytab')
-        or die "cannot run klist: $!\n";
+    my $pid = open (KLIST, '-|');
+    if (not defined $pid) {
+        die "cannot fork: $!\n";
+    } elsif ($pid == 0) {
+        open (STDERR, '>', '/dev/null') or die "cannot reopen stderr: $!\n";
+        exec ('klist', '-ke', 'keytab')
+            or die "cannot run klist: $!\n";
+    }
     local $_;
     while (<KLIST>) {
         next unless /^ *\d+ /;

@@ -5,7 +5,7 @@ wallet - Client for retrieving secure data from a central server
 =for stopwords
 -hv srvtab arg keytabs metadata keytab ACL PTS kinit klist remctl PKINIT
 acl timestamp autocreate backend-specific setacl enctypes enctype ktadd
-KDC appdefaults remctld Allbery uuencode getacl backend
+KDC appdefaults remctld Allbery uuencode getacl backend ACL's
 
 =head1 SYNOPSIS
 
@@ -209,6 +209,15 @@ entry in the special ACL C<ADMIN> cannot be removed to protect against
 accidental lockout, but administrators can remove themselves from the
 C<ADMIN> ACL and can leave only a non-functioning entry on the ACL.  Use
 caution when removing entries from the C<ADMIN> ACL.
+
+=item acl rename <id> <name>
+
+Renames the ACL identified by <id> to <name>.  This changes the
+human-readable name, not the underlying numeric ID, so the ACL's
+associations with objects will be unchanged.  The C<ADMIN> ACL may not be
+renamed.  <id> may be either the current name or the numeric ID.  <name>
+must not be all-numeric.  To rename an ACL, the current user must be
+authorized by the C<ADMIN> ACL.
 
 =item acl show <id>
 

@@ -10,40 +10,43 @@
 # and are not generated or touched by configure.  They're listed here to be
 # added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
-	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/NetDB.pm		    \
-	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm		    \
-	perl/Wallet/Config.pm perl/Wallet/Database.pm perl/Wallet/Kadmin.pm \
-	perl/Wallet/Kadmin/Heimdal.pm perl/Wallet/Kadmin/MIT.pm		    \
-	perl/Wallet/Object/Base.pm perl/Wallet/Object/File.pm		    \
-	perl/Wallet/Object/Keytab.pm perl/Wallet/Report.pm		    \
-	perl/Wallet/Schema.pm perl/Wallet/Server.pm perl/t/acl.t	    \
-	perl/t/admin.t perl/t/config.t perl/t/data/README		    \
-	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/file.t	    \
-	perl/t/init.t perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm    \
-	perl/t/object.t perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t  \
-	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		    \
+PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			   \
+	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/Krb5/Regex.pm		   \
+	perl/Wallet/ACL/NetDB.pm perl/Wallet/ACL/NetDB/Root.pm		   \
+	perl/Wallet/Admin.pm perl/Wallet/Config.pm perl/Wallet/Database.pm \
+	perl/Wallet/Kadmin.pm perl/Wallet/Kadmin/Heimdal.pm		   \
+	perl/Wallet/Kadmin/MIT.pm perl/Wallet/Object/Base.pm		   \
+	perl/Wallet/Object/File.pm perl/Wallet/Object/Keytab.pm		   \
+	perl/Wallet/Report.pm perl/Wallet/Schema.pm perl/Wallet/Server.pm  \
+	perl/t/acl.t perl/t/admin.t perl/t/config.t perl/t/data/README	   \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf			   \
+	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/file.t	   \
+	perl/t/init.t perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm   \
+	perl/t/object.t perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t \
+	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		   \
 	perl/t/verifier.t
 
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
-	config/allow-extract config/keytab config/keytab.acl config/wallet \
-	docs/design contrib/README contrib/convert-srvtab-db		   \
-	contrib/used-principals contrib/wallet-contacts			   \
-	contrib/wallet-summary contrib/wallet-summary.8 docs/design-acl	   \
-	docs/design-api docs/netdb-role-api docs/notes docs/setup	   \
-	docs/stanford-naming examples/stanford.conf tests/TESTS		   \
-	tests/data/README tests/data/allow-extract tests/data/basic.conf   \
-	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	   \
-	tests/data/fake-kadmin tests/data/fake-keytab			   \
-	tests/data/fake-keytab-2 tests/data/fake-keytab-merge		   \
-	tests/data/fake-keytab-old tests/data/fake-srvtab		   \
-	tests/data/full.conf tests/data/wallet.conf			   \
-	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
-	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
-	tests/tap/kerberos.sh tests/tap/libtap.sh tests/tap/remctl.sh	   \
+EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		     \
+	client/wallet-rekey.pod config/allow-extract config/keytab	     \
+	config/keytab.acl config/wallet config/wallet-report.acl docs/design \
+	contrib/README contrib/convert-srvtab-db contrib/used-principals     \
+	contrib/wallet-contacts contrib/wallet-summary			     \
+	contrib/wallet-summary.8 contrib/wallet-unknown-hosts		     \
+	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	     \
+	docs/setup docs/stanford-naming examples/stanford.conf tests/TESTS   \
+	tests/data/README tests/data/allow-extract tests/data/basic.conf     \
+	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	     \
+	tests/data/fake-kadmin tests/data/fake-keytab			     \
+	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		     \
+	tests/data/fake-keytab-merge tests/data/fake-keytab-old		     \
+	tests/data/fake-keytab-partial tests/data/fake-keytab-partial-result \
+	tests/data/fake-keytab-rekey tests/data/fake-keytab-unknown	     \
+	tests/data/fake-srvtab tests/data/full.conf tests/data/wallet.conf   \
+	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	     \
+	tests/server/backend-t tests/server/keytab-t tests/server/report-t   \
+	tests/tap/kerberos.sh tests/tap/libtap.sh tests/tap/remctl.sh	     \
 	tests/util/xmalloc-t $(PERL_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
@@ -57,23 +60,35 @@ util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h	\
 	util/messages.h util/xmalloc.c util/xmalloc.h
 util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
-bin_PROGRAMS = client/wallet
+noinst_LIBRARIES += client/libwallet.a
+client_libwallet_a_SOURCES = client/file.c client/internal.h client/keytab.c \
+	client/krb5.c client/options.c client/remctl.c client/srvtab.c
+client_libwallet_a_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
+
+bin_PROGRAMS = client/wallet client/wallet-rekey
 dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
 	server/wallet-backend server/wallet-report
-client_wallet_SOURCES = client/file.c client/internal.h client/keytab.c \
-	client/krb5.c client/remctl.c client/srvtab.c client/wallet.c
 client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
 client_wallet_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
-client_wallet_LDADD = util/libutil.a portable/libportable.a $(REMCTL_LIBS) \
-	$(KRB5_LIBS)
+client_wallet_LDADD = client/libwallet.a util/libutil.a \
+	portable/libportable.a $(REMCTL_LIBS) $(KRB5_LIBS)
+client_wallet_rekey_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
+client_wallet_rekey_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
+client_wallet_rekey_LDADD = client/libwallet.a util/libutil.a \
+	portable/libportable.a $(REMCTL_LIBS) $(KRB5_LIBS)
 
-dist_man_MANS = client/wallet.1 server/keytab-backend.8 \
+dist_man_MANS = client/wallet.1 client/wallet-rekey.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
-# without optimization turned on, and add -DDEBUG=1 so we'll also compile all
-# debugging code and test it.
-WARNINGS = -g -O -DDEBUG=1 -Wall -W -Wendif-labels -Wpointer-arith \
+# without optimization turned on.  Desirable warnings that can't be turned
+# on due to other problems:
+#
+#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
+#
+# Last checked against gcc 4.4 (2010-08-15).
+WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self \
+	-Wswitch-enum -Wdeclaration-after-statement -Wshadow -Wpointer-arith \
 	-Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
 	-Wmissing-prototypes -Wnested-externs -Werror
 
@@ -97,9 +112,9 @@ all-local: perl/blib/lib/Wallet/Config.pm
 
 perl/blib/lib/Wallet/Config.pm:
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/NetDB \
-		perl/Wallet/Kadmin perl/Wallet/Object perl/t perl/t/data \
-		perl/t/lib 2>/dev/null || true ; \
+	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5 \
+		perl/Wallet/ACL/NetDB perl/Wallet/Kadmin perl/Wallet/Object \
+		perl/t perl/t/data perl/t/lib 2>/dev/null || true ; \
 	    for f in $(PERL_FILES) ; do \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
 	    done \

@@ -246,8 +246,6 @@ main(int argc, char *argv[])
     size_t limit = 0;
     int willfail = 0;
     unsigned char code;
-    struct rlimit rl;
-    void *tmp;
 
     if (argc < 3)
         die("Usage error.  Type, size, and limit must be given.");
@@ -290,6 +288,9 @@ main(int argc, char *argv[])
      */
     if (limit > 0) {
 #if HAVE_SETRLIMIT && defined(RLIMIT_AS)
+        struct rlimit rl;
+        void *tmp;
+
         rl.rlim_cur = limit;
         rl.rlim_max = limit;
         if (setrlimit(RLIMIT_AS, &rl) < 0) {

@@ -8,7 +8,7 @@
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 44;
+use Test::More tests => 48;
 
 # Create a dummy class for Wallet::Report that prints what method was called
 # with its arguments and returns data for testing.
@@ -35,6 +35,7 @@ sub acls {
     shift;
     print "acls @_\n";
     return if ($error or $empty);
+    return ([ qw/d1 d2 d3/ ], [ qw/o1 o2/ ]) if (@_ && $_[0] eq 'duplicate');
     return ([ 1, 'ADMIN' ], [ 2, 'group/admins' ], [ 4, 'group/users' ]);
 }
 
@@ -119,6 +120,10 @@ is ($err, '', 'List succeeds for ACLs');
 is ($out, "new\nacls \n"
     . "ADMIN (ACL ID: 1)\ngroup/admins (ACL ID: 2)\ngroup/users (ACL ID: 4)\n",
     ' and returns the right output');
+($out, $err) = run_report ('acls', 'duplicate');
+is ($err, '', 'Duplicate report succeeds for ACLs');
+is ($out, "new\nacls duplicate\nd1 d2 d3\no1 o2\n",
+    ' and returns the right output');
 ($out, $err) = run_report ('acls', 'entry', 'foo', 'foo');
 is ($err, '', 'List succeeds for ACLs');
 is ($out, "new\nacls entry foo foo\n"
@@ -168,6 +173,9 @@ $Wallet::Report::empty = 1;
 ($out, $err) = run_report ('acls');
 is ($err, '', 'acls runs with an empty list and no errors');
 is ($out, "new\nacls \n", ' and calls the right methods');
+($out, $err) = run_report ('acls', 'duplicate');
+is ($err, '', 'acls duplicate runs with an empty list and no errors');
+is ($out, "new\nacls duplicate\n", ' and calls the right methods');
 ($out, $err) = run_report ('audit', 'objects', 'name');
 is ($err, '', 'audit runs with an empty list and no errors');
 is ($out, "new\naudit objects name\n", ' and calls the right methods');

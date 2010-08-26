@@ -10,18 +10,12 @@
 remctld_start () {
     local keytab principal
     rm -f "$BUILD/data/remctld.pid"
-    keytab=''
-    for f in "$BUILD/data/test.keytab" "$SOURCE/data/test.keytab" ; do
-        if [ -r "$f" ] ; then
-            keytab="$f"
-        fi
-    done
-    principal=''
-    for f in "$BUILD/data/test.principal" "$SOURCE/data/test.principal" ; do
-        if [ -r "$f" ] ; then
-            principal=`cat "$BUILD/data/test.principal"`
-        fi
-    done
+    keytab=`test_file_path data/test.keytab`
+    principal=`test_file_path data/test.principal`
+    principal=`cat "$principal" 2>/dev/null`
+    if [ -z "$keytab" ] || [ -z "$principal" ] ; then
+        return 1
+    fi
     if [ -n "$VALGRIND" ] ; then
         ( "$VALGRIND" --log-file=valgrind.%p --leak-check=full "$1" -m \
           -p 14373 -s "$principal" -P "$BUILD/data/remctld.pid" -f "$2" -d \

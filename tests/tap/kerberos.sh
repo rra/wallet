@@ -1,7 +1,7 @@
 # Shell function library to initialize Kerberos credentials
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
 #
 # See LICENSE for licensing terms.
 
@@ -10,18 +10,9 @@
 # configured.  Sets the global principal variable to the principal to use.
 kerberos_setup () {
     local keytab
-    keytab=''
-    for f in "$BUILD/data/test.keytab" "$SOURCE/data/test.keytab" ; do
-        if [ -r "$f" ] ; then
-            keytab="$f"
-        fi
-    done
-    principal=''
-    for f in "$BUILD/data/test.principal" "$SOURCE/data/test.principal" ; do
-        if [ -r "$f" ] ; then
-            principal=`cat "$BUILD/data/test.principal"`
-        fi
-    done
+    keytab=`test_file_path data/test.keytab`
+    principal=`test_file_path data/test.principal`
+    principal=`cat "$principal" 2>/dev/null`
     if [ -z "$keytab" ] || [ -z "$principal" ] ; then
         return 1
     fi
@@ -45,4 +36,19 @@ kerberos_setup () {
 # Clean up at the end of a test.  Currently only removes the ticket cache.
 kerberos_cleanup () {
     rm -f "$BUILD/data/test.cache"
+}
+
+# List the contents of a keytab with enctypes and keys.  This adjusts for the
+# difference between MIT Kerberos (which uses klist) and Heimdal (which uses
+# ktutil).  Be careful to try klist first, since the ktutil on MIT Kerberos
+# may just hang.  Takes the keytab to list and the file into which to save the
+# output, and strips off the header containing the file name.
+ktutil_list () {
+    if klist -keK "$1" > ktutil-tmp 2>/dev/null ; then
+        :
+    else
+        ktutil -k "$1" list --keys > ktutil-tmp < /dev/null 2>/dev/null
+    fi
+    sed -e '/Keytab name:/d' -e "/^[^ ]*:/d" ktutil-tmp > "$2"
+    rm -f ktutil-tmp
 }
