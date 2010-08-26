@@ -12,6 +12,7 @@ wallet (0.12-1) UNRELEASED; urgency=low
     other sites.
   * Install the other contrib scripts except convert-srvtab-db to the
     examples directory for wallet-server.
+  * Update standards version to 3.9.1 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Wed, 25 Aug 2010 18:03:49 -0700
 
