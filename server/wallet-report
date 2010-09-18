@@ -31,6 +31,7 @@ Wallet reporting help:
   objects owner <owner>         Objects owned by that owner
   objects type <type>           Objects of that type
   objects unused                Objects that have never been stored/gotten
+  owners <type> <name>          All ACL entries owning matching objects
 EOH
 
 ##############################################################################
