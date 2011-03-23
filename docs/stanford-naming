@@ -153,6 +153,13 @@ Object Naming
         files and assembled into a shibboleth.xml file, but that isn't
         always the path of least resistance.
 
+    <group>-<service>-ssl-keystore
+
+        The Java keystore file (containing both public and private key)
+        used by a service for authentication to other services.  If a
+        given service uses more than one, include the purpose in the
+        <service> part of the name.
+
     <group>-<service>-ssl-pkcs12
 
         The PKCS#12 file (containing both public and private key) used by
