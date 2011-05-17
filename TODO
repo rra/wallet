@@ -20,9 +20,6 @@ Client:
 
  * Support authenticating with a keytab.
 
- * Allow store data to contain nuls.  Requires rewriting the command
-   processing for store to use iovecs.
-
  * When obtaining tickets in the wallet client with -u, should we get a
    TGT as we do now or just directly obtain the service ticket we're going
    to use for remctl?
@@ -89,9 +86,6 @@ Database:
 
  * Fix case-insensitivity bug in unique keys with MySQL for objects.
 
- * Add the database schema version to a global table so that we can use it
-   to support schema upgrades in the future.
-
  * On upgrades, support adding new object types and ACL verifiers to the
    class tables.
 
@@ -133,8 +127,6 @@ Reports:
    backends that don't do referential integrity.
 
  * Add report for all objects that have never been stored.
-
- * Add report of all ACLs with identical contents.
 
  * For objects tied to hostnames, report on objects referring to hosts
    which do not exist.  For the initial pass, this is probably only keytab
