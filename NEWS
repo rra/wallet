@@ -1,5 +1,11 @@
                        User-Visible wallet Changes
 
+wallet 1.0 (unreleased)
+
+    wallet-admin has a new sub-command, upgrade, which upgrades the wallet
+    database to the latest schema version.  This command should be run
+    when deploying any new version of the wallet server.
+
 wallet 0.12 (2010-08-25)
 
     New client program wallet-rekey that, given a list of keytabs on the

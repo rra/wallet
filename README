@@ -131,6 +131,10 @@ BUILD AND INSTALLATION
       make
       make install
 
+  If you are upgrading the wallet server from an earlier installed
+  version, run wallet-admin upgrade after installation to upgrade the
+  database schema.  See the wallet-admin manual page for more information.
+
   Pass --enable-silent-rules to configure for a quieter build (similar to
   the Linux kernel).  Use make warnings instead of make to build with full
   GCC compiler warnings (requires a relatively current version of GCC).

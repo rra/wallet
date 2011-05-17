@@ -3,11 +3,12 @@
 # Tests for wallet administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 16;
+use Test::More tests => 18;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -24,6 +25,8 @@ is ($@, '', 'Wallet::Admin creation did not die');
 ok ($admin->isa ('Wallet::Admin'), ' and returned the right class');
 is ($admin->initialize ('admin@EXAMPLE.COM'), 1,
     ' and initialization succeeds');
+is ($admin->upgrade, 1, ' and upgrade succeeds (should do nothing)');
+is ($admin->error, undef, ' and there is no error');
 
 # We have an empty database, so we should see no objects and one ACL.
 my $report = Wallet::Report->new;

@@ -3,7 +3,8 @@
 # wallet-admin -- Wallet server administrative commands.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -56,6 +57,9 @@ sub command {
         } else {
             die "only object or verifier is supported for register\n";
         }
+    } elsif ($command eq 'upgrade') {
+        die "too many arguments to upgrade\n" if @args;
+        $admin->upgrade or die $admin->error, "\n";
     } else {
         die "unknown command $command\n";
     }
@@ -132,6 +136,11 @@ All object and ACL implementations that come with wallet are registered by
 default as part of database initialization, so this command is used
 primarily to register local implementations of additional object types or
 ACL schemes.
+
+=item upgrade
+
+Upgrades the database to the latest schema version, preserving data as
+much as possible.
 
 =back
 

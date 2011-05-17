@@ -126,7 +126,7 @@ sub _schema_version {
     eval {
         my $sql = 'select md_version from metadata';
         my $result = $dbh->selectrow_arrayref ($sql);
-        $version = $result->[0][0];
+        $version = $result->[0];
     };
     if ($@) {
         $version = 0;

@@ -1,7 +1,8 @@
 # Wallet::Admin -- Wallet system administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -22,7 +23,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -103,6 +104,19 @@ sub destroy {
     my ($self) = @_;
     my $schema = Wallet::Schema->new;
     eval { $schema->drop ($self->{dbh}) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+    return 1;
+}
+
+# Upgrade the database to the latest schema version.  Returns true on success
+# and false on failure.
+sub upgrade {
+    my ($self) = @_;
+    my $schema = Wallet::Schema->new;
+    eval { $schema->upgrade ($self->{dbh}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -204,12 +218,12 @@ failure to get the error message.
 
 =over 4
 
-=item destroy()
+=item destroy ()
 
 Destroys the database, deleting all of its data and all of the tables used
 by the wallet server.  Returns true on success and false on failure.
 
-=item error()
+=item error ()
 
 Returns the error of the last failing operation or undef if no operations
 have failed.  Callers should call this function to get the error message
@@ -240,7 +254,7 @@ Register in the database a mapping from the ACL scheme SCHEME to the class
 CLASS.  Returns true on success and false on failure (including when the
 verifier is already registered).
 
-=item reinitialize(PRINCIPAL)
+=item reinitialize (PRINCIPAL)
 
 Performs the same actions as initialize(), but first drops any existing
 wallet database tables from the database, allowing this function to be
@@ -248,6 +262,11 @@ called on a prior wallet database.  All data stored in the database will
 be deleted and a fresh set of wallet database tables will be created.
 This method is equivalent to calling destroy() followed by initialize().
 Returns true on success and false on failure.
+
+=item upgrade ()
+
+Upgrades the database to the latest schema version, preserving data as
+much as possible.  Returns true on success and false on failure.
 
 =back
 
