@@ -67,23 +67,13 @@ sub sql {
 # Initialization and cleanup
 ##############################################################################
 
-# Given a database handle, try to create our database by running the SQL.  Do
-# this in a transaction regardless of the database settings and throw an
-# exception if this fails.  We have to do a bit of fiddling to get syntax that
-# works with both MySQL and SQLite.
-sub create {
-    my ($self, $dbh) = @_;
-    my $driver = $dbh->{Driver}->{Name};
+# Run a set of SQL commands, forcing a transaction, rolling back on error, and
+# throwing an exception if anything fails.
+sub _run_sql {
+    my ($self, $dbh, @sql) = @_;
     eval {
         $dbh->begin_work if $dbh->{AutoCommit};
-        my @sql = @{ $self->{sql} };
         for my $sql (@sql) {
-            if ($driver eq 'SQLite') {
-                $sql =~ s{auto_increment primary key}
-                         {primary key autoincrement};
-            } elsif ($driver eq 'mysql' and $sql =~ /^\s*create\s+table\s/) {
-                $sql =~ s/;$/ engine=InnoDB;/;
-            }
             $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
         }
         $dbh->commit;
@@ -92,6 +82,24 @@ sub create {
         $dbh->rollback;
         die "$@\n";
     }
+}
+
+# Given a database handle, try to create our database by running the SQL.  Do
+# this in a transaction regardless of the database settings and throw an
+# exception if this fails.  We have to do a bit of fiddling to get syntax that
+# works with both MySQL and SQLite.
+sub create {
+    my ($self, $dbh) = @_;
+    my $driver = $dbh->{Driver}->{Name};
+    my @create = map {
+        if ($driver eq 'SQLite') {
+            s/auto_increment primary key/primary key autoincrement/;
+        } elsif ($driver eq 'mysql' and /^\s*create\s+table\s/) {
+            s/;$/ engine=InnoDB;/;
+        }
+        $_;
+    } @{ $self->{sql} };
+    $self->_run_sql ($dbh, @create);
 }
 
 # Given a database handle, try to remove the wallet database tables by
@@ -106,17 +114,42 @@ sub drop {
             ();
         }
     } reverse @{ $self->{sql} };
+    $self->_run_sql ($dbh, @drop);
+}
+
+# Given an open database handle, determine the current database schema
+# version.  If we can't read the version number, we currently assume a version
+# 0 database.  This will change in the future.
+sub _schema_version {
+    my ($self, $dbh) = @_;
+    my $version;
     eval {
-        $dbh->begin_work if $dbh->{AutoCommit};
-        for my $sql (@drop) {
-            $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
-        }
-        $dbh->commit;
+        my $sql = 'select md_version from metadata';
+        my $result = $dbh->selectrow_arrayref ($sql);
+        $version = $result->[0][0];
     };
     if ($@) {
-        $dbh->rollback;
-        die "$@\n";
+        $version = 0;
     }
+    return $version;
+}
+
+# Given a database handle, try to upgrade the schema of that database to the
+# current version while preserving all data.  Do this in a transaction
+# regardless of the database settings and throw an exception if this fails.
+sub upgrade {
+    my ($self, $dbh) = @_;
+    my $version = $self->_schema_version ($dbh);
+    my @sql;
+    if ($version == 1) {
+        return;
+    } elsif ($version == 0) {
+        @sql = ('create table metadata (md_version integer)',
+                   'insert into metadata (md_version) values (1)');
+    } else {
+        die "unknown database version $version\n";
+    }
+    $self->_run_sql ($dbh, @sql);
 }
 
 ##############################################################################
@@ -186,6 +219,12 @@ throw a database exception.
 Returns the schema and the population of the normalization tables as a
 list of SQL commands to run to create the wallet database in an otherwise
 empty database.
+
+=item upgrade(DBH)
+
+Given a connected database handle, runs the SQL commands necessary to
+upgrade that database to the current schema version.  On any error, this
+method will throw a database exception.
 
 =back
 

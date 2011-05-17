@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 11;
+use Test::More tests => 15;
 
 use DBI;
 use Wallet::Config;
@@ -42,6 +42,15 @@ is ($@, '', "create() doesn't die");
 my $sql = "select md_version from metadata";
 my $version = $dbh->selectall_arrayref ($sql);
 is (@$version, 1, 'metadata has correct number of rows');
+is (@{ $version->[0] }, 1, ' and correct number of columns');
+is ($version->[0][0], 1, ' and the schema version is correct');
+
+# Test upgrading the database from version 0.
+$dbh->do ("drop table metadata");
+eval { $schema->upgrade ($dbh) };
+is ($@, '', "upgrade() doesn't die");
+$version = $dbh->selectall_arrayref ($sql);
+is (@$version, 1, ' and metadata has correct number of rows');
 is (@{ $version->[0] }, 1, ' and correct number of columns');
 is ($version->[0][0], 1, ' and the schema version is correct');
 
