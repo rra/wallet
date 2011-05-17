@@ -3,11 +3,12 @@
 # Tests for the wallet schema class.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 8;
+use Test::More tests => 11;
 
 use DBI;
 use Wallet::Config;
@@ -21,7 +22,7 @@ ok (defined $schema, 'Wallet::Schema creation');
 ok ($schema->isa ('Wallet::Schema'), ' and class verification');
 my @sql = $schema->sql;
 ok (@sql > 0, 'sql() returns something');
-is (scalar (@sql), 29, ' and returns the right number of statements');
+is (scalar (@sql), 31, ' and returns the right number of statements');
 
 # Connect to a database and test create.
 db_setup;
@@ -36,6 +37,13 @@ $dbh->{RaiseError} = 1;
 $dbh->{PrintError} = 0;
 eval { $schema->create ($dbh) };
 is ($@, '', "create() doesn't die");
+
+# Check that the version number is correct.
+my $sql = "select md_version from metadata";
+my $version = $dbh->selectall_arrayref ($sql);
+is (@$version, 1, 'metadata has correct number of rows');
+is (@{ $version->[0] }, 1, ' and correct number of columns');
+is ($version->[0][0], 1, ' and the schema version is correct');
 
 # Test dropping the database.
 eval { $schema->drop ($dbh) };

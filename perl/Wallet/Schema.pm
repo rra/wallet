@@ -1,7 +1,8 @@
 # Wallet::Schema -- Database schema for the wallet system.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -20,7 +21,7 @@ use DBI;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 ##############################################################################
 # Data manipulation
@@ -135,7 +136,7 @@ Wallet::Schema - Database schema for the wallet system
 
 =for stopwords
 SQL ACL API APIs enums Enums Keytab Backend keytab backend enctypes
-enctype Allbery
+enctype Allbery Metadata metadata
 
 =head1 SYNOPSIS
 
@@ -189,6 +190,19 @@ empty database.
 =back
 
 =head1 SCHEMA
+
+=head2 Metadata Tables
+
+This table is used to store metadata about the wallet database, used for
+upgrades and in similar situations:
+
+  create table metadata
+     (md_version          integer);
+  insert into metadata (md_version) values (1);
+
+This table will normally only have one row.  md_version holds the version
+number of the schema (which does not necessarily have any relationship to
+the version number of wallet itself).
 
 =head2 Normalization Tables
 
