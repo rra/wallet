@@ -145,7 +145,9 @@ sub upgrade {
         return;
     } elsif ($version == 0) {
         @sql = ('create table metadata (md_version integer)',
-                   'insert into metadata (md_version) values (1)');
+                'insert into metadata (md_version) values (1)',
+                'alter table objects add ob_comment varchar(255) default null'
+               );
     } else {
         die "unknown database version $version\n";
     }
@@ -367,6 +369,7 @@ table:
       ob_downloaded_by    varchar(255) default null,
       ob_downloaded_from  varchar(255) default null,
       ob_downloaded_on    datetime default null,
+      ob_comment          varchar(255) default null,
       primary key (ob_name, ob_type));
   create index ob_owner on objects (ob_owner);
   create index ob_expires on objects (ob_expires);

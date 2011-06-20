@@ -3,7 +3,8 @@
 # wallet-backend -- Wallet server for storing and retrieving secure data.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -191,6 +192,20 @@ sub command {
         } else {
             print $status ? "yes\n" : "no\n";
         }
+    } elsif ($command eq 'comment') {
+        check_args (2, 3, [], @args);
+        if (@args > 2) {
+            $server->comment (@args) or failure ($server->error, @_);
+        } else {
+            my $output = $server->comment (@args);
+            if (defined $output) {
+                print $output, "\n";
+            } elsif (not $server->error) {
+                print "No comment set\n";
+            } else {
+                failure ($server->error, @_);
+            }
+        }
     } elsif ($command eq 'create') {
         check_args (2, 2, [], @args);
         $server->create (@args) or failure ($server->error, @_);
@@ -364,13 +379,14 @@ Most commands are only available to wallet administrators (users on the
 C<ADMIN> ACL).  The exceptions are C<autocreate>, C<get>, C<store>,
 C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>, C<setattr>,
 and C<history>.  All of those commands have their own ACLs except
-C<getattr> and C<history>, which use the C<show> ACL, and C<setattr>,
-which uses the C<store> ACL.  If the appropriate ACL is set, it alone is
-checked to see if the user has access.  Otherwise, C<get>, C<store>,
-C<show>, C<getattr>, C<setattr>, and C<history> access is permitted if the
-user is authorized by the owner ACL of the object.  C<autocreate> is
-permitted if the user is listed in the default ACL for an object for that
-name.
+C<getattr> and C<history>, which use the C<show> ACL, C<setattr>, which
+uses the C<store> ACL, and C<comment>, which uses the owner or C<show>
+ACL depending on whether one is setting or retrieving the comment.  If the
+appropriate ACL is set, it alone is checked to see if the user has access.
+Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, C<history>,
+and C<comment> access is permitted if the user is authorized by the owner
+ACL of the object.  C<autocreate> is permitted if the user is listed in
+the default ACL for an object for that name.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<store>, they must still be authorized by
@@ -379,8 +395,8 @@ either the appropriate specific ACL or the owner ACL.
 If the locked flag is set on an object, no commands can be run on that
 object that change data except the C<flags> commands, nor can the C<get>
 command be used on that object.  C<show>, C<history>, C<getacl>,
-C<getattr>, and C<owner> or C<expires> without an argument can still be
-used on that object.
+C<getattr>, and C<owner>, C<comment>, or C<expires> without an argument
+can still be used on that object.
 
 For more information on attributes, see L<ATTRIBUTES>.
 
@@ -436,6 +452,15 @@ object will be created with that default ACL set as the object owner.
 
 Check whether an object of type <type> and name <name> already exists.  If
 it does, prints C<yes>; if not, prints C<no>.
+
+=item comment <type> <name> [<comment>]
+
+If <comment> is not given, displays the current comment for the object
+identified by <type> and <name>, or C<No comment set> if none is set.
+
+If <comment> is given, sets the comment on the object identified by
+<type> and <name> to <comment>.  If <comment> is the empty string, clears
+the comment.
 
 =item create <type> <name>
 

@@ -3,12 +3,13 @@
 # Tests for the basic object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 131;
+use Test::More tests => 137;
 
 use Wallet::ACL;
 use Wallet::Admin;
@@ -98,6 +99,23 @@ if ($object->expires ('', @trace)) {
 }
 is ($object->expires, undef, ' at which point it is cleared');
 is ($object->expires ($now, @trace), 1, ' and setting it again works');
+
+# Comment.
+is ($object->comment, undef, 'Comment is not set to start');
+if ($object->comment ('this is a comment', @trace)) {
+    ok (1, ' and setting it works');
+} else {
+    is ($object->error, '', ' and setting it works');
+}
+is ($object->comment, 'this is a comment', ' at which point it matches');
+if ($object->comment ('', @trace)) {
+    ok (1, ' and clearing it works');
+} else {
+    is ($object->error, '', ' and clearing it works');
+}
+is ($object->comment, undef, ' at which point it is cleared');
+is ($object->comment (join (' ', ('this is a comment') x 5), @trace), 1,
+    ' and setting it again works');
 
 # ACLs.
 for my $type (qw/get store show destroy flags/) {
@@ -203,6 +221,8 @@ my $output = <<"EOO";
     Destroy ACL: ADMIN
       Flags ACL: ADMIN
         Expires: $now
+        Comment: this is a comment this is a comment this is a comment this is
+                 a comment this is a comment
           Flags: unchanging
      Created by: $user
    Created from: $host
@@ -223,6 +243,8 @@ $output = <<"EOO";
     Destroy ACL: ADMIN
       Flags ACL: ADMIN
         Expires: $now
+        Comment: this is a comment this is a comment this is a comment this is
+                 a comment this is a comment
           Flags: locked unchanging
      Created by: $user
    Created from: $host
@@ -266,6 +288,12 @@ $date  set expires to $now
 $date  unset expires (was $now)
     by $user from $host
 $date  set expires to $now
+    by $user from $host
+$date  set comment to this is a comment
+    by $user from $host
+$date  unset comment (was this is a comment)
+    by $user from $host
+$date  set comment to this is a comment this is a comment this is a comment this is a comment this is a comment
     by $user from $host
 $date  set acl_get to ADMIN (1)
     by $user from $host

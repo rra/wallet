@@ -45,8 +45,6 @@ Server Interface:
 
  * Support limiting returned history information by timestamp.
 
- * Add a comment field for objects that can be set by the owner.
-
  * Provide a REST implementation of the wallet server.
 
  * Provide a CGI implementation of the wallet server.

@@ -6,6 +6,11 @@ wallet 1.0 (unreleased)
     database to the latest schema version.  This command should be run
     when deploying any new version of the wallet server.
 
+    Add a comment field to objects and corresponding commands to
+    wallet-backend and wallet to set and retrieve it.  The comment field
+    can only be set by the owner or wallet administrators but can be seen
+    by anyone on the show ACL.
+
 wallet 0.12 (2010-08-25)
 
     New client program wallet-rekey that, given a list of keytabs on the

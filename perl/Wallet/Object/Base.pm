@@ -1,7 +1,8 @@
 # Wallet::Object::Base -- Parent class for any object stored in the wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -17,6 +18,7 @@ use vars qw($VERSION);
 
 use DBI;
 use POSIX qw(strftime);
+use Text::Wrap qw(wrap);
 use Wallet::ACL;
 
 # This version should be increased on any code change to this module.  Always
@@ -169,7 +171,7 @@ sub log_set {
     }
     my %fields = map { $_ => 1 }
         qw(owner acl_get acl_store acl_show acl_destroy acl_flags expires
-           flags type_data);
+           comment flags type_data);
     unless ($fields{$field}) {
         die "invalid history field $field";
     }
@@ -289,6 +291,19 @@ sub attr {
 sub attr_show {
     my ($self) = @_;
     return '';
+}
+
+# Get or set the comment value of an object.  If setting it, trace information
+# must also be provided.
+sub comment {
+    my ($self, $comment, $user, $host, $time) = @_;
+    if ($comment) {
+        return $self->_set_internal ('comment', $comment, $user, $host, $time);
+    } elsif (defined $comment) {
+        return $self->_set_internal ('comment', undef, $user, $host, $time);
+    } else {
+        return $self->_get_internal ('comment');
+    }
 }
 
 # Get or set the expires value of an object.  Expects an expiration time in
@@ -565,6 +580,7 @@ sub show {
                  [ ob_acl_destroy     => 'Destroy ACL'     ],
                  [ ob_acl_flags       => 'Flags ACL'       ],
                  [ ob_expires         => 'Expires'         ],
+                 [ ob_comment         => 'Comment'         ],
                  [ ob_created_by      => 'Created by'      ],
                  [ ob_created_from    => 'Created from'    ],
                  [ ob_created_on      => 'Created on'      ],
@@ -592,7 +608,14 @@ sub show {
 
     # Format the results.  We use a hack to insert the flags before the first
     # trace field since they're not a field in the object in their own right.
+    # The comment should be word-wrapped at 80 columns.
     for my $i (0 .. $#data) {
+        if ($attrs[$i][0] eq 'ob_comment' && length ($data[$i]) > 79 - 17) {
+            local $Text::Wrap::columns = 80;
+            local $Text::Wrap::unexpand = 0;
+            $data[$i] = wrap (' ' x 17, ' ' x 17, $data[$i]);
+            $data[$i] =~ s/^ {17}//;
+        }
         if ($attrs[$i][0] eq 'ob_created_by') {
             my @flags = $self->flag_list;
             if (not @flags and $self->error) {
@@ -777,6 +800,18 @@ always returns the empty string.  If there are any type-specific
 attributes set, this method should return that metadata, formatted as key:
 value pairs with the keys right-aligned in the first 15 characters,
 followed by a space, a colon, and the value.
+
+=item comment([COMMENT, PRINCIPAL, HOSTNAME [, DATETIME]])
+
+Sets or retrieves the comment associated with an object.  If no arguments
+are given, returns the current comment or undef if no comment is set.  If
+arguments are given, change the comment to COMMENT and return true on
+success and false on failure.  Pass in the empty string for COMMENT to
+clear the comment.
+
+The other arguments are used for logging and history and should indicate
+the user and host from which the change is made and the time of the
+change.
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 

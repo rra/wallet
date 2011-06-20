@@ -1,7 +1,8 @@
 # Wallet::Server -- Wallet system server implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -23,7 +24,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.09';
+$VERSION = '0.10';
 
 ##############################################################################
 # Utility methods
@@ -276,7 +277,9 @@ sub object_error {
 # set the ACL accordingly.
 sub acl_check {
     my ($self, $object, $action) = @_;
-    unless ($action =~ /^(get|store|show|destroy|flags|setattr|getattr)\z/) {
+    my %actions = map { $_ => 1 }
+        qw(get store show destroy flags setattr getattr comment);
+    unless ($actions{$action}) {
         $self->error ("unknown action $action");
         return;
     }
@@ -288,10 +291,10 @@ sub acl_check {
         $id = $object->acl ('show');
     } elsif ($action eq 'setattr') {
         $id = $object->acl ('store');
-    } else {
+    } elsif ($action ne 'comment') {
         $id = $object->acl ($action);
     }
-    if (! defined ($id) and $action =~ /^(get|(get|set)attr|store|show)\z/) {
+    if (! defined ($id) and $action ne 'flags' and $action ne 'destroy') {
         $id = $object->owner;
     }
     unless (defined $id) {
@@ -363,6 +366,26 @@ sub attr {
             return @result;
         }
     }
+}
+
+# Retrieves or sets the comment of an object.
+sub comment {
+    my ($self, $type, $name, $comment) = @_;
+    undef $self->{error};
+    my $object = $self->retrieve ($type, $name);
+    return unless defined $object;
+    my $result;
+    if (defined $comment) {
+        return unless $self->acl_check ($object, 'comment');
+        $result = $object->comment ($comment, $self->{user}, $self->{host});
+    } else {
+        return unless $self->acl_check ($object, 'show');
+        $result = $object->comment;
+    }
+    if (not defined ($result) and $object->error) {
+        $self->error ($object->error);
+    }
+    return $result;
 }
 
 # Retrieves or sets the expiration of an object.
@@ -895,6 +918,20 @@ Check whether an object of type TYPE and name NAME exists.  Returns 1 if
 it does, 0 if it doesn't, and undef if some error occurred while checking
 for the existence of the object.
 
+=item comment(TYPE, NAME, [COMMENT])
+
+Gets or sets the comment for the object identified by TYPE and NAME.  If
+COMMENT is not given, returns the current comment or undef if no comment
+is set or on an error.  To distinguish between an expiration that isn't
+set and a failure to retrieve the expiration, the caller should call
+error() after an undef return.  If error() also returns undef, no comment
+was set; otherwise, error() will return the error message.
+
+If COMMENT is given, sets the comment to COMMENT.  Pass in the empty
+string for COMMENT to clear the comment.  To set a comment, the current
+user must be the object owner or be on the ADMIN ACL.  Returns true for
+success and false for failure.
+
 =item create(TYPE, NAME)
 
 Creates a new object of type TYPE and name NAME.  TYPE must be a
@@ -933,12 +970,12 @@ Gets or sets the expiration for the object identified by TYPE and NAME.
 If EXPIRES is not given, returns the current expiration or undef if no
 expiration is set or on an error.  To distinguish between an expiration
 that isn't set and a failure to retrieve the expiration, the caller should
-call error() after an undef return.  If error() also returns undef, that
-ACL wasn't set; otherwise, error() will return the error message.
+call error() after an undef return.  If error() also returns undef, the
+expiration wasn't set; otherwise, error() will return the error message.
 
 If EXPIRES is given, sets the expiration to EXPIRES.  EXPIRES must be in
 the format C<YYYY-MM-DD +HH:MM:SS>, although the time portion may be
-omitted.  Pass in the empty +string for EXPIRES to clear the expiration
+omitted.  Pass in the empty string for EXPIRES to clear the expiration
 date.  To set an expiration, the current user must be authorized by the
 ADMIN ACL.  Returns true for success and false for failure.
 

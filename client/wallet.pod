@@ -154,11 +154,13 @@ As mentioned above, most commands are only available to wallet
 administrators.  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
 C<flag clear>, C<flag set>, C<getattr>, C<setattr>, and C<history>.  All
 of those commands have their own ACLs except C<getattr> and C<history>,
-which use the C<show> ACL, and C<setattr>, which uses the C<store> ACL.
-If the appropriate ACL is set, it alone is checked to see if the user has
-access.  Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, and
-C<history> access is permitted if the user is authorized by the owner ACL
-of the object.
+which use the C<show> ACL, C<setattr>, which uses the C<store> ACL, and
+C<comment>, which uses the owner or C<show> ACL depending on whether one
+is setting or retrieving the comment.  If the appropriate ACL is set, it
+alone is checked to see if the user has access.  Otherwise, C<get>,
+C<store>, C<show>, C<getattr>, C<setattr>, C<history>, and C<comment>
+access is permitted if the user is authorized by the owner ACL of the
+object.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<show>, they must still be authorized by
@@ -167,8 +169,8 @@ either the appropriate specific ACL or the owner ACL.
 If the locked flag is set on an object, no commands can be run on that
 object that change data except the C<flags> commands, nor can the C<get>
 command be used on that object.  C<show>, C<history>, C<getacl>,
-C<getattr>, and C<owner> or C<expires> without an argument can still be
-used on that object.
+C<getattr>, and C<owner>, C<expires>, or C<comment> without an argument
+can still be used on that object.
 
 For more information on attributes, see L<ATTRIBUTES>.
 
@@ -237,6 +239,15 @@ already exist.
 
 Check whether an object of type <type> and name <name> already exists.  If
 it does, prints C<yes>; if not, prints C<no>.
+
+=item comment <type> <name> [<comment>]
+
+If <comment> is not given, displays the current comment for the object
+identified by <type> and <name>, or C<No comment set> if none is set.
+
+If <comment> is given, sets the comment on the object identified by
+<type> and <name> to <comment>.  If <comment> is the empty string, clears
+the comment.
 
 =item create <type> <name>
 

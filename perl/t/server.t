@@ -3,11 +3,12 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 355;
+use Test::More tests => 377;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -198,6 +199,24 @@ is ($server->check ('base', 'service/test'), 0,
     ' and now check says it is not there');
 is ($server->destroy ('base', 'service/test'), undef, ' but not twice');
 is ($server->error, 'cannot find base:service/test', ' with the right error');
+
+# Test manipulating comments.
+is ($server->comment ('base', 'service/test'), undef,
+    'Retrieving comment on an unknown object fails');
+is ($server->error, 'cannot find base:service/test', ' with the right error');
+is ($server->comment ('base', 'service/test', 'this is a comment'), undef,
+    ' and setting it also fails');
+is ($server->error, 'cannot find base:service/test', ' with the right error');
+is ($server->comment ('base', 'service/admin'), undef,
+    'Retrieving comment for the right object returns undef');
+is ($server->error, undef, ' but there is no error');
+is ($server->comment ('base', 'service/admin', 'this is a comment'), 1,
+    ' and we can set it');
+is ($server->comment ('base', 'service/admin'), 'this is a comment',
+    ' and get the value back');
+is ($server->comment ('base', 'service/admin', ''), 1, ' and clear it');
+is ($server->comment ('base', 'service/admin'), undef, ' and now it is gone');
+is ($server->error, undef, ' and still no error');
 
 # Test manipulating expires.
 my $now = strftime ('%Y-%m-%d %T', localtime time);
@@ -393,6 +412,10 @@ is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
 $history = <<"EOO";
 DATE  create
     by $admin from $host
+DATE  set comment to this is a comment
+    by $admin from $host
+DATE  unset comment (was this is a comment)
+    by $admin from $host
 DATE  set expires to $now
     by $admin from $host
 DATE  unset expires (was $now)
@@ -510,12 +533,15 @@ is ($server->store ('base', 'service/user1', 'stuff'), undef,
 is ($server->error,
     "cannot store base:service/user1: object type is immutable",
     ' and the method is called');
+is ($server->comment ('base', 'service/user1', 'this is a comment'), 1,
+    ' and set a comment');
 $show = $server->show ('base', 'service/user1');
 $show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/user1
           Owner: user1
+        Comment: this is a comment
      Created by: $admin
    Created from: $host
      Created on: 0
@@ -529,6 +555,8 @@ DATE  create
     by $admin from $host
 DATE  set owner to user1 (2)
     by $admin from $host
+DATE  set comment to this is a comment
+    by $user1 from $host
 EOO
 $seen = $server->history ('base', 'service/user1');
 $seen =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
@@ -565,6 +593,11 @@ is ($server->attr ('base', 'service/user2', 'foo', ''), undef,
     ' and set attributes');
 is ($server->error,
     "$user1 not authorized to set attributes for base:service/user2",
+    ' with the right error');
+is ($server->comment ('base', 'service/user2', 'this is a comment'), undef,
+    ' and set comment');
+is ($server->error,
+    "$user1 not authorized to set comment for base:service/user2",
     ' with the right error');
 
 # And only some things on an object we own with some ACLs.
@@ -702,8 +735,27 @@ is ($server->history ('base', 'service/user1'), undef,
     ' or see history for it');
 is ($server->error, "$user2 not authorized to show base:service/user1",
     ' with the right error');
+is ($server->comment ('base', 'service/user1', 'this is a comment'), undef,
+    ' or set a comment for it');
+is ($server->error,
+    "$user2 not authorized to set comment for base:service/user1",
+    ' with the right error');
 
-# And only some things on an object we own with some ACLs.
+# Test that setting a comment is controlled by the owner but retrieving it is
+# controlled by the show ACL.
+$result = eval { $server->get ('base', 'service/both') };
+is ($result, undef, 'We can get an object we jointly own');
+is ($@, "Do not instantiate Wallet::Object::Base directly\n",
+    ' and the method is called');
+is ($server->comment ('base', 'service/both', 'this is a comment'), 1,
+    ' and can set a comment on it');
+is ($server->error, undef, ' with no error');
+is ($server->comment ('base', 'service/both'), undef,
+    ' but cannot see the comment on it');
+is ($server->error, "$user2 not authorized to show base:service/both",
+    ' with the right error');
+
+# And can only do some things on an object we own with some ACLs.
 $result = eval { $server->get ('base', 'service/both') };
 is ($result, undef, 'We can get an object we jointly own');
 is ($@, "Do not instantiate Wallet::Object::Base directly\n",

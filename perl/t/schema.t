@@ -8,11 +8,12 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 15;
+use Test::More tests => 16;
 
-use DBI;
-use Wallet::Config;
-use Wallet::Schema;
+use DBI ();
+use POSIX qw(strftime);
+use Wallet::Config ();
+use Wallet::Schema ();
 
 use lib 't/lib';
 use Util;
@@ -45,14 +46,34 @@ is (@$version, 1, 'metadata has correct number of rows');
 is (@{ $version->[0] }, 1, ' and correct number of columns');
 is ($version->[0][0], 1, ' and the schema version is correct');
 
-# Test upgrading the database from version 0.
+# Test upgrading the database from version 0.  SQLite cannot drop table
+# columns, so we have to kill the table and then recreate it.
 $dbh->do ("drop table metadata");
+if (lc ($Wallet::Config::DB_DRIVER) eq 'sqlite') {
+    ($sql) = grep { /create table objects/ } $schema->sql;
+    $sql =~ s/ob_comment .*,//;
+    $dbh->do ("drop table objects")
+        or die "cannot drop objects table: $DBI::errstr\n";
+    $dbh->do ($sql)
+        or die "cannot recreate objects table: $DBI::errstr\n";
+} else {
+    $dbh->do ("alter table objects drop column ob_comment")
+        or die "cannot drop ob_comment column: $DBI::errstr\n";
+}
 eval { $schema->upgrade ($dbh) };
 is ($@, '', "upgrade() doesn't die");
+$sql = "select md_version from metadata";
 $version = $dbh->selectall_arrayref ($sql);
 is (@$version, 1, ' and metadata has correct number of rows');
 is (@{ $version->[0] }, 1, ' and correct number of columns');
 is ($version->[0][0], 1, ' and the schema version is correct');
+$sql = "insert into objects (ob_type, ob_name, ob_created_by, ob_created_from,
+    ob_created_on, ob_comment) values ('file', 'test', 'test',
+    'test.example.org', ?, 'a test comment')";
+$dbh->do ($sql, undef, strftime ('%Y-%m-%d %T', localtime time));
+$sql = "select ob_comment from objects where ob_name = 'test'";
+my ($comment) = $dbh->selectrow_array ($sql);
+is ($comment, 'a test comment', ' and ob_comment was added to objects');
 
 # Test dropping the database.
 eval { $schema->drop ($dbh) };
