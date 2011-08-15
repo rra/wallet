@@ -30,6 +30,8 @@ Client:
 
 Server Interface:
 
+ * Add check command for ACLs similar to the check command for objects.
+
  * Provide a way to get history for deleted objects and ACLs.
 
  * Provide an interface to mass-change all instances of one ACL to another.
