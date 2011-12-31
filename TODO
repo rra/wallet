@@ -150,6 +150,10 @@ Administrative Interface:
  * Add a function to wallet-admin to purge expired entries.  Possibly also
    check expiration before allowing anyone to get or store objects.
 
+ * Add a function or separate script to automate removal of DNS-based
+   objects for which the hosts no longer exist.  Will need to support a
+   site-specific callout to determine whether the host exists.  (WALLET-3)
+
 Documentation:
 
  * Write a conventions document for ACL naming, object naming, and similar
