@@ -100,7 +100,7 @@ Objects:
 
  * Write a WebAuth keyring object store.  It should support attributes
    saying how long to keep old keys and how far in advance to create new
-   keys and update the keyring as needed on object download.
+   keys and update the keyring as needed on object download.  (WALLET-4)
 
  * Use the Perl Authen::Krb5::Admin module instead of rolling our own
    kadmin code with Expect now that MIT Kerberos has made the kadmin API
