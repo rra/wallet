@@ -34,7 +34,7 @@ SQLite Database Setup
 
     SQLite is very nice in that you don't have to create the database
     first.  You don't even have to create the file.  Just create
-    /etc/wallet.conf with something like:
+    /etc/wallet/wallet.conf with something like:
 
         $DB_DRIVER = 'SQLite';
         $DB_INFO = '/path/to/database';
