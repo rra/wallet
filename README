@@ -95,6 +95,10 @@ REQUIREMENTS
   binary that supports the -norandkey option to ktadd.  This option is
   included in MIT Kerberos 1.7 and later.
 
+  To support the LDAP attribute ACL verifier, the Authen::SASL and
+  Net::LDAP Perl modules must be installed on the server.  This verifier
+  only works with LDAP servers that support GSS-API binds.
+
   To support the NetDB ACL verifier (only of interest at sites using NetDB
   to manage DNS), the Net::Remctl Perl module must be installed on the
   server.

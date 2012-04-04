@@ -378,6 +378,85 @@ our $KEYTAB_REMCTL_PORT;
 
 =back
 
+=head1 LDAP ACL CONFIGURATION
+
+These configuration variables are only needed if you intend to use the
+C<ldap-attr> ACL type (the Wallet::ACL::LDAP::Attribute class).  They
+specify the LDAP server and additional connection and data model
+information required for the wallet to check for the existence of
+attributes.
+
+=over 4
+
+=item LDAP_HOST
+
+The LDAP server name to use to verify LDAP ACLs.  This variable must be
+set to use LDAP ACLs.
+
+=cut
+
+our $LDAP_HOST;
+
+=item LDAP_BASE
+
+The base DN under which to search for the entry corresponding to a
+principal.  Currently, the wallet always does a full subtree search under
+this base DN.  This variable must be set to use LDAP ACLs.
+
+=cut
+
+our $LDAP_BASE;
+
+=item LDAP_FILTER_ATTR
+
+The attribute used to find the entry corresponding to a principal.  The
+LDAP entry containing this attribute with a value equal to the principal
+will be found and checked for the required attribute and value.  If this
+variable is not set, the default is C<krb5PrincipalName>.
+
+=cut
+
+our $LDAP_FILTER_ATTR;
+
+=item LDAP_CACHE
+
+Specifies the Kerberos ticket cache to use when connecting to the LDAP
+server.  GSS-API authentication is always used; there is currently no
+support for any other type of bind.  The ticket cache must be for a
+principal with access to verify the values of attributes that will be used
+with this ACL type.  This variable must be set to use LDAP ACLs.
+
+=cut
+
+our $LDAP_CACHE;
+
+=back
+
+Finally, depending on the structure of the LDAP directory being queried,
+there may not be any attribute in the directory whose value exactly
+matches the Kerberos principal.  The attribute designated by
+LDAP_FILTER_ATTR may instead hold a transformation of the principal name
+(such as the principal with the local realm stripped off, or rewritten
+into an LDAP DN form).  If this is the case, define a Perl function named
+ldap_map_attribute.  This function will be called whenever an LDAP
+attribute ACL is being verified.  It will take one argument, the
+principal, and is expected to return the value to search for in the LDAP
+directory server.
+
+For example, if the principal name without the local realm is stored in
+the C<uid> attribute in the directory, set LDAP_FILTER_ATTR to C<uid> and
+then define ldap_map_attribute as follows:
+
+    sub ldap_map_attribute {
+        my ($principal) = @_;
+        $principal =~ s/\@EXAMPLE\.COM$//;
+        return $principal;
+    }
+
+Note that this example only removes the local realm (here, EXAMPLE.COM).
+Any principal from some other realm will be left fully qualified, and then
+presumably will not be found in the directory.
+
 =head1 NETDB ACL CONFIGURATION
 
 These configuration variables are only needed if you intend to use the

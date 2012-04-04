@@ -23,7 +23,7 @@ ok (defined $schema, 'Wallet::Schema creation');
 ok ($schema->isa ('Wallet::Schema'), ' and class verification');
 my @sql = $schema->sql;
 ok (@sql > 0, 'sql() returns something');
-is (scalar (@sql), 31, ' and returns the right number of statements');
+is (scalar (@sql), 32, ' and returns the right number of statements');
 
 # Connect to a database and test create.
 db_setup;

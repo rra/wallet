@@ -63,8 +63,6 @@ ACLs:
  * Error messages from ACL operations should refer to the ACLs by name
    instead of by ID.
 
- * Write the LDAP entitlement ACL verifier.
-
  * Write the PTS ACL verifier.
 
  * Rename Wallet::ACL::* to Wallet::Verifier::*.  Add Wallet::ACL as a
@@ -81,7 +79,8 @@ ACLs:
  * A group-in-groups ACL schema.
 
  * Provide an API for verifiers to syntax-check the values before an ACL
-   is set and implement syntax checking for the Krb5 verifier.
+   is set and implement syntax checking for the krb5 and ldap-attr
+   verifiers.
 
  * Investigate how best to support client authentication using anonymous
    PKINIT for things like initial system keying.
@@ -194,6 +193,11 @@ Code Style and Cleanup:
    error() method common to many classes.
 
 Test Suite:
+
+ * The ldap-attr verifier test case is awful and completely specific to
+   people with admin access to the Stanford LDAP tree.  Write a real test.
+
+ * Rename the tests to use a subdirectory organization.
 
  * Add POD coverage testing using Test::POD::Coverage for the server
    modules.

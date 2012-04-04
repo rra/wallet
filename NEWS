@@ -6,6 +6,15 @@ wallet 1.0 (unreleased)
     database to the latest schema version.  This command should be run
     when deploying any new version of the wallet server.
 
+    A new ACL type, ldap-attr (Wallet::ACL::LDAP::Attribute), is now
+    supported.  This ACL type grants access if the LDAP entry
+    corresponding to the principal contains the attribute name and value
+    specified in the ACL.  The Net::LDAP and Authen::SASL Perl modules are
+    required to use this ACL type.  New configuration settings are
+    required as well; see Wallet::Config for more information.  To enable
+    this ACL type for an existing wallet database, use wallet-admin to
+    register the new verifier.
+
     Add a comment field to objects and corresponding commands to
     wallet-backend and wallet to set and retrieve it.  The comment field
     can only be set by the owner or wallet administrators but can be seen
