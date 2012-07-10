@@ -189,10 +189,10 @@ Code Style and Cleanup:
  * WALLET-50: The Wallet::Config class is very ugly and could use some
    better internal API to reference the variables in it.
 
- * WALLET-51: Use Class::DBI and Class::Trigger to handle the data access
-   layer rather than writing SQL directly, and implement the logging
-   requirements with triggers rather than explicit SQL.  This may also
-   replace Wallet::Schema.
+ * WALLET-51: Use Class::DBI and Class::Trigger (or DBIx::Class) to handle
+   the data access layer rather than writing SQL directly, and implement
+   the logging requirements with triggers rather than explicit SQL.  This
+   may also replace Wallet::Schema.
 
  * WALLET-52: Consider using Class::Accessor to get rid of the scaffolding
    code to access object data, and a Wallet::Base class to handle things
