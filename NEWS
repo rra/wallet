@@ -20,6 +20,9 @@ wallet 1.0 (unreleased)
     can only be set by the owner or wallet administrators but can be seen
     by anyone on the show ACL.
 
+    Add docs/objects-and-schemes, which provides a brief summary of the
+    current supported object types and ACL schemes.
+
 wallet 0.12 (2010-08-25)
 
     New client program wallet-rekey that, given a list of keytabs on the
