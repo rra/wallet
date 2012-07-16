@@ -129,6 +129,14 @@ Objects:
    wallet so that one can determine whether the version stored on disk is
    identical.
 
+ * WALLET-60: Implement new password wallet object, which is like file
+   except that it generates a random, strong password when retrieved the
+   first time without being stored.
+
+ * WALLET-61: Support interrogating objects to find all host-based objects
+   for a particular host, allowing cleanup of all of those host's objects
+   after retiring the host.
+
 Reports:
 
  * WALLET-38: Add audit for references to unknown ACLs, possibly
