@@ -378,6 +378,67 @@ our $KEYTAB_REMCTL_PORT;
 
 =back
 
+=head1 WEBAUTH KEYRING OBJECT CONFIGURATION
+
+These configuration variables only need to be set if you intend to use the
+C<wakeyring> object type (the Wallet::Object::WAKeyring class).
+
+=over 4
+
+=item WAKEYRING_BUCKET
+
+The directory into which to store WebAuth keyring objects.  WebAuth
+keyring objects will be stored in subdirectories of this directory.  See
+L<Wallet::Object::WAKeyring> for the full details of the naming scheme.
+This directory must be writable by the wallet server and the wallet server
+must be able to create subdirectories of it.
+
+WAKEYRING_BUCKET must be set to use file objects.
+
+=cut
+
+our $WAKEYRING_BUCKET;
+
+=item WAKEYRING_REKEY_INTERVAL
+
+The interval, in seconds, at which new keys are generated in a keyring.
+The object implementation will try to arrange for there to be keys added
+to the keyring separated by this interval.
+
+It's useful to provide some interval to install the keyring everywhere
+that it's used before the key becomes inactive.  Every keyring will
+therefore normally have at least three keys: one that's currently active,
+one that becomes valid in the future but less than
+WAKEYRING_REKEY_INTERVAL from now, and one that becomes valid between one
+and two of those intervals into the future.  This means that one has twice
+this interval to distribute the keyring everywhere it is used.
+
+Internally, this is implemented by adding a new key that becomes valid in
+twice this interval from the current time if the newest key becomes valid
+at or less than this interval in the future.
+
+The default value is 60 * 60 * 24 (one day).
+
+=cut
+
+our $WAKEYRING_REKEY_INTERVAL = 60 * 60 * 24;
+
+=item WAKEYRING_PURGE_INTERVAL
+
+The interval, in seconds, from the key creation date after which keys are
+removed from the keyring.  This is used to clean up old keys and finish
+key rotation.  Keys won't be removed unless there are more than three keys
+in the keyring to try to keep a misconfiguration from removing all valid
+keys.
+
+The default value is 60 * 60 * 24 * 90 (90 days).
+
+=cut
+
+our $WAKEYRING_PURGE_INTERVAL = 60 * 60 * 24 * 90;
+
+=back
+
 =head1 LDAP ACL CONFIGURATION
 
 These configuration variables are only needed if you intend to use the
