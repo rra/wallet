@@ -76,7 +76,7 @@ __END__
 wallet-admin - Wallet server administrative commands
 
 =for stopwords
-metadata ACL hostname backend acl acls wildcard SQL Allbery
+metadata ACL hostname backend acl acls wildcard SQL Allbery verifier
 
 =head1 SYNOPSIS
 

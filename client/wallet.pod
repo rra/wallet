@@ -5,7 +5,7 @@ wallet - Client for retrieving secure data from a central server
 =for stopwords
 -hv srvtab arg keytabs metadata keytab ACL PTS kinit klist remctl PKINIT
 acl timestamp autocreate backend-specific setacl enctypes enctype ktadd
-KDC appdefaults remctld Allbery uuencode getacl backend ACL's
+KDC appdefaults remctld Allbery uuencode getacl backend ACL's DES
 
 =head1 SYNOPSIS
 
