@@ -59,6 +59,11 @@ Server Interface:
  * WALLET-22: Remove the hard-coded ADMIN ACL in the server with something
    more configurable, perhaps a global ACL table or something.
 
+ * WALLET-63: Support leap-of-faith keying of systems by registering an
+   object for one-time download (ideally from a specific IP address) and
+   then allowing that object to be downloaded anonymously from that IP.
+   Relies on support for Kerberos anonymous authentication.
+
 ACLs:
 
  * WALLET-23: Error messages from ACL operations should refer to the ACLs
@@ -155,6 +160,11 @@ Reports:
    wallet-report, with additional configuration in Wallet::Config.
    Enhance it to report on any sort of object, not just on keytabs, and to
    give numbers on downloaded versus not downloaded objects.
+
+ * WALLET-62: Write a tool to mail the owners of wallet objects, taking
+   the list of objects and the mail message to send as inputs.  This could
+   possibly use the notification service, although a version that sends
+   mail directly would be useful external to Stanford.
 
 Administrative Interface:
 
