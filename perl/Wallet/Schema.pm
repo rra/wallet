@@ -171,7 +171,7 @@ Wallet::Schema - Database schema for the wallet system
 
 =for stopwords
 SQL ACL API APIs enums Enums Keytab Backend keytab backend enctypes
-enctype Allbery Metadata metadata
+enctype Allbery Metadata metadata verifier
 
 =head1 SYNOPSIS
 

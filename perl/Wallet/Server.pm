@@ -753,7 +753,7 @@ Wallet::Server - Wallet system server implementation
 
 =for stopwords
 keytabs metadata backend HOSTNAME ACL timestamp ACL's nul Allbery
-backend-specific wallet-backend
+backend-specific wallet-backend verifier
 
 =head1 SYNOPSIS
 

@@ -51,7 +51,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-ACL krb5 Allbery
+ACL krb5 Allbery verifier
 
 =head1 NAME
 

@@ -442,7 +442,7 @@ __END__
 Wallet::ACL - Implementation of ACLs in the wallet system
 
 =for stopwords
-ACL DBH metadata HOSTNAME DATETIME timestamp Allbery
+ACL DBH metadata HOSTNAME DATETIME timestamp Allbery verifier verifiers
 
 =head1 SYNOPSIS
 

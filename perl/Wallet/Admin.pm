@@ -178,7 +178,7 @@ __DATA__
 Wallet::Admin - Wallet system administrative interface
 
 =for stopwords
-ACL hostname Allbery
+ACL hostname Allbery verifier
 
 =head1 SYNOPSIS
 

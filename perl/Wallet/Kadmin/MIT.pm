@@ -256,6 +256,7 @@ __END__
 
 =for stopwords
 rekeying rekeys remctl backend keytabs keytab kadmin KDC API Allbery
+unlinked
 
 =head1 NAME
 

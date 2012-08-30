@@ -136,7 +136,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-ACL NetDB remctl DNS DHCP Allbery netdb
+ACL NetDB remctl DNS DHCP Allbery netdb verifier
 
 =head1 NAME
 

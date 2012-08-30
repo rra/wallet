@@ -695,7 +695,7 @@ Wallet::Object::Base - Generic parent class for wallet objects
 
 =for stopwords
 DBH HOSTNAME DATETIME ACL backend metadata timestamp Allbery wallet-backend
-backend-specific
+backend-specific subclasses
 
 =head1 SYNOPSIS
 

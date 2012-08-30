@@ -60,7 +60,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-ACL Allbery
+ACL Allbery verifier verifiers
 
 =head1 NAME
 

@@ -234,7 +234,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-keytabs keytab kadmin KDC API Allbery Heimdal
+keytabs keytab kadmin KDC API Allbery Heimdal unlinked
 
 =head1 NAME
 

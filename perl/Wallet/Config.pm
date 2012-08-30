@@ -27,7 +27,7 @@ Wallet::Config - Configuration handling for the wallet server
 DBI DSN SQLite subdirectories KEYTAB keytab kadmind KDC add-ons kadmin DNS
 SRV kadmin keytabs remctl backend lowercased NETDB ACL NetDB unscoped
 usernames rekey hostnames Allbery wallet-backend keytab-backend Heimdal
-rekeys
+rekeys WebAuth WEBAUTH keyring LDAP DN GSS-API
 
 =head1 SYNOPSIS
 

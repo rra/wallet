@@ -49,7 +49,7 @@ sub check {
 ##############################################################################
 
 =for stopwords
-ACL NetDB DNS DHCP Allbery
+ACL NetDB DNS DHCP Allbery verifier
 
 =head1 NAME
 

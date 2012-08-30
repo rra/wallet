@@ -141,7 +141,7 @@ sub check {
 ##############################################################################
 
 =for stopwords
-ACL Allbery
+ACL Allbery verifier LDAP PRINCIPAL's DN ldap-attr
 
 =head1 NAME
 
@@ -174,6 +174,8 @@ information about how to set wallet configuration.
 
 =head1 METHODS
 
+=over 4
+
 =item new()
 
 Creates a new ACL verifier.  Opens and binds the connection to the LDAP
@@ -196,6 +198,8 @@ Returns the error if check() returned undef.
 =head1 DIAGNOSTICS
 
 The new() method may fail with one of the following exceptions:
+
+=over 4
 
 =item LDAP attribute ACL support not available: %s
 

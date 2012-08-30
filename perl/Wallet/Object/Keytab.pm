@@ -347,7 +347,7 @@ __END__
 
 =for stopwords
 keytab API KDC keytabs HOSTNAME DATETIME enctypes enctype DBH metadata
-unmanaged kadmin Allbery
+unmanaged kadmin Allbery unlinked
 
 =head1 NAME
 
