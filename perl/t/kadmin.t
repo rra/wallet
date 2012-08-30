@@ -3,12 +3,13 @@
 # Tests for the kadmin object implementation.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2009, 2010, 2012
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 32;
+use Test::More tests => 33;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
@@ -94,6 +95,7 @@ SKIP: {
     # Create the principal and check that keytab returns something.  We'll
     # check the details of the return in the keytab check.
     is ($kadmin->create ('wallet/one'), 1, 'Creating wallet/one works');
+    is ($kadmin->error, undef, ' with no error message');
     is ($kadmin->exists ('wallet/one'), 1, ' and it now exists');
     my $data = $kadmin->keytab_rekey ('wallet/one');
     ok (defined ($data), ' and retrieving a keytab works');
