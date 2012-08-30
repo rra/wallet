@@ -610,6 +610,7 @@ sub show {
     # trace field since they're not a field in the object in their own right.
     # The comment should be word-wrapped at 80 columns.
     for my $i (0 .. $#data) {
+        next unless defined $data[$i];
         if ($attrs[$i][0] eq 'ob_comment' && length ($data[$i]) > 79 - 17) {
             local $Text::Wrap::columns = 80;
             local $Text::Wrap::unexpand = 0;
