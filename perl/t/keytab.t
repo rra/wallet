@@ -451,6 +451,7 @@ SKIP: {
         is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
         is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
         remctld_stop;
+        unlink 'krb5cc_good';
     }
 
     # Now Heimdal.  Since the keytab contains timestamps, before testing for
