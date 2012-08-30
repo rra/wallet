@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 135;
+use Test::More tests => 139;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
@@ -399,15 +399,15 @@ SKIP: {
 
     # Finally we can test.  First the MIT Kerberos tests.
   SKIP: {
-        skip 'skipping MIT unchanging tests for Heimdal', 12
+        skip 'skipping MIT unchanging tests for Heimdal', 16
             if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'heimdal');
 
         # We need remctld and Net::Remctl.
         my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
         my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-        skip 'remctld not found', 12 unless $remctld;
+        skip 'remctld not found', 16 unless $remctld;
         eval { require Net::Remctl };
-        skip 'Net::Remctl not available', 12 if $@;
+        skip 'Net::Remctl not available', 16 if $@;
 
         # Now spawn our remctld server and get a ticket cache.
         remctld_spawn ($remctld, $principal, 't/data/test.keytab',
@@ -441,7 +441,7 @@ SKIP: {
             ' and we get the same thing the second time');
         is ($one->flag_clear ('unchanging', @trace), 1,
             'Clearing the unchanging flag works');
-        my $data = $object->get (@trace);
+        my $data = $one->get (@trace);
         ok (defined ($data), ' and getting the keytab works');
         ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
         is ($two->get (@trace), undef, 'Get for wallet/two does not work');
