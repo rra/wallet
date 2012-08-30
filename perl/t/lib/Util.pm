@@ -74,6 +74,7 @@ sub db_setup {
 sub getcreds {
     my ($file, $principal) = @_;
     my @commands = (
+        "kinit --no-afslog -k -t $file $principal >/dev/null 2>&1 </dev/null",
         "kinit -k -t $file $principal >/dev/null 2>&1 </dev/null",
         "kinit -t $file $principal >/dev/null 2>&1 </dev/null",
         "kinit -T /bin/true -k -K $file $principal >/dev/null 2>&1 </dev/null",
