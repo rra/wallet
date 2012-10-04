@@ -64,6 +64,12 @@ Server Interface:
    then allowing that object to be downloaded anonymously from that IP.
    Relies on support for Kerberos anonymous authentication.
 
+ * WALLET-64: Split "get" and "update" in semantics, and only do keytab
+   rekeying on update.  "get" would not be permitted unless the keytab was
+   flagged as unchanging, and update would still change even an unchanging
+   keytab (maybe).  Or, alternately, maybe we allow get of any keytab?
+   Requires more thought.
+
 ACLs:
 
  * WALLET-23: Error messages from ACL operations should refer to the ACLs
