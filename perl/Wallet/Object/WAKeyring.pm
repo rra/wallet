@@ -238,6 +238,9 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+WebAuth keyring
+
 =head1 NAME
 
 Wallet::Object::WAKeyring - WebAuth keyring object implementation for wallet
