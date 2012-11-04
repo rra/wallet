@@ -110,7 +110,7 @@ test_format(bool trunc, const char *expected, int count,
 int
 main(void)
 {
-    int n, i, count;
+    int i, count;
     unsigned int j;
     long lcount;
     char lgbuf[128];
@@ -153,7 +153,6 @@ main(void)
     is_int(31, lcount, "correct output from long %%ln");
     test_format(true, "(null)", 6, "%s", NULL);
 
-    n = 26;
     for (i = 0; fp_formats[i] != NULL; i++)
         for (j = 0; j < ARRAY_SIZE(fp_nums); j++) {
             count = sprintf(lgbuf, fp_formats[i], fp_nums[j]);
