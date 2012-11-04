@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 33;
+use Test::More tests => 34;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
@@ -73,7 +73,7 @@ SKIP: {
 # implementation is configured.  This retests some things that are also tested
 # by the keytab test, but specifically through the Wallet::Kadmin API.
 SKIP: {
-    skip 'no keytab configuration', 14 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 15 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -91,6 +91,7 @@ SKIP: {
     is ($@, '', ' and there is no error');
     is ($kadmin->destroy ('wallet/one'), 1, 'Deleting wallet/one works');
     is ($kadmin->exists ('wallet/one'), 0, ' and it does not exist');
+    is ($kadmin->error, undef, ' with no error message');
 
     # Create the principal and check that keytab returns something.  We'll
     # check the details of the return in the keytab check.
