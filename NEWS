@@ -15,6 +15,10 @@ wallet 1.0 (unreleased)
     this ACL type for an existing wallet database, use wallet-admin to
     register the new verifier.
 
+    Add a new acl check command which, given an ACL ID, prints yes if that
+    ACL already exists and no otherwise.  This is parallel to the check
+    command for objects.
+
     Add a comment field to objects and corresponding commands to
     wallet-backend and wallet to set and retrieve it.  The comment field
     can only be set by the owner or wallet administrators but can be seen

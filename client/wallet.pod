@@ -151,19 +151,20 @@ options and commands are ignored.
 =head1 COMMANDS
 
 As mentioned above, most commands are only available to wallet
-administrators.  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
-C<flag clear>, C<flag set>, C<getattr>, C<setattr>, and C<history>.  All
-of those commands have their own ACLs except C<getattr> and C<history>,
-which use the C<show> ACL, C<setattr>, which uses the C<store> ACL, and
-C<comment>, which uses the owner or C<show> ACL depending on whether one
-is setting or retrieving the comment.  If the appropriate ACL is set, it
-alone is checked to see if the user has access.  Otherwise, C<get>,
-C<store>, C<show>, C<getattr>, C<setattr>, C<history>, and C<comment>
-access is permitted if the user is authorized by the owner ACL of the
-object.
+administrators.  The exceptions are C<acl check>, C<check>, C<get>,
+C<store>, C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>,
+C<setattr>, and C<history>.  C<acl check> and C<check> can be run by
+anyone.  All of the rest of those commands have their own ACLs except
+C<getattr> and C<history>, which use the C<show> ACL, C<setattr>, which
+uses the C<store> ACL, and C<comment>, which uses the owner or C<show> ACL
+depending on whether one is setting or retrieving the comment.  If the
+appropriate ACL is set, it alone is checked to see if the user has access.
+Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, C<history>,
+and C<comment> access is permitted if the user is authorized by the owner
+ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
-and C<store>.  For C<get> and C<show>, they must still be authorized by
+and C<store>.  For C<get> and C<store>, they must still be authorized by
 either the appropriate specific ACL or the owner ACL.
 
 If the locked flag is set on an object, no commands can be run on that
@@ -178,8 +179,13 @@ For more information on attributes, see L<ATTRIBUTES>.
 
 =item acl add <id> <scheme> <identifier>
 
-Adds an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
+Add an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
 either the name of an ACL or its numeric identifier.
+
+=item acl check <id>
+
+Check whether an ACL with the ID <id> already exists.  If it does, prints
+C<yes>; if not, prints C<no>.
 
 =item acl create <name>
 

@@ -3,13 +3,13 @@
 # Tests for the wallet-backend dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008, 2009, 2010, 2011
+# Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 1296;
+use Test::More tests => 1314;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -44,6 +44,18 @@ sub acl_remove
     { shift; print "acl_remove @_\n"; ($_[0] eq 'error') ? undef : 1 }
 sub acl_rename
     { shift; print "acl_rename @_\n"; ($_[0] eq 'error') ? undef : 1 }
+
+sub acl_check {
+    shift;
+    print "acl_check @_\n";
+    if ($_[0] eq 'error') {
+        return;
+    } elsif ($_[0] eq 'unknown') {
+        return 0;
+    } else {
+        return 1;
+    }
+}
 
 sub acl_history {
     shift;
@@ -243,6 +255,7 @@ my %commands = (autocreate => [2, 2],
                 show       => [2, 2],
                 store      => [2, 3]);
 my %acl_commands = (add     => [3, 3],
+                    check   => [1, 1],
                     create  => [1, 1],
                     destroy => [1, 1],
                     history => [1, 1],
@@ -460,7 +473,9 @@ for my $command (sort keys %acl_commands) {
     is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
         ' and success logged');
     my $expected;
-    if ($command eq 'show') {
+    if ($command eq 'check') {
+        $expected = "$new\nacl_$command name$extra\nyes\n";
+    } elsif ($command eq 'show') {
         $expected = "$new\nacl_$command name$extra\nacl_show";
     } elsif ($command eq 'history') {
         $expected = "$new\nacl_$command name$extra\nacl_history";
@@ -476,6 +491,15 @@ for my $command (sort keys %acl_commands) {
     is ($out, "$new\nacl_$command error$extra\n",
         ' and ran the right method');
     $error++;
+    if ($command eq 'check') {
+        ($out, $err) = run_backend ('acl', $command, 'unknown');
+        my $ran = "acl $command unknown";
+        is ($err, '', "Command $command ran with no errors (unknown)");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
+        is ($out, "$new\nacl_$command unknown\nno\n",
+            ' and ran the right method with output');
+    }
 }
 for my $command (sort keys %flag_commands) {
     my @extra = ('foo') x ($flag_commands{$command}[0] - 2);

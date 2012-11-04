@@ -275,7 +275,7 @@ sub object_error {
 # the internal error message.  Note that we do not allow any special access to
 # admins for get and store; if they want to do that with objects, they need to
 # set the ACL accordingly.
-sub acl_check {
+sub acl_verify {
     my ($self, $object, $action) = @_;
     my %actions = map { $_ => 1 }
         qw(get store show destroy flags setattr getattr comment);
@@ -349,7 +349,7 @@ sub attr {
     my $user = $self->{user};
     my $host = $self->{host};
     if (@values) {
-        return unless $self->acl_check ($object, 'setattr');
+        return unless $self->acl_verify ($object, 'setattr');
         if (@values == 1 and $values[0] eq '') {
             @values = ();
         }
@@ -357,7 +357,7 @@ sub attr {
         $self->error ($object->error) unless $result;
         return $result;
     } else {
-        return unless $self->acl_check ($object, 'getattr');
+        return unless $self->acl_verify ($object, 'getattr');
         my @result = $object->attr ($attr);
         if (not @result and $object->error) {
             $self->error ($object->error);
@@ -376,10 +376,10 @@ sub comment {
     return unless defined $object;
     my $result;
     if (defined $comment) {
-        return unless $self->acl_check ($object, 'comment');
+        return unless $self->acl_verify ($object, 'comment');
         $result = $object->comment ($comment, $self->{user}, $self->{host});
     } else {
-        return unless $self->acl_check ($object, 'show');
+        return unless $self->acl_verify ($object, 'show');
         $result = $object->comment;
     }
     if (not defined ($result) and $object->error) {
@@ -456,7 +456,7 @@ sub get {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'get');
+    return unless $self->acl_verify ($object, 'get');
     my $result = $object->get ($self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -471,7 +471,7 @@ sub store {
     my ($self, $type, $name, $data) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'store');
+    return unless $self->acl_verify ($object, 'store');
     if (not defined ($data)) {
         $self->{error} = "no data supplied to store";
         return;
@@ -488,7 +488,7 @@ sub show {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'show');
+    return unless $self->acl_verify ($object, 'show');
     my $result = $object->show;
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -501,7 +501,7 @@ sub history {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'show');
+    return unless $self->acl_verify ($object, 'show');
     my $result = $object->history;
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -513,7 +513,7 @@ sub destroy {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'destroy');
+    return unless $self->acl_verify ($object, 'destroy');
     my $result = $object->destroy ($self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -529,7 +529,7 @@ sub flag_clear {
     my ($self, $type, $name, $flag) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'flags');
+    return unless $self->acl_verify ($object, 'flags');
     my $result = $object->flag_clear ($flag, $self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -541,7 +541,7 @@ sub flag_set {
     my ($self, $type, $name, $flag) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'flags');
+    return unless $self->acl_verify ($object, 'flags');
     my $result = $object->flag_set ($flag, $self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -550,6 +550,22 @@ sub flag_set {
 ##############################################################################
 # ACL methods
 ##############################################################################
+
+# Checks for the existence of an ACL.  Returns 1 if it does, 0 if it doesn't,
+# and undef if there was an error in checking the existence of the object.
+sub acl_check {
+    my ($self, $id) = @_;
+    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    if ($@) {
+        if ($@ =~ /^ACL .* not found/) {
+            return 0;
+        } else {
+            $self->error ($@);
+            return;
+        }
+    }
+    return 1;
+}
 
 # Create a new empty ACL in the database.  Returns true on success and undef
 # on failure, setting the internal error.

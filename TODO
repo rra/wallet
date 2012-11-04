@@ -29,9 +29,6 @@ Client:
 
 Server Interface:
 
- * WALLET-12: Add check command for ACLs similar to the check command for
-   objects.
-
  * WALLET-13: Provide a way to get history for deleted objects and ACLs.
 
  * WALLET-14: Provide an interface to mass-change all instances of one ACL

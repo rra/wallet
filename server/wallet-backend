@@ -3,7 +3,7 @@
 # wallet-backend -- Wallet server for storing and retrieving secure data.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010, 2011
+# Copyright 2007, 2008, 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -150,6 +150,14 @@ sub command {
         if ($action eq 'add') {
             check_args (3, 3, [3], @args);
             $server->acl_add (@args) or failure ($server->error, @_);
+        } elsif ($action eq 'check') {
+            check_args (1, 1, [], @args);
+            my $status = $server->acl_check (@args);
+            if (!defined ($status)) {
+                failure ($server->error, @_);
+            } else {
+                print $status ? "yes\n" : "no\n";
+            }
         } elsif ($action eq 'create') {
             check_args (1, 1, [], @args);
             $server->acl_create (@args) or failure ($server->error, @_);
@@ -376,17 +384,17 @@ syslog.
 =head1 COMMANDS
 
 Most commands are only available to wallet administrators (users on the
-C<ADMIN> ACL).  The exceptions are C<autocreate>, C<get>, C<store>,
-C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>, C<setattr>,
-and C<history>.  All of those commands have their own ACLs except
+C<ADMIN> ACL).  The exceptions are C<acl check>, C<check>, C<get>,
+C<store>, C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>,
+C<setattr>, and C<history>.  C<acl check> and C<check> can be run by
+anyone.  All of the rest of those commands have their own ACLs except
 C<getattr> and C<history>, which use the C<show> ACL, C<setattr>, which
-uses the C<store> ACL, and C<comment>, which uses the owner or C<show>
-ACL depending on whether one is setting or retrieving the comment.  If the
+uses the C<store> ACL, and C<comment>, which uses the owner or C<show> ACL
+depending on whether one is setting or retrieving the comment.  If the
 appropriate ACL is set, it alone is checked to see if the user has access.
 Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, C<history>,
 and C<comment> access is permitted if the user is authorized by the owner
-ACL of the object.  C<autocreate> is permitted if the user is listed in
-the default ACL for an object for that name.
+ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<store>, they must still be authorized by
@@ -404,8 +412,13 @@ For more information on attributes, see L<ATTRIBUTES>.
 
 =item acl add <id> <scheme> <identifier>
 
-Adds an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
+Add an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
 either the name of an ACL or its numeric identifier.
+
+=item acl check <id>
+
+Check whether an ACL with the ID <id> already exists.  If it does, prints
+C<yes>; if not, prints C<no>.
 
 =item acl create <name>
 

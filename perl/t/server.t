@@ -3,12 +3,12 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010, 2011
+# Copyright 2007, 2008, 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 377;
+use Test::More tests => 381;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -66,7 +66,9 @@ is ($result, $history, ' including by number');
 is ($server->acl_create (3), undef, 'Cannot create ACL with a numeric name');
 is ($server->error, 'ACL name may not be all numbers',
     ' and returns the right error');
+is ($server->acl_check ('user1'), 0, 'user1 ACL does not exist');
 is ($server->acl_create ('user1'), 1, 'Can create regular ACL');
+is ($server->acl_check ('user1'), 1, 'user1 now exists');
 is ($server->acl_show ('user1'), "Members of ACL user1 (id: 2) are:\n",
     ' and show works');
 is ($server->acl_create ('user1'), undef, ' but not twice');
@@ -95,8 +97,10 @@ is ($server->acl_history ('test'), undef, ' and history fails');
 is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_destroy ('test'), undef, 'Destroying the old name fails');
 is ($server->error, 'ACL test not found', ' and returns the right error');
-is ($server->acl_destroy ('test2'), 1, ' but destroying another one works');
+is ($server->acl_check ('test2'), 1, ' but the other ACL exists');
+is ($server->acl_destroy ('test2'), 1, ' and destroying it works');
 is ($server->acl_destroy ('test2'), undef, ' but not twice');
+is ($server->acl_check ('test2'), 0, ' and now it does not exist');
 is ($server->error, 'ACL test2 not found', ' and returns the right error');
 is ($server->acl_add ('user1', 'krb4', $user1), undef,
     'Adding with a bad scheme fails');
