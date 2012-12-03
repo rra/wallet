@@ -1,7 +1,7 @@
 # Wallet::Admin -- Wallet system administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010, 2011
+# Copyright 2008, 2009, 2010, 2011, 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -17,13 +17,12 @@ use strict;
 use vars qw($VERSION);
 
 use Wallet::ACL;
-use Wallet::Database;
 use Wallet::Schema;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -34,7 +33,7 @@ $VERSION = '0.06';
 # Throw an exception if anything goes wrong.
 sub new {
     my ($class) = @_;
-    my $dbh = Wallet::Database->connect;
+    my $dbh = Wallet::Schema->connect;
     my $self = { dbh => $dbh };
     bless ($self, $class);
     return $self;
@@ -61,7 +60,7 @@ sub error {
 # Disconnect the database handle on object destruction to avoid warnings.
 sub DESTROY {
     my ($self) = @_;
-    $self->{dbh}->disconnect unless $self->{dbh}->{InactiveDestroy};
+    $self->{dbh}->storage->dbh->disconnect;
 }
 
 ##############################################################################
@@ -75,17 +74,49 @@ sub DESTROY {
 # true on success and false on failure, setting the object error.
 sub initialize {
     my ($self, $user) = @_;
-    my $schema = Wallet::Schema->new;
-    eval { $schema->create ($self->{dbh}) };
+
+    # Deploy the database schema from DDL files, if they exist.  If not then
+    # we automatically get the database from the Schema modules.
+    $self->{dbh}->deploy ({}, $Wallet::Config::DB_DDL_DIRECTORY);
     if ($@) {
         $self->error ($@);
         return;
     }
+    $self->default_data;
+
+    # Create a default admin ACL.
     my $acl = Wallet::ACL->create ('ADMIN', $self->{dbh}, $user, 'localhost');
     unless ($acl->add ('krb5', $user, $user, 'localhost')) {
         $self->error ($acl->error);
         return;
     }
+
+    return 1;
+}
+
+# Load default data into various tables.  We'd like to do this more directly
+# in the schema definitions, but not yet seeing a good way to do that.
+sub default_data {
+    my ($self) = @_;
+
+    # acl_schemes default rows.
+    my ($r1) = $self->{dbh}->resultset('AclScheme')->populate ([
+                       [ qw/as_name as_class/ ],
+                       [ 'krb5',       'Wallet::ACL::Krb5'            ],
+                       [ 'krb5-regex', 'Wallet::ACL::Krb5::Regex'     ],
+                       [ 'ldap-attr',  'Wallet::ACL::LDAP::Attribute' ],
+                       [ 'netdb',      'Wallet::ACL::NetDB'           ],
+                       [ 'netdb-root', 'Wallet::ACL::NetDB::Root'     ],
+                                                     ]);
+    warn "default AclScheme not installed" unless defined $r1;
+
+    # types default rows.
+    my @record = ([ qw/ty_name ty_class/ ],
+               [ 'file', 'Wallet::Object::File' ],
+               [ 'keytab', 'Wallet::Object::Keytab' ]);
+    ($r1) = $self->{dbh}->resultset('Type')->populate (\@record);
+    warn "default Type not installed" unless defined $r1;
+
     return 1;
 }
 
@@ -102,12 +133,31 @@ sub reinitialize {
 # false on failure.
 sub destroy {
     my ($self) = @_;
-    my $schema = Wallet::Schema->new;
-    eval { $schema->drop ($self->{dbh}) };
-    if ($@) {
-        $self->error ($@);
-        return;
+
+    # Get an actual DBI handle and use it to delete all tables.
+    my $real_dbh = $self->{dbh}->storage->dbh;
+    my @tables = qw/acls acl_entries acl_history acl_schemes enctypes
+        flags keytab_enctypes keytab_sync objects object_history
+        sync_targets types dbix_class_schema_versions/;
+    for my $table (@tables) {
+        my $sql = "DROP TABLE IF EXISTS $table";
+        $real_dbh->do ($sql);
     }
+
+    return 1;
+}
+
+# Save a DDL of the database in every supported database server.  Returns
+# true on success and false on failure.
+sub backup {
+    my ($self, $oldversion) = @_;
+
+    my @dbs = qw/MySQL SQLite PostgreSQL/;
+    my $version = $Wallet::Schema::VERSION;
+    $self->{dbh}->create_ddl_dir (\@dbs, $version,
+                                  $Wallet::Config::DB_DDL_DIRECTORY,
+                                  $oldversion);
+
     return 1;
 }
 
@@ -115,12 +165,16 @@ sub destroy {
 # and false on failure.
 sub upgrade {
     my ($self) = @_;
-    my $schema = Wallet::Schema->new;
-    eval { $schema->upgrade ($self->{dbh}) };
+
+    if ($self->{dbh}->get_db_version) {
+        eval { $self->{dbh}->upgrade; };
+    }
     if ($@) {
         $self->error ($@);
+        warn $@;
         return;
     }
+
     return 1;
 }
 
@@ -135,13 +189,14 @@ sub upgrade {
 sub register_object {
     my ($self, $type, $class) = @_;
     eval {
-        my $sql = 'insert into types (ty_name, ty_class) values (?, ?)';
-        $self->{dbh}->do ($sql, undef, $type, $class);
-        $self->{dbh}->commit;
+        my $guard = $self->{dbh}->txn_scope_guard;
+        my %record = (ty_name  => $type,
+                      ty_class => $class);
+        $self->{dbh}->resultset('Type')->create (\%record);
+        $guard->commit;
     };
     if ($@) {
         $self->error ("cannot register $class for $type: $@");
-        $self->{dbh}->rollback;
         return;
     }
     return 1;
@@ -154,13 +209,14 @@ sub register_object {
 sub register_verifier {
     my ($self, $scheme, $class) = @_;
     eval {
-        my $sql = 'insert into acl_schemes (as_name, as_class) values (?, ?)';
-        $self->{dbh}->do ($sql, undef, $scheme, $class);
-        $self->{dbh}->commit;
+        my $guard = $self->{dbh}->txn_scope_guard;
+        my %record = (as_name  => $scheme,
+                      as_class => $class);
+        $self->{dbh}->resultset('AclScheme')->create (\%record);
+        $guard->commit;
     };
     if ($@) {
-        $self->error ("cannot registery $class for $scheme: $@");
-        $self->{dbh}->rollback;
+        $self->error ("cannot register $class for $scheme: $@");
         return;
     }
     return 1;

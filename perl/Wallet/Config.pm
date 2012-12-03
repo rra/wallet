@@ -167,6 +167,16 @@ backends, particularly SQLite, do not need this.
 
 our $DB_PASSWORD;
 
+=item DB_DDL_DIRECTORY
+
+Specifies the directory used to dump the database schema in formats for
+each possible database server.  This also includes diffs between schema
+versions, for upgrades.
+
+=cut
+
+our $DB_DDL_DIRECTORY;
+
 =back
 
 =head1 FILE OBJECT CONFIGURATION

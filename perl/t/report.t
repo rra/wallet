@@ -145,7 +145,7 @@ is (scalar (@lines), 1, 'Searching for objects owned by ADMIN finds one');
 is ($lines[0][0], 'base', ' and it has the right type');
 is ($lines[0][1], 'service/admin', ' and the right name');
 @lines = $report->objects ('owner', 'null');
-is (scalar (@lines), 1, 'Searching for objects with no set ownerfinds one');
+is (scalar (@lines), 1, 'Searching for objects with no set owner finds one');
 is ($lines[0][0], 'base', ' and it has the right type');
 is ($lines[0][1], 'service/null', ' and the right name');
 @lines = $report->objects ('acl', 'ADMIN');

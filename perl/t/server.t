@@ -1030,5 +1030,5 @@ is ($@, "database connection information not configured\n",
     ' or if DB_INFO is not set');
 $Wallet::Config::DB_INFO = 't';
 $server = eval { Wallet::Server->new ($user2, $host) };
-like ($@, qr/^cannot connect to database: /,
+like ($@, qr/unable to open database file/,
       ' or if the database connection fails');

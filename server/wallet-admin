@@ -15,6 +15,13 @@
 use strict;
 use Wallet::Admin;
 
+# The last non-DBIx::Class version.  If a database has no DBIx::Class
+# versioning, we want to set it to this so that upgrades can begin.
+our $BASE_VERSION = '0.07';
+
+# Directory that contains the wallet SQL files for upgrades.
+our $SQL_DIR = '/usr/share/wallet/sql/';
+
 ##############################################################################
 # Implementation
 ##############################################################################
@@ -41,6 +48,9 @@ sub command {
         die "too few arguments to initialize\n" if @args < 1;
         die "invalid admin principal $args[0]\n"
             unless $args[0] =~ /^[^\@\s]+\@\S+$/;
+
+        my $schema = $admin->{dbh};
+        $schema->upgrade_directory ($SQL_DIR);
         $admin->initialize (@args) or die $admin->error, "\n";
     } elsif ($command eq 'register') {
         die "too many arguments to register\n" if @args > 3;
@@ -59,7 +69,20 @@ sub command {
         }
     } elsif ($command eq 'upgrade') {
         die "too many arguments to upgrade\n" if @args;
+
+        my $schema = $admin->{dbh};
+        $schema->upgrade_directory ($SQL_DIR);
+
+        # Check to see if the database is versioned.  If not, install the
+        # versioning table and default version.
+        if (!$schema->get_db_version) {
+            print "Versioning database.\n";
+            $schema->install ($BASE_VERSION);
+        }
+
+        # Actually upgrade.
         $admin->upgrade or die $admin->error, "\n";
+
     } else {
         die "unknown command $command\n";
     }

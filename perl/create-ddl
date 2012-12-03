@@ -1,0 +1,93 @@
+#!/usr/bin/perl -w
+#
+# create-ddl - Create DDL files for Wallet
+#
+# Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2012 Board of Trustees, Leland Stanford Jr. University
+
+#############################################################################
+# Modules and declarations
+#############################################################################
+
+use strict;
+use vars qw();
+
+use Getopt::Long;
+use Wallet::Admin;
+
+#############################################################################
+# Main routine
+#############################################################################
+
+# Get errors and output in the same order.
+$| = 0;
+
+# Clean up the path name.
+my $fullpath = $0;
+$0 =~ s%^.*/%%;
+
+# Parse command-line options.
+my ($help);
+my $oldversion = '';
+Getopt::Long::config ('bundling');
+GetOptions ('h|help'         => \$help,
+            'o|oldversion=s' => \$oldversion) or exit 1;
+if ($help) {
+    print "Feeding myself to perldoc, please wait....\n";
+    exec ('perldoc', '-t', $fullpath);
+}
+
+# Default wallet settings, for Wallet::Admin.
+$Wallet::Config::DB_DDL_DIRECTORY = 'sql/';
+$Wallet::Config::DB_DRIVER = 'SQLite';
+$Wallet::Config::DB_INFO = 'wallet-db';
+
+# Create a Wallet::Admin object and run the backup.
+my $admin = Wallet::Admin->new;
+$admin->backup ($oldversion);
+
+exit(0);
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+create-ddl - Create DDL files for Wallet
+
+=head1 SYNOPSIS
+
+create-ddl [B<--help>] [B<--oldversion>]
+
+=head1 DESCRIPTION
+
+create-ddl is used to create DDL files for the various DBIx::Class
+Wallet::Schema modules.  It simply is an interface for the backup command
+in Wallet::Admin, which does the work via DBIx::Class.  The end result
+is a number of files that can be used to load the database for each
+supported database server.
+
+These files can be modified after creation to customize the database
+load, though should only be done when necessary to prevent confusion
+for the schema modules not matching the actual table definitions.  This
+is currently only done in the case of SQLite databases, due to the
+SQLite parser creating keys without AUTOINCREMENT.
+
+=head1 OPTIONS
+
+B<--help>
+
+Prints the perldoc information (this document) for the script.
+
+B<--oldversion>=<version>
+
+The version number of the previous version.  If there are existing DDL
+files for this version, then we will also create diff files to upgrade
+a database from the old version to the current.
+
+=head1 AUTHORS
+
+Jon Robertson <jonrober@stanford.edu>
+
+=cut

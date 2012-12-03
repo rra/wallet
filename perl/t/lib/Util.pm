@@ -45,6 +45,7 @@ sub contents {
 # for testing by default, but support t/data/test.database as a configuration
 # file to use another database backend.
 sub db_setup {
+    $Wallet::Config::DB_DDL_DIRECTORY = 'sql/';
     if (-f 't/data/test.database') {
         open (DB, '<', 't/data/test.database')
             or die "cannot open t/data/test.database: $!";
@@ -60,6 +61,10 @@ sub db_setup {
         $Wallet::Config::DB_USER = $user if $user;
         $Wallet::Config::DB_PASSWORD = $password if $password;
     } else {
+
+        # If we have a new SQLite db by default, disable version checking.
+        $ENV{DBIC_NO_VERSION_CHECK} = 1;
+
         $Wallet::Config::DB_DRIVER = 'SQLite';
         $Wallet::Config::DB_INFO = 'wallet-db';
         unlink 'wallet-db';

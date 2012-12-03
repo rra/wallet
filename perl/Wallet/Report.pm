@@ -16,12 +16,12 @@ use strict;
 use vars qw($VERSION);
 
 use Wallet::ACL;
-use Wallet::Database;
+use Wallet::Schema;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -32,7 +32,7 @@ $VERSION = '0.03';
 # exception if anything goes wrong.
 sub new {
     my ($class) = @_;
-    my $dbh = Wallet::Database->connect;
+    my $dbh = Wallet::Schema->connect;
     my $self = { dbh => $dbh };
     bless ($self, $class);
     return $self;
@@ -59,7 +59,7 @@ sub error {
 # Disconnect the database handle on object destruction to avoid warnings.
 sub DESTROY {
     my ($self) = @_;
-    $self->{dbh}->disconnect unless $self->{dbh}->{InactiveDestroy};
+    $self->{dbh}->storage->dbh->disconnect;
 }
 
 ##############################################################################
@@ -69,18 +69,26 @@ sub DESTROY {
 # Return the SQL statement to find every object in the database.
 sub objects_all {
     my ($self) = @_;
-    my $sql = 'select ob_type, ob_name from objects order by ob_type,
-        ob_name';
-    return $sql;
+    my @objects;
+
+    my %search = ();
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    return (\%search, \%options);
 }
 
 # Return the SQL statement and the search field required to find all objects
 # matching a specific type.
 sub objects_type {
     my ($self, $type) = @_;
-    my $sql = 'select ob_type, ob_name from objects where ob_type=? order
-        by ob_type, ob_name';
-    return ($sql, $type);
+    my @objects;
+
+    my %search = (ob_type => $type);
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    return (\%search, \%options);
 }
 
 # Return the SQL statement and search field required to find all objects owned
@@ -89,28 +97,36 @@ sub objects_type {
 # match any ACLs, set an error and return undef.
 sub objects_owner {
     my ($self, $owner) = @_;
-    my ($sth);
+    my @objects;
+
+    my %search;
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
     if (lc ($owner) eq 'null') {
-        my $sql = 'select ob_type, ob_name from objects where ob_owner is null
-            order by objects.ob_type, objects.ob_name';
-        return ($sql);
+        %search = (ob_owner => undef);
     } else {
         my $acl = eval { Wallet::ACL->new ($owner, $self->{dbh}) };
         return unless $acl;
-        my $sql = 'select ob_type, ob_name from objects where ob_owner = ?
-            order by objects.ob_type, objects.ob_name';
-        return ($sql, $acl->id);
+        %search = (ob_owner => $acl->id);
     }
+
+    return (\%search, \%options);
 }
 
 # Return the SQL statement and search field required to find all objects that
 # have a specific flag set.
 sub objects_flag {
     my ($self, $flag) = @_;
-    my $sql = 'select ob_type, ob_name from objects left join flags on
-        (objects.ob_type = flags.fl_type and objects.ob_name = flags.fl_name)
-        where flags.fl_flag = ? order by objects.ob_type, objects.ob_name';
-    return ($sql, $flag);
+    my @objects;
+
+    my %search = ('flags.fl_flag' => $flag);
+    my %options = (join     => 'flags',
+                   prefetch => 'flags',
+                   order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    return (\%search, \%options);
 }
 
 # Return the SQL statement and search field required to find all objects that
@@ -120,22 +136,35 @@ sub objects_flag {
 # set an error and return the empty string.
 sub objects_acl {
     my ($self, $search) = @_;
-    my $acl = eval { Wallet::ACL->new ($search, $self->{dbh}) };
+    my @objects;
+
+    my $dbh = $self->{dbh};
+    my $acl = eval { Wallet::ACL->new ($search, $dbh) };
     return unless $acl;
-    my $sql = 'select ob_type, ob_name from objects where ob_owner = ? or
-        ob_acl_get = ? or ob_acl_store = ? or ob_acl_show = ? or
-        ob_acl_destroy = ? or ob_acl_flags = ? order by objects.ob_type,
-        objects.ob_name';
-    return ($sql, ($acl->id) x 6);
+
+    my @search = ({ ob_owner       => $acl->id },
+                  { ob_acl_get     => $acl->id },
+                  { ob_acl_store   => $acl->id },
+                  { ob_acl_show    => $acl->id },
+                  { ob_acl_destroy => $acl->id },
+                  { ob_acl_flags   => $acl->id });
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    return (\@search, \%options);
 }
 
 # Return the SQL statement to find all objects that have been created but
 # have never been retrieved (via get).
 sub objects_unused {
     my ($self) = @_;
-    my $sql = 'select ob_type, ob_name from objects where ob_downloaded_on
-        is null order by objects.ob_type, objects.ob_name';
-    return ($sql);
+    my @objects;
+
+    my %search = (ob_downloaded_on => undef);
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    return (\%search, \%options);
 }
 
 # Returns a list of all objects stored in the wallet database in the form of
@@ -148,46 +177,44 @@ sub objects {
     my ($self, $type, @args) = @_;
     undef $self->{error};
 
-    # Find the SQL statement and the arguments to use.
-    my $sql = '';
-    my @search = ();
+    # Get the search and options array refs from specific functions.
+    my ($search_ref, $options_ref);
     if (!defined $type || $type eq '') {
-        ($sql) = $self->objects_all;
+        ($search_ref, $options_ref) = $self->objects_all;
     } else {
         if ($type ne 'unused' && @args != 1) {
             $self->error ("object searches require one argument to search");
         } elsif ($type eq 'type') {
-            ($sql, @search) = $self->objects_type (@args);
+            ($search_ref, $options_ref) = $self->objects_type (@args);
         } elsif ($type eq 'owner') {
-            ($sql, @search) = $self->objects_owner (@args);
+            ($search_ref, $options_ref) = $self->objects_owner (@args);
         } elsif ($type eq 'flag') {
-            ($sql, @search) = $self->objects_flag (@args);
+            ($search_ref, $options_ref) = $self->objects_flag (@args);
         } elsif ($type eq 'acl') {
-            ($sql, @search) = $self->objects_acl (@args);
+            ($search_ref, $options_ref) = $self->objects_acl (@args);
         } elsif ($type eq 'unused') {
-            ($sql) = $self->objects_unused (@args);
+            ($search_ref, $options_ref) = $self->objects_unused (@args);
         } else {
             $self->error ("do not know search type: $type");
         }
-        return unless $sql;
+        return unless $search_ref;
     }
 
-    # Do the search.
+    # Perform the search and return on any errors.
     my @objects;
+    my $dbh = $self->{dbh};
     eval {
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute (@search);
-        my $object;
-        while (defined ($object = $sth->fetchrow_arrayref)) {
-            push (@objects, [ @$object ]);
+        my @objects_rs = $dbh->resultset('Object')->search ($search_ref,
+                                                            $options_ref);
+        for my $object_rs (@objects_rs) {
+            push (@objects, [ $object_rs->ob_type, $object_rs->ob_name ]);
         }
-        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ("cannot list objects: $@");
-        $self->{dbh}->rollback;
         return;
     }
+
     return @objects;
 }
 
@@ -199,17 +226,51 @@ sub objects {
 # database.
 sub acls_all {
     my ($self) = @_;
-    my $sql = 'select ac_id, ac_name from acls order by ac_id';
-    return ($sql);
+    my @acls;
+
+    my $dbh = $self->{dbh};
+    my %search = ();
+    my %options = (order_by => [ qw/ac_id/ ],
+                   select   => [ qw/ac_id ac_name/ ]);
+
+    eval {
+        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+        for my $acl_rs (@acls_rs) {
+            push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
+        }
+    };
+
+    if ($@) {
+        $self->error ("cannot list ACLs: $@");
+        return;
+    }
+    return (@acls);
 }
 
 # Returns the SQL statement required to find all empty ACLs in the database.
 sub acls_empty {
     my ($self) = @_;
-    my $sql = 'select ac_id, ac_name from acls left join acl_entries
-        on (acls.ac_id = acl_entries.ae_id) where ae_id is null order by
-        ac_id';
-    return ($sql);
+    my @acls;
+
+    my $dbh = $self->{dbh};
+    my %search = (ae_id => undef);
+    my %options = (join     => 'acl_entries',
+                   prefetch => 'acl_entries',
+                   order_by => [ qw/ac_id/ ],
+                   select   => [ qw/ac_id ac_name/ ]);
+
+    eval {
+        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+        for my $acl_rs (@acls_rs) {
+            push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
+        }
+    };
+
+    if ($@) {
+        $self->error ("cannot list ACLs: $@");
+        return;
+    }
+    return (@acls);
 }
 
 # Returns the SQL statement and the field required to find ACLs containing the
@@ -217,22 +278,69 @@ sub acls_empty {
 # do a substring search.
 sub acls_entry {
     my ($self, $type, $identifier) = @_;
-    my $sql = 'select distinct ac_id, ac_name from acl_entries left join acls
-        on (ae_id = ac_id) where ae_scheme = ? and ae_identifier like ? order
-        by ac_id';
-    return ($sql, $type, '%' . $identifier . '%');
+    my @acls;
+
+    my $dbh = $self->{dbh};
+    my %search = (ae_scheme     => $type,
+                  ae_identifier => { like => '%'.$identifier.'%' });
+    my %options = (join     => 'acl_entries',
+                   prefetch => 'acl_entries',
+                   order_by => [ qw/ac_id/ ],
+                   select   => [ qw/ac_id ac_name/ ],
+                   distinct => 1);
+
+    eval {
+        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+        for my $acl_rs (@acls_rs) {
+            push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
+        }
+    };
+
+    if ($@) {
+        $self->error ("cannot list ACLs: $@");
+        return;
+    }
+    return (@acls);
 }
 
 # Returns the SQL statement required to find unused ACLs.
 sub acls_unused {
     my ($self) = @_;
-    my $sql = 'select ac_id, ac_name from acls where not ac_id in (select
-        ob_owner from objects where ob_owner = ac_id)';
-    for my $acl (qw/get store show destroy flags/) {
-        $sql .= " and not ac_id in (select ob_acl_$acl from objects where
-            ob_acl_$acl = ac_id)";
+    my @acls;
+
+    my $dbh = $self->{dbh};
+    my %search = (
+                  #'acls_owner.ob_owner'   => undef,
+                  #'acls_get.ob_owner'     => undef,
+                  #'acls_store.ob_owner'   => undef,
+                  #'acls_show.ob_owner'    => undef,
+                  #'acls_destroy.ob_owner' => undef,
+                  #'acls_flags.ob_owner'   => undef,
+                 );
+    my %options = (#join     => [ qw/acls_owner acls_get acls_store acls_show acls_destroy acls_flags/ ],
+                   order_by => [ qw/ac_id/ ],
+                   select   => [ qw/ac_id ac_name/ ]);
+
+    eval {
+        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+
+        # FIXME: Almost certainly a way of doing this with the search itself.
+        for my $acl_rs (@acls_rs) {
+            next if $acl_rs->acls_owner->first;
+            next if $acl_rs->acls_get->first;
+            next if $acl_rs->acls_store->first;
+            next if $acl_rs->acls_show->first;
+            next if $acl_rs->acls_destroy->first;
+            next if $acl_rs->acls_flags->first;
+            push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
+        }
+    };
+
+    if ($@) {
+        $self->error ("cannot list ACLs: $@");
+        return;
     }
-    return ($sql);
+    return (@acls);
 }
 
 # Obtain a textual representation of the membership of an ACL, returning undef
@@ -290,11 +398,10 @@ sub acls {
     my ($self, $type, @args) = @_;
     undef $self->{error};
 
-    # Find the SQL statement and the arguments to use.
-    my $sql;
-    my @search = ();
+    # Find the ACLs for any given search.
+    my @acls;
     if (!defined $type || $type eq '') {
-        ($sql) = $self->acls_all;
+        @acls = $self->acls_all;
     } else {
         if ($type eq 'duplicate') {
             return $self->acls_duplicate;
@@ -303,33 +410,16 @@ sub acls {
                 $self->error ('ACL searches require an argument to search');
                 return;
             } else {
-                ($sql, @search) = $self->acls_entry (@args);
+                @acls = $self->acls_entry (@args);
             }
         } elsif ($type eq 'empty') {
-            ($sql) = $self->acls_empty;
+            @acls = $self->acls_empty;
         } elsif ($type eq 'unused') {
-            ($sql) = $self->acls_unused;
+            @acls = $self->acls_unused;
         } else {
             $self->error ("unknown search type: $type");
             return;
         }
-    }
-
-    # Do the search.
-    my @acls;
-    eval {
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute (@search);
-        my $object;
-        while (defined ($object = $sth->fetchrow_arrayref)) {
-            push (@acls, [ @$object ]);
-        }
-        $self->{dbh}->commit;
-    };
-    if ($@) {
-        $self->error ("cannot list ACLs: $@");
-        $self->{dbh}->rollback;
-        return;
     }
     return @acls;
 }
@@ -343,26 +433,32 @@ sub acls {
 sub owners {
     my ($self, $type, $name) = @_;
     undef $self->{error};
-    my @lines;
+    my $dbh = $self->{dbh};
+
+    my @owners;
     eval {
-        my $sql = 'select distinct ae_scheme, ae_identifier from acl_entries,
-            acls, objects where ae_id = ac_id and ac_id = ob_owner and
-            ob_type like ? and ob_name like ? order by ae_scheme,
-            ae_identifier';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute ($type, $name);
-        my $object;
-        while (defined ($object = $sth->fetchrow_arrayref)) {
-            push (@lines, [ @$object ]);
+        my %search = (
+                      'acls_owner.ob_type' => { like => $type },
+                      'acls_owner.ob_name' => { like => $name });
+        my %options = (
+                       join     => { 'acls' => 'acls_owner' },
+                       order_by => [ qw/ae_scheme ae_identifier/ ],
+                       distinct => 1,
+                      );
+
+        my @acls_rs = $dbh->resultset('AclEntry')->search (\%search,
+                                                           \%options);
+        for my $acl_rs (@acls_rs) {
+            my $scheme = $acl_rs->ae_scheme;
+            my $identifier = $acl_rs->ae_identifier;
+            push (@owners, [ $scheme, $identifier ]);
         }
-        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ("cannot report on owners: $@");
-        $self->{dbh}->rollback;
         return;
     }
-    return @lines;
+    return @owners;
 }
 
 ##############################################################################

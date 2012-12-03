@@ -18,13 +18,12 @@ use vars qw(%MAPPING $VERSION);
 
 use Wallet::ACL;
 use Wallet::Config;
-use Wallet::Database;
 use Wallet::Schema;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 ##############################################################################
 # Utility methods
@@ -38,7 +37,7 @@ $VERSION = '0.10';
 # for various things.  Throw an exception if anything goes wrong.
 sub new {
     my ($class, $user, $host) = @_;
-    my $dbh = Wallet::Database->connect;
+    my $dbh = Wallet::Schema->connect;
     my $acl = Wallet::ACL->new ('ADMIN', $dbh);
     my $self = {
         dbh   => $dbh,
@@ -71,8 +70,9 @@ sub error {
 # Disconnect the database handle on object destruction to avoid warnings.
 sub DESTROY {
     my ($self) = @_;
-    if ($self->{dbh} and not $self->{dbh}->{InactiveDestroy}) {
-        $self->{dbh}->disconnect;
+
+    if ($self->{dbh}) {
+        $self->{dbh}->storage->dbh->disconnect;
     }
 }
 
@@ -86,13 +86,14 @@ sub type_mapping {
     my ($self, $type) = @_;
     my $class;
     eval {
-        my $sql = 'select ty_class from types where ty_name = ?';
-        ($class) = $self->{dbh}->selectrow_array ($sql, undef, $type);
-        $self->{dbh}->commit;
+        my $guard = $self->{dbh}->txn_scope_guard;
+        my %search = (ty_name => $type);
+        my $type_rec = $self->{dbh}->resultset('Type')->find (\%search);
+        $class = $type_rec->ty_class;
+        $guard->commit;
     };
     if ($@) {
         $self->error ($@);
-        $self->{dbh}->rollback;
         return;
     }
     if (defined $class) {
