@@ -393,7 +393,7 @@ L<Wallet::Object::WAKeyring> for the full details of the naming scheme.
 This directory must be writable by the wallet server and the wallet server
 must be able to create subdirectories of it.
 
-WAKEYRING_BUCKET must be set to use file objects.
+WAKEYRING_BUCKET must be set to use WebAuth keyring objects.
 
 =cut
 
