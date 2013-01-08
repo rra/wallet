@@ -50,7 +50,7 @@ sub file_path {
     $name =~ s/([^\w-])/sprintf ('%%%02X', ord ($1))/ge;
     my $parent = "$Wallet::Config::WAKEYRING_BUCKET/$hash";
     unless (-d $parent || mkdir ($parent, 0700)) {
-        $self->error ("cannot create file bucket $hash: $!");
+        $self->error ("cannot create keyring bucket $hash: $!");
         return;
     }
     return "$Wallet::Config::WAKEYRING_BUCKET/$hash/$name";
@@ -83,6 +83,7 @@ sub get {
         return;
     }
     my $path = $self->file_path;
+    return unless defined $path;
 
     # Create a WebAuth context and ensure we can load the relevant modules.
     my $wa = eval { WebAuth->new };
@@ -127,7 +128,7 @@ sub get {
     }
 
     # Read the keyring.
-    my $ring = eval { WebAuth::Keyring->read ($path) };
+    my $ring = eval { WebAuth::Keyring->read ($wa, $path) };
     if ($@) {
         $self->error ("cannot read keyring: $@");
         return;
@@ -172,7 +173,7 @@ sub get {
             $i++;
         }
     }
-    if (@purge) {
+    if (@purge && $count - @purge >= 3) {
         eval {
             for my $key (reverse @purge) {
                 $ring->remove ($key);
