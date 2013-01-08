@@ -20,7 +20,7 @@ use Digest::MD5 qw(md5_hex);
 use Fcntl qw(LOCK_EX);
 use Wallet::Config ();
 use Wallet::Object::Base;
-use WebAuth qw(WA_KEY_AES WA_AES_128);
+use WebAuth 3.06 qw(WA_KEY_AES WA_AES_128);
 
 @ISA = qw(Wallet::Object::Base);
 
