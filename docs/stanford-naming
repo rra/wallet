@@ -62,52 +62,80 @@ Object Naming
     it should get its own object type first and to agree on a naming
     convention for that type of thing.
 
-    All file object names start with a short indicator of the responsible
-    group, a slash, the type of object, a slash, and then the hostname (if
-    they're only used on a single host) or the service name for which that
-    object is used.  The hostname is normally presented without the domain
-    if it's a normal .stanford.edu host.
+    There are two basic types of file objects: ones that are tied to a
+    particular system, and ones that are not.  For the ones that are tied
+    to a particular system, we use a naming convention very similar to
+    host-based Kerberos principals so that we can set up default ACLs
+    based on the host.  For ones that are not, we require an indication of
+    the repsonsible group in each file object, since the rest of the name
+    can often be ambiguous.
+
+    File objects are named with two or more slash-separated components
+    (again, similar to Kerberos principals).  The first is the type of
+    file being stored.  The rest vary based on the file type.
 
     We previously instead used <group>-<server>-<type>, but that caused
     various problems in parsing because groups, servers, and types all
     also contained dashes.  Slashes are much less ambiguous.  This
     document shows both the new and the old form.
 
-    Then, we use the following naming conventions for different types of
-    objects.
-
     Host-based:
 
-    <group>/htpasswd/<server>/<app>
+    htpasswd/<server>/<app>
 
         An .htpasswd file for HTTP Basic Authentication for special-case
-        web configurations that require such a thing.
+        web configurations that require such a thing.  <server> is the
+        server (or group of servers) on which the file will be stored
 
         (OLD: <group>-<server>-htpasswd-<app>)
 
-    <group>/ssh-<type>/<server>
+    password-ipmi/<server>
+
+        Stores the password for remote IPMI/iLO/ILOM access to the
+        system.
+
+        (OLD: <group>-<server>-password-ipmi)
+
+    password-root/<server>
+
+        Stores the root password for a given server.
+
+        (OLD: <group>-<server>-password-root)
+
+    password-tivoli/<server>
+
+        Stores the Tivoli TSM backup password for a given server.  See
+        also tivoli-key/<server>, but depending on what one wants to do
+        with the password, this may be a better representation.
+
+        (OLD: <group>-<server>-password-tivoli)
+
+    ssh-<type>/<server>
 
         Stores the SSH private key for <server>.  For shared private keys
         across a pool, <server> should be the name of the pool, or
         possibly some unambiguous name for the set of systems.  <type> is
-        the type of SSH key (RSA or DSA).
+        the type of SSH key (rsa or dsa, in lowercase).
 
         (OLD: <group>-<server>-ssh-<type>)
 
-    <group>/ssl-key/<server>
+    ssl-key/<server>
 
         Stores the SSL X.509 certificate private key for <server>.  Used
         for Apache, Postfix, LDAP, and similar cases where the certificate
         should match the host name.  The public certificate we manage
         external to wallet since it doesn't need to be protected or
-        encrypted.
+        encrypted.  <server> here should be the CN of the certificate,
+        which may be different than the hostname (for hosts with multiple
+        virtual hosts, for example, or because the certificate is for a
+        load-balanced name).
 
-        Use idg/ssl-key/starYYYY for the key for the *.stanford.edu
-        certificate, where YYYY is the expiration year.
+        Use ssl-key/starYYYY.stanford.edu for the key for the
+        *.stanford.edu certificate, where YYYY is the expiration year.
 
         (OLD: <group>-<server>-ssl-key)
 
-    <group>/tivoli-key/<server>
+    tivoli-key/<server>
 
         The Tivoli password or backup encryption key for this server.
         Both the password and the encryption key, if used, are stored in
@@ -116,13 +144,13 @@ Object Naming
 
         (OLD: <group>-<server>-tivoli-key)
 
-    In all cases, <server> is the server (or group of servers) on which
-    the file will be stored, not the server expecting that key material
-    for authentication.
+    In all cases, <server> should be a fully-qualified domain name in the
+    new naming convention.  In the old naming convention, .stanford.edu
+    was omitted, but this adds unnecessary ambiguity.
 
     Service-based:
 
-    <group>/config/<service>-<name>
+    config/<group>/<service>/<name>
 
         A configuration file named <name> that contains some secure
         information, such as a database password.  Ideally, the secure
@@ -133,7 +161,7 @@ Object Naming
 
         (OLD: <group>-<service>-config-<name>)
 
-    <group>/db/<service>/<database>
+    db/<group>/<service>/<database>
 
         Stores the database password for <service> access to the database
         named <database>.  This may be a file containing only the database
@@ -142,17 +170,17 @@ Object Naming
 
         (OLD: <group>-<service>-db-<database>)
 
-    <group>/gpg-key/<service>
+    gpg-key/<group>/<service>
 
         Stores the GnuPG private key for a service that needs to do GnuPG
         signing or encryption.
 
         (OLD: <group>-<service>-gpg-key)
 
-    <group>/password/<service>-<name>
+    password/<group>/<service>/<name>
 
         A password for some account, service, keystore, or something
-        similar that covered by one of the more specific naming
+        similar that is not covered by one of the more specific naming
         conventions, such as a password used to connect to a remote ssh
         service.  <service> is the service that uses this password and
         <name> is the thing the password is used for (such as the remote
@@ -163,7 +191,7 @@ Object Naming
 
         (OLD: <group>-<server>-password-<account>)
 
-    <group>/properties/<service>
+    properties/<group>/<service>[/<name>]
 
         The properties file for a Java application that contains some
         secure data (such as SSL key passwords or database passwords).
@@ -171,27 +199,36 @@ Object Naming
         the password and closely-related information, such as database
         connection information.  For anything else, switch to storing the
         password separately using the password type above and building the
-        properties file dynamically from the password and a template.
+        properties file dynamically from the password and a template.  The
+        optional <name> component is for when there are multiple files
+        stored for a particular service.
 
         (OLD: <group>-<service>-properties)
 
-    <group>/ssl-keystore/<service>
+    ssl-keystore/<group>/<service>[/<name>]
 
         The Java keystore file (containing both public and private key)
         used by a service for authentication to other services.  If a
-        given service uses more than one, include the purpose in the
-        <service> part of the name.
+        given service uses more than one, use the optional <name>
+        component to distinguish.
 
         (OLD: <group>-<service>-ssl-keystore)
 
-    <group>/ssl-pkcs12/<service>
+    ssl-pkcs12/<group>/<service>[/<name>]
 
         The PKCS#12 file (containing both public and private key) used by
         a service for authentication to other services.  If a given
-        service uses more than one, include the purpose in the <service>
-        part of the name.
+        service uses more than one, use the optional <name> component to
+        distinguish.
 
         (OLD: <group>-<service>-ssl-pkcs12)
+
+    If there are separate objects for different tiers, <service> should be
+    left unqualified for production and be qualified with a dash and the
+    tier for non-production.  For example, ssl-keystore/idg/accounts would
+    be the production keystore for the Accounts application, and
+    ssl-keystore/idg/accounts-uat would be the keystore for the UAT
+    version.
 
     We previously stored a wider variety of configuration files before
     developing a way to dynamically substitute the password into a larger
