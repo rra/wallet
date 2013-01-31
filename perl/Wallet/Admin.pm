@@ -178,6 +178,14 @@ sub upgrade {
         $self->{dbh}->install ($BASE_VERSION);
     }
 
+    # Suppress warnings that actually are just informational messages.
+    local $SIG{__WARN__} = sub {
+        my ($warn) = @_;
+        return if $warn =~ m{Upgrade not necessary};
+        return if $warn =~ m{Attempting upgrade};
+        warn $warn;
+    };
+
     # Perform the actual upgrade.
     if ($self->{dbh}->get_db_version) {
         eval { $self->{dbh}->upgrade; };
