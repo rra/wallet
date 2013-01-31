@@ -179,6 +179,16 @@ Administrative Interface:
    DNS-based objects for which the hosts no longer exist.  Will need to
    support a site-specific callout to determine whether the host exists.
 
+ * WALLET-66: Database creation appears not to work without the SQL files,
+   but it's supposed to work directly from the classes.  Double-check
+   this.
+
+Installation:
+
+ * WALLET-65: Install the SQL files and set a default value for
+   $DB_DDL_DIRECTORY.  Document this in the installation instructions.
+   Test for the validity of that variable before doing upgrades?
+
 Documentation:
 
  * WALLET-43: Write a conventions document for ACL naming, object naming,
@@ -209,11 +219,6 @@ Code Style and Cleanup:
 
  * WALLET-50: The Wallet::Config class is very ugly and could use some
    better internal API to reference the variables in it.
-
- * WALLET-51: Use Class::DBI and Class::Trigger (or DBIx::Class) to handle
-   the data access layer rather than writing SQL directly, and implement
-   the logging requirements with triggers rather than explicit SQL.  This
-   may also replace Wallet::Schema.
 
  * WALLET-52: Consider using Class::Accessor to get rid of the scaffolding
    code to access object data, and a Wallet::Base class to handle things
