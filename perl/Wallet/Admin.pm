@@ -1,7 +1,7 @@
 # Wallet::Admin -- Wallet system administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010, 2011, 2012
+# Copyright 2008, 2009, 2010, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -23,6 +23,12 @@ use Wallet::Schema;
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
 $VERSION = '0.07';
+
+# The last non-DBIx::Class version of Wallet::Schema.  If a database has no
+# DBIx::Class versioning, we artificially install this version number before
+# starting the upgrade process so that the automated DBIx::Class upgrade will
+# work properly.
+our $BASE_VERSION = '0.07';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -166,6 +172,13 @@ sub backup {
 sub upgrade {
     my ($self) = @_;
 
+    # Check to see if the database is versioned.  If not, install the
+    # versioning table and default version.
+    if (!$self->{dbh}->get_db_version) {
+        $self->{dbh}->install ($BASE_VERSION);
+    }
+
+    # Perform the actual upgrade.
     if ($self->{dbh}->get_db_version) {
         eval { $self->{dbh}->upgrade; };
     }
