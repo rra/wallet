@@ -140,8 +140,8 @@ sub sync_set {
         eval {
             my $name = $self->{name};
             my %search = (ks_name => $name);
-            my $sync_rs = $self->dbh->resultset('KeytabSync')
-                ->search (\%search);
+            my $sync_rs = $self->{dbh}->resultset('KeytabSync')
+                ->find (\%search);
             if (defined $sync_rs) {
                 my $target = $sync_rs->ks_target;
                 $sync_rs->delete;
@@ -167,8 +167,8 @@ sub sync_list {
     eval {
         my %search = (ks_name => $self->{name});
         my %attrs = (order_by => 'ks_target');
-        my @syncs = $self->dbh->resultset('KeytabSync')->search (\%search,
-                                                                 \%attrs);
+        my @syncs = $self->{dbh}->resultset('KeytabSync')->search (\%search,
+                                                                   \%attrs);
         for my $sync_rs (@syncs) {
             push (@targets, $sync_rs->ks_target);
         }
