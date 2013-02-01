@@ -30,26 +30,26 @@ db_setup;
 my $admin = eval { Wallet::Admin->new };
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
-my $dbh = $admin->dbh;
+my $schema = $admin->schema;
 
 # Okay, now we have a database.  Test create and new.  We make believe this is
 # a keytab object; it won't matter for what we're doing.
 my $object = eval {
-    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+    Wallet::Object::Base->create ('keytab', $princ, $schema, @trace)
   };
 is ($@, '', 'Object creation did not die');
 ok ($object->isa ('Wallet::Object::Base'), ' and returned the right class');
 my $other = eval {
-    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+    Wallet::Object::Base->create ('keytab', $princ, $schema, @trace)
   };
 like ($@, qr/^cannot create object \Qkeytab:$princ: /, 'Repeating fails');
-$other = eval { Wallet::Object::Base->create ('', $princ, $dbh, @trace) };
+$other = eval { Wallet::Object::Base->create ('', $princ, $schema, @trace) };
 is ($@, "invalid object type\n", 'Using an empty type fails');
-$other = eval { Wallet::Object::Base->create ('keytab', '', $dbh, @trace) };
+$other = eval { Wallet::Object::Base->create ('keytab', '', $schema, @trace) };
 is ($@, "invalid object name\n", ' as does an empty name');
-$object = eval { Wallet::Object::Base->new ('keytab', "a$princ", $dbh) };
+$object = eval { Wallet::Object::Base->new ('keytab', "a$princ", $schema) };
 is ($@, "cannot find keytab:a$princ\n", 'Searching for unknown object fails');
-$object = eval { Wallet::Object::Base->new ('keytab', $princ, $dbh) };
+$object = eval { Wallet::Object::Base->new ('keytab', $princ, $schema) };
 is ($@, '', 'Object new did not die');
 ok ($object->isa ('Wallet::Object::Base'), ' and returned the right class');
 
@@ -58,7 +58,7 @@ is ($object->type, 'keytab', 'Type accessor works');
 is ($object->name, $princ, 'Name accessor works');
 
 # We'll use this for later tests.
-my $acl = Wallet::ACL->new ('ADMIN', $dbh);
+my $acl = Wallet::ACL->new ('ADMIN', $schema);
 
 # Owner.
 is ($object->owner, undef, 'Owner is not set to start');
@@ -266,12 +266,12 @@ if ($object->destroy (@trace)) {
 } else {
     is ($object->error, '', 'Destroy is successful');
 }
-$object = eval { Wallet::Object::Base->new ('keytab', $princ, $dbh) };
+$object = eval { Wallet::Object::Base->new ('keytab', $princ, $schema) };
 is ($@, "cannot find keytab:$princ\n", ' and object is all gone');
 
 # Test history.
 $object = eval {
-    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+    Wallet::Object::Base->create ('keytab', $princ, $schema, @trace)
   };
 ok (defined ($object), 'Recreating the object succeeds');
 $output = <<"EOO";

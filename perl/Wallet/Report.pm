@@ -32,8 +32,8 @@ $VERSION = '0.04';
 # exception if anything goes wrong.
 sub new {
     my ($class) = @_;
-    my $dbh = Wallet::Schema->connect;
-    my $self = { dbh => $dbh };
+    my $schema = Wallet::Schema->connect;
+    my $self = { schema => $schema };
     bless ($self, $class);
     return $self;
 }
@@ -41,7 +41,13 @@ sub new {
 # Returns the database handle (used mostly for testing).
 sub dbh {
     my ($self) = @_;
-    return $self->{dbh};
+    return $self->{schema}->storage->dbh;
+}
+
+# Returns the DBIx::Class-based database schema object.
+sub schema {
+    my ($self) = @_;
+    return $self->{schema};
 }
 
 # Set or return the error stashed in the object.
@@ -59,7 +65,7 @@ sub error {
 # Disconnect the database handle on object destruction to avoid warnings.
 sub DESTROY {
     my ($self) = @_;
-    $self->{dbh}->storage->dbh->disconnect;
+    $self->{schema}->storage->dbh->disconnect;
 }
 
 ##############################################################################
@@ -106,7 +112,7 @@ sub objects_owner {
     if (lc ($owner) eq 'null') {
         %search = (ob_owner => undef);
     } else {
-        my $acl = eval { Wallet::ACL->new ($owner, $self->{dbh}) };
+        my $acl = eval { Wallet::ACL->new ($owner, $self->{schema}) };
         return unless $acl;
         %search = (ob_owner => $acl->id);
     }
@@ -138,8 +144,8 @@ sub objects_acl {
     my ($self, $search) = @_;
     my @objects;
 
-    my $dbh = $self->{dbh};
-    my $acl = eval { Wallet::ACL->new ($search, $dbh) };
+    my $schema = $self->{schema};
+    my $acl = eval { Wallet::ACL->new ($search, $schema) };
     return unless $acl;
 
     my @search = ({ ob_owner       => $acl->id },
@@ -202,10 +208,10 @@ sub objects {
 
     # Perform the search and return on any errors.
     my @objects;
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     eval {
-        my @objects_rs = $dbh->resultset('Object')->search ($search_ref,
-                                                            $options_ref);
+        my @objects_rs = $schema->resultset('Object')->search ($search_ref,
+                                                               $options_ref);
         for my $object_rs (@objects_rs) {
             push (@objects, [ $object_rs->ob_type, $object_rs->ob_name ]);
         }
@@ -228,13 +234,13 @@ sub acls_all {
     my ($self) = @_;
     my @acls;
 
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my %search = ();
     my %options = (order_by => [ qw/ac_id/ ],
                    select   => [ qw/ac_id ac_name/ ]);
 
     eval {
-        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+        my @acls_rs = $schema->resultset('Acl')->search (\%search, \%options);
         for my $acl_rs (@acls_rs) {
             push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
         }
@@ -252,7 +258,7 @@ sub acls_empty {
     my ($self) = @_;
     my @acls;
 
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my %search = (ae_id => undef);
     my %options = (join     => 'acl_entries',
                    prefetch => 'acl_entries',
@@ -260,7 +266,7 @@ sub acls_empty {
                    select   => [ qw/ac_id ac_name/ ]);
 
     eval {
-        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+        my @acls_rs = $schema->resultset('Acl')->search (\%search, \%options);
         for my $acl_rs (@acls_rs) {
             push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
         }
@@ -280,7 +286,7 @@ sub acls_entry {
     my ($self, $type, $identifier) = @_;
     my @acls;
 
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my %search = (ae_scheme     => $type,
                   ae_identifier => { like => '%'.$identifier.'%' });
     my %options = (join     => 'acl_entries',
@@ -290,7 +296,7 @@ sub acls_entry {
                    distinct => 1);
 
     eval {
-        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+        my @acls_rs = $schema->resultset('Acl')->search (\%search, \%options);
         for my $acl_rs (@acls_rs) {
             push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
         }
@@ -308,7 +314,7 @@ sub acls_unused {
     my ($self) = @_;
     my @acls;
 
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my %search = (
                   #'acls_owner.ob_owner'   => undef,
                   #'acls_get.ob_owner'     => undef,
@@ -322,7 +328,7 @@ sub acls_unused {
                    select   => [ qw/ac_id ac_name/ ]);
 
     eval {
-        my @acls_rs = $dbh->resultset('Acl')->search (\%search, \%options);
+        my @acls_rs = $schema->resultset('Acl')->search (\%search, \%options);
 
         # FIXME: Almost certainly a way of doing this with the search itself.
         for my $acl_rs (@acls_rs) {
@@ -347,7 +353,7 @@ sub acls_unused {
 # on error and setting the internal error.
 sub acl_membership {
     my ($self, $id) = @_;
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -433,7 +439,7 @@ sub acls {
 sub owners {
     my ($self, $type, $name) = @_;
     undef $self->{error};
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
 
     my @owners;
     eval {
@@ -446,8 +452,8 @@ sub owners {
                        distinct => 1,
                       );
 
-        my @acls_rs = $dbh->resultset('AclEntry')->search (\%search,
-                                                           \%options);
+        my @acls_rs = $schema->resultset('AclEntry')->search (\%search,
+                                                              \%options);
         for my $acl_rs (@acls_rs) {
             my $scheme = $acl_rs->ae_scheme;
             my $identifier = $acl_rs->ae_identifier;

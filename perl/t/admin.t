@@ -63,11 +63,11 @@ $Wallet::Schema::VERSION = '0.07';
 is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     ' and re-initialization succeeds');
 $Wallet::Schema::VERSION = '0.08';
-my $schema = $admin->dbh;
+my $schema = $admin->schema;
 $schema->upgrade_directory ('sql/');
 my $retval = $admin->upgrade;
 is ($retval, 1, 'Performing an upgrade succeeds');
-my $dbh = $schema->storage->dbh;
+my $dbh = $admin->dbh;
 my $sql = "select version from dbix_class_schema_versions order by version "
     ."DESC";
 $version = $dbh->selectall_arrayref ($sql);

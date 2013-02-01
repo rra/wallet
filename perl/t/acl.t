@@ -29,30 +29,30 @@ db_setup;
 my $setup = eval { Wallet::Admin->new };
 is ($@, '', 'Database connection succeeded');
 is ($setup->reinitialize ($setup), 1, 'Database initialization succeeded');
-my $dbh = $setup->dbh;
+my $schema = $setup->schema;
 
 # Test create and new.
-my $acl = eval { Wallet::ACL->create ('test', $dbh, @trace) };
+my $acl = eval { Wallet::ACL->create ('test', $schema, @trace) };
 ok (defined ($acl), 'ACL creation');
 is ($@, '', ' with no exceptions');
 ok ($acl->isa ('Wallet::ACL'), ' and the right class');
 is ($acl->name, 'test', ' and the right name');
 is ($acl->id, 2, ' and the right ID');
-$acl = eval { Wallet::ACL->create (3, $dbh, @trace) };
+$acl = eval { Wallet::ACL->create (3, $schema, @trace) };
 ok (!defined ($acl), 'Creating with a numeric name');
 is ($@, "ACL name may not be all numbers\n", ' with the right error message');
-$acl = eval { Wallet::ACL->create ('test', $dbh, @trace) };
+$acl = eval { Wallet::ACL->create ('test', $schema, @trace) };
 ok (!defined ($acl), 'Creating a duplicate object');
 like ($@, qr/^cannot create ACL test: /, ' with the right error message');
-$acl = eval { Wallet::ACL->new ('test2', $dbh) };
+$acl = eval { Wallet::ACL->new ('test2', $schema) };
 ok (!defined ($acl), 'Searching for a non-existent ACL');
 is ($@, "ACL test2 not found\n", ' with the right error message');
-$acl = eval { Wallet::ACL->new ('test', $dbh) };
+$acl = eval { Wallet::ACL->new ('test', $schema) };
 ok (defined ($acl), 'Searching for the test ACL by name');
 is ($@, '', ' with no exceptions');
 ok ($acl->isa ('Wallet::ACL'), ' and the right class');
 is ($acl->id, 2, ' and the right ID');
-$acl = eval { Wallet::ACL->new (2, $dbh) };
+$acl = eval { Wallet::ACL->new (2, $schema) };
 ok (defined ($acl), 'Searching for the test ACL by ID');
 is ($@, '', ' with no exceptions');
 ok ($acl->isa ('Wallet::ACL'), ' and the right class');
@@ -66,15 +66,15 @@ if ($acl->rename ('example')) {
 }
 is ($acl->name, 'example', ' and the new name is right');
 is ($acl->id, 2, ' and the ID did not change');
-$acl = eval { Wallet::ACL->new ('test', $dbh) };
+$acl = eval { Wallet::ACL->new ('test', $schema) };
 ok (!defined ($acl), ' and it cannot be found under the old name');
 is ($@, "ACL test not found\n", ' with the right error message');
-$acl = eval { Wallet::ACL->new ('example', $dbh) };
+$acl = eval { Wallet::ACL->new ('example', $schema) };
 ok (defined ($acl), ' and it can be found with the new name');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');
 is ($acl->id, 2, ' and the right ID');
-$acl = eval { Wallet::ACL->new (2, $dbh) };
+$acl = eval { Wallet::ACL->new (2, $schema) };
 ok (defined ($acl), ' and it can still found by ID');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');
@@ -212,13 +212,13 @@ if ($acl->destroy (@trace)) {
 } else {
     is ($acl->error, '', 'Destroying the ACL works');
 }
-$acl = eval { Wallet::ACL->new ('example', $dbh) };
+$acl = eval { Wallet::ACL->new ('example', $schema) };
 ok (!defined ($acl), ' and now cannot be found');
 is ($@, "ACL example not found\n", ' with the right error message');
-$acl = eval { Wallet::ACL->new (2, $dbh) };
+$acl = eval { Wallet::ACL->new (2, $schema) };
 ok (!defined ($acl), ' or by ID');
 is ($@, "ACL 2 not found\n", ' with the right error message');
-$acl = eval { Wallet::ACL->create ('example', $dbh, @trace) };
+$acl = eval { Wallet::ACL->create ('example', $schema, @trace) };
 ok (defined ($acl), ' and creating another with the same name works');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');

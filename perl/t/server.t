@@ -36,8 +36,8 @@ is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
 $server = eval { Wallet::Server->new (@trace) };
 is ($@, '', 'Reopening with new did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
-my $dbh = $server->dbh;
-ok (defined ($dbh), ' and returns a defined database handle');
+my $schema = $server->schema;
+ok (defined ($schema), ' and returns a defined schema object');
 
 # Allow creation of base objects for testing purposes.
 $setup->register_object ('base', 'Wallet::Object::Base');

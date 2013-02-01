@@ -37,13 +37,13 @@ $VERSION = '0.11';
 # for various things.  Throw an exception if anything goes wrong.
 sub new {
     my ($class, $user, $host) = @_;
-    my $dbh = Wallet::Schema->connect;
-    my $acl = Wallet::ACL->new ('ADMIN', $dbh);
+    my $schema = Wallet::Schema->connect;
+    my $acl = Wallet::ACL->new ('ADMIN', $schema);
     my $self = {
-        dbh   => $dbh,
-        user  => $user,
-        host  => $host,
-        admin => $acl,
+        schema => $schema,
+        user   => $user,
+        host   => $host,
+        admin  => $acl,
     };
     bless ($self, $class);
     return $self;
@@ -52,7 +52,13 @@ sub new {
 # Returns the database handle (used mostly for testing).
 sub dbh {
     my ($self) = @_;
-    return $self->{dbh};
+    return $self->{schema}->storage->dbh;
+}
+
+# Returns the DBIx::Class-based database schema object.
+sub schema {
+    my ($self) = @_;
+    return $self->{schema};
 }
 
 # Set or return the error stashed in the object.
@@ -71,8 +77,8 @@ sub error {
 sub DESTROY {
     my ($self) = @_;
 
-    if ($self->{dbh}) {
-        $self->{dbh}->storage->dbh->disconnect;
+    if ($self->{schema}) {
+        $self->{schema}->storage->dbh->disconnect;
     }
 }
 
@@ -86,9 +92,9 @@ sub type_mapping {
     my ($self, $type) = @_;
     my $class;
     eval {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
         my %search = (ty_name => $type);
-        my $type_rec = $self->{dbh}->resultset('Type')->find (\%search);
+        my $type_rec = $self->{schema}->resultset('Type')->find (\%search);
         $class = $type_rec->ty_class;
         $guard->commit;
     };
@@ -118,7 +124,7 @@ sub create_check {
     my ($self, $type, $name) = @_;
     my $user = $self->{user};
     my $host = $self->{host};
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     unless (defined (&Wallet::Config::default_owner)) {
         $self->error ("$user not authorized to create ${type}:${name}");
         return;
@@ -128,9 +134,9 @@ sub create_check {
         $self->error ("$user not authorized to create ${type}:${name}");
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($aname, $dbh) };
+    my $acl = eval { Wallet::ACL->new ($aname, $schema) };
     if ($@) {
-        $acl = eval { Wallet::ACL->create ($aname, $dbh, $user, $host) };
+        $acl = eval { Wallet::ACL->create ($aname, $schema, $user, $host) };
         if ($@) {
             $self->error ($@);
             return;
@@ -181,10 +187,10 @@ sub create_object {
         $self->error ("unknown object type $type");
         return;
     }
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my $user = $self->{user};
     my $host = $self->{host};
-    my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
+    my $object = eval { $class->create ($type, $name, $schema, $user, $host) };
     if ($@) {
         $self->error ($@);
         return;
@@ -246,7 +252,7 @@ sub retrieve {
         $self->error ("unknown object type $type");
         return;
     }
-    my $object = eval { $class->new ($type, $name, $self->{dbh}) };
+    my $object = eval { $class->new ($type, $name, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -302,7 +308,7 @@ sub acl_verify {
         $self->object_error ($object, $action);
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -556,7 +562,7 @@ sub flag_set {
 # and undef if there was an error in checking the existence of the object.
 sub acl_check {
     my ($self, $id) = @_;
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         if ($@ =~ /^ACL .* not found/) {
             return 0;
@@ -585,8 +591,8 @@ sub acl_create {
             return;
         }
     }
-    my $dbh = $self->{dbh};
-    my $acl = eval { Wallet::ACL->create ($name, $dbh, $user, $host) };
+    my $schema = $self->{schema};
+    my $acl = eval { Wallet::ACL->create ($name, $schema, $user, $host) };
     if ($@) {
         $self->error ($@);
         return;
@@ -617,7 +623,7 @@ sub acl_history {
         $self->acl_error ($id, 'history');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -637,7 +643,7 @@ sub acl_show {
         $self->acl_error ($id, 'show');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -658,7 +664,7 @@ sub acl_rename {
         $self->acl_error ($id, 'rename');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -689,7 +695,7 @@ sub acl_destroy {
         $self->acl_error ($id, 'destroy');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -713,7 +719,7 @@ sub acl_add {
         $self->acl_error ($id, 'add');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -733,7 +739,7 @@ sub acl_remove {
         $self->acl_error ($id, 'remove');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -974,6 +980,10 @@ Returns the database handle of a Wallet::Server object.  This is used
 mostly for testing; normally, clients should perform all actions through
 the Wallet::Server object to ensure that authorization and history logging
 is done properly.
+
+=item schema()
+
+Returns the DBIx::Class schema object.
 
 =item error()
 

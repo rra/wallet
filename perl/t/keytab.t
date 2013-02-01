@@ -147,8 +147,8 @@ db_setup;
 my $admin = eval { Wallet::Admin->new };
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
-my $schema = $admin->dbh;
-my $dbh = $schema->storage->dbh;
+my $schema = $admin->schema;
+my $dbh = $admin->dbh;
 
 # Use this to accumulate the history traces so that we can check history.
 my $history = '';

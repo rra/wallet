@@ -32,7 +32,7 @@ $VERSION = '0.07';
 # and the database handle to use for future operations.  If the object
 # doesn't exist, throws an exception.
 sub new {
-    my ($class, $id, $dbh) = @_;
+    my ($class, $id, $schema) = @_;
     my (%search, $data, $name);
     if ($id =~ /^\d+\z/) {
         $search{ac_id} = $id;
@@ -40,7 +40,7 @@ sub new {
         $search{ac_name} = $id;
     }
     eval {
-        $data = $dbh->resultset('Acl')->find (\%search);
+        $data = $schema->resultset('Acl')->find (\%search);
     };
     if ($@) {
         die "cannot search for ACL $id: $@\n";
@@ -48,9 +48,9 @@ sub new {
         die "ACL $id not found\n";
     }
     my $self = {
-        dbh  => $dbh,
-        id   => $data->ac_id,
-        name => $data->ac_name,
+        schema  => $schema,
+        id      => $data->ac_id,
+        name    => $data->ac_name,
     };
     bless ($self, $class);
     return $self;
@@ -60,18 +60,18 @@ sub new {
 # blessed ACL object for it.  Stores the database handle to use and the ID of
 # the newly created ACL in the object.  On failure, throws an exception.
 sub create {
-    my ($class, $name, $dbh, $user, $host, $time) = @_;
+    my ($class, $name, $schema, $user, $host, $time) = @_;
     if ($name =~ /^\d+\z/) {
         die "ACL name may not be all numbers\n";
     }
     $time ||= time;
     my $id;
     eval {
-        my $guard = $dbh->txn_scope_guard;
+        my $guard = $schema->txn_scope_guard;
 
         # Create the new record.
         my %record = (ac_name => $name);
-        my $acl = $dbh->resultset('Acl')->create (\%record);
+        my $acl = $schema->resultset('Acl')->create (\%record);
         $id = $acl->ac_id;
         die "unable to retrieve new ACL ID" unless defined $id;
 
@@ -82,7 +82,7 @@ sub create {
                    ah_by     => $user,
                    ah_from   => $host,
                    ah_on     => $date);
-        my $history = $dbh->resultset('AclHistory')->create (\%record);
+        my $history = $schema->resultset('AclHistory')->create (\%record);
         die "unable to create new history entry" unless defined $history;
 
         $guard->commit;
@@ -91,9 +91,9 @@ sub create {
         die "cannot create ACL $name: $@\n";
     }
     my $self = {
-        dbh  => $dbh,
-        id   => $id,
-        name => $name,
+        schema => $schema,
+        id     => $id,
+        name   => $name,
     };
     bless ($self, $class);
     return $self;
@@ -134,7 +134,7 @@ sub scheme_mapping {
     my $class;
     eval {
         my %search = (as_name => $scheme);
-        my $scheme_rec = $self->{dbh}->resultset('AclScheme')
+        my $scheme_rec = $self->{schema}->resultset('AclScheme')
             ->find (\%search);
         $class = $scheme_rec->as_class;
     };
@@ -169,7 +169,7 @@ sub log_acl {
                   ah_by         => $user,
                   ah_from       => $host,
                   ah_on         => strftime ('%Y-%m-%d %T', localtime $time));
-    $self->{dbh}->resultset('AclHistory')->create (\%record);
+    $self->{schema}->resultset('AclHistory')->create (\%record);
 }
 
 ##############################################################################
@@ -186,9 +186,9 @@ sub rename {
         return;
     }
     eval {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
         my %search = (ac_id => $self->{id});
-        my $acls = $self->{dbh}->resultset('Acl')->find (\%search);
+        my $acls = $self->{schema}->resultset('Acl')->find (\%search);
         $acls->ac_name ($name);
         $acls->update;
         $guard->commit;
@@ -212,7 +212,7 @@ sub destroy {
     my ($self, $user, $host, $time) = @_;
     $time ||= time;
     eval {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
 
         # Make certain no one is using the ACL.
         my @search = ({ ob_owner       => $self->{id} },
@@ -221,7 +221,7 @@ sub destroy {
                       { ob_acl_show    => $self->{id} },
                       { ob_acl_destroy => $self->{id} },
                       { ob_acl_flags   => $self->{id} });
-        my @entries = $self->{dbh}->resultset('Object')->search (\@search);
+        my @entries = $self->{schema}->resultset('Object')->search (\@search);
         if (@entries) {
             my ($entry) = @entries;
             die "ACL in use by ".$entry->ob_type.":".$entry->ob_name;
@@ -229,14 +229,14 @@ sub destroy {
 
         # Delete any entries (there may or may not be any).
         my %search = (ae_id => $self->{id});
-        @entries = $self->{dbh}->resultset('AclEntry')->search(\%search);
+        @entries = $self->{schema}->resultset('AclEntry')->search(\%search);
         for my $entry (@entries) {
             $entry->delete;
         }
 
         # There should definitely be an ACL record to delete.
         %search = (ac_id => $self->{id});
-        my $entry = $self->{dbh}->resultset('Acl')->find(\%search);
+        my $entry = $self->{schema}->resultset('Acl')->find(\%search);
         $entry->delete if defined $entry;
 
         # Create new history line for the deletion.
@@ -245,7 +245,7 @@ sub destroy {
                       ah_by     => $user,
                       ah_from   => $host,
                       ah_on     => $time);
-        $self->{dbh}->resultset('AclHistory')->create (\%record);
+        $self->{schema}->resultset('AclHistory')->create (\%record);
         $guard->commit;
     };
     if ($@) {
@@ -268,11 +268,11 @@ sub add {
         return;
     }
     eval {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
         my %record = (ae_id         => $self->{id},
                       ae_scheme     => $scheme,
                       ae_identifier => $identifier);
-        my $entry = $self->{dbh}->resultset('AclEntry')->create (\%record);
+        my $entry = $self->{schema}->resultset('AclEntry')->create (\%record);
         $self->log_acl ('add', $scheme, $identifier, $user, $host, $time);
         $guard->commit;
     };
@@ -290,11 +290,11 @@ sub remove {
     my ($self, $scheme, $identifier, $user, $host, $time) = @_;
     $time ||= time;
     eval {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
         my %search = (ae_id         => $self->{id},
                       ae_scheme     => $scheme,
                       ae_identifier => $identifier);
-        my $entry = $self->{dbh}->resultset('AclEntry')->find (\%search);
+        my $entry = $self->{schema}->resultset('AclEntry')->find (\%search);
         unless (defined $entry) {
             die "entry not found in ACL\n";
         }
@@ -322,9 +322,9 @@ sub list {
     undef $self->{error};
     my @entries;
     eval {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
         my %search = (ae_id => $self->{id});
-        my @entry_recs = $self->{dbh}->resultset('AclEntry')
+        my @entry_recs = $self->{schema}->resultset('AclEntry')
             ->search (\%search);
         for my $entry (@entry_recs) {
             push (@entries, [ $entry->ae_scheme, $entry->ae_identifier ]);
@@ -364,11 +364,11 @@ sub history {
     my ($self) = @_;
     my $output = '';
     eval {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
         my %search  = (ah_acl => $self->{id});
         my %options = (order_by => 'ah_on');
-        my @data = $self->{dbh}->resultset('AclHistory')->search (\%search,
-                                                                  \%options);
+        my @data = $self->{schema}->resultset('AclHistory')
+            ->search (\%search, \%options);
         for my $data (@data) {
             $output .= sprintf ("%s %s  ", $data->ah_on->ymd,
                                 $data->ah_on->hms);
@@ -512,14 +512,14 @@ references.
 
 =over 4
 
-=item new(ACL, DBH)
+=item new(ACL, SCHEMA)
 
 Instantiate a new ACL object with the given ACL ID or name.  Takes the
 Wallet::Schema object to use for retrieving metadata from the wallet
 database.  Returns a new ACL object if the ACL was found and throws an
 exception if it wasn't or on any other error.
 
-=item create(NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+=item create(NAME, SCHEMA, PRINCIPAL, HOSTNAME [, DATETIME])
 
 Similar to new() in that it instantiates a new ACL object, but instead of
 finding an existing one, creates a new ACL record in the database with the

@@ -31,7 +31,7 @@ db_setup;
 my $admin = eval { Wallet::Admin->new };
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
-my $dbh = $admin->dbh;
+my $schema = $admin->schema;
 
 # Use this to accumulate the history traces so that we can check history.
 my $history = '';
@@ -39,7 +39,7 @@ my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 
 # Test error handling in the absence of configuration.
 $object = eval {
-    Wallet::Object::File->create ('file', 'test', $dbh, @trace)
+    Wallet::Object::File->create ('file', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Creating a basic file object succeeds');
 ok ($object->isa ('Wallet::Object::File'), ' and is the right class');
@@ -55,7 +55,7 @@ $Wallet::Config::FILE_BUCKET = 'test-files';
 
 # Okay, now we can test.  First, the basic object without store.
 $object = eval {
-    Wallet::Object::File->create ('file', 'test', $dbh, @trace)
+    Wallet::Object::File->create ('file', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Creating a basic file object succeeds');
 ok ($object->isa ('Wallet::Object::File'), ' and is the right class');
@@ -66,7 +66,7 @@ is ($object->destroy (@trace), 1, ' but destroying the object succeeds');
 
 # Now store something and be sure that we get something reasonable.
 $object = eval {
-    Wallet::Object::File->create ('file', 'test', $dbh, @trace)
+    Wallet::Object::File->create ('file', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Recreating the object succeeds');
 is ($object->store ("foo\n", @trace), 1, ' and storing data in it succeeds');
@@ -103,7 +103,7 @@ ok (! -f 'test-files/09/test', ' and the file is gone');
 
 # Now try some aggressive names.
 $object = eval {
-    Wallet::Object::File->create ('file', '../foo', $dbh, @trace)
+    Wallet::Object::File->create ('file', '../foo', $schema, @trace)
   };
 ok (defined ($object), 'Creating ../foo succeeds');
 is ($object->store ("foo\n", @trace), 1, ' and storing data in it succeeds');
@@ -115,7 +115,7 @@ is ($object->get (@trace), "foo\n", ' and get returns correctly');
 is ($object->destroy (@trace), 1, 'Destroying the object works');
 ok (! -f 'test-files/39/%2E%2E%2Ffoo', ' and the file is gone');
 $object = eval {
-    Wallet::Object::File->create ('file', "\0", $dbh, @trace)
+    Wallet::Object::File->create ('file', "\0", $schema, @trace)
   };
 ok (defined ($object), 'Creating nul succeeds');
 is ($object->store ("foo\n", @trace), 1, ' and storing data in it succeeds');
@@ -130,7 +130,7 @@ ok (! -f 'test-files/93/%00', ' and the file is gone');
 # Test error handling in the file store.
 system ('rm -r test-files') == 0 or die "cannot remove test-files\n";
 $object = eval {
-    Wallet::Object::File->create ('file', 'test', $dbh, @trace)
+    Wallet::Object::File->create ('file', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Recreating the object succeeds');
 is ($object->store ("foo\n", @trace), undef,

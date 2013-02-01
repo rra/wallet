@@ -143,7 +143,7 @@ API HOSTNAME DATETIME keytab remctld backend nul Allbery wallet-backend
 
     my @name = qw(file mysql-lsdb)
     my @trace = ($user, $host, time);
-    my $object = Wallet::Object::Keytab->create (@name, $dbh, @trace);
+    my $object = Wallet::Object::Keytab->create (@name, $schema, @trace);
     unless ($object->store ("the-password\n")) {
         die $object->error, "\n";
     }

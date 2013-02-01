@@ -255,7 +255,7 @@ Wallet::Object::WAKeyring - WebAuth keyring object implementation for wallet
     my ($user, $host, $time);
     my @name = qw(wa-keyring www.stanford.edu);
     my @trace = ($user, $host, $time);
-    my $object = Wallet::Object::WAKeyring->create (@name, $dbh, $trace);
+    my $object = Wallet::Object::WAKeyring->create (@name, $schema, $trace);
     my $keyring = $object->get (@trace);
     unless ($object->store ($keyring)) {
         die $object->error, "\n";

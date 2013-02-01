@@ -40,14 +40,14 @@ db_setup;
 my $admin = eval { Wallet::Admin->new };
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
-my $dbh = $admin->dbh;
+my $schema = $admin->schema;
 
 # Create a WebAuth context to use.
 my $wa = WebAuth->new;
 
 # Test error handling in the absence of configuration.
 my $object = eval {
-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $dbh, @trace)
+    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Creating a basic WebAuth keyring object succeeds');
 ok ($object->isa ('Wallet::Object::WAKeyring'), ' and is the right class');
@@ -65,7 +65,7 @@ $Wallet::Config::WAKEYRING_BUCKET = 'test-keyrings';
 
 # Okay, now we can test.  First, the basic object without store.
 $object = eval {
-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $dbh, @trace)
+    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Creating a basic WebAuth keyring object succeeds');
 ok ($object->isa ('Wallet::Object::WAKeyring'), ' and is the right class');
@@ -100,7 +100,7 @@ is ($object->destroy (@trace), 1, 'Destroying the object succeeds');
 
 # Now store something and be sure that we get something reasonable.
 $object = eval {
-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $dbh, @trace)
+    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Recreating the object succeeds');
 my $key = WebAuth::Key->new ($wa, WA_KEY_AES, WA_AES_128);
@@ -159,7 +159,7 @@ is ($object->destroy (@trace), 1, 'Destroying the object succeeds');
 # Test error handling in the file store.
 system ('rm -r test-keyrings') == 0 or die "cannot remove test-keyrings\n";
 $object = eval {
-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $dbh, @trace)
+    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Recreating the object succeeds');
 is ($object->get (@trace), undef, ' but retrieving it fails');

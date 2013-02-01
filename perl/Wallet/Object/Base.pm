@@ -36,16 +36,16 @@ $VERSION = '0.06';
 # type in the object.  If the object doesn't exist, returns undef.  This will
 # probably be usable as-is by most object types.
 sub new {
-    my ($class, $type, $name, $dbh) = @_;
+    my ($class, $type, $name, $schema) = @_;
     my %search = (ob_type => $type,
                   ob_name => $name);
-    my $object = $dbh->resultset('Object')->find (\%search);
+    my $object = $schema->resultset('Object')->find (\%search);
     die "cannot find ${type}:${name}\n"
         unless ($object and $object->ob_name eq $name);
     my $self = {
-        dbh  => $dbh,
-        name => $name,
-        type => $type,
+        schema => $schema,
+        name   => $name,
+        type   => $type,
     };
     bless ($self, $class);
     return $self;
@@ -56,11 +56,11 @@ sub new {
 # specified class.  Stores the database handle to use, the name, and the type
 # in the object.  Subclasses may need to override this to do additional setup.
 sub create {
-    my ($class, $type, $name, $dbh, $user, $host, $time) = @_;
+    my ($class, $type, $name, $schema, $user, $host, $time) = @_;
     $time ||= time;
     die "invalid object type\n" unless $type;
     die "invalid object name\n" unless $name;
-    my $guard = $dbh->txn_scope_guard;
+    my $guard = $schema->txn_scope_guard;
     eval {
         my %record = (ob_type         => $type,
                       ob_name         => $name,
@@ -68,7 +68,7 @@ sub create {
                       ob_created_from => $host,
                       ob_created_on   => strftime ('%Y-%m-%d %T',
                                                    localtime $time));
-        $dbh->resultset('Object')->create (\%record);
+        $schema->resultset('Object')->create (\%record);
 
         %record = (oh_type   => $type,
                    oh_name   => $name,
@@ -76,7 +76,7 @@ sub create {
                    oh_by     => $user,
                    oh_from   => $host,
                    oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
-        $dbh->resultset('ObjectHistory')->create (\%record);
+        $schema->resultset('ObjectHistory')->create (\%record);
 
         $guard->commit;
     };
@@ -84,9 +84,9 @@ sub create {
         die "cannot create object ${type}:${name}: $@\n";
     }
     my $self = {
-        dbh  => $dbh,
-        name => $name,
-        type => $type,
+        schema => $schema,
+        name   => $name,
+        type   => $type,
     };
     bless ($self, $class);
     return $self;
@@ -136,7 +136,7 @@ sub log_action {
     # We have two traces to record, one in the object_history table and one in
     # the object record itself.  Commit both changes as a transaction.  We
     # assume that AutoCommit is turned off.
-    my $guard = $self->{dbh}->txn_scope_guard;
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
         my %record = (oh_type   => $self->{type},
                       oh_name   => $self->{name},
@@ -144,11 +144,11 @@ sub log_action {
                       oh_by     => $user,
                       oh_from   => $host,
                       oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
-        $self->{dbh}->resultset('ObjectHistory')->create (\%record);
+        $self->{schema}->resultset('ObjectHistory')->create (\%record);
 
         my %search = (ob_type   => $self->{type},
                       ob_name   => $self->{name});
-        my $object = $self->{dbh}->resultset('Object')->find (\%search);
+        my $object = $self->{schema}->resultset('Object')->find (\%search);
         if ($action eq 'get') {
             $object->ob_downloaded_by   ($user);
             $object->ob_downloaded_from ($host);
@@ -202,7 +202,7 @@ sub log_set {
                   oh_by         => $user,
                   oh_from       => $host,
                   oh_on         => strftime ('%Y-%m-%d %T', localtime $time));
-    $self->{dbh}->resultset('ObjectHistory')->create (\%record);
+    $self->{schema}->resultset('ObjectHistory')->create (\%record);
 }
 
 ##############################################################################
@@ -225,11 +225,11 @@ sub _set_internal {
         return;
     }
 
-    my $guard = $self->{dbh}->txn_scope_guard;
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
         my %search = (ob_type => $type,
                       ob_name => $name);
-        my $object = $self->{dbh}->resultset('Object')->find (\%search);
+        my $object = $self->{schema}->resultset('Object')->find (\%search);
         my $old = $object->get_column ("ob_$attr");
 
         $object->update ({ "ob_$attr" => $value });
@@ -261,7 +261,7 @@ sub _get_internal {
     eval {
         my %search = (ob_type => $type,
                       ob_name => $name);
-        my $object = $self->{dbh}->resultset('Object')->find (\%search);
+        my $object = $self->{schema}->resultset('Object')->find (\%search);
         $value = $object->get_column ($attr);
     };
     if ($@) {
@@ -282,7 +282,7 @@ sub acl {
     my $attr = "acl_$type";
     if ($id) {
         my $acl;
-        eval { $acl = Wallet::ACL->new ($id, $self->{dbh}) };
+        eval { $acl = Wallet::ACL->new ($id, $self->{schema}) };
         if ($@) {
             $self->error ($@);
             return;
@@ -352,7 +352,7 @@ sub owner {
     my ($self, $owner, $user, $host, $time) = @_;
     if ($owner) {
         my $acl;
-        eval { $acl = Wallet::ACL->new ($owner, $self->{dbh}) };
+        eval { $acl = Wallet::ACL->new ($owner, $self->{schema}) };
         if ($@) {
             $self->error ($@);
             return;
@@ -375,13 +375,13 @@ sub flag_check {
     my ($self, $flag) = @_;
     my $name = $self->{name};
     my $type = $self->{type};
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my $value;
     eval {
         my %search = (fl_type => $type,
                       fl_name => $name,
                       fl_flag => $flag);
-        my $flag = $dbh->resultset('Flag')->find (\%search);
+        my $flag = $schema->resultset('Flag')->find (\%search);
         if (not defined $flag) {
             $value = 0;
         } else {
@@ -403,13 +403,13 @@ sub flag_clear {
     $time ||= time;
     my $name = $self->{name};
     my $type = $self->{type};
-    my $dbh = $self->{dbh};
-    my $guard = $dbh->txn_scope_guard;
+    my $schema = $self->{schema};
+    my $guard = $schema->txn_scope_guard;
     eval {
         my %search = (fl_type => $type,
                       fl_name => $name,
                       fl_flag => $flag);
-        my $flag = $dbh->resultset('Flag')->find (\%search);
+        my $flag = $schema->resultset('Flag')->find (\%search);
         unless (defined $flag) {
             die "flag not set\n";
         }
@@ -435,8 +435,8 @@ sub flag_list {
         my %search = (fl_type => $self->{type},
                       fl_name => $self->{name});
         my %attrs  = (order_by => 'fl_flag');
-        my @flags_rs = $self->{dbh}->resultset('Flag')->search (\%search,
-                                                                \%attrs);
+        my @flags_rs = $self->{schema}->resultset('Flag')->search (\%search,
+                                                                   \%attrs);
         for my $flag (@flags_rs) {
             push (@flags, $flag->fl_flag);
         }
@@ -457,17 +457,17 @@ sub flag_set {
     $time ||= time;
     my $name = $self->{name};
     my $type = $self->{type};
-    my $dbh = $self->{dbh};
-    my $guard = $dbh->txn_scope_guard;
+    my $schema = $self->{schema};
+    my $guard = $schema->txn_scope_guard;
     eval {
         my %search = (fl_type => $type,
                       fl_name => $name,
                       fl_flag => $flag);
-        my $flag = $dbh->resultset('Flag')->find (\%search);
+        my $flag = $schema->resultset('Flag')->find (\%search);
         if (defined $flag) {
             die "flag already set\n";
         }
-        $flag = $dbh->resultset('Flag')->create (\%search);
+        $flag = $schema->resultset('Flag')->create (\%search);
         $self->log_set ('flags', undef, $flag->fl_flag, $user, $host, $time);
         $guard->commit;
     };
@@ -489,7 +489,7 @@ sub format_acl_id {
     my $name = $id;
 
     my %search = (ac_id => $id);
-    my $acl_rs = $self->{dbh}->resultset('Acl')->find (\%search);
+    my $acl_rs = $self->{schema}->resultset('Acl')->find (\%search);
     if (defined $acl_rs) {
         $name = $acl_rs->ac_name . " ($id)";
     }
@@ -507,7 +507,7 @@ sub history {
         my %search = (oh_type => $self->{type},
                       oh_name => $self->{name});
         my %attrs = (order_by => 'oh_on');
-        my @history = $self->{dbh}->resultset('ObjectHistory')
+        my @history = $self->{schema}->resultset('ObjectHistory')
             ->search (\%search, \%attrs);
 
         for my $history_rs (@history) {
@@ -620,7 +620,7 @@ sub show {
     eval {
         my %search = (ob_type => $type,
                       ob_name => $name);
-        $object_rs = $self->{dbh}->resultset('Object')->find (\%search);
+        $object_rs = $self->{schema}->resultset('Object')->find (\%search);
     };
     if ($@) {
         $self->error ("cannot retrieve data for ${type}:${name}: $@");
@@ -658,7 +658,7 @@ sub show {
             $output .= $attr_output;
         }
         if ($field =~ /^ob_(owner|acl_)/) {
-            my $acl = eval { Wallet::ACL->new ($value, $self->{dbh}) };
+            my $acl = eval { Wallet::ACL->new ($value, $self->{schema}) };
             if ($acl and not $@) {
                 $value = $acl->name || $value;
                 push (@acls, [ $acl, $value ]);
@@ -688,18 +688,18 @@ sub destroy {
         $self->error ("cannot destroy ${type}:${name}: object is locked");
         return;
     }
-    my $guard = $self->{dbh}->txn_scope_guard;
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
 
         # Remove any flags that may exist for the record.
         my %search = (fl_type => $type,
                       fl_name => $name);
-        $self->{dbh}->resultset('Flag')->search (\%search)->delete;
+        $self->{schema}->resultset('Flag')->search (\%search)->delete;
 
         # Remove any object records
         %search = (ob_type => $type,
                    ob_name => $name);
-        $self->{dbh}->resultset('Object')->search (\%search)->delete;
+        $self->{schema}->resultset('Object')->search (\%search)->delete;
 
         # And create a new history object for the destroy action.
         my %record = (oh_type => $type,
@@ -708,7 +708,7 @@ sub destroy {
                       oh_by     => $user,
                       oh_from   => $host,
                       oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
-        $self->{dbh}->resultset('ObjectHistory')->create (\%record);
+        $self->{schema}->resultset('ObjectHistory')->create (\%record);
         $guard->commit;
     };
     if ($@) {

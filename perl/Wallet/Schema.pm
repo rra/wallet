@@ -40,11 +40,11 @@ sub connect {
     my $user = $Wallet::Config::DB_USER;
     my $pass = $Wallet::Config::DB_PASSWORD;
     my %attrs = (PrintError => 0, RaiseError => 1);
-    my $dbh = eval { $class->SUPER::connect ($dsn, $user, $pass, \%attrs) };
+    my $schema = eval { $class->SUPER::connect ($dsn, $user, $pass, \%attrs) };
     if ($@) {
         die "cannot connect to database: $@\n";
     }
-    return $dbh;
+    return $schema;
 }
 
 __END__
@@ -62,7 +62,7 @@ Wallet::Schema - Database schema and connector for the wallet system
 =head1 SYNOPSIS
 
     use Wallet::Schema;
-    my $dbh = Wallet::Schema->connect;
+    my $schema = Wallet::Schema->connect;
 
 =head1 DESCRIPTION
 

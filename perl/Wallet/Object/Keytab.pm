@@ -40,12 +40,12 @@ sub enctypes_set {
     my @trace = ($user, $host, $time);
     my $name = $self->{name};
     my %enctypes = map { $_ => 1 } @$enctypes;
-    my $guard = $self->{dbh}->txn_scope_guard;
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
 
         # Find all enctypes for the given keytab.
         my %search = (ke_name => $name);
-        my @enctypes = $self->{dbh}->resultset('KeytabEnctype')
+        my @enctypes = $self->{schema}->resultset('KeytabEnctype')
             ->search (\%search);
         my (@current);
         for my $enctype_rs (@enctypes) {
@@ -61,7 +61,7 @@ sub enctypes_set {
             } else {
                 %search = (ke_name    => $name,
                            ke_enctype => $enctype);
-                $self->{dbh}->resultset('KeytabEnctype')->find (\%search)
+                $self->{schema}->resultset('KeytabEnctype')->find (\%search)
                     ->delete;
                 $self->log_set ('type_data enctypes', $enctype, undef, @trace);
             }
@@ -73,13 +73,13 @@ sub enctypes_set {
         # to make it easier to test.
         for my $enctype (sort keys %enctypes) {
             my %search = (en_name => $enctype);
-            my $enctype_rs = $self->{dbh}->('Enctype')->find (\%search);
+            my $enctype_rs = $self->{schema}->('Enctype')->find (\%search);
             unless (defined $enctype_rs) {
                 die "unknown encryption type $enctype\n";
             }
             my %record = (ke_name    => $name,
                           ke_enctype => $enctype);
-            $self->{dbh}->resultset('Enctype')->create (\%record);
+            $self->{schema}->resultset('Enctype')->create (\%record);
             $self->log_set ('type_data enctypes', undef, $enctype, @trace);
         }
         $guard->commit;
@@ -101,7 +101,7 @@ sub enctypes_list {
     eval {
         my %search = (ke_name => $self->{name});
         my %attrs = (order_by => 'ke_enctype');
-        my @enctypes_rs = $self->{dbh}->resultset('KeytabEnctype')
+        my @enctypes_rs = $self->{schema}->resultset('KeytabEnctype')
             ->search (\%search, \%attrs);
         for my $enctype_rs (@enctypes_rs) {
             push (@enctypes, $enctype_rs->ke_enctype);
@@ -136,11 +136,11 @@ sub sync_set {
         $self->error ("unsupported synchronization target $target");
         return;
     } else {
-        my $guard = $self->{dbh}->txn_scope_guard;
+        my $guard = $self->{schema}->txn_scope_guard;
         eval {
             my $name = $self->{name};
             my %search = (ks_name => $name);
-            my $sync_rs = $self->{dbh}->resultset('KeytabSync')
+            my $sync_rs = $self->{schema}->resultset('KeytabSync')
                 ->find (\%search);
             if (defined $sync_rs) {
                 my $target = $sync_rs->ks_target;
@@ -167,8 +167,8 @@ sub sync_list {
     eval {
         my %search = (ks_name => $self->{name});
         my %attrs = (order_by => 'ks_target');
-        my @syncs = $self->{dbh}->resultset('KeytabSync')->search (\%search,
-                                                                   \%attrs);
+        my @syncs = $self->{schema}->resultset('KeytabSync')->search (\%search,
+                                                                      \%attrs);
         for my $sync_rs (@syncs) {
             push (@targets, $sync_rs->ks_target);
         }
@@ -239,16 +239,16 @@ sub attr_show {
 # Override new to start by creating a handle for the kadmin module we're
 # using.
 sub new {
-    my ($class, $type, $name, $dbh) = @_;
+    my ($class, $type, $name, $schema) = @_;
      my $self = {
-        dbh    => $dbh,
+        schema => $schema,
         kadmin => undef,
     };
     bless $self, $class;
     my $kadmin = Wallet::Kadmin->new ();
     $self->{kadmin} = $kadmin;
 
-    $self = $class->SUPER::new ($type, $name, $dbh);
+    $self = $class->SUPER::new ($type, $name, $schema);
     $self->{kadmin} = $kadmin;
     return $self;
 }
@@ -258,9 +258,9 @@ sub new {
 # great here since we don't have a way to communicate the error back to the
 # caller.
 sub create {
-    my ($class, $type, $name, $dbh, $creator, $host, $time) = @_;
+    my ($class, $type, $name, $schema, $creator, $host, $time) = @_;
     my $self = {
-        dbh    => $dbh,
+        schema => $schema,
         kadmin => undef,
     };
     bless $self, $class;
@@ -270,7 +270,8 @@ sub create {
     if (not $kadmin->create ($name)) {
         die $kadmin->error, "\n";
     }
-    $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
+    $self = $class->SUPER::create ($type, $name, $schema, $creator, $host,
+                                   $time);
     $self->{kadmin} = $kadmin;
     return $self;
 }
@@ -283,15 +284,15 @@ sub destroy {
         $self->error ("cannot destroy $id: object is locked");
         return;
     }
-    my $dbh = $self->{dbh};
-    my $guard = $dbh->txn_scope_guard;
+    my $schema = $self->{schema};
+    my $guard = $schema->txn_scope_guard;
     eval {
         my %search = (ks_name => $self->{name});
-        my $sync_rs = $dbh->resultset('KeytabSync')->search (\%search);
+        my $sync_rs = $schema->resultset('KeytabSync')->search (\%search);
         $sync_rs->delete_all if defined $sync_rs;
 
         %search = (ke_name => $self->{name});
-        my $enctype_rs = $dbh->resultset('KeytabEnctype')->search (\%search);
+        my $enctype_rs = $schema->resultset('KeytabEnctype')->search (\%search);
         $enctype_rs->delete_all if defined $enctype_rs;
 
         $guard->commit;
@@ -353,7 +354,7 @@ Wallet::Object::Keytab - Keytab object implementation for wallet
 
     my @name = qw(keytab host/shell.example.com);
     my @trace = ($user, $host, time);
-    my $object = Wallet::Object::Keytab->create (@name, $dbh, @trace);
+    my $object = Wallet::Object::Keytab->create (@name, $schema, @trace);
     my $keytab = $object->get (@trace);
     $object->destroy (@trace);
 
