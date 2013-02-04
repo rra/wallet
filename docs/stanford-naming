@@ -119,7 +119,7 @@ Object Naming
 
         (OLD: <group>-<server>-ssh-<type>)
 
-    ssl-key/<server>
+    ssl-key/<server>[/<application>]
 
         Stores the SSL X.509 certificate private key for <server>.  Used
         for Apache, Postfix, LDAP, and similar cases where the certificate
@@ -129,6 +129,12 @@ Object Naming
         which may be different than the hostname (for hosts with multiple
         virtual hosts, for example, or because the certificate is for a
         load-balanced name).
+
+        An optional <application> component may be added if there are
+        multiple certificates with the same host name as the CN but with
+        different private keys.  (This may happen if, for example,
+        multiple services are running on the same FQDN but should have
+        isolated security contexts.)
 
         Use ssl-key/starYYYY.stanford.edu for the key for the
         *.stanford.edu certificate, where YYYY is the expiration year.
