@@ -16,7 +16,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Test::More tests => 57;
+use Test::More tests => 91;
 
 use lib 't/lib';
 use Util;
@@ -38,7 +38,28 @@ my @INVALID_KEYTABS = qw(example host/example service/example.stanford.edu
     thisistoolong/cgi not-valid/cgi unknown/example.stanford.edu);
 
 # Various valid file names.
-my @VALID_FILES = qw(apps-example-config-file crcsg-example-db-s_example
+my @VALID_FILES = qw(htpasswd/example.stanford.edu/web
+    password-ipmi/example.stanford.edu
+    password-root/example.stanford.edu
+    password-tivoli/example.stanford.edu
+    ssh-dsa/example.stanford.edu
+    ssh-rsa/example.stanford.edu
+    ssl-key/example.stanford.edu
+    ssl-key/example.stanford.edu/mysql
+    tivoli-key/example.stanford.edu
+    config/idg/example/foo
+    db/idg/example/s_foo
+    gpg-key/idg/debian
+    password/idg/example/backup
+    properties/idg/accounts
+    properties/idg/accounts/sponsorship
+    ssl-keystore/idg/accounts
+    ssl-keystore/idg/accounts/sponsorship
+    ssl-pkcs12/idg/accounts
+    ssl-pkcs12/idg/accounts/sponsorship);
+
+# Various valid legacy file names.
+my @VALID_LEGACY_FILES = qw(apps-example-config-file crcsg-example-db-s_example
     idg-debian-gpg-key idg-devnull-password-root sulair-accounts-properties
     idg-accounts-ssl-keystore idg-accounts-ssl-pkcs12
     crcsg-example-htpasswd-web sulair-example-password-ipmi
@@ -47,7 +68,12 @@ my @VALID_FILES = qw(apps-example-config-file crcsg-example-db-s_example
     idg-openafs-tivoli-key);
 
 # Various invalid file names.
-my @INVALID_FILES = qw(unknown foo-example-ssh-rsa idg-accounts-foo !!bad);
+my @INVALID_FILES = qw(unknown foo-example-ssh-rsa idg-accounts-foo !!bad
+    htpasswd/example.stanford.edu htpasswd/example password-root/example
+    password-root/example.stanford.edu/foo ssh-foo/example.stanford.edu
+    tivoli-key/example.stanford.edu/foo tivoli-key config config/idg
+    config/idg/example db/idg/example password/idg/example
+    idg/password/example properties//accounts properties/idg/);
 
 # Global variables for the wallet server setup.
 my $ADMIN = 'admin@EXAMPLE.COM';
@@ -62,6 +88,9 @@ for my $name (@INVALID_KEYTABS) {
     isnt(verify_name('keytab', $name), undef, "Invalid keytab $name");
 }
 for my $name (@VALID_FILES) {
+    is(verify_name('file', $name), undef, "Valid file $name");
+}
+for my $name (@VALID_LEGACY_FILES) {
     is(verify_name('file', $name), undef, "Valid file $name");
 }
 for my $name (@INVALID_FILES) {

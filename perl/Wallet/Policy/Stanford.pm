@@ -30,6 +30,59 @@ BEGIN {
 }
 
 ##############################################################################
+# Configuration
+##############################################################################
+
+# These variables are all declared as globals so that they can be overridden
+# from wallet.conf if desirable.
+
+# The domain to append to hostnames to fully-qualify them.
+our $DOMAIN = 'stanford.edu';
+
+# Groups for file object naming.  This default is entirely Stanford-specific,
+# even more so than the rest of this file.
+our @GROUPS = qw(apps crcsg gsb idg sysadmin sulair vast);
+
+# File object types.  Each type can have one or more parameters: whether it is
+# host-based (host), whether it takes a qualifier after the host or service
+# (extra), and whether that qualifier is mandatory (need_extra).
+our %FILE_TYPES = (
+    config            => {            extra => 1, need_extra => 1 },
+    db                => {            extra => 1, need_extra => 1 },
+    'gpg-key'         => { },
+    htpasswd          => { host => 1, extra => 1, need_extra => 1 },
+    password          => {            extra => 1, need_extra => 1 },
+    'password-ipmi'   => { host => 1 },
+    'password-root'   => { host => 1 },
+    'password-tivoli' => { host => 1 },
+    properties        => {            extra => 1 },
+    'ssh-dsa'         => { host => 1 },
+    'ssh-rsa'         => { host => 1 },
+    'ssl-key'         => { host => 1, extra => 1 },
+    'ssl-keystore'    => {            extra => 1 },
+    'ssl-pkcs12'      => {            extra => 1 },
+    'tivoli-key'      => { host => 1 },
+);
+
+# Host-based file object types for the legacy file object naming scheme.
+our @FILE_HOST_LEGACY = qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key);
+
+# File object types for the legacy file object naming scheme.
+our @FILE_TYPES_LEGACY = qw(config db gpg-key htpasswd password properties
+  ssh-rsa ssh-dsa ssl-key ssl-keystore ssl-pkcs12 tivoli-key);
+
+# Host-based Kerberos principal prefixes.
+our @KEYTAB_HOST = qw(HTTP afpserver cifs ftp host imap ipp ldap lpr nfs pop
+  postgres sieve smtp webauth xmpp);
+
+# The Kerberos realm, used when forming principals for krb5 ACLs.
+our $REALM = 'stanford.edu';
+
+# A file listing principal names that should be required to use a root
+# instance to autocreate any objects.
+our $ROOT_REQUIRED = '/etc/remctl/acl/its-idg';
+
+##############################################################################
 # Implementation
 ##############################################################################
 
@@ -40,7 +93,7 @@ BEGIN {
 # pose a security problem.
 #
 # On any failure, just return an empty ACL to use the default.
-sub acl_has_netdb_root {
+sub _acl_has_netdb_root {
     my ($name) = @_;
     my $schema = eval { Wallet::Schema->connect };
     return unless ($schema and not $@);
@@ -52,19 +105,19 @@ sub acl_has_netdb_root {
     return;
 }
 
-# Map a file object name to a hostname and return it.  Returns undef if this
-# file object name doesn't map to a hostname.
-sub _host_for_file {
+# Map a file object name to a hostname for the legacy file object naming
+# scheme and return it.  Returns undef if this file object name doesn't map to
+# a hostname.
+sub _host_for_file_legacy {
     my ($name) = @_;
-    my %allowed = map { $_ => 1 }
-        qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key);
+    my %allowed = map { $_ => 1 } @FILE_HOST_LEGACY;
     my $allowed_regex = '(?:' . join ('|', sort keys %allowed) . ')';
     if ($name !~ /^[^-]+-(.*)-$allowed_regex(?:-.*)?$/) {
         return;
     }
     my $host = $1;
     if ($host !~ /\./) {
-        $host .= '.stanford.edu';
+        $host .= q{.} . $DOMAIN;
     }
     return $host;
 }
@@ -73,14 +126,12 @@ sub _host_for_file {
 # keytab principal name doesn't map to a hostname.
 sub _host_for_keytab {
     my ($name) = @_;
-    my %allowed = map { $_ => 1 }
-        qw(HTTP afpserver cifs ftp host imap ipp ldap lpr nfs pop postgres
-           sieve smtp webauth xmpp);
+    my %allowed = map { $_ => 1 } @KEYTAB_HOST;
     return unless $name =~ m,/,;
     my ($service, $host) = split ('/', $name, 2);
     return unless $allowed{$service};
     if ($host !~ /\./) {
-        $host .= '.stanford.edu';
+        $host .= q{.} . $DOMAIN;
     }
     return $host;
 }
@@ -91,22 +142,21 @@ sub _host_for_keytab {
 # using root instances by default.
 sub default_owner {
     my ($type, $name) = @_;
-    my $realm = 'stanford.edu';
     my %host_for = (
         keytab => \&_host_for_keytab,
-        file   => \&_host_for_file,
+        file   => \&_host_for_file_legacy,
     );
     return unless defined $host_for{$type};
     my $host = $host_for{$type}->($name);
     return unless $host;
     my $acl_name = "host/$host";
     my @acl;
-    if ($ENV{REMOTE_USER} =~ m,/root, or acl_has_netdb_root ($acl_name)) {
+    if ($ENV{REMOTE_USER} =~ m,/root, or _acl_has_netdb_root ($acl_name)) {
         @acl = ([ 'netdb-root', $host ],
-                [ 'krb5', "host/$host\@$realm" ]);
+                [ 'krb5', "host/$host\@$REALM" ]);
     } else {
         @acl = ([ 'netdb', $host ],
-                [ 'krb5', "host/$host\@$realm" ]);
+                [ 'krb5', "host/$host\@$REALM" ]);
     }
     return ($acl_name, @acl);
 }
@@ -119,11 +169,8 @@ sub default_owner {
 # creation using a */root instance.
 sub verify_name {
     my ($type, $name, $user) = @_;
-    my %host = map { $_ => 1 }
-        qw(HTTP afpserver cifs ftp http host ident imap ipp ldap lpr nfs pop
-           postgres sieve smtp uniengd webauth xmpp);
     my %staff;
-    if (open (STAFF, '<', '/etc/remctl/acl/its-idg')) {
+    if (open (STAFF, '<', $ROOT_REQUIRED)) {
         local $_;
         while (<STAFF>) {
             s/^\s+//;
@@ -141,6 +188,7 @@ sub verify_name {
 
     # Check keytab naming conventions.
     if ($type eq 'keytab') {
+        my %host = map { $_ => 1 } @KEYTAB_HOST;
         if ($name !~ m,^[a-zA-Z0-9_-]+/[a-z0-9.-]+$,) {
             return "invalid principal name $name";
         }
@@ -169,20 +217,80 @@ sub verify_name {
 
     # Check file object naming conventions.
     if ($type eq 'file') {
-        my %groups = map { $_ => 1 }
-            qw(apps crcsg gsb idg sysadmin sulair vast);
-        my %types  = map { $_ => 1 }
-            qw(config db gpg-key htpasswd password properties ssh-rsa ssh-dsa
-               ssl-key ssl-keystore ssl-pkcs12 tivoli-key);
-        if ($name !~ m,^[a-zA-Z0-9_.-]+$,) {
-            return "invalid file object $name";
-        }
-        my $group_regex = '(?:' . join ('|', sort keys %groups) . ')';
-        my $type_regex  = '(?:' . join ('|', sort keys %types)  . ')';
-        if ($name !~ /^$group_regex-/) {
-            return "no recognized owning group in $name";
-        } elsif ($name !~ /^$group_regex-.*-$type_regex(-.*)?$/) {
-            return "invalid file object name $name";
+        my %groups = map { $_ => 1 } @GROUPS;
+        if ($name =~ m{ / }xms) {
+            my @name = split('/', $name);
+
+            # Names have between two and four components and all must be
+            # non-empty.
+            if (@name > 4) {
+                return "too many components in $name";
+            }
+            if (@name < 2) {
+                return "too few components in $name";
+            }
+            if (grep { $_ eq q{} } @name) {
+                return "empty component in $name";
+            }
+
+            # All objects start with the type.  First check if this is a
+            # host-based type.
+            my $type = shift @name;
+            if ($FILE_TYPES{$type} && $FILE_TYPES{$type}{host}) {
+                my ($host, $extra) = @name;
+                if ($host !~ m{ [.] }xms) {
+                    return "host name $host is not fully qualified";
+                }
+                if (defined($extra) && !$FILE_TYPES{$type}{extra}) {
+                    return "extraneous component at end of $name";
+                }
+                if (!defined($extra) && $FILE_TYPES{$type}{need_extra}) {
+                    return "missing component in $name";
+                }
+                return;
+            }
+
+            # Otherwise, the name is group-based.  There be at least two
+            # remaining components.
+            if (@name < 2) {
+                return "too few components in $name";
+            }
+            my ($group, $service, $extra) = @name;
+
+            # Check the group.
+            if (!$groups{$group}) {
+                return "unknown group $group";
+            }
+
+            # Check the type.  Be sure it's not host-based.
+            if (!$FILE_TYPES{$type}) {
+                return "unknown type $type";
+            }
+            if ($FILE_TYPES{$type}{host}) {
+                return "bad name for host-based file type $type";
+            }
+
+            # Check the extra data.
+            if (defined($extra) && !$FILE_TYPES{$type}{extra}) {
+                return "extraneous component at end of $name";
+            }
+            if (!defined($extra) && $FILE_TYPES{$type}{need_extra}) {
+                return "missing component in $name";
+            }
+            return;
+        } else {
+            # Legacy naming scheme.
+            my %types  = map { $_ => 1 } @FILE_TYPES_LEGACY;
+            if ($name !~ m,^[a-zA-Z0-9_.-]+$,) {
+                return "invalid file object $name";
+            }
+            my $group_regex = '(?:' . join ('|', sort keys %groups) . ')';
+            my $type_regex  = '(?:' . join ('|', sort keys %types)  . ')';
+            if ($name !~ /^$group_regex-/) {
+                return "no recognized owning group in $name";
+            } elsif ($name !~ /^$group_regex-.*-$type_regex(-.*)?$/) {
+                return "invalid file object name $name";
+            }
         }
     }
 
