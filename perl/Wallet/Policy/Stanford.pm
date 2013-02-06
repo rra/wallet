@@ -122,6 +122,22 @@ sub _host_for_file_legacy {
     return $host;
 }
 
+# Map a file object name to a hostname.  Returns undef if this file object
+# name doesn't map to a hostname.
+sub _host_for_file {
+    my ($name) = @_;
+
+    # If $name doesn't contain /, defer to the legacy naming scheme.
+    if ($name !~ m{ / }xms) {
+        return _host_for_file_legacy($name);
+    }
+
+    # Parse the name and check whether this is a host-based object.
+    my ($type, $host) = split('/', $name);
+    return if !$FILE_TYPES{$type}{host};
+    return $host;
+}
+
 # Map a keytab object name to a hostname and return it.  Returns undef if this
 # keytab principal name doesn't map to a hostname.
 sub _host_for_keytab {
@@ -144,7 +160,7 @@ sub default_owner {
     my ($type, $name) = @_;
     my %host_for = (
         keytab => \&_host_for_keytab,
-        file   => \&_host_for_file_legacy,
+        file   => \&_host_for_file,
     );
     return unless defined $host_for{$type};
     my $host = $host_for{$type}->($name);

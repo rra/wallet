@@ -16,7 +16,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Test::More tests => 91;
+use Test::More tests => 94;
 
 use lib 't/lib';
 use Util;
@@ -202,6 +202,30 @@ is(default_owner('keytab', 'service/foo'), undef,
 # Check for an unknown object type.
 is(default_owner('unknown', 'foo'), undef,
     'No default owner for unknown type');
+
+# Check for autocreation mappings for host-based file objects.
+is_deeply(
+    [default_owner('file', 'ssl-key/example.stanford.edu')],
+    [
+        'host/example.stanford.edu',
+        ['netdb-root', 'example.stanford.edu'],
+        ['krb5', 'host/example.stanford.edu@stanford.edu']
+    ],
+    'Default owner for file ssl-key/example.stanford.edu',
+);
+is_deeply(
+    [default_owner('file', 'ssl-key/example.stanford.edu/mysql')],
+    [
+        'host/example.stanford.edu',
+        ['netdb-root', 'example.stanford.edu'],
+        ['krb5', 'host/example.stanford.edu@stanford.edu']
+    ],
+    'Default owner for file ssl-key/example.stanford.edu/mysql',
+);
+
+# Check for a file object that isn't host-based.
+is(default_owner('file', 'config/idg/example/foo'), undef,
+    'No default owner for non-host-based file type');
 
 # Check for legacy autocreation mappings for file objects.
 for my $type (qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key)) {
