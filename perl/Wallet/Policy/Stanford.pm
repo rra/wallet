@@ -39,9 +39,19 @@ BEGIN {
 # The domain to append to hostnames to fully-qualify them.
 our $DOMAIN = 'stanford.edu';
 
-# Groups for file object naming.  This default is entirely Stanford-specific,
-# even more so than the rest of this file.
-our @GROUPS = qw(apps crcsg gsb idg sysadmin sulair vast);
+# Groups for file object naming, each mapped to the ACL to use for
+# non-host-based objects owned by that group.  This default is entirely
+# Stanford-specific, even more so than the rest of this file.
+our %GROUPS = (
+    'its-apps'    => 'group/sharedapps',
+    'its-crc-sg'  => 'group/crcsg',
+    'its-idg'     => 'group/its-idg',
+    'its-rc'      => 'group/its-rc',
+    'its-sa-core' => 'group/its-sa-core',
+);
+
+# Legacy group names for older file objects.
+our @GROUPS_LEGACY = qw(apps crcsg gsb idg sysadmin sulair vast);
 
 # File object types.  Each type can have one or more parameters: whether it is
 # host-based (host), whether it takes a qualifier after the host or service
@@ -233,7 +243,6 @@ sub verify_name {
 
     # Check file object naming conventions.
     if ($type eq 'file') {
-        my %groups = map { $_ => 1 } @GROUPS;
         if ($name =~ m{ / }xms) {
             my @name = split('/', $name);
 
@@ -274,7 +283,7 @@ sub verify_name {
             my ($group, $service, $extra) = @name;
 
             # Check the group.
-            if (!$groups{$group}) {
+            if (!$GROUPS{$group}) {
                 return "unknown group $group";
             }
 
@@ -296,6 +305,7 @@ sub verify_name {
             return;
         } else {
             # Legacy naming scheme.
+            my %groups = map { $_ => 1 } @GROUPS_LEGACY;
             my %types  = map { $_ => 1 } @FILE_TYPES_LEGACY;
             if ($name !~ m,^[a-zA-Z0-9_.-]+$,) {
                 return "invalid file object $name";

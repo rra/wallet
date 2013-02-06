@@ -16,7 +16,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Test::More tests => 94;
+use Test::More tests => 95;
 
 use lib 't/lib';
 use Util;
@@ -47,16 +47,16 @@ my @VALID_FILES = qw(htpasswd/example.stanford.edu/web
     ssl-key/example.stanford.edu
     ssl-key/example.stanford.edu/mysql
     tivoli-key/example.stanford.edu
-    config/idg/example/foo
-    db/idg/example/s_foo
-    gpg-key/idg/debian
-    password/idg/example/backup
-    properties/idg/accounts
-    properties/idg/accounts/sponsorship
-    ssl-keystore/idg/accounts
-    ssl-keystore/idg/accounts/sponsorship
-    ssl-pkcs12/idg/accounts
-    ssl-pkcs12/idg/accounts/sponsorship);
+    config/its-idg/example/foo
+    db/its-idg/example/s_foo
+    gpg-key/its-idg/debian
+    password/its-idg/example/backup
+    properties/its-idg/accounts
+    properties/its-idg/accounts/sponsorship
+    ssl-keystore/its-idg/accounts
+    ssl-keystore/its-idg/accounts/sponsorship
+    ssl-pkcs12/its-idg/accounts
+    ssl-pkcs12/its-idg/accounts/sponsorship);
 
 # Various valid legacy file names.
 my @VALID_LEGACY_FILES = qw(apps-example-config-file crcsg-example-db-s_example
@@ -71,9 +71,10 @@ my @VALID_LEGACY_FILES = qw(apps-example-config-file crcsg-example-db-s_example
 my @INVALID_FILES = qw(unknown foo-example-ssh-rsa idg-accounts-foo !!bad
     htpasswd/example.stanford.edu htpasswd/example password-root/example
     password-root/example.stanford.edu/foo ssh-foo/example.stanford.edu
-    tivoli-key/example.stanford.edu/foo tivoli-key config config/idg
-    config/idg/example db/idg/example password/idg/example
-    idg/password/example properties//accounts properties/idg/);
+    tivoli-key/example.stanford.edu/foo tivoli-key config config/its-idg
+    config/its-idg/example db/its-idg/example password/its-idg/example
+    its-idg/password/example properties//accounts properties/its-idg/
+    ssl-keystore/idg/accounts);
 
 # Global variables for the wallet server setup.
 my $ADMIN = 'admin@EXAMPLE.COM';
@@ -224,7 +225,7 @@ is_deeply(
 );
 
 # Check for a file object that isn't host-based.
-is(default_owner('file', 'config/idg/example/foo'), undef,
+is(default_owner('file', 'config/its-idg/example/foo'), undef,
     'No default owner for non-host-based file type');
 
 # Check for legacy autocreation mappings for file objects.
