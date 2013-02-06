@@ -42,7 +42,7 @@ our $DOMAIN = 'stanford.edu';
 # Groups for file object naming, each mapped to the ACL to use for
 # non-host-based objects owned by that group.  This default is entirely
 # Stanford-specific, even more so than the rest of this file.
-our %GROUPS = (
+our %ACL_FOR_GROUP = (
     'its-apps'    => 'group/sharedapps',
     'its-crc-sg'  => 'group/crcsg',
     'its-idg'     => 'group/its-idg',
@@ -56,7 +56,7 @@ our @GROUPS_LEGACY = qw(apps crcsg gsb idg sysadmin sulair vast);
 # File object types.  Each type can have one or more parameters: whether it is
 # host-based (host), whether it takes a qualifier after the host or service
 # (extra), and whether that qualifier is mandatory (need_extra).
-our %FILE_TYPES = (
+our %FILE_TYPE = (
     config            => {            extra => 1, need_extra => 1 },
     db                => {            extra => 1, need_extra => 1 },
     'gpg-key'         => { },
@@ -96,6 +96,21 @@ our $ROOT_REQUIRED = '/etc/remctl/acl/its-idg';
 # Implementation
 ##############################################################################
 
+# Retrieve an existing ACL and return its members as a list.
+#
+# $name - Name of the ACL to retrieve
+#
+# Returns: Members of the ACL as a list of pairs
+#          The empty list on any failure to retrieve the ACL
+sub _acl_members {
+    my ($name) = @_;
+    my $schema = eval { Wallet::Schema->connect };
+    return if (!$schema || $@);
+    my $acl = eval { Wallet::ACL->new ($name, $schema) };
+    return if (!$acl || $@);
+    return $acl->list;
+}
+
 # Retrieve an existing ACL and check whether it contains a netdb-root member.
 # This is used to check if a default ACL is already present with a netdb-root
 # member so that we can return a default owner that matches.  We only ever
@@ -105,11 +120,7 @@ our $ROOT_REQUIRED = '/etc/remctl/acl/its-idg';
 # On any failure, just return an empty ACL to use the default.
 sub _acl_has_netdb_root {
     my ($name) = @_;
-    my $schema = eval { Wallet::Schema->connect };
-    return unless ($schema and not $@);
-    my $acl = eval { Wallet::ACL->new ($name, $schema) };
-    return unless ($acl and not $@);
-    for my $line ($acl->list) {
+    for my $line (_acl_members($name)) {
         return 1 if $line->[0] eq 'netdb-root';
     }
     return;
@@ -144,7 +155,7 @@ sub _host_for_file {
 
     # Parse the name and check whether this is a host-based object.
     my ($type, $host) = split('/', $name);
-    return if !$FILE_TYPES{$type}{host};
+    return if !$FILE_TYPE{$type}{host};
     return $host;
 }
 
@@ -168,23 +179,50 @@ sub _host_for_keytab {
 # using root instances by default.
 sub default_owner {
     my ($type, $name) = @_;
+
+    # How to determine the host for host-based objects.
     my %host_for = (
         keytab => \&_host_for_keytab,
         file   => \&_host_for_file,
     );
-    return unless defined $host_for{$type};
-    my $host = $host_for{$type}->($name);
-    return unless $host;
-    my $acl_name = "host/$host";
-    my @acl;
-    if ($ENV{REMOTE_USER} =~ m,/root, or _acl_has_netdb_root ($acl_name)) {
-        @acl = ([ 'netdb-root', $host ],
-                [ 'krb5', "host/$host\@$REALM" ]);
-    } else {
-        @acl = ([ 'netdb', $host ],
-                [ 'krb5', "host/$host\@$REALM" ]);
+
+    # If we have a possible host mapping, see if we can use that.
+    if (defined($host_for{$type})) {
+        my $host = $host_for{$type}->($name);
+        if ($host) {
+            my $acl_name = "host/$host";
+            my @acl;
+            if ($ENV{REMOTE_USER} =~ m,/root,
+                || _acl_has_netdb_root ($acl_name)) {
+                @acl = ([ 'netdb-root', $host ],
+                        [ 'krb5', "host/$host\@$REALM" ]);
+            } else {
+                @acl = ([ 'netdb', $host ],
+                        [ 'krb5', "host/$host\@$REALM" ]);
+            }
+            return ($acl_name, @acl);
+        }
     }
-    return ($acl_name, @acl);
+
+    # We have no open if this is not a file object.
+    return if $type ne 'file';
+
+    # Parse the name of the file object only far enough to get type and group
+    # (if there is a group).
+    my ($file_type, $group) = split('/', $name);
+
+    # Host-based file objects should be caught by the above.  We certainly
+    # can't do anything about them here.
+    return if $FILE_TYPE{$file_type}{host};
+
+    # If we have a mapping for this group, retrieve the ACL contents.  We
+    # would like to just return the ACL name, but wallet currently requires we
+    # return the whole ACL.
+    my $acl = $ACL_FOR_GROUP{$group};
+    return if !defined($acl);
+    my @members = _acl_members($acl);
+    return if @members == 0;
+    return ($acl, @members);
 }
 
 # Enforce a naming policy.  Host-based keytabs must have fully-qualified
@@ -261,15 +299,15 @@ sub verify_name {
             # All objects start with the type.  First check if this is a
             # host-based type.
             my $type = shift @name;
-            if ($FILE_TYPES{$type} && $FILE_TYPES{$type}{host}) {
+            if ($FILE_TYPE{$type} && $FILE_TYPE{$type}{host}) {
                 my ($host, $extra) = @name;
                 if ($host !~ m{ [.] }xms) {
                     return "host name $host is not fully qualified";
                 }
-                if (defined($extra) && !$FILE_TYPES{$type}{extra}) {
+                if (defined($extra) && !$FILE_TYPE{$type}{extra}) {
                     return "extraneous component at end of $name";
                 }
-                if (!defined($extra) && $FILE_TYPES{$type}{need_extra}) {
+                if (!defined($extra) && $FILE_TYPE{$type}{need_extra}) {
                     return "missing component in $name";
                 }
                 return;
@@ -283,23 +321,23 @@ sub verify_name {
             my ($group, $service, $extra) = @name;
 
             # Check the group.
-            if (!$GROUPS{$group}) {
+            if (!$ACL_FOR_GROUP{$group}) {
                 return "unknown group $group";
             }
 
             # Check the type.  Be sure it's not host-based.
-            if (!$FILE_TYPES{$type}) {
+            if (!$FILE_TYPE{$type}) {
                 return "unknown type $type";
             }
-            if ($FILE_TYPES{$type}{host}) {
+            if ($FILE_TYPE{$type}{host}) {
                 return "bad name for host-based file type $type";
             }
 
             # Check the extra data.
-            if (defined($extra) && !$FILE_TYPES{$type}{extra}) {
+            if (defined($extra) && !$FILE_TYPE{$type}{extra}) {
                 return "extraneous component at end of $name";
             }
-            if (!defined($extra) && $FILE_TYPES{$type}{need_extra}) {
+            if (!defined($extra) && $FILE_TYPE{$type}{need_extra}) {
                 return "missing component in $name";
             }
             return;

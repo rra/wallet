@@ -16,7 +16,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Test::More tests => 95;
+use Test::More tests => 97;
 
 use lib 't/lib';
 use Util;
@@ -136,6 +136,11 @@ is(
     '...and krb5 ACL line'
 );
 
+# Create a group/its-idg ACL, which will be used for autocreation of file
+# objects.
+is($server->acl_create('group/its-idg'), 1, 'Created group/its-idg ACL');
+is($server->acl_add('group/its-idg', 'krb5', $ADMIN), 1, '...with member');
+
 # Now we can test default ACLs.  First, without a root instance.
 local $ENV{REMOTE_USER} = $ADMIN;
 is_deeply(
@@ -225,8 +230,11 @@ is_deeply(
 );
 
 # Check for a file object that isn't host-based.
-is(default_owner('file', 'config/its-idg/example/foo'), undef,
-    'No default owner for non-host-based file type');
+is_deeply(
+    [default_owner('file', 'config/its-idg/example/foo')],
+    ['group/its-idg', ['krb5', $ADMIN]],
+    'Default owner for file config/its-idg/example/foo',
+);
 
 # Check for legacy autocreation mappings for file objects.
 for my $type (qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key)) {
