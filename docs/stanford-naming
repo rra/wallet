@@ -141,6 +141,16 @@ Object Naming
 
         (OLD: <group>-<server>-ssl-key)
 
+    ssl-keypair/<server>[/<application>]
+
+        Same as ssl-key except that the signed certificate is included in
+        the same file as the private key.  This is used for convenience
+        with some applications that want to have both the signed
+        certificate and private key in the same file.
+
+        The meaning of <server> and <application> are the same as for
+        ssl-key.
+
     tivoli-key/<server>
 
         The Tivoli password or backup encryption key for this server.

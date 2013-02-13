@@ -16,7 +16,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Test::More tests => 97;
+use Test::More tests => 99;
 
 use lib 't/lib';
 use Util;
@@ -46,6 +46,8 @@ my @VALID_FILES = qw(htpasswd/example.stanford.edu/web
     ssh-rsa/example.stanford.edu
     ssl-key/example.stanford.edu
     ssl-key/example.stanford.edu/mysql
+    ssl-keypair/example.stanford.edu
+    ssl-keypair/example.stanford.edu/mysql
     tivoli-key/example.stanford.edu
     config/its-idg/example/foo
     db/its-idg/example/s_foo

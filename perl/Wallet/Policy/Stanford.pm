@@ -69,6 +69,7 @@ our %FILE_TYPE = (
     'ssh-dsa'         => { host => 1 },
     'ssh-rsa'         => { host => 1 },
     'ssl-key'         => { host => 1, extra => 1 },
+    'ssl-keypair'     => { host => 1, extra => 1 },
     'ssl-keystore'    => {            extra => 1 },
     'ssl-pkcs12'      => {            extra => 1 },
     'tivoli-key'      => { host => 1 },
