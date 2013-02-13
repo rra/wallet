@@ -369,6 +369,9 @@ sub verify_name {
 # Documentation
 ##############################################################################
 
+=for stopwords
+Allbery
+
 =head1 NAME
 
 Wallet::Policy::Stanford - Stanford's wallet naming and ownership policy

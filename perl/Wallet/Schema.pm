@@ -55,6 +55,10 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+RaiseError PrintError AutoCommit ACL verifier API APIs enums keytab backend
+enctypes DBI Allbery
+
 =head1 NAME
 
 Wallet::Schema - Database schema and connector for the wallet system

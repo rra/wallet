@@ -5,6 +5,9 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
+=for stopwords
+APIs
+
 =head1 NAME
 
 Wallet::Schema::Result::Type

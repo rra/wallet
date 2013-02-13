@@ -6,6 +6,9 @@ use warnings;
 use base 'DBIx::Class::Core';
 __PACKAGE__->load_components (qw//);
 
+=for stopwords
+ACL verifier APIs
+
 =head1 NAME
 
 Wallet::Schema::Result::AclScheme
