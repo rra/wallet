@@ -200,7 +200,6 @@ sub upgrade {
     }
     if ($@) {
         $self->error ($@);
-        warn $@;
         return;
     }
 
