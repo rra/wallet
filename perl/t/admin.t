@@ -63,8 +63,6 @@ $Wallet::Schema::VERSION = '0.07';
 is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     ' and re-initialization succeeds');
 $Wallet::Schema::VERSION = '0.08';
-my $schema = $admin->schema;
-$schema->upgrade_directory ('sql/');
 my $retval = $admin->upgrade;
 is ($retval, 1, 'Performing an upgrade succeeds');
 my $dbh = $admin->dbh;

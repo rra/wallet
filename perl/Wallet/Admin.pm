@@ -195,6 +195,7 @@ sub upgrade {
 
     # Perform the actual upgrade.
     if ($self->{schema}->get_db_version) {
+        $self->{schema}->upgrade_directory ($Wallet::Config::DB_DDL_DIRECTORY);
         eval { $self->{schema}->upgrade; };
     }
     if ($@) {
