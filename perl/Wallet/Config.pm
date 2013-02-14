@@ -84,6 +84,17 @@ file.
 
 =over 4
 
+=item DB_DDL_DIRECTORY
+
+Specifies the directory used to dump the database schema in formats for
+each possible database server.  This also includes diffs between schema
+versions, for upgrades.  The default value is F</usr/local/share/wallet>,
+which matches the default installation location.
+
+=cut
+
+our $DB_DDL_DIRECTORY = '/usr/local/share/wallet';
+
 =item DB_DRIVER
 
 Sets the Perl database driver to use for the wallet database.  Common
@@ -166,16 +177,6 @@ backends, particularly SQLite, do not need this.
 =cut
 
 our $DB_PASSWORD;
-
-=item DB_DDL_DIRECTORY
-
-Specifies the directory used to dump the database schema in formats for
-each possible database server.  This also includes diffs between schema
-versions, for upgrades.
-
-=cut
-
-our $DB_DDL_DIRECTORY;
 
 =back
 

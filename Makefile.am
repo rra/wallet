@@ -1,8 +1,8 @@
 # Automake makefile for wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008, 2010
-#     Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008, 2010, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -81,6 +81,15 @@ client_wallet_rekey_LDADD = client/libwallet.a util/libutil.a \
 
 dist_man_MANS = client/wallet.1 client/wallet-rekey.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
+
+# Install the SQL files that are used by the server code to do upgrades.
+dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
+	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql		\
+	perl/sql/Wallet-Schema-0.07-MySQL.sql			\
+	perl/sql/Wallet-Schema-0.07-SQLite.sql			\
+	perl/sql/Wallet-Schema-0.08-MySQL.sql			\
+	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql		\
+	perl/sql/Wallet-Schema-0.08-SQLite.sql
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
 # without optimization turned on.  Desirable warnings that can't be turned

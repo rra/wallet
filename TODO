@@ -183,12 +183,6 @@ Administrative Interface:
    but it's supposed to work directly from the classes.  Double-check
    this.
 
-Installation:
-
- * WALLET-65: Install the SQL files and set a default value for
-   $DB_DDL_DIRECTORY.  Document this in the installation instructions.
-   Test for the validity of that variable before doing upgrades?
-
 Documentation:
 
  * WALLET-43: Write a conventions document for ACL naming, object naming,
