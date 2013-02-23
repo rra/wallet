@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-Wallet::Schema::Result::KeytabEnctype
+Wallet::Schema::Result::KeytabEnctype - Wallet schema for keytab enctype
 
 =head1 DESCRIPTION
 

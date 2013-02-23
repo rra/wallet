@@ -9,7 +9,7 @@ __PACKAGE__->load_components("InflateColumn::DateTime");
 
 =head1 NAME
 
-Wallet::Schema::Result::AclHistory
+Wallet::Schema::Result::AclHistory - Wallet schema for ACL history
 
 =head1 DESCRIPTION
 

@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-Wallet::Schema::Result::Acl
+Wallet::Schema::Result::Acl - Wallet schema for an ACL
 
 =head1 DESCRIPTION
 

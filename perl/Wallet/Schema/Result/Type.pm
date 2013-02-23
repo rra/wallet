@@ -10,7 +10,7 @@ APIs
 
 =head1 NAME
 
-Wallet::Schema::Result::Type
+Wallet::Schema::Result::Type - Wallet schema for object types
 
 =head1 DESCRIPTION
 

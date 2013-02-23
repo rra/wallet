@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-Wallet::Schema::Result::KeytabSync
+Wallet::Schema::Result::KeytabSync - Wallet schema for keytab synchronization
 
 =head1 DESCRIPTION
 

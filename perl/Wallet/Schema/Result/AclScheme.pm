@@ -11,7 +11,7 @@ ACL verifier APIs
 
 =head1 NAME
 
-Wallet::Schema::Result::AclScheme
+Wallet::Schema::Result::AclScheme - Wallet schema for ACL scheme
 
 =head1 DESCRIPTION
 

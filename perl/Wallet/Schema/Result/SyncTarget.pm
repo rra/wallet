@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-Wallet::Schema::Result::SyncTarget
+Wallet::Schema::Result::SyncTarget - Wallet schema for synchronization targets
 
 =head1 DESCRIPTION
 

@@ -5,9 +5,12 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
+=for stopwords
+Kerberos
+
 =head1 NAME
 
-Wallet::Schema::Result::Enctype
+Wallet::Schema::Result::Enctype - Wallet schema for Kerberos encryption type
 
 =head1 DESCRIPTION
 

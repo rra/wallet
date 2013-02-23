@@ -9,7 +9,7 @@ __PACKAGE__->load_components("InflateColumn::DateTime");
 
 =head1 NAME
 
-Wallet::Schema::Result::ObjectHistory
+Wallet::Schema::Result::ObjectHistory - Wallet schema for object history
 
 =head1 DESCRIPTION
 

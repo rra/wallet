@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-Wallet::Schema::Result::Flag
+Wallet::Schema::Result::Flag - Wallet schema for object flags
 
 =head1 DESCRIPTION
 
