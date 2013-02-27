@@ -6,7 +6,8 @@
 # like DBIx::Class objects in the rest of the code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008-2012 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2012, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

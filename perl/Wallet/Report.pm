@@ -1,7 +1,8 @@
 # Wallet::Report -- Wallet system reporting interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 

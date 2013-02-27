@@ -2,12 +2,10 @@ dnl Autoconf configuration for wallet.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
 dnl Copyright 2006, 2007, 2008, 2010
-dnl     Board of Trustees, Leland Stanford Jr. University
+dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
 
-dnl We cannot use -Wall -Werror with AM_INIT_AUTOMAKE since we override
-dnl distuninstallcheck (not supported by Perl).
 AC_PREREQ([2.64])
 AC_INIT([wallet], [0.12], [rra@stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])

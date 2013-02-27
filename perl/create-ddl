@@ -3,7 +3,8 @@
 # create-ddl - Create DDL files for Wallet
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2012 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2012
+#     The Board of Trustees of the Leland Stanford Junior University
 
 #############################################################################
 # Modules and declarations
