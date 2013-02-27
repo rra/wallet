@@ -252,9 +252,11 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
      * keys.  If there is an error, first make a backup of the current keytab
      * file as keytab.old.
      */
-    if (access(file, F_OK) != 0)
-        link(tempfile, file);
-    else {
+    if (access(file, F_OK) != 0) {
+        if (link(tempfile, file) < 0)
+            sysdie("rename of temporary keytab %s to %s failed", tempfile,
+                   file);
+    } else {
         if (error) {
             data = read_file(file, &length);
             backupfile = concat(file, ".old", (char *) 0);
