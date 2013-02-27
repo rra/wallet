@@ -6,17 +6,24 @@
 # access to the LDAP server and will be skipped in all other environments.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 10;
+use Test::More;
 
 use lib 't/lib';
 use Util;
 
-BEGIN { use_ok ('Wallet::ACL::LDAP::Attribute') };
+# Skip all spelling tests unless the maintainer environment variable is set.
+plan skip_all => 'LDAP verifier tests only run for maintainer'
+    unless $ENV{RRA_MAINTAINER_TESTS};
+
+# Declare a plan.
+plan tests => 10;
+
+require_ok ('Wallet::ACL::LDAP::Attribute');
 
 my $host   = 'ldap.stanford.edu';
 my $base   = 'cn=people,dc=stanford,dc=edu';
