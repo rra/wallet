@@ -22,3 +22,22 @@ password
     be configured in your system krb5.conf file or in DNS configuration
     picked up by your Kerberos libraries and must be in the same realm as
     the keytab above or have valid cross-realm trust to it.
+
+If you are building in a different directory tree than the source tree,
+don't put the files in this directory.  Instead, after running configure,
+you will have an empty tests/config directory in your build tree.  Put the
+keytab and principal files in that directory instead.
+
+If your krb5.conf file is not in /etc or /usr/local/etc, put a copy of
+your krb5.conf file in the tests/data directory.  The tests need to
+generate a modified copy in order to test some behavior.
+
+-----
+
+Copyright 2013
+    The Board of Trustees of the Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.
