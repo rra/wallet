@@ -27,6 +27,49 @@ wallet 1.0 (unreleased)
     Add docs/objects-and-schemes, which provides a brief summary of the
     current supported object types and ACL schemes.
 
+    Update to rra-c-util 4.8:
+
+    * Look for krb5-config in /usr/kerberos/bin after the user's PATH.
+    * Kerberos library probing fixes without transitive shared libraries.
+    * Fix Autoconf warnings when probing for AIX's bundled Kerberos.
+    * Avoid using krb5-config if --with-{krb5,gssapi}-{include,lib} given.
+    * Correctly remove -I/usr/include from Kerberos and GSS-API flags.
+    * Build on systems where krb5/krb5.h exists but krb5.h does not.
+    * Pass --deps to krb5-config unless --enable-reduced-depends was used.
+    * Do not use krb5-config results unless gssapi is supported.
+    * Fix probing for Heimdal's libroken to work with older versions.
+    * Update warning flags for GCC 4.6.1.
+    * Update utility library and test suite for newer GCC warnings.
+    * Fix broken GCC attribute markers causing compilation problems.
+    * Suppress warnings on compilers that support gcc's __attribute__.
+    * Add notices to all files copied over from rra-c-util.
+    * Fix warnings when reporting memory allocation failure in messages.c.
+    * Fix message utility library compiler warnings on 64-bit systems.
+    * Include strings.h for additional POSIX functions where found.
+    * Use an atexit handler to clean up after Kerberos tests.
+    * Kerberos test configuration now goes in tests/config.
+    * The principal of the test keytab is determined automatically.
+    * Simplify the test suite calls for Kerberos and remctl tests.
+    * Check for a missing ssize_t.
+    * Improve the xstrndup utility function.
+    * Checked asprintf variants are now void functions and cannot fail.
+    * Fix use of long long in portable/mkstemp.c.
+    * Fix test suite portability to Solaris.
+    * Substantial improvements to the POD syntax and spelling checks.
+
+    Update to C TAP Harness 1.12:
+
+    * Fix compliation of runtests with more aggressive warnings.
+    * Add a more complete usage message and a -h command-line flag.
+    * Flush stderr before printing output from tests.
+    * Better handle running shell tests without BUILD and SOURCE set.
+    * Fix runtests to honor -s even if BUILD and -b aren't given.
+    * runtests now frees all allocated resources on exit.
+    * Only use feature-test macros when requested or built with gcc -ansi.
+    * Drop is_double from the C TAP library to avoid requiring -lm.
+    * Avoid using local in the shell libtap.sh library.
+    * Suppress warnings on compilers that support gcc's __attribute__.
+
 wallet 0.12 (2010-08-25)
 
     New client program wallet-rekey that, given a list of keytabs on the

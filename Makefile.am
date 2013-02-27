@@ -26,7 +26,6 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			   \
 	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		   \
 	perl/t/verifier.t
 
-AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	client/wallet-rekey.pod config/allow-extract config/keytab	   \
@@ -97,18 +96,22 @@ dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
 #
 #     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
 #
-# Last checked against gcc 4.4 (2010-08-15).
-WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self \
-	-Wswitch-enum -Wdeclaration-after-statement -Wshadow -Wpointer-arith \
-	-Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
-	-Wmissing-prototypes -Wnested-externs -Werror
+# Last checked against gcc 4.6.1 (2011-05-04).  -D_FORTIFY_SOURCE=2 enables
+# warn_unused_result attribute markings on glibc functions on Linux, which
+# catches a few more issues.
+WARNINGS = -g -O -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wendif-labels	    \
+	-Wformat=2 -Winit-self -Wswitch-enum -Wdeclaration-after-statement  \
+	-Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align	    \
+	-Wwrite-strings -Wjump-misses-init -Wlogical-op			    \
+	-Wstrict-prototypes -Wmissing-prototypes -Wredundant-decls	    \
+	-Wnested-externs -Werror
 
 warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)'
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # Remove some additional files.
-DISTCLEANFILES = perl/Makefile tests/data/.placeholder
+DISTCLEANFILES = perl/Makefile
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 	build-aux/depcomp build-aux/install-sh build-aux/missing	     \
 	client/wallet.1 config.h.in config.h.in~ configure		     \
@@ -163,7 +166,8 @@ check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
 	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
-	tests/tap/messages.h tests/tap/process.c tests/tap/process.h
+	tests/tap/messages.h tests/tap/process.c tests/tap/process.h	\
+	tests/tap/string.c tests/tap/string.h
 
 # All of the test programs.
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \

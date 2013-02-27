@@ -1,22 +1,38 @@
 /*
  * Some utility routines for writing tests.
  *
- * Herein are a variety of utility routines for writing tests.  All routines
- * of the form ok() or is*() take a test number and some number of appropriate
- * arguments, check to be sure the results match the expected output using the
- * arguments, and print out something appropriate for that test number.  Other
- * utility routines help in constructing more complex tests, skipping tests,
- * or setting up the TAP output format.
+ * Here are a variety of utility routines for writing tests compatible with
+ * the TAP protocol.  All routines of the form ok() or is*() take a test
+ * number and some number of appropriate arguments, check to be sure the
+ * results match the expected output using the arguments, and print out
+ * something appropriate for that test number.  Other utility routines help in
+ * constructing more complex tests, skipping tests, reporting errors, setting
+ * up the TAP output format, or finding things in the test environment.
  *
- * Copyright 2009, 2010 Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2008
- *     Board of Trustees, Leland Stanford Jr. University
- * Copyright (c) 2004, 2005, 2006
- *     by Internet Systems Consortium, Inc. ("ISC")
- * Copyright (c) 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
- *     2002, 2003 by The Internet Software Consortium and Rich Salz
+ * This file is part of C TAP Harness.  The current version plus supporting
+ * documentation is at <http://www.eyrie.org/~eagle/software/c-tap-harness/>.
  *
- * See LICENSE for licensing terms.
+ * Copyright 2009, 2010, 2011, 2012 Russ Allbery <rra@stanford.edu>
+ * Copyright 2001, 2002, 2004, 2005, 2006, 2007, 2008, 2011, 2012
+ *     The Board of Trustees of the Leland Stanford Junior University
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include <errno.h>
@@ -24,12 +40,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+# include <direct.h>
+#else
+# include <sys/stat.h>
+#endif
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
-#include <tap/basic.h>
+#include <tests/tap/basic.h>
+
+/* Windows provides mkdir and rmdir under different names. */
+#ifdef _WIN32
+# define mkdir(p, m) _mkdir(p)
+# define rmdir(p)    _rmdir(p)
+#endif
 
 /*
  * The test count.  Always contains the number that will be used for the next
@@ -57,7 +82,9 @@ static int _lazy = 0;
 
 /*
  * Our exit handler.  Called on completion of the test to report a summary of
- * results provided we're still in the original process.
+ * results provided we're still in the original process.  This also handles
+ * printing out the plan if we used plan_lazy(), although that's suppressed if
+ * we never ran a test (due to an early bail, for example).
  */
 static void
 finish(void)
@@ -66,8 +93,9 @@ finish(void)
 
     if (_planned == 0 && !_lazy)
         return;
+    fflush(stderr);
     if (_process != 0 && getpid() == _process) {
-        if (_lazy) {
+        if (_lazy && highest > 0) {
             printf("1..%lu\n", highest);
             _planned = highest;
         }
@@ -98,6 +126,7 @@ plan(unsigned long count)
     if (setvbuf(stdout, NULL, _IOLBF, BUFSIZ) != 0)
         fprintf(stderr, "# cannot set stdout to line buffered: %s\n",
                 strerror(errno));
+    fflush(stderr);
     printf("1..%lu\n", count);
     testnum = 1;
     _planned = count;
@@ -130,6 +159,7 @@ plan_lazy(void)
 void
 skip_all(const char *format, ...)
 {
+    fflush(stderr);
     printf("1..0 # skip");
     if (format != NULL) {
         va_list args;
@@ -162,6 +192,7 @@ print_desc(const char *format, va_list args)
 void
 ok(int success, const char *format, ...)
 {
+    fflush(stderr);
     printf("%sok %lu", success ? "" : "not ", testnum++);
     if (!success)
         _failed++;
@@ -182,6 +213,7 @@ ok(int success, const char *format, ...)
 void
 okv(int success, const char *format, va_list args)
 {
+    fflush(stderr);
     printf("%sok %lu", success ? "" : "not ", testnum++);
     if (!success)
         _failed++;
@@ -197,6 +229,7 @@ okv(int success, const char *format, va_list args)
 void
 skip(const char *reason, ...)
 {
+    fflush(stderr);
     printf("ok %lu # skip", testnum++);
     if (reason != NULL) {
         va_list args;
@@ -218,6 +251,7 @@ ok_block(unsigned long count, int status, const char *format, ...)
 {
     unsigned long i;
 
+    fflush(stderr);
     for (i = 0; i < count; i++) {
         printf("%sok %lu", status ? "" : "not ", testnum++);
         if (!status)
@@ -242,6 +276,7 @@ skip_block(unsigned long count, const char *reason, ...)
 {
     unsigned long i;
 
+    fflush(stderr);
     for (i = 0; i < count; i++) {
         printf("ok %lu # skip", testnum++);
         if (reason != NULL) {
@@ -264,6 +299,7 @@ skip_block(unsigned long count, const char *reason, ...)
 void
 is_int(long wanted, long seen, const char *format, ...)
 {
+    fflush(stderr);
     if (wanted == seen)
         printf("ok %lu", testnum++);
     else {
@@ -293,35 +329,11 @@ is_string(const char *wanted, const char *seen, const char *format, ...)
         wanted = "(null)";
     if (seen == NULL)
         seen = "(null)";
+    fflush(stderr);
     if (strcmp(wanted, seen) == 0)
         printf("ok %lu", testnum++);
     else {
         printf("# wanted: %s\n#   seen: %s\n", wanted, seen);
-        printf("not ok %lu", testnum++);
-        _failed++;
-    }
-    if (format != NULL) {
-        va_list args;
-
-        va_start(args, format);
-        print_desc(format, args);
-        va_end(args);
-    }
-    putchar('\n');
-}
-
-
-/*
- * Takes an expected double and a seen double and assumes the test passes if
- * those two numbers match.
- */
-void
-is_double(double wanted, double seen, const char *format, ...)
-{
-    if (wanted == seen)
-        printf("ok %lu", testnum++);
-    else {
-        printf("# wanted: %g\n#   seen: %g\n", wanted, seen);
         printf("not ok %lu", testnum++);
         _failed++;
     }
@@ -343,6 +355,7 @@ is_double(double wanted, double seen, const char *format, ...)
 void
 is_hex(unsigned long wanted, unsigned long seen, const char *format, ...)
 {
+    fflush(stderr);
     if (wanted == seen)
         printf("ok %lu", testnum++);
     else {
@@ -370,6 +383,7 @@ bail(const char *format, ...)
 {
     va_list args;
 
+    fflush(stderr);
     fflush(stdout);
     printf("Bail out! ");
     va_start(args, format);
@@ -389,6 +403,7 @@ sysbail(const char *format, ...)
     va_list args;
     int oerrno = errno;
 
+    fflush(stderr);
     fflush(stdout);
     printf("Bail out! ");
     va_start(args, format);
@@ -407,6 +422,7 @@ diag(const char *format, ...)
 {
     va_list args;
 
+    fflush(stderr);
     fflush(stdout);
     printf("# ");
     va_start(args, format);
@@ -425,12 +441,99 @@ sysdiag(const char *format, ...)
     va_list args;
     int oerrno = errno;
 
+    fflush(stderr);
     fflush(stdout);
     printf("# ");
     va_start(args, format);
     vprintf(format, args);
     va_end(args);
     printf(": %s\n", strerror(oerrno));
+}
+
+
+/*
+ * Allocate cleared memory, reporting a fatal error with bail on failure.
+ */
+void *
+bcalloc(size_t n, size_t size)
+{
+    void *p;
+
+    p = calloc(n, size);
+    if (p == NULL)
+        sysbail("failed to calloc %lu", (unsigned long)(n * size));
+    return p;
+}
+
+
+/*
+ * Allocate memory, reporting a fatal error with bail on failure.
+ */
+void *
+bmalloc(size_t size)
+{
+    void *p;
+
+    p = malloc(size);
+    if (p == NULL)
+        sysbail("failed to malloc %lu", (unsigned long) size);
+    return p;
+}
+
+
+/*
+ * Reallocate memory, reporting a fatal error with bail on failure.
+ */
+void *
+brealloc(void *p, size_t size)
+{
+    p = realloc(p, size);
+    if (p == NULL)
+        sysbail("failed to realloc %lu bytes", (unsigned long) size);
+    return p;
+}
+
+
+/*
+ * Copy a string, reporting a fatal error with bail on failure.
+ */
+char *
+bstrdup(const char *s)
+{
+    char *p;
+    size_t len;
+
+    len = strlen(s) + 1;
+    p = malloc(len);
+    if (p == NULL)
+        sysbail("failed to strdup %lu bytes", (unsigned long) len);
+    memcpy(p, s, len);
+    return p;
+}
+
+
+/*
+ * Copy up to n characters of a string, reporting a fatal error with bail on
+ * failure.  Don't use the system strndup function, since it may not exist and
+ * the TAP library doesn't assume any portability support.
+ */
+char *
+bstrndup(const char *s, size_t n)
+{
+    const char *p;
+    char *copy;
+    size_t length;
+
+    /* Don't assume that the source string is nul-terminated. */
+    for (p = s; (size_t) (p - s) < n && *p != '\0'; p++)
+        ;
+    length = p - s;
+    copy = malloc(length + 1);
+    if (p == NULL)
+        sysbail("failed to strndup %lu bytes", (unsigned long) length);
+    memcpy(copy, s, length);
+    copy[length] = '\0';
+    return copy;
 }
 
 
@@ -458,9 +561,7 @@ test_file_path(const char *file)
         if (base == NULL)
             continue;
         length = strlen(base) + 1 + strlen(file) + 1;
-        path = malloc(length);
-        if (path == NULL)
-            sysbail("cannot allocate memory");
+        path = bmalloc(length);
         sprintf(path, "%s/%s", base, file);
         if (access(path, R_OK) == 0)
             break;
@@ -479,6 +580,50 @@ test_file_path(const char *file)
 void
 test_file_path_free(char *path)
 {
+    if (path != NULL)
+        free(path);
+}
+
+
+/*
+ * Create a temporary directory, tmp, under BUILD if set and the current
+ * directory if it does not.  Returns the path to the temporary directory in
+ * newly allocated memory, and calls bail on any failure.  The return value
+ * should be freed with test_tmpdir_free.
+ *
+ * This function uses sprintf because it attempts to be independent of all
+ * other portability layers.  The use immediately after a memory allocation
+ * should be safe without using snprintf or strlcpy/strlcat.
+ */
+char *
+test_tmpdir(void)
+{
+    const char *build;
+    char *path = NULL;
+    size_t length;
+
+    build = getenv("BUILD");
+    if (build == NULL)
+        build = ".";
+    length = strlen(build) + strlen("/tmp") + 1;
+    path = bmalloc(length);
+    sprintf(path, "%s/tmp", build);
+    if (access(path, X_OK) < 0)
+        if (mkdir(path, 0777) < 0)
+            sysbail("error creating temporary directory %s", path);
+    return path;
+}
+
+
+/*
+ * Free a path returned from test_tmpdir() and attempt to remove the
+ * directory.  If we can't delete the directory, don't worry; something else
+ * that hasn't yet cleaned up may still be using it.
+ */
+void
+test_tmpdir_free(char *path)
+{
+    rmdir(path);
     if (path != NULL)
         free(path);
 }

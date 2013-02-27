@@ -1,12 +1,13 @@
 /*
- * Utility functions to test message handling.
+ * String utilities for the TAP protocol.
+ *
+ * Additional string utilities that can't be included with C TAP Harness
+ * because they rely on additional portability code from rra-c-util.
  *
  * The canonical version of this file is maintained in the rra-c-util package,
  * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
- * Copyright 2002 Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2009
- *     The Board of Trustees of the Leland Stanford Junior University
+ * Copyright 2011, 2012 Russ Allbery <rra@stanford.edu>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,25 +28,38 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TAP_MESSAGES_H
-#define TAP_MESSAGES_H 1
-
 #include <config.h>
-#include <tests/tap/macros.h>
+#include <portable/system.h>
 
-/* A global buffer into which errors_capture stores errors. */
-extern char *errors;
+#include <tests/tap/basic.h>
+#include <tests/tap/string.h>
 
-BEGIN_DECLS
 
 /*
- * Turn on capturing of errors with errors_capture.  Errors reported by warn
- * will be stored in the global errors variable.  Turn this off again with
- * errors_uncapture.  Caller is responsible for freeing errors when done.
+ * vsprintf into a newly allocated string, reporting a fatal error with bail
+ * on failure.
  */
-void errors_capture(void);
-void errors_uncapture(void);
+void
+bvasprintf(char **strp, const char *fmt, va_list args)
+{
+    int status;
 
-END_DECLS
+    status = vasprintf(strp, fmt, args);
+    if (status < 0)
+        sysbail("failed to allocate memory for vasprintf");
+}
 
-#endif /* !TAP_MESSAGES_H */
+
+/*
+ * sprintf into a newly allocated string, reporting a fatal error with bail on
+ * failure.
+ */
+void
+basprintf(char **strp, const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    bvasprintf(strp, fmt, args);
+    va_end(args);
+}

@@ -21,11 +21,11 @@ chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
 
 SKIP: {
     skip 'no password configuration', $total
-        unless -f "$ENV{BUILD}/data/test.password";
+        unless -f "$ENV{BUILD}/config/password";
     my $remctld = '@REMCTLD@';
     skip 'remctld not found', $total unless $remctld;
     eval { require Expect };
-    skip 'Exepct module not found', $total if $@;
+    skip 'Expect module not found', $total if $@;
 
     # Disable sending of wallet's output to our standard output.  Do this
     # twice to avoid Perl warnings.
@@ -34,14 +34,14 @@ SKIP: {
 
     # Spawn remctld and set up with a different ticket cache.
     unlink ('krb5cc_test', 'test-pid');
-    my $principal = contents ("$ENV{BUILD}/data/test.principal");
-    remctld_spawn ($remctld, $principal, "$ENV{BUILD}/data/test.keytab",
+    my $principal = contents ("$ENV{BUILD}/config/principal");
+    remctld_spawn ($remctld, $principal, "$ENV{BUILD}/config/keytab",
                    "$ENV{SOURCE}/data/basic.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
 
     # Read in the principal and password.
-    open (PASS, '<', "$ENV{BUILD}/data/test.password")
-        or die "Cannot open $ENV{BUILD}/data/test.password: $!\n";
+    open (PASS, '<', "$ENV{BUILD}/config/password")
+        or die "Cannot open $ENV{BUILD}/config/password: $!\n";
     my $user = <PASS>;
     my $password = <PASS>;
     close PASS;

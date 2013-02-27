@@ -22,11 +22,9 @@
 /tests/client/full-t
 /tests/client/prompt-t
 /tests/client/rekey-t
-/tests/data/.placeholder
-/tests/data/test.keytab
-/tests/data/test.password
-/tests/data/test.principal
-/tests/data/test.krbtype
+/tests/config/keytab
+/tests/config/password
+/tests/config/principal
 /tests/portable/asprintf-t
 /tests/portable/mkstemp-t
 /tests/portable/setenv-t

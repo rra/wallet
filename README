@@ -223,7 +223,7 @@ TESTING
   support in the server, however, you will need to do some preparatory
   work before running the test suite.  Review the files:
 
-      tests/data/README
+      tests/config/README
       perl/t/data/README
 
   and follow the instructions in those files to enable the full test

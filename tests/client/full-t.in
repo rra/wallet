@@ -56,19 +56,19 @@ chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
 
 SKIP: {
     skip 'no keytab configuration', $total
-        unless -f "$ENV{BUILD}/data/test.keytab";
+        unless -f "$ENV{BUILD}/config/keytab";
     my $remctld = '@REMCTLD@';
     skip 'remctld not found', $total unless $remctld;
 
     # Spawn remctld and get local tickets.  Don't destroy the user's Kerberos
     # ticket cache.
     unlink ('krb5cc_test', 'test-pid');
-    my $principal = contents ("$ENV{BUILD}/data/test.principal");
+    my $principal = contents ("$ENV{BUILD}/config/principal");
     remctld_spawn ($remctld, $principal,
-                   "$ENV{BUILD}/data/test.keytab",
+                   "$ENV{BUILD}/config/keytab",
                    "$ENV{SOURCE}/data/full.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
-    getcreds ("$ENV{BUILD}/data/test.keytab", $principal);
+    getcreds ("$ENV{BUILD}/config/keytab", $principal);
 
     # Use Wallet::Admin to set up the database.
     db_setup;
