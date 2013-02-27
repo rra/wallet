@@ -5,6 +5,9 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
+=for stopwords
+keytab enctype
+
 =head1 NAME
 
 Wallet::Schema::Result::KeytabEnctype - Wallet schema for keytab enctype

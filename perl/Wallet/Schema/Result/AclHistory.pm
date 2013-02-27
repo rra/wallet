@@ -7,6 +7,9 @@ use base 'DBIx::Class::Core';
 
 __PACKAGE__->load_components("InflateColumn::DateTime");
 
+=for stopwords
+ACL
+
 =head1 NAME
 
 Wallet::Schema::Result::AclHistory - Wallet schema for ACL history

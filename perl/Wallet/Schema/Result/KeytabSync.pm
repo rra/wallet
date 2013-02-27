@@ -5,6 +5,9 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
+=for stopwords
+keytab
+
 =head1 NAME
 
 Wallet::Schema::Result::KeytabSync - Wallet schema for keytab synchronization
