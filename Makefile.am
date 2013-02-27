@@ -56,9 +56,9 @@ portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
 	portable/system.h portable/uio.h
 portable_libportable_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 portable_libportable_a_LIBADD = $(LIBOBJS)
-util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h	\
-	util/messages-krb5.c util/messages-krb5.h util/messages.c	\
-	util/messages.h util/xmalloc.c util/xmalloc.h
+util_libutil_a_SOURCES = util/macros.h util/messages-krb5.c		    \
+	util/messages-krb5.h util/messages.c util/messages.h util/xmalloc.c \
+	util/xmalloc.h
 util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
 noinst_LIBRARIES += client/libwallet.a
@@ -155,11 +155,11 @@ distclean-local:
 	fi
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/portable/asprintf-t		    \
-	tests/portable/mkstemp-t tests/portable/setenv-t		    \
-	tests/portable/snprintf-t tests/portable/strlcat-t		    \
-	tests/portable/strlcpy-t tests/util/concat-t			    \
-	tests/util/messages-krb5-t tests/util/messages-t tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/portable/asprintf-t	\
+	tests/portable/mkstemp-t tests/portable/setenv-t	\
+	tests/portable/snprintf-t tests/portable/strlcat-t	\
+	tests/portable/strlcpy-t tests/util/messages-krb5-t	\
+	tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -188,8 +188,6 @@ tests_portable_strlcat_t_LDADD = tests/tap/libtap.a portable/libportable.a
 tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
 	tests/portable/strlcpy.c
 tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.a
-tests_util_concat_t_LDADD = tests/tap/libtap.a util/libutil.a \
-	portable/libportable.a
 tests_util_messages_krb5_t_CPPFLAGS = $(KRB5_CPPFLAGS)
 tests_util_messages_krb5_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_util_messages_krb5_t_LDADD = tests/tap/libtap.a util/libutil.a \

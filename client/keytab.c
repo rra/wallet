@@ -15,7 +15,6 @@
 #include <remctl.h>
 
 #include <client/internal.h>
-#include <util/concat.h>
 #include <util/messages-krb5.h>
 #include <util/messages.h>
 #include <util/xmalloc.h>
@@ -107,7 +106,7 @@ merge_keytab(krb5_context ctx, const char *newfile, const char *file)
     krb5_error_code status;
 
     memset(&entry, 0, sizeof(entry));
-    oldfile = concat("WRFILE:", file, (char *) 0);
+    xasprintf(&oldfile, "WRFILE:%s", file);
     status = krb5_kt_resolve(ctx, oldfile, &old);
     if (status != 0)
         die_krb5(ctx, status, "cannot open keytab %s", file);
@@ -189,7 +188,7 @@ get_keytab(struct remctl *r, krb5_context ctx, const char *type,
         return 255;
     }
     if (access(file, F_OK) == 0) {
-        tempfile = concat(file, ".new", (char *) 0);
+        xasprintf(&tempfile, "%s.new", file);
         overwrite_file(tempfile, data, length);
         if (srvtab != NULL)
             write_srvtab(ctx, srvtab, name, tempfile);
@@ -225,7 +224,7 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
     bool error = false, rekeyed = false;
     struct principal_name *names, *current;
 
-    tempfile = concat(file, ".new", (char *) 0);
+    xasprintf(&tempfile, "%s.new", file);
     krb5_get_default_realm(ctx, &realm);
     names = keytab_principals(ctx, file, realm);
     for (current = names; current != NULL; current = current->next) {
@@ -260,7 +259,7 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
     } else {
         if (error) {
             data = read_file(file, &length);
-            backupfile = concat(file, ".old", (char *) 0);
+            xasprintf(&backupfile, "%s.old", file);
             overwrite_file(backupfile, data, length);
             warn("partial failure to rekey keytab %s, old keytab left in %s",
                  file, backupfile);

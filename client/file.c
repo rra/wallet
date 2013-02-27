@@ -16,7 +16,6 @@
 #include <sys/stat.h>
 
 #include <client/internal.h>
-#include <util/concat.h>
 #include <util/messages.h>
 #include <util/xmalloc.h>
 
@@ -83,8 +82,8 @@ write_file(const char *name, const void *data, size_t length)
 {
     char *temp, *backup;
 
-    temp = concat(name, ".new", (char *) 0);
-    backup = concat(name, ".bak", (char *) 0);
+    xasprintf(&temp, "%s.new", name);
+    xasprintf(&backup, "%s.bak", name);
     overwrite_file(temp, data, length);
     if (access(name, F_OK) == 0) {
         if (access(backup, F_OK) == 0)
