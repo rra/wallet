@@ -106,6 +106,9 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+KDC bzip2
+
 =head1 NAME
 
 used-principals - Report which Kerberos v5 principals are in use

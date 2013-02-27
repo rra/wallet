@@ -135,6 +135,9 @@ print join ("\n", @email, '');
 # Documentation
 ##############################################################################
 
+=for stopwords
+ACL NetDB SQL hostname lookup swhois whois
+
 =head1 NAME
 
 wallet-contacts - Report contact addresses for matching wallet objects

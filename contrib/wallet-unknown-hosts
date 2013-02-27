@@ -187,6 +187,9 @@ if ($command eq 'check') {
 # Documentation
 ##############################################################################
 
+=for stopwords
+ACL API CNAME DNS IP env keytab keytabs timestamp
+
 =head1 NAME
 
 wallet-unknown-hosts - Report host keytabs in wallet for unknown hosts
@@ -236,7 +239,7 @@ those thresholds.
 
 When run with the C<purge> argument, B<wallet-unknown-hosts> will build a
 list of keytab objects the same as with the C<report> argument, using the
-same additioanl arguments, but rather than printing them out will instead
+same additional arguments, but rather than printing them out will instead
 delete them from the wallet database.  To run C<purge>, the environment
 variable REMOTE_USER must be set to a principal that's a member of the
 C<ADMIN> ACL.
