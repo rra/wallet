@@ -1,3 +1,11 @@
+# Wallet schema for keytab synchronization.
+#
+# Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2012, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
 package Wallet::Schema::Result::KeytabSync;
 
 use strict;
