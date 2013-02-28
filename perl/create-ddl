@@ -59,7 +59,7 @@ create-ddl - Create DDL files for Wallet
 
 =head1 SYNOPSIS
 
-create-ddl [B<--help>] [B<--oldversion>]
+B<create-ddl> [B<--help>] [B<--oldversion>=I<version>]
 
 =head1 DESCRIPTION
 
@@ -77,15 +77,19 @@ SQLite parser creating keys without AUTOINCREMENT.
 
 =head1 OPTIONS
 
-B<--help>
+=over 4
+
+=item B<--help>
 
 Prints the perldoc information (this document) for the script.
 
-B<--oldversion>=<version>
+=item B<--oldversion>=I<version>
 
 The version number of the previous version.  If there are existing DDL
 files for this version, then we will also create diff files to upgrade
 a database from the old version to the current.
+
+=back
 
 =head1 AUTHORS
 
