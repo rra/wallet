@@ -46,7 +46,7 @@ Server Issues
 
   ACL Management
 
-    Supported operations are:  get, store, create (possibly triggered by a
+    Supported operations are: get, store, create (possibly triggered by a
     get or store of something that didn't already exist), destroy, show,
     and setting or clearing flags.  Each of these need a separate ACL
     potentially.  Not sure if we're going to need separate ACLs for each
@@ -62,10 +62,9 @@ Server Issues
     that returns a default ACL given the object type and name if the
     object doesn't already exist.
 
-    Owner rights provides get, store, and show, but not destroy or setting
-    or clearing flags (not destroy because it's too destructive and we
-    don't want it done accidentally).  This can be overridden by more
-    precise ACL settings.  So the ACL logic would go like this:
+    Owner rights provides get, store, show, and destroy, but not setting
+    or clearing flags.  This can be overridden by more precise ACL
+    settings.  So the ACL logic would go like this:
 
      * If the user is an administrator and the operation isn't get or
        store, operation is permitted.
@@ -74,7 +73,8 @@ Server Issues
        that specific ACL, apply that ACL.
 
      * If the object exists but with no specific ACL setting and the
-       operation is one of get, store, or show, apply the owner ACL.
+       operation is one of get, store, show, or destroy, apply the owner
+       ACL.
 
      * If the object doesn't exist and the action is get, store, or
        create, punt to a local policy if it exists and see if it returns a

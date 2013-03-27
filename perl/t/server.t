@@ -3,12 +3,12 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010, 2011, 2012
+# Copyright 2007, 2008, 2010, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 381;
+use Test::More tests => 382;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -497,10 +497,6 @@ is ($server->create ('base', 'service/test'), undef,
     ' nor can we create objects');
 is ($server->error, "$user1 not authorized to create base:service/test",
     ' with error');
-is ($server->destroy ('base', 'service/user1'), undef,
-    ' or destroy objects');
-is ($server->error, "$user1 not authorized to destroy base:service/user1",
-    ' with error');
 is ($server->owner ('base', 'service/user1', 'user2'), undef,
     ' or set the owner');
 is ($server->error,
@@ -801,6 +797,12 @@ is ($server->store ('base', 'service/both', 'stuff'), undef,
     ' or store it');
 is ($server->error, 'cannot find base:service/both', ' because it is gone');
 
+# Switch back to user1 and test destroy.
+$server = eval { Wallet::Server->new ($user1, $host) };
+is ($@, '', 'Switching users works');
+is ($server->destroy ('base', 'service/user1'), 1,
+    'Destroy of an object we own with no destroy ACLs works');
+
 # Test default ACLs on object creation.
 #
 # Create a default_acl sub that permits $user2 to create service/default with
@@ -836,8 +838,10 @@ sub default_owner {
 }
 package main;
 
-# We're still user2, so we should now be able to create service/default.  Make
-# sure we can and that the ACLs all look good.
+# Switch back to user2, so we should now be able to create service/default.
+# Make sure we can and that the ACLs all look good.
+$server = eval { Wallet::Server->new ($user2, $host) };
+is ($@, '', 'Switching users works');
 is ($server->create ('base', 'service/default'), undef,
     'Creating an object with the default ACL fails');
 is ($server->error, "$user2 not authorized to create base:service/default",

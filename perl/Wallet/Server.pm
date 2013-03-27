@@ -1,7 +1,7 @@
 # Wallet::Server -- Wallet system server implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010, 2011
+# Copyright 2007, 2008, 2010, 2011, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -301,7 +301,7 @@ sub acl_verify {
     } elsif ($action ne 'comment') {
         $id = $object->acl ($action);
     }
-    if (! defined ($id) and $action ne 'flags' and $action ne 'destroy') {
+    if (! defined ($id) and $action ne 'flags') {
         $id = $object->owner;
     }
     unless (defined $id) {
@@ -970,9 +970,10 @@ owner as determined by the wallet configuration.
 Destroys the object identified by TYPE and NAME.  This destroys any data
 that the wallet had saved about the object, may remove the underlying
 object from other external systems, and destroys the wallet database entry
-for the object.  To destroy an object, the current user must be authorized
-by the ADMIN ACL or the destroy ACL on the object; the owner ACL is not
-sufficient.  Returns true on success and false on failure.
+for the object.  To destroy an object, the current user must be a member
+of the ADMIN ACL, authorized by the destroy ACL, or authorized by the
+owner ACL; however, if the destroy ACL is set, the owner ACL will not be
+checked.  Returns true on success and false on failure.
 
 =item dbh()
 
@@ -980,10 +981,6 @@ Returns the database handle of a Wallet::Server object.  This is used
 mostly for testing; normally, clients should perform all actions through
 the Wallet::Server object to ensure that authorization and history logging
 is done properly.
-
-=item schema()
-
-Returns the DBIx::Class schema object.
 
 =item error()
 
@@ -1057,6 +1054,10 @@ failure.
 The owner of an object is permitted to get, store, and show that object,
 but cannot destroy or set flags on that object without being listed on
 those ACLs as well.
+
+=item schema()
+
+Returns the DBIx::Class schema object.
 
 =item show(TYPE, NAME)
 

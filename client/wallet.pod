@@ -159,9 +159,9 @@ C<getattr> and C<history>, which use the C<show> ACL, C<setattr>, which
 uses the C<store> ACL, and C<comment>, which uses the owner or C<show> ACL
 depending on whether one is setting or retrieving the comment.  If the
 appropriate ACL is set, it alone is checked to see if the user has access.
-Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, C<history>,
-and C<comment> access is permitted if the user is authorized by the owner
-ACL of the object.
+Otherwise, C<destroy>, C<get>, C<store>, C<show>, C<getattr>, C<setattr>,
+C<history>, and C<comment> access is permitted if the user is authorized
+by the owner ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<store>, they must still be authorized by

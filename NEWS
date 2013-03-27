@@ -2,6 +2,11 @@
 
 wallet 1.0 (unreleased)
 
+    Owners of wallet objects are now allowed to destroy them.  In previous
+    versions, a special destroy ACL had to be set and the owner ACL wasn't
+    used for destroy actions, but operational experience at Stanford has
+    shown that letting owners destroy their own objects is a better model.
+
     wallet-admin has a new sub-command, upgrade, which upgrades the wallet
     database to the latest schema version.  This command should be run
     when deploying any new version of the wallet server.

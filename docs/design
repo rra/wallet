@@ -148,9 +148,9 @@ Server Design
 
     * Optional ACLs for get, store, show, destroy, and flag operations.
       If there is an ACL for get, store, or show, that overrides the
-      normal permissions of the owner.  In the absence of an ACL for
-      destroy or flag, only wallet administrators can destroy an object or
-      set flags on that object.  This entry would need no special ACLs.
+      normal permissions of the owner.  In the absence of an ACL for flag,
+      only wallet administrators can set flags on that object.  This entry
+      would need no special ACLs.
 
     * Trace fields storing the user, remote host, and timestamp for when
       this object was last created, stored, and downloaded.
