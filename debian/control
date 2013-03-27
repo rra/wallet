@@ -5,9 +5,9 @@ Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>= 7.0.50~), libdatetime-format-sqlite-perl,
  libdbd-sqlite3-perl, libdbi-perl, libdbx-class-perl, libkrb5-dev,
  libremctl-dev, libsql-translator-perl, libtest-pod-perl, perl
-Standards-Version: 3.9.1
+Standards-Version: 3.9.4
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
-Vcs-Git: git://git.eyrie.org/kerberos/wallet.git
+Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/wallet.git
 
 Package: keytab-backend
