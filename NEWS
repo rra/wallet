@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 1.0 (unreleased)
+wallet 1.0 (2013-03-27)
 
     Owners of wallet objects are now allowed to destroy them.  In previous
     versions, a special destroy ACL had to be set and the owner ACL wasn't
