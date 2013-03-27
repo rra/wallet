@@ -29,7 +29,14 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			   \
 	perl/Wallet/Schema/Result/Object.pm				   \
 	perl/Wallet/Schema/Result/ObjectHistory.pm			   \
 	perl/Wallet/Schema/Result/SyncTarget.pm				   \
-	perl/Wallet/Schema/Result/Type.pm perl/t/acl.t perl/t/admin.t	   \
+	perl/Wallet/Schema/Result/Type.pm				   \
+	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			   \
+	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			   \
+	perl/sql/Wallet-Schema-0.07-MySQL.sql				   \
+	perl/sql/Wallet-Schema-0.07-SQLite.sql				   \
+	perl/sql/Wallet-Schema-0.08-MySQL.sql				   \
+	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			   \
+	perl/sql/Wallet-Schema-0.08-SQLite.sql perl/t/acl.t perl/t/admin.t \
 	perl/t/config.t perl/t/data/README perl/t/data/keytab-fake	   \
 	perl/t/data/keytab.conf perl/t/data/netdb.conf			   \
 	perl/t/data/netdb-fake perl/t/file.t perl/t/init.t perl/t/kadmin.t \
@@ -138,14 +145,14 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 all-local: perl/blib/lib/Wallet/Config.pm
 
 perl/blib/lib/Wallet/Config.pm:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		    \
-	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5	    \
-		perl/Wallet/ACL/NetDB perl/Wallet/Kadmin perl/Wallet/Object \
-		perl/Wallet/Schema perl/Wallet/Schema/Result perl/t	    \
-		perl/t/data perl/t/lib 2>/dev/null || true ;		    \
-	    for f in $(PERL_FILES) ; do					    \
-		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			    \
-	    done							    \
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		     \
+	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5	     \
+		perl/Wallet/ACL/NetDB perl/Wallet/Kadmin perl/Wallet/Object  \
+		perl/Wallet/Schema perl/Wallet/Schema/Result perl/sql perl/t \
+		perl/t/data perl/t/lib 2>/dev/null || true ;		     \
+	    for f in $(PERL_FILES) ; do					     \
+		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			     \
+	    done							     \
 	fi
 	cd perl && perl Makefile.PL
 	cd perl && $(MAKE)
