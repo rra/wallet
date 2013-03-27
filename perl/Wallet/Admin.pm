@@ -125,8 +125,9 @@ sub default_data {
 
     # types default rows.
     my @record = ([ qw/ty_name ty_class/ ],
-               [ 'file', 'Wallet::Object::File' ],
-               [ 'keytab', 'Wallet::Object::Keytab' ]);
+               [ 'file',       'Wallet::Object::File' ],
+               [ 'keytab',     'Wallet::Object::Keytab' ],
+               [ 'wa-keyring', 'Wallet::Object::WAKeyring' ]);
     ($r1) = $self->{schema}->resultset('Type')->populate (\@record);
     warn "default Type not installed" unless defined $r1;
 
