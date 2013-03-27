@@ -2,8 +2,9 @@ Source: wallet
 Section: net
 Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 7.0.50~), libdbi-perl, libdbd-sqlite3-perl,
- libkrb5-dev, libremctl-dev, libtest-pod-perl, perl
+Build-Depends: debhelper (>= 7.0.50~), libdatetime-format-sqlite-perl,
+ libdbd-sqlite3-perl, libdbi-perl, libdbx-class-perl, libkrb5-dev,
+ libremctl-dev, libsql-translator-perl, libtest-pod-perl, perl
 Standards-Version: 3.9.1
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
 Vcs-Git: git://git.eyrie.org/kerberos/wallet.git
@@ -39,10 +40,12 @@ Description: Kerberos-authenticated secure data management client
 
 Package: wallet-server
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libdbi-perl,
- libdbd-sqlite3-perl | libdbd-mysql-perl, remctl-server
-Recommends: krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
-Suggests: libnet-remctl-perl
+Depends: ${misc:Depends}, ${perl:Depends},
+ libdbd-sqlite3-perl | libdbd-mysql-perl | libdbd-pg-perl,
+ libdbix-class-perl, libsql-translator-perl, remctl-server
+Recommends: libdatetime-format-sqlite-perl,
+ krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
+Suggests: libauthen-sasl-perl, libnet-ldap-perl, libnet-remctl-perl
 Description: Kerberos-authenticated secure data management server
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions
