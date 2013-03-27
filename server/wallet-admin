@@ -65,12 +65,13 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+metadata ACL hostname backend acl acls wildcard SQL Allbery verifier
+MERCHANTABILITY NONINFRINGEMENT sublicense
+
 =head1 NAME
 
 wallet-admin - Wallet server administrative commands
-
-=for stopwords
-metadata ACL hostname backend acl acls wildcard SQL Allbery verifier
 
 =head1 SYNOPSIS
 

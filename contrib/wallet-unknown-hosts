@@ -183,7 +183,8 @@ if ($command eq 'check') {
 ##############################################################################
 
 =for stopwords
-ACL API CNAME DNS IP env keytab keytabs timestamp
+ACL API CNAME DNS IP env keytab keytabs timestamp MERCHANTABILITY
+NONINFRINGEMENT sublicense
 
 =head1 NAME
 
