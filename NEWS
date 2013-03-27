@@ -29,6 +29,12 @@ wallet 1.0 (unreleased)
     can only be set by the owner or wallet administrators but can be seen
     by anyone on the show ACL.
 
+    The wallet server backend now uses DBIx::Class for the database layer,
+    which means that DBIx::Class and SQL::Translator and all of their
+    dependencies now have to be installed for the server to work.  If the
+    database in use is SQLite 3, DateTime::Format::SQLite should also be
+    installed.
+
     Add docs/objects-and-schemes, which provides a brief summary of the
     current supported object types and ACL schemes.
 
