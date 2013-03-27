@@ -10,6 +10,7 @@ wallet (1.0-1) UNRELEASED; urgency=low
     - New acl check command that returns whether the named ACL exists.
     - New comments field for objects and wallet commands to set and
       retrieve it.
+  * Switch to xz compression for the upstream and Debian tarballs.
   * Move single-debian-patch to local-options and patch-header to
     local-patch-header so that they only apply to the packages I build and
     NMUs get regular version-numbered patches.
