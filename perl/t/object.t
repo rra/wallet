@@ -3,12 +3,13 @@
 # Tests for the basic object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 131;
+use Test::More tests => 137;
 
 use Wallet::ACL;
 use Wallet::Admin;
@@ -29,26 +30,26 @@ db_setup;
 my $admin = eval { Wallet::Admin->new };
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
-my $dbh = $admin->dbh;
+my $schema = $admin->schema;
 
 # Okay, now we have a database.  Test create and new.  We make believe this is
 # a keytab object; it won't matter for what we're doing.
 my $object = eval {
-    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+    Wallet::Object::Base->create ('keytab', $princ, $schema, @trace)
   };
 is ($@, '', 'Object creation did not die');
 ok ($object->isa ('Wallet::Object::Base'), ' and returned the right class');
 my $other = eval {
-    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+    Wallet::Object::Base->create ('keytab', $princ, $schema, @trace)
   };
 like ($@, qr/^cannot create object \Qkeytab:$princ: /, 'Repeating fails');
-$other = eval { Wallet::Object::Base->create ('', $princ, $dbh, @trace) };
+$other = eval { Wallet::Object::Base->create ('', $princ, $schema, @trace) };
 is ($@, "invalid object type\n", 'Using an empty type fails');
-$other = eval { Wallet::Object::Base->create ('keytab', '', $dbh, @trace) };
+$other = eval { Wallet::Object::Base->create ('keytab', '', $schema, @trace) };
 is ($@, "invalid object name\n", ' as does an empty name');
-$object = eval { Wallet::Object::Base->new ('keytab', "a$princ", $dbh) };
+$object = eval { Wallet::Object::Base->new ('keytab', "a$princ", $schema) };
 is ($@, "cannot find keytab:a$princ\n", 'Searching for unknown object fails');
-$object = eval { Wallet::Object::Base->new ('keytab', $princ, $dbh) };
+$object = eval { Wallet::Object::Base->new ('keytab', $princ, $schema) };
 is ($@, '', 'Object new did not die');
 ok ($object->isa ('Wallet::Object::Base'), ' and returned the right class');
 
@@ -57,7 +58,7 @@ is ($object->type, 'keytab', 'Type accessor works');
 is ($object->name, $princ, 'Name accessor works');
 
 # We'll use this for later tests.
-my $acl = Wallet::ACL->new ('ADMIN', $dbh);
+my $acl = Wallet::ACL->new ('ADMIN', $schema);
 
 # Owner.
 is ($object->owner, undef, 'Owner is not set to start');
@@ -98,6 +99,23 @@ if ($object->expires ('', @trace)) {
 }
 is ($object->expires, undef, ' at which point it is cleared');
 is ($object->expires ($now, @trace), 1, ' and setting it again works');
+
+# Comment.
+is ($object->comment, undef, 'Comment is not set to start');
+if ($object->comment ('this is a comment', @trace)) {
+    ok (1, ' and setting it works');
+} else {
+    is ($object->error, '', ' and setting it works');
+}
+is ($object->comment, 'this is a comment', ' at which point it matches');
+if ($object->comment ('', @trace)) {
+    ok (1, ' and clearing it works');
+} else {
+    is ($object->error, '', ' and clearing it works');
+}
+is ($object->comment, undef, ' at which point it is cleared');
+is ($object->comment (join (' ', ('this is a comment') x 5), @trace), 1,
+    ' and setting it again works');
 
 # ACLs.
 for my $type (qw/get store show destroy flags/) {
@@ -203,6 +221,8 @@ my $output = <<"EOO";
     Destroy ACL: ADMIN
       Flags ACL: ADMIN
         Expires: $now
+        Comment: this is a comment this is a comment this is a comment this is
+                 a comment this is a comment
           Flags: unchanging
      Created by: $user
    Created from: $host
@@ -223,6 +243,8 @@ $output = <<"EOO";
     Destroy ACL: ADMIN
       Flags ACL: ADMIN
         Expires: $now
+        Comment: this is a comment this is a comment this is a comment this is
+                 a comment this is a comment
           Flags: locked unchanging
      Created by: $user
    Created from: $host
@@ -244,12 +266,12 @@ if ($object->destroy (@trace)) {
 } else {
     is ($object->error, '', 'Destroy is successful');
 }
-$object = eval { Wallet::Object::Base->new ('keytab', $princ, $dbh) };
+$object = eval { Wallet::Object::Base->new ('keytab', $princ, $schema) };
 is ($@, "cannot find keytab:$princ\n", ' and object is all gone');
 
 # Test history.
 $object = eval {
-    Wallet::Object::Base->create ('keytab', $princ, $dbh, @trace)
+    Wallet::Object::Base->create ('keytab', $princ, $schema, @trace)
   };
 ok (defined ($object), 'Recreating the object succeeds');
 $output = <<"EOO";
@@ -266,6 +288,12 @@ $date  set expires to $now
 $date  unset expires (was $now)
     by $user from $host
 $date  set expires to $now
+    by $user from $host
+$date  set comment to this is a comment
+    by $user from $host
+$date  unset comment (was this is a comment)
+    by $user from $host
+$date  set comment to this is a comment this is a comment this is a comment this is a comment this is a comment
     by $user from $host
 $date  set acl_get to ADMIN (1)
     by $user from $host

@@ -1,11 +1,6 @@
 #!/usr/bin/perl
 #
-# wallet-backend -- Wallet server for storing and retrieving secure data.
-#
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
-#
-# See LICENSE for licensing terms.
+# Wallet server for storing and retrieving secure data.
 
 ##############################################################################
 # Declarations and site configuration
@@ -149,6 +144,14 @@ sub command {
         if ($action eq 'add') {
             check_args (3, 3, [3], @args);
             $server->acl_add (@args) or failure ($server->error, @_);
+        } elsif ($action eq 'check') {
+            check_args (1, 1, [], @args);
+            my $status = $server->acl_check (@args);
+            if (!defined ($status)) {
+                failure ($server->error, @_);
+            } else {
+                print $status ? "yes\n" : "no\n";
+            }
         } elsif ($action eq 'create') {
             check_args (1, 1, [], @args);
             $server->acl_create (@args) or failure ($server->error, @_);
@@ -190,6 +193,20 @@ sub command {
             failure ($server->error, @_);
         } else {
             print $status ? "yes\n" : "no\n";
+        }
+    } elsif ($command eq 'comment') {
+        check_args (2, 3, [], @args);
+        if (@args > 2) {
+            $server->comment (@args) or failure ($server->error, @_);
+        } else {
+            my $output = $server->comment (@args);
+            if (defined $output) {
+                print $output, "\n";
+            } elsif (not $server->error) {
+                print "No comment set\n";
+            } else {
+                failure ($server->error, @_);
+            }
         }
     } elsif ($command eq 'create') {
         check_args (2, 2, [], @args);
@@ -318,7 +335,7 @@ __END__
 =for stopwords
 wallet-backend backend backend-specific remctld ACL acl timestamp getacl
 setacl metadata keytab keytabs enctypes enctype ktadd KDC Allbery
-autocreate
+autocreate MERCHANTABILITY NONINFRINGEMENT sublicense
 
 =head1 NAME
 
@@ -361,16 +378,17 @@ syslog.
 =head1 COMMANDS
 
 Most commands are only available to wallet administrators (users on the
-C<ADMIN> ACL).  The exceptions are C<autocreate>, C<get>, C<store>,
-C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>, C<setattr>,
-and C<history>.  All of those commands have their own ACLs except
-C<getattr> and C<history>, which use the C<show> ACL, and C<setattr>,
-which uses the C<store> ACL.  If the appropriate ACL is set, it alone is
-checked to see if the user has access.  Otherwise, C<get>, C<store>,
-C<show>, C<getattr>, C<setattr>, and C<history> access is permitted if the
-user is authorized by the owner ACL of the object.  C<autocreate> is
-permitted if the user is listed in the default ACL for an object for that
-name.
+C<ADMIN> ACL).  The exceptions are C<acl check>, C<check>, C<get>,
+C<store>, C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>,
+C<setattr>, and C<history>.  C<acl check> and C<check> can be run by
+anyone.  All of the rest of those commands have their own ACLs except
+C<getattr> and C<history>, which use the C<show> ACL, C<setattr>, which
+uses the C<store> ACL, and C<comment>, which uses the owner or C<show> ACL
+depending on whether one is setting or retrieving the comment.  If the
+appropriate ACL is set, it alone is checked to see if the user has access.
+Otherwise, C<destroy>, C<get>, C<store>, C<show>, C<getattr>, C<setattr>,
+C<history>, and C<comment> access is permitted if the user is authorized
+by the owner ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
 and C<store>.  For C<get> and C<store>, they must still be authorized by
@@ -379,8 +397,8 @@ either the appropriate specific ACL or the owner ACL.
 If the locked flag is set on an object, no commands can be run on that
 object that change data except the C<flags> commands, nor can the C<get>
 command be used on that object.  C<show>, C<history>, C<getacl>,
-C<getattr>, and C<owner> or C<expires> without an argument can still be
-used on that object.
+C<getattr>, and C<owner>, C<comment>, or C<expires> without an argument
+can still be used on that object.
 
 For more information on attributes, see L<ATTRIBUTES>.
 
@@ -388,8 +406,13 @@ For more information on attributes, see L<ATTRIBUTES>.
 
 =item acl add <id> <scheme> <identifier>
 
-Adds an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
+Add an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
 either the name of an ACL or its numeric identifier.
+
+=item acl check <id>
+
+Check whether an ACL with the ID <id> already exists.  If it does, prints
+C<yes>; if not, prints C<no>.
 
 =item acl create <name>
 
@@ -436,6 +459,15 @@ object will be created with that default ACL set as the object owner.
 
 Check whether an object of type <type> and name <name> already exists.  If
 it does, prints C<yes>; if not, prints C<no>.
+
+=item comment <type> <name> [<comment>]
+
+If <comment> is not given, displays the current comment for the object
+identified by <type> and <name>, or C<No comment set> if none is set.
+
+If <comment> is given, sets the comment on the object identified by
+<type> and <name> to <comment>.  If <comment> is the empty string, clears
+the comment.
 
 =item create <type> <name>
 
@@ -580,15 +612,38 @@ enctypes than those requested by this attribute.
 
 =back
 
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2007, 2008, 2010, 2011, 2012, 2013 The Board of Trustees of the
+Leland Stanford Junior University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
 =head1 SEE ALSO
 
 Wallet::Server(3), remctld(8)
 
 This program is part of the wallet system.  The current version is
 available from L<http://www.eyrie.org/~eagle/software/wallet/>.
-
-=head1 AUTHOR
-
-Russ Allbery <rra@stanford.edu>
 
 =cut

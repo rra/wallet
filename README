@@ -1,12 +1,12 @@
-                           wallet release 0.12
+                            wallet release 1.0
                      (secure data management system)
 
                 Written by Russ Allbery <rra@stanford.edu>
 
-  Copyright 2006, 2007, 2008, 2009, 2010 Board of Trustees, Leland
-  Stanford Jr. University.  This software is distributed under a BSD-style
-  license.  Please see the file LICENSE in the distribution for more
-  information.
+  Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013 The Board of Trustees
+  of the Leland Stanford Junior University.  This software is distributed
+  under a BSD-style license.  Please see the section LICENSE below for
+  more information.
 
 BLURB
 
@@ -42,16 +42,16 @@ DESCRIPTION
   infrastructure.  Currently, the only ACL type supported matches a single
   Kerberos principal name, but this will be extended in future releases.
 
-  Currently, the object types supported are simple files and Kerberos
-  keytabs.  By default, whenever a Kerberos keytab object is retrieved
-  from the wallet, the key is changed in the Kerberos KDC and the wallet
-  returns a keytab for the new key.  However, a keytab object can also be
-  configured to preserve the existing keys when retrieved.  Included in
-  the wallet distribution is a script that can be run via remctl on an MIT
-  Kerberos KDC to extract the existing key for a principal, and the wallet
-  system will use that interface to retrieve the current key if the
-  unchanging flag is set on a Kerberos keytab object for MIT Kerberos.
-  (Heimdal doesn't require any special support.)
+  Currently, the object types supported are simple files, Kerberos
+  keytabs, and WebAuth keyrings.  By default, whenever a Kerberos keytab
+  object is retrieved from the wallet, the key is changed in the Kerberos
+  KDC and the wallet returns a keytab for the new key.  However, a keytab
+  object can also be configured to preserve the existing keys when
+  retrieved.  Included in the wallet distribution is a script that can be
+  run via remctl on an MIT Kerberos KDC to extract the existing key for a
+  principal, and the wallet system will use that interface to retrieve the
+  current key if the unchanging flag is set on a Kerberos keytab object
+  for MIT Kerberos.  (Heimdal doesn't require any special support.)
 
 REQUIREMENTS
 
@@ -64,11 +64,17 @@ REQUIREMENTS
   The wallet client will build with either MIT Kerberos or Heimdal.
 
   The wallet server is written in Perl and requires Perl 5.6.0 or later.
-  It uses the Perl DBI layer to talk to a database, and therefore the DBI
-  module and a DBD module for the database it will use must be installed.
-  Currently, the server has only been tested against SQLite 3 and MySQL 5
-  and will probably not work fully with other database backends.  Porting
-  is welcome.
+  It uses DBIx::Class and DBI to talk to a database, and therefore the
+  DBIx::Class and DBI modules (and their dependencies) and a DBD module
+  for the database it will use must be installed.  The SQL::Translator
+  Perl module is also required for schema deployment and database
+  upgrades.  If the wallet server is used with a SQLite 3 database, the
+  Perl module DateTime::Format::SQLite should also be installed.
+
+  Currently, the server has only been tested against SQLite 3, MySQL 5,
+  and PostgreSQL, and prebuilt SQL files (for database upgrades) are only
+  provided for those servers.  It will probably not work fully with other
+  database backends.  Porting is welcome.
 
   The wallet server is intended to be run under remctld and use remctld to
   do authentication.  It can be ported to any other front-end, but doing
@@ -95,27 +101,24 @@ REQUIREMENTS
   binary that supports the -norandkey option to ktadd.  This option is
   included in MIT Kerberos 1.7 and later.
 
+  To support the LDAP attribute ACL verifier, the Authen::SASL and
+  Net::LDAP Perl modules must be installed on the server.  This verifier
+  only works with LDAP servers that support GSS-API binds.
+
   To support the NetDB ACL verifier (only of interest at sites using NetDB
   to manage DNS), the Net::Remctl Perl module must be installed on the
   server.
 
-  To run the test suite, you must have Perl 5.8 or later and the Perl DBI
-  module installed.  You will also need a DBD module installed for the
-  database backend you want to use (currently, either DBD::SQLite or
-  DBD::mysql).  The other modules are available from CPAN and may be
-  available as part of your OS (many Linux distributions have them as
-  packages, for example).
-
-  To run the full test suite, additionally all of the above software
-  requirements must be met.  Tests requiring some bit of software that's
-  not installed should be skipped, but not all the permutations have been
-  checked.  The full test suite also requires the Test::Pod Perl module
-  (available from CPAN), that remctld be installed and available on the
-  user's path or in /usr/local/sbin or /usr/sbin, that test cases can run
-  services on and connect to port 14373 on 127.0.0.1, and that kinit and
-  either kvno or kgetcred (which come with Kerberos) be installed and
-  available on the user's path.  The full test suite also requires a local
-  keytab and some additional configuration.
+  To run the full test suite, all of the above software requirements must
+  be met.  Tests requiring some bit of software that's not installed
+  should be skipped, but not all the permutations have been checked.  The
+  full test suite also requires the Test::Pod Perl module (available from
+  CPAN), that remctld be installed and available on the user's path or in
+  /usr/local/sbin or /usr/sbin, that test cases can run services on and
+  connect to port 14373 on 127.0.0.1, and that kinit and either kvno or
+  kgetcred (which come with Kerberos) be installed and available on the
+  user's path.  The full test suite also requires a local keytab and some
+  additional configuration.
 
   To bootstrap from a Git checkout, or if you change the Automake files
   and need to regenerate Makefile.in, you will need Automake 1.11 or
@@ -130,6 +133,10 @@ BUILD AND INSTALLATION
       ./configure
       make
       make install
+
+  If you are upgrading the wallet server from an earlier installed
+  version, run wallet-admin upgrade after installation to upgrade the
+  database schema.  See the wallet-admin manual page for more information.
 
   Pass --enable-silent-rules to configure for a quieter build (similar to
   the Linux kernel).  Use make warnings instead of make to build with full
@@ -215,7 +222,7 @@ TESTING
   support in the server, however, you will need to do some preparatory
   work before running the test suite.  Review the files:
 
-      tests/data/README
+      tests/config/README
       perl/t/data/README
 
   and follow the instructions in those files to enable the full test
@@ -244,7 +251,7 @@ CONFIGURATION
   remctld to run the wallet-backend program.
 
   Before setting up the wallet server, review the Wallet::Config
-  docuemntation (with man Wallet::Config or perldoc Wallet::Config).
+  documentation (with man Wallet::Config or perldoc Wallet::Config).
   There are many customization options, some of which must be set.  You
   may also need to create a Kerberos keytab for the keytab object backend
   and give it appropriate ACLs, and set up keytab-backend and its remctld
@@ -253,6 +260,38 @@ CONFIGURATION
   The wallet client supports reading configuration settings from the
   system krb5.conf file.  For more information, see the CONFIGURATION
   section of the wallet client man page (man wallet).
+
+SUPPORT
+
+  The wallet web page at:
+
+      http://www.eyrie.org/~eagle/software/wallet/
+
+  will always have the current version of this package, the current
+  documentation, and pointers to any additional resources.
+
+  New releases of the wallet are announced on the kerberos@mit.edu mailing
+  list and discussion of the wallet (particularly the keytab components)
+  are welcome there.
+
+  I welcome bug reports and patches for this package at rra@stanford.edu.
+  However, please be aware that I tend to be extremely busy and work
+  projects often take priority.  I'll save your mail and get to it as soon
+  as I can, but it may take me a couple of months.
+
+SOURCE REPOSITORY
+
+  The wallet is maintained using Git.  You can access the current source
+  by cloning the repository at:
+
+      git://git.eyrie.org/kerberos/wallet.git
+
+  or view the repository on the web at:
+
+      http://git.eyrie.org/?p=kerberos/wallet.git
+
+  When contributing modifications, patches (possibly generated by
+  git-format-patch) are preferred to Git pull requests.
 
 THANKS
 
@@ -274,3 +313,40 @@ THANKS
   To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
   many of the wallet server-side reports, and the initial wallet-rekey
   implementation.
+
+LICENSE
+
+  The wallet distribution as a whole is covered by the following copyright
+  statement and license:
+
+    Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013
+        The Board of Trustees of the Leland Stanford Junior University
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+  All individual files without an explicit exception below are released
+  under this license.  Some files may have additional copyright holders as
+  noted in those files.  There is detailed information about the licensing
+  of each file in the LICENSE file in this distribution.
+
+  Some files in this distribution are individually released under
+  different licenses, all of which are compatible with the above general
+  package license but which may require preservation of additional
+  notices.  All required notices are preserved in the LICENSE file.

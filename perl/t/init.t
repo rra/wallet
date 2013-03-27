@@ -3,7 +3,8 @@
 # Tests for database initialization.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -24,7 +25,7 @@ is ($admin->initialize ('admin@EXAMPLE.COM'), 1,
     ' and initialization succeeds');
 
 # Check whether the database entries that should be created were.
-my $acl = eval { Wallet::ACL->new ('ADMIN', $admin->dbh) };
+my $acl = eval { Wallet::ACL->new ('ADMIN', $admin->schema) };
 is ($@, '', 'Retrieving ADMIN ACL successful');
 ok ($acl->isa ('Wallet::ACL'), ' and is the right class');
 my @entries = $acl->list;
@@ -38,7 +39,7 @@ is ($admin->reinitialize ('admin@EXAMPLE.ORG'), 1,
     'Reinitialization succeeded');
 
 # Now repeat the database content checks.
-$acl = eval { Wallet::ACL->new ('ADMIN', $admin->dbh) };
+$acl = eval { Wallet::ACL->new ('ADMIN', $admin->schema) };
 is ($@, '', 'Retrieving ADMIN ACL successful');
 ok ($acl->isa ('Wallet::ACL'), ' and is the right class');
 @entries = $acl->list;
@@ -49,7 +50,7 @@ is ($entries[0][1], 'admin@EXAMPLE.ORG', ' with the right user');
 
 # Test cleanup.
 is ($admin->destroy, 1, 'Destroying the database works');
-$acl = eval { Wallet::ACL->new ('ADMIN', $admin->dbh) };
+$acl = eval { Wallet::ACL->new ('ADMIN', $admin->schema) };
 like ($@, qr/^cannot search for ACL ADMIN: /,
       ' and now the database is gone');
 unlink 'wallet-db';

@@ -1,0 +1,100 @@
+                  Supported Object Types and ACL Schemes
+
+Introduction
+
+    This is a list of all supported wallet object types and ACL schemes in
+    the current version of wallet, with some brief information about the
+    properties of each one.  For more detailed documentation, see the
+    documentation of the underlying Wallet::Object::* class or
+    Wallet::ACL::* class referenced here.
+
+Object Types
+
+  file
+
+    Stores an arbitrary file and allows retrieval of that file.  The file
+    must be stored before it can be retrieved.  All files are stored on
+    the local file system of the wallet server in a directory organized by
+    a hash of the name of the file object.  The size of file objects is
+    limited by wallet server configuration.  File contents may include nul
+    characters.
+
+    Implemented via Wallet::Object::File.
+
+  keytab
+
+    Stores a keytab representing private keys for a given Kerberos
+    principal.  The object name is the Kerberos principal (without the
+    realm).  On object creation, the Kerberos principal is created in the
+    underlying KDC; on object destruction, the Kerberos principal is also
+    deleted.  Normally, any retrieval of the object creates new random
+    keys for all supported enctypes and then returns a new keytab
+    containing those keys.  Store is not supported.
+
+    Keytab objects with the unchanging flag set will retrieve the existing
+    keys from the Kerberos KDC instead of randomizing the keys.  For MIT
+    Kerberos, this requires a custom backend be installed on the KDC.
+
+    The enctypes of the returned keys can be restricted by setting the
+    enctypes attribute on the wallet object.
+
+    Implemented via Wallet::Object::Keytab.
+
+ACL Schemes
+
+  krb5
+
+    The value is a string representation of a Kerberos principal name.
+    This ACL grants access if the authenticated wallet client user (as
+    determined by remctl or whatever other protocol is used for the wallet
+    transport) equals the ACL value.
+
+    Implemented via Wallet::ACL::Krb5.
+
+  krb5-regex
+
+    Like krb5, but instead of taking the principal string, takes a regular
+    expression that is matched against the principal string.  Grants
+    access if the regular expression matches the user identity.
+
+    Implemented via Wallet::ACL::Krb5::Regex.
+
+  ldap-attr
+
+    The value is an LDAP attribute, an equal sign, and the value that
+    attribute must have.  The LDAP entry for the user (determined via
+    site-local customization in the wallet configuration file) is
+    retrieved, and the wallet server checks that the user's LDAP entry
+    contains that attribute with that value.  If so, access is granted.
+    This effectively implements an entitlement check.
+
+    Implemented via Wallet::ACL::LDAP::Attribute.
+
+  netdb
+
+    The value is a hostname.  NetDB (a system for managing DNS, DHCP, and
+    related machine information) is queried to see what roles the client
+    user has for that hostname.  If the user has a role of user, admin, or
+    team, the ACL grants access.
+
+    Implemented via Wallet::ACL::NetDB.
+
+  netdb-root
+
+    Identical to netdb, except that the user identity is taken as a
+    Kerberos principal and must be in the form of <user>/root@<realm>.
+    The /root part is stripped before checking NetDB for roles.  This
+    forces users to use /root instances for wallet operations instead of
+    their normal principals.
+
+    Implemented via Wallet::ACL::NetDB::Root.
+
+License
+
+    Copyright 2012, 2013
+        The Board of Trustees of the Leland Stanford Junior University
+
+    Copying and distribution of this file, with or without modification,
+    are permitted in any medium without royalty provided the copyright
+    notice and this notice are preserved.  This file is offered as-is,
+    without any warranty.

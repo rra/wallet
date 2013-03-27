@@ -1,8 +1,8 @@
 # Wallet::Object::Keytab -- Keytab object implementation for the wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2009, 2010
-#     Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2009, 2010, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -40,21 +40,29 @@ sub enctypes_set {
     my @trace = ($user, $host, $time);
     my $name = $self->{name};
     my %enctypes = map { $_ => 1 } @$enctypes;
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
-        my $sql = 'select ke_enctype from keytab_enctypes where ke_name = ?';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute ($name);
-        my (@current, $entry);
-        while (defined ($entry = $sth->fetchrow_arrayref)) {
-            push (@current, @$entry);
+
+        # Find all enctypes for the given keytab.
+        my %search = (ke_name => $name);
+        my @enctypes = $self->{schema}->resultset('KeytabEnctype')
+            ->search (\%search);
+        my (@current);
+        for my $enctype_rs (@enctypes) {
+            push (@current, $enctype_rs->ke_enctype);
         }
+
+        # Use the existing enctypes and the enctypes we should have to match
+        # against ones that need to be removed, and note those that already
+        # exist.
         for my $enctype (@current) {
             if ($enctypes{$enctype}) {
                 delete $enctypes{$enctype};
             } else {
-                $sql = 'delete from keytab_enctypes where ke_name = ? and
-                    ke_enctype = ?';
-                $self->{dbh}->do ($sql, undef, $name, $enctype);
+                %search = (ke_name    => $name,
+                           ke_enctype => $enctype);
+                $self->{schema}->resultset('KeytabEnctype')->find (\%search)
+                    ->delete;
                 $self->log_set ('type_data enctypes', $enctype, undef, @trace);
             }
         }
@@ -64,21 +72,20 @@ sub enctypes_set {
         # doesn't enforce integrity constraints.  We do this in sorted order
         # to make it easier to test.
         for my $enctype (sort keys %enctypes) {
-            $sql = 'select en_name from enctypes where en_name = ?';
-            my $status = $self->{dbh}->selectrow_array ($sql, undef, $enctype);
-            unless ($status) {
+            my %search = (en_name => $enctype);
+            my $enctype_rs = $self->{schema}->('Enctype')->find (\%search);
+            unless (defined $enctype_rs) {
                 die "unknown encryption type $enctype\n";
             }
-            $sql = 'insert into keytab_enctypes (ke_name, ke_enctype) values
-                (?, ?)';
-            $self->{dbh}->do ($sql, undef, $name, $enctype);
+            my %record = (ke_name    => $name,
+                          ke_enctype => $enctype);
+            $self->{schema}->resultset('Enctype')->create (\%record);
             $self->log_set ('type_data enctypes', undef, $enctype, @trace);
         }
-        $self->{dbh}->commit;
+        $guard->commit;
     };
     if ($@) {
         $self->error ($@);
-        $self->{dbh}->rollback;
         return;
     }
     return 1;
@@ -92,19 +99,16 @@ sub enctypes_list {
     my ($self) = @_;
     my @enctypes;
     eval {
-        my $sql = 'select ke_enctype from keytab_enctypes where ke_name = ?
-            order by ke_enctype';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute ($self->{name});
-        my $entry;
-        while (defined ($entry = $sth->fetchrow_arrayref)) {
-            push (@enctypes, @$entry);
+        my %search = (ke_name => $self->{name});
+        my %attrs = (order_by => 'ke_enctype');
+        my @enctypes_rs = $self->{schema}->resultset('KeytabEnctype')
+            ->search (\%search, \%attrs);
+        for my $enctype_rs (@enctypes_rs) {
+            push (@enctypes, $enctype_rs->ke_enctype);
         }
-        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ($@);
-        $self->{dbh}->rollback;
         return;
     }
     return @enctypes;
@@ -132,21 +136,21 @@ sub sync_set {
         $self->error ("unsupported synchronization target $target");
         return;
     } else {
+        my $guard = $self->{schema}->txn_scope_guard;
         eval {
-            my $sql = 'select ks_target from keytab_sync where ks_name = ?';
-            my $dbh = $self->{dbh};
             my $name = $self->{name};
-            my ($result) = $dbh->selectrow_array ($sql, undef, $name);
-            if ($result) {
-                my $sql = 'delete from keytab_sync where ks_name = ?';
-                $self->{dbh}->do ($sql, undef, $name);
-                $self->log_set ('type_data sync', $result, undef, @trace);
+            my %search = (ks_name => $name);
+            my $sync_rs = $self->{schema}->resultset('KeytabSync')
+                ->find (\%search);
+            if (defined $sync_rs) {
+                my $target = $sync_rs->ks_target;
+                $sync_rs->delete;
+                $self->log_set ('type_data sync', $target, undef, @trace);
             }
-            $self->{dbh}->commit;
+            $guard->commit;
         };
         if ($@) {
             $self->error ($@);
-            $self->{dbh}->rollback;
             return;
         }
     }
@@ -161,19 +165,16 @@ sub sync_list {
     my ($self) = @_;
     my @targets;
     eval {
-        my $sql = 'select ks_target from keytab_sync where ks_name = ?
-            order by ks_target';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute ($self->{name});
-        my $target;
-        while (defined ($target = $sth->fetchrow_array)) {
-            push (@targets, $target);
+        my %search = (ks_name => $self->{name});
+        my %attrs = (order_by => 'ks_target');
+        my @syncs = $self->{schema}->resultset('KeytabSync')->search (\%search,
+                                                                      \%attrs);
+        for my $sync_rs (@syncs) {
+            push (@targets, $sync_rs->ks_target);
         }
-        $self->{dbh}->commit;
     };
     if ($@) {
         $self->error ($@);
-        $self->{dbh}->rollback;
         return;
     }
     return @targets;
@@ -238,21 +239,16 @@ sub attr_show {
 # Override new to start by creating a handle for the kadmin module we're
 # using.
 sub new {
-    my ($class, $type, $name, $dbh) = @_;
+    my ($class, $type, $name, $schema) = @_;
      my $self = {
-        dbh    => $dbh,
+        schema => $schema,
         kadmin => undef,
     };
     bless $self, $class;
     my $kadmin = Wallet::Kadmin->new ();
     $self->{kadmin} = $kadmin;
 
-    # Set a callback for things to do after a fork, specifically for the MIT
-    # kadmin module which forks to kadmin.
-    my $callback = sub { $self->{dbh}->{InactiveDestroy} = 1 };
-    $kadmin->fork_callback ($callback);
-
-    $self = $class->SUPER::new ($type, $name, $dbh);
+    $self = $class->SUPER::new ($type, $name, $schema);
     $self->{kadmin} = $kadmin;
     return $self;
 }
@@ -262,24 +258,20 @@ sub new {
 # great here since we don't have a way to communicate the error back to the
 # caller.
 sub create {
-    my ($class, $type, $name, $dbh, $creator, $host, $time) = @_;
+    my ($class, $type, $name, $schema, $creator, $host, $time) = @_;
     my $self = {
-        dbh    => $dbh,
+        schema => $schema,
         kadmin => undef,
     };
     bless $self, $class;
     my $kadmin = Wallet::Kadmin->new ();
     $self->{kadmin} = $kadmin;
 
-    # Set a callback for things to do after a fork, specifically for the MIT
-    # kadmin module which forks to kadmin.
-    my $callback = sub { $self->{dbh}->{InactiveDestroy} = 1 };
-    $kadmin->fork_callback ($callback);
-
     if (not $kadmin->create ($name)) {
         die $kadmin->error, "\n";
     }
-    $self = $class->SUPER::create ($type, $name, $dbh, $creator, $host, $time);
+    $self = $class->SUPER::create ($type, $name, $schema, $creator, $host,
+                                   $time);
     $self->{kadmin} = $kadmin;
     return $self;
 }
@@ -292,16 +284,21 @@ sub destroy {
         $self->error ("cannot destroy $id: object is locked");
         return;
     }
+    my $schema = $self->{schema};
+    my $guard = $schema->txn_scope_guard;
     eval {
-        my $sql = 'delete from keytab_sync where ks_name = ?';
-        $self->{dbh}->do ($sql, undef, $self->{name});
-        $sql = 'delete from keytab_enctypes where ke_name = ?';
-        $self->{dbh}->do ($sql, undef, $self->{name});
-        $self->{dbh}->commit;
+        my %search = (ks_name => $self->{name});
+        my $sync_rs = $schema->resultset('KeytabSync')->search (\%search);
+        $sync_rs->delete_all if defined $sync_rs;
+
+        %search = (ke_name => $self->{name});
+        my $enctype_rs = $schema->resultset('KeytabEnctype')->search (\%search);
+        $enctype_rs->delete_all if defined $enctype_rs;
+
+        $guard->commit;
     };
     if ($@) {
         $self->error ($@);
-        $self->{dbh}->rollback;
         return;
     }
     my $kadmin = $self->{kadmin};
@@ -347,7 +344,7 @@ __END__
 
 =for stopwords
 keytab API KDC keytabs HOSTNAME DATETIME enctypes enctype DBH metadata
-unmanaged kadmin Allbery
+unmanaged kadmin Allbery unlinked
 
 =head1 NAME
 
@@ -357,7 +354,7 @@ Wallet::Object::Keytab - Keytab object implementation for wallet
 
     my @name = qw(keytab host/shell.example.com);
     my @trace = ($user, $host, time);
-    my $object = Wallet::Object::Keytab->create (@name, $dbh, @trace);
+    my $object = Wallet::Object::Keytab->create (@name, $schema, @trace);
     my $keytab = $object->get (@trace);
     $object->destroy (@trace);
 

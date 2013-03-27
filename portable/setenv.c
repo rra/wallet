@@ -4,8 +4,18 @@
  * Provides the same functionality as the standard library routine setenv for
  * those platforms that don't have it.
  *
+ * The canonical version of this file is maintained in the rra-c-util package,
+ * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
+ *
  * Written by Russ Allbery <rra@stanford.edu>
- * This work is hereby placed in the public domain by its author.
+ *
+ * The authors hereby relinquish any claim to any copyright that they may have
+ * in this work, whether granted under contract or by operation of law or
+ * international treaty, and hereby commit to the public, at large, that they
+ * shall not, at any time in the future, seek to enforce any copyright in this
+ * work against any person or entity, or prevent any person or entity from
+ * copying, publishing, distributing or creating derivative works of this
+ * work.
  */
 
 #include <config.h>
@@ -31,10 +41,9 @@ setenv(const char *name, const char *value, int overwrite)
 
     /*
      * Allocate memory for the environment string.  We intentionally don't use
-     * concat here, or the xmalloc family of allocation routines, since the
-     * intention is to provide a replacement for the standard library function
-     * which sets errno and returns in the event of a memory allocation
-     * failure.
+     * the xmalloc family of allocation routines here, since the intention is
+     * to provide a replacement for the standard library function that sets
+     * errno and returns in the event of a memory allocation failure.
      */
     size = strlen(name) + 1 + strlen(value) + 1;
     envstring = malloc(size);

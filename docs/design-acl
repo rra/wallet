@@ -79,3 +79,13 @@ ACL Schemes
     (Not yet implemented.)  <identifier> is the name of an AFS PTS group.
     Access is granted if the principal of the user is a member of that AFS
     PTS group.
+
+License
+
+    Copyright 2006, 2007, 2008, 2013
+        The Board of Trustees of the Leland Stanford Junior University
+
+    Copying and distribution of this file, with or without modification,
+    are permitted in any medium without royalty provided the copyright
+    notice and this notice are preserved.  This file is offered as-is,
+    without any warranty.

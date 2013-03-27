@@ -3,16 +3,18 @@
 # Tests for wallet administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 16;
+use Test::More tests => 23;
 
 use Wallet::Admin;
 use Wallet::Report;
 use Wallet::Schema;
 use Wallet::Server;
+use DBI;
 
 use lib 't/lib';
 use Util;
@@ -24,6 +26,8 @@ is ($@, '', 'Wallet::Admin creation did not die');
 ok ($admin->isa ('Wallet::Admin'), ' and returned the right class');
 is ($admin->initialize ('admin@EXAMPLE.COM'), 1,
     ' and initialization succeeds');
+is ($admin->upgrade, 1, ' and upgrade succeeds (should do nothing)');
+is ($admin->error, undef, ' and there is no error');
 
 # We have an empty database, so we should see no objects and one ACL.
 my $report = Wallet::Report->new;
@@ -52,6 +56,22 @@ is ($admin->register_verifier ('base', 'Wallet::ACL::Base'), undef,
     ' and cannot be registered twice');
 is ($server->acl_add ('ADMIN', 'base', 'foo'), 1,
     ' and adding a base ACL now works');
+
+# Test an upgrade.  Reinitialize to an older version, then test upgrade to
+# the current version.
+$Wallet::Schema::VERSION = '0.07';
+is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
+    ' and re-initialization succeeds');
+$Wallet::Schema::VERSION = '0.08';
+my $retval = $admin->upgrade;
+is ($retval, 1, 'Performing an upgrade succeeds');
+my $dbh = $admin->dbh;
+my $sql = "select version from dbix_class_schema_versions order by version "
+    ."DESC";
+$version = $dbh->selectall_arrayref ($sql);
+is (@$version, 2, ' and versions table has correct number of rows');
+is (@{ $version->[0] }, 1, ' and correct number of columns');
+is ($version->[0][0], '0.08', ' and the schema version is correct');
 
 # Clean up.
 is ($admin->destroy, 1, 'Destruction succeeds');

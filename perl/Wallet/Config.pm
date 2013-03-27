@@ -1,7 +1,8 @@
 # Wallet::Config -- Configuration handling for the wallet server.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -27,7 +28,7 @@ Wallet::Config - Configuration handling for the wallet server
 DBI DSN SQLite subdirectories KEYTAB keytab kadmind KDC add-ons kadmin DNS
 SRV kadmin keytabs remctl backend lowercased NETDB ACL NetDB unscoped
 usernames rekey hostnames Allbery wallet-backend keytab-backend Heimdal
-rekeys
+rekeys WebAuth WEBAUTH keyring LDAP DN GSS-API
 
 =head1 SYNOPSIS
 
@@ -83,6 +84,17 @@ file.
 =head1 DATABASE CONFIGURATION
 
 =over 4
+
+=item DB_DDL_DIRECTORY
+
+Specifies the directory used to dump the database schema in formats for
+each possible database server.  This also includes diffs between schema
+versions, for upgrades.  The default value is F</usr/local/share/wallet>,
+which matches the default installation location.
+
+=cut
+
+our $DB_DDL_DIRECTORY = '/usr/local/share/wallet';
 
 =item DB_DRIVER
 
@@ -377,6 +389,146 @@ will be used.
 our $KEYTAB_REMCTL_PORT;
 
 =back
+
+=head1 WEBAUTH KEYRING OBJECT CONFIGURATION
+
+These configuration variables only need to be set if you intend to use the
+C<wakeyring> object type (the Wallet::Object::WAKeyring class).
+
+=over 4
+
+=item WAKEYRING_BUCKET
+
+The directory into which to store WebAuth keyring objects.  WebAuth
+keyring objects will be stored in subdirectories of this directory.  See
+L<Wallet::Object::WAKeyring> for the full details of the naming scheme.
+This directory must be writable by the wallet server and the wallet server
+must be able to create subdirectories of it.
+
+WAKEYRING_BUCKET must be set to use WebAuth keyring objects.
+
+=cut
+
+our $WAKEYRING_BUCKET;
+
+=item WAKEYRING_REKEY_INTERVAL
+
+The interval, in seconds, at which new keys are generated in a keyring.
+The object implementation will try to arrange for there to be keys added
+to the keyring separated by this interval.
+
+It's useful to provide some interval to install the keyring everywhere
+that it's used before the key becomes inactive.  Every keyring will
+therefore normally have at least three keys: one that's currently active,
+one that becomes valid in the future but less than
+WAKEYRING_REKEY_INTERVAL from now, and one that becomes valid between one
+and two of those intervals into the future.  This means that one has twice
+this interval to distribute the keyring everywhere it is used.
+
+Internally, this is implemented by adding a new key that becomes valid in
+twice this interval from the current time if the newest key becomes valid
+at or less than this interval in the future.
+
+The default value is 60 * 60 * 24 (one day).
+
+=cut
+
+our $WAKEYRING_REKEY_INTERVAL = 60 * 60 * 24;
+
+=item WAKEYRING_PURGE_INTERVAL
+
+The interval, in seconds, from the key creation date after which keys are
+removed from the keyring.  This is used to clean up old keys and finish
+key rotation.  Keys won't be removed unless there are more than three keys
+in the keyring to try to keep a misconfiguration from removing all valid
+keys.
+
+The default value is 60 * 60 * 24 * 90 (90 days).
+
+=cut
+
+our $WAKEYRING_PURGE_INTERVAL = 60 * 60 * 24 * 90;
+
+=back
+
+=head1 LDAP ACL CONFIGURATION
+
+These configuration variables are only needed if you intend to use the
+C<ldap-attr> ACL type (the Wallet::ACL::LDAP::Attribute class).  They
+specify the LDAP server and additional connection and data model
+information required for the wallet to check for the existence of
+attributes.
+
+=over 4
+
+=item LDAP_HOST
+
+The LDAP server name to use to verify LDAP ACLs.  This variable must be
+set to use LDAP ACLs.
+
+=cut
+
+our $LDAP_HOST;
+
+=item LDAP_BASE
+
+The base DN under which to search for the entry corresponding to a
+principal.  Currently, the wallet always does a full subtree search under
+this base DN.  This variable must be set to use LDAP ACLs.
+
+=cut
+
+our $LDAP_BASE;
+
+=item LDAP_FILTER_ATTR
+
+The attribute used to find the entry corresponding to a principal.  The
+LDAP entry containing this attribute with a value equal to the principal
+will be found and checked for the required attribute and value.  If this
+variable is not set, the default is C<krb5PrincipalName>.
+
+=cut
+
+our $LDAP_FILTER_ATTR;
+
+=item LDAP_CACHE
+
+Specifies the Kerberos ticket cache to use when connecting to the LDAP
+server.  GSS-API authentication is always used; there is currently no
+support for any other type of bind.  The ticket cache must be for a
+principal with access to verify the values of attributes that will be used
+with this ACL type.  This variable must be set to use LDAP ACLs.
+
+=cut
+
+our $LDAP_CACHE;
+
+=back
+
+Finally, depending on the structure of the LDAP directory being queried,
+there may not be any attribute in the directory whose value exactly
+matches the Kerberos principal.  The attribute designated by
+LDAP_FILTER_ATTR may instead hold a transformation of the principal name
+(such as the principal with the local realm stripped off, or rewritten
+into an LDAP DN form).  If this is the case, define a Perl function named
+ldap_map_attribute.  This function will be called whenever an LDAP
+attribute ACL is being verified.  It will take one argument, the
+principal, and is expected to return the value to search for in the LDAP
+directory server.
+
+For example, if the principal name without the local realm is stored in
+the C<uid> attribute in the directory, set LDAP_FILTER_ATTR to C<uid> and
+then define ldap_map_attribute as follows:
+
+    sub ldap_map_attribute {
+        my ($principal) = @_;
+        $principal =~ s/\@EXAMPLE\.COM$//;
+        return $principal;
+    }
+
+Note that this example only removes the local realm (here, EXAMPLE.COM).
+Any principal from some other realm will be left fully qualified, and then
+presumably will not be found in the directory.
 
 =head1 NETDB ACL CONFIGURATION
 

@@ -13,7 +13,6 @@ portable/strlcpy
 server/admin
 server/backend
 server/keytab
-util/concat
 util/messages
 util/messages-krb5
 util/xmalloc

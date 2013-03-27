@@ -3,16 +3,17 @@
 # Tests for the keytab object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2009, 2010
-#     Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2009, 2010, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 135;
+use Test::More tests => 139;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
+use DBI;
 use Wallet::Admin;
 use Wallet::Config;
 use Wallet::Kadmin;
@@ -146,6 +147,7 @@ db_setup;
 my $admin = eval { Wallet::Admin->new };
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
+my $schema = $admin->schema;
 my $dbh = $admin->dbh;
 
 # Use this to accumulate the history traces so that we can check history.
@@ -173,7 +175,8 @@ SKIP: {
     # Test that object creation without KEYTAB_TMP fails.
     undef $Wallet::Config::KEYTAB_TMP;
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     is ($object, undef, 'Creating keytab without KEYTAB_TMP fails');
     is ($@, "KEYTAB_TMP configuration variable not set\n",
@@ -182,7 +185,8 @@ SKIP: {
 
     # Okay, now we can test.  First, create.
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', "wallet\nf", $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', "wallet\nf", $schema,
+                                        @trace)
       };
     is ($object, undef, 'Creating malformed principal fails');
     if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
@@ -192,7 +196,7 @@ SKIP: {
               ' with the right error');
     }
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', '', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', '', $schema, @trace)
       };
     is ($object, undef, 'Creating empty principal fails');
     if ($Wallet::Config::KEYTAB_KRBTYPE eq 'MIT') {
@@ -201,7 +205,8 @@ SKIP: {
         like ($@, qr/^error adding principal \@/, ' with the right error');
     }
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     if (defined ($object)) {
         ok (defined ($object), 'Creating good principal succeeds');
@@ -212,7 +217,8 @@ SKIP: {
     ok (created ('wallet/one'), ' and the principal was created');
     create ('wallet/two');
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/two', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/two', $schema,
+                                        @trace)
       };
     if (defined ($object)) {
         ok (defined ($object), 'Creating an existing principal succeeds');
@@ -224,13 +230,13 @@ SKIP: {
     is ($object->error, undef, ' with no error message');
     ok (! created ('wallet/two'), ' and now it does not exist');
     my @name = qw(keytab wallet-test/one);
-    $object = eval { Wallet::Object::Keytab->create (@name, $dbh, @trace) };
+    $object = eval { Wallet::Object::Keytab->create (@name, $schema, @trace) };
     is ($object, undef, 'Creation without permissions fails');
     like ($@, qr{^error adding principal wallet-test/one\@\Q$realm: },
           ' with the right error');
 
     # Now, try retrieving the keytab.
-    $object = Wallet::Object::Keytab->new ('keytab', 'wallet/one', $dbh);
+    $object = Wallet::Object::Keytab->new ('keytab', 'wallet/one', $schema);
     ok (defined ($object), 'Retrieving the object works');
     ok ($object->isa ('Wallet::Object::Keytab'), ' and is the right type');
     is ($object->flag_set ('locked', @trace), 1, ' and setting locked works');
@@ -283,7 +289,8 @@ EOO
 
     # Test principal deletion on object destruction.
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     ok (defined ($object), 'Creating good principal succeeds');
     ok (created ('wallet/one'), ' and the principal was created');
@@ -332,7 +339,8 @@ EOO
     # Test configuration errors.
     undef $Wallet::Config::KEYTAB_FILE;
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     is ($object, undef, 'Creating with bad configuration fails');
     is ($@, "keytab object implementation not configured\n",
@@ -340,7 +348,8 @@ EOO
     $Wallet::Config::KEYTAB_FILE = 't/data/test.keytab';
     undef $Wallet::Config::KEYTAB_PRINCIPAL;
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     is ($object, undef, ' likewise with another missing variable');
     is ($@, "keytab object implementation not configured\n",
@@ -348,7 +357,8 @@ EOO
     $Wallet::Config::KEYTAB_PRINCIPAL = contents ('t/data/test.principal');
     undef $Wallet::Config::KEYTAB_REALM;
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     is ($object, undef, ' and another');
     is ($@, "keytab object implementation not configured\n",
@@ -356,14 +366,16 @@ EOO
     $Wallet::Config::KEYTAB_REALM = contents ('t/data/test.realm');
     undef $Wallet::Config::KEYTAB_KRBTYPE;
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     is ($object, undef, ' and another');
     is ($@, "keytab object implementation not configured\n",
         ' with the right error');
     $Wallet::Config::KEYTAB_KRBTYPE = 'Active Directory';
     $object = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     is ($object, undef, ' and one set to an invalid value');
     is ($@, "unknown KEYTAB_KRBTYPE setting: Active Directory\n",
@@ -374,7 +386,7 @@ EOO
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
 # can't find remctld.
 SKIP: {
-    skip 'no keytab configuration', 27 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 31 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -387,27 +399,29 @@ SKIP: {
 
     # Create the objects for testing and set the unchanging flag.
     my $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     ok (defined ($one), 'Creating wallet/one succeeds');
     is ($one->flag_set ('unchanging', @trace), 1, ' and setting unchanging');
     my $two = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/two', $dbh, @trace);
+        Wallet::Object::Keytab->create ('keytab', 'wallet/two', $schema,
+                                        @trace);
       };
     ok (defined ($two), 'Creating wallet/two succeeds');
     is ($two->flag_set ('unchanging', @trace), 1, ' and setting unchanging');
 
     # Finally we can test.  First the MIT Kerberos tests.
   SKIP: {
-        skip 'skipping MIT unchanging tests for Heimdal', 12
+        skip 'skipping MIT unchanging tests for Heimdal', 16
             if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'heimdal');
 
         # We need remctld and Net::Remctl.
         my @path = (split (':', $ENV{PATH}), '/usr/local/sbin', '/usr/sbin');
         my ($remctld) = grep { -x $_ } map { "$_/remctld" } @path;
-        skip 'remctld not found', 12 unless $remctld;
+        skip 'remctld not found', 16 unless $remctld;
         eval { require Net::Remctl };
-        skip 'Net::Remctl not available', 12 if $@;
+        skip 'Net::Remctl not available', 16 if $@;
 
         # Now spawn our remctld server and get a ticket cache.
         remctld_spawn ($remctld, $principal, 't/data/test.keytab',
@@ -441,7 +455,7 @@ SKIP: {
             ' and we get the same thing the second time');
         is ($one->flag_clear ('unchanging', @trace), 1,
             'Clearing the unchanging flag works');
-        my $data = $object->get (@trace);
+        my $data = $one->get (@trace);
         ok (defined ($data), ' and getting the keytab works');
         ok (keytab_valid ($data, 'wallet/one'), ' and the keytab is valid');
         is ($two->get (@trace), undef, 'Get for wallet/two does not work');
@@ -451,6 +465,7 @@ SKIP: {
         is ($one->destroy (@trace), 1, 'Destroying wallet/one works');
         is ($two->destroy (@trace), 1, ' as does destroying wallet/two');
         remctld_stop;
+        unlink 'krb5cc_good';
     }
 
     # Now Heimdal.  Since the keytab contains timestamps, before testing for
@@ -506,7 +521,8 @@ SKIP: {
     # Test setting synchronization attributes, which can also be done without
     # configuration.
     my $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     ok (defined ($one), 'Creating wallet/one succeeds');
     my $expected = <<"EOO";
@@ -583,7 +599,8 @@ SKIP: {
     # Create an object for testing and determine the enctypes we have to work
     # with.
     my $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     if (defined ($one)) {
         ok (1, 'Creating wallet/one succeeds');
@@ -729,7 +746,8 @@ EOO
         'Setting a single enctype works');
     is ($one->destroy (@trace), 1, ' and destroying the object works');
     $one = eval {
-        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $dbh, @trace)
+        Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
+                                        @trace)
       };
     ok (defined ($one), ' as does recreating it');
     @values = $one->attr ('enctypes');

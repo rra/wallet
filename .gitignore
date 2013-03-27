@@ -9,6 +9,7 @@
 /config.log
 /config.status
 /configure
+/perl/MYMETA.yml
 /perl/Makefile.PL
 /perl/Makefile.old
 /perl/blib/
@@ -21,11 +22,9 @@
 /tests/client/full-t
 /tests/client/prompt-t
 /tests/client/rekey-t
-/tests/data/.placeholder
-/tests/data/test.keytab
-/tests/data/test.password
-/tests/data/test.principal
-/tests/data/test.krbtype
+/tests/config/keytab
+/tests/config/password
+/tests/config/principal
 /tests/portable/asprintf-t
 /tests/portable/mkstemp-t
 /tests/portable/setenv-t
@@ -33,7 +32,6 @@
 /tests/portable/strlcat-t
 /tests/portable/strlcpy-t
 /tests/runtests
-/tests/util/concat-t
 /tests/util/messages-krb5-t
 /tests/util/messages-t
 /tests/util/xmalloc

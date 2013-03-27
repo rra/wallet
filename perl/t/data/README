@@ -58,3 +58,13 @@ also need to be configured in your local krb.conf (but not krb.realms).
 The test process will create the principals wallet.one and wallet.two and
 on success will clean up after itself.  If the test fails, they may be
 left behind in the AFS kaserver.
+
+-----
+
+Copyright 2007, 2009, 2013
+    The Board of Trustees of the Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.

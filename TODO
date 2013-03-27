@@ -2,206 +2,241 @@
 
 Client:
 
- * Handle duplicate kvnos in a newly returned keytab and an existing
-   keytab (such as when downloading an unchanging keytab and merging it
-   into an existing one) in some reasonable fashion.
+ * WALLET-5: Handle duplicate kvnos in a newly returned keytab and an
+   existing keytab (such as when downloading an unchanging keytab and
+   merging it into an existing one) in some reasonable fashion.
 
- * Support removing old kvnos from a merged keytab (similar to kadmin
-   ktremove old).
+ * WALLET-6: Support removing old kvnos from a merged keytab (similar to
+   kadmin ktremove old).
 
- * When reading configuration from krb5.conf, we should first try to
-   determine our principal from any existing K5 ticket cache (after
-   obtaining tickets if -u was given) and extract the realm from that
-   principal, using it as the default realm when reading configuration
-   information.
+ * WALLET-7: When reading configuration from krb5.conf, we should first
+   try to determine our principal from any existing Kerberos ticket cache
+   (after obtaining tickets if -u was given) and extract the realm from
+   that principal, using it as the default realm when reading
+   configuration information.
 
- * Add readline support to the wallet client to make it easier to issue
-   multiple commands.
+ * WALLET-8: Add readline support to the wallet client to make it easier
+   to issue multiple commands.
 
- * Support authenticating with a keytab.
+ * WALLET-9: Support authenticating with a keytab.
 
- * Allow store data to contain nuls.  Requires rewriting the command
-   processing for store to use iovecs.
+ * WALLET-10: When obtaining tickets in the wallet client with -u,
+   directly obtain the service ticket we're going to use for remctl.
 
- * When obtaining tickets in the wallet client with -u, should we get a
-   TGT as we do now or just directly obtain the service ticket we're going
-   to use for remctl?
+ * WALLET-11: Provide a way to refresh a file object if and only if what's
+   stored on the server is different than what's on disk.  This will
+   require server support as well for returning the checksum of a file.
 
 Server Interface:
 
- * Provide a way to get history for deleted objects and ACLs.
+ * WALLET-13: Provide a way to get history for deleted objects and ACLs.
 
- * Provide an interface to mass-change all instances of one ACL to another.
+ * WALLET-14: Provide an interface to mass-change all instances of one ACL
+   to another.
 
- * Add help functions to wallet-backend, wallet-report, and wallet-admin
-   listing the commands.
+ * WALLET-15: Add help functions to wallet-backend, wallet-report, and
+   wallet-admin listing the commands.
 
- * Catch exceptions on object creation in wallet-backend so that we can
-   log those as well.
+ * WALLET-16: Catch exceptions on object creation in wallet-backend so
+   that we can log those as well.
 
- * Provide a way to list all objects for which the connecting user has
-   ACLs.
+ * WALLET-17: Provide a way to list all objects for which the connecting
+   user has ACLs.
 
- * Support limiting returned history information by timestamp.
+ * WALLET-18: Support limiting returned history information by timestamp.
 
- * Add a comment field for objects that can be set by the owner.
+ * WALLET-19: Provide a REST implementation of the wallet server.
 
- * Provide a REST implementation of the wallet server.
+ * WALLET-20: Provide a CGI implementation of the wallet server.
 
- * Provide a CGI implementation of the wallet server.
+ * WALLET-21: Support setting flags and attributes on autocreate.  In
+   general, work out a Wallet::Object::Template Perl object that I can
+   return that specifies things other than just the ACL.
 
- * Support setting flags and attributes on autocreate.  In general, work
-   out a Wallet::Object::Template Perl object that I can return that
-   specifies things other than just the ACL.
+ * WALLET-22: Remove the hard-coded ADMIN ACL in the server with something
+   more configurable, perhaps a global ACL table or something.
 
- * Remove the hard-coded ADMIN ACL in the server with something more
-   configurable, perhaps a global ACL table or something.
+ * WALLET-63: Support leap-of-faith keying of systems by registering an
+   object for one-time download (ideally from a specific IP address) and
+   then allowing that object to be downloaded anonymously from that IP.
+   Relies on support for Kerberos anonymous authentication.
+
+ * WALLET-64: Split "get" and "update" in semantics, and only do keytab
+   rekeying on update.  "get" would not be permitted unless the keytab was
+   flagged as unchanging, and update would still change even an unchanging
+   keytab (maybe).  Or, alternately, maybe we allow get of any keytab?
+   Requires more thought.
 
 ACLs:
 
- * Error messages from ACL operations should refer to the ACLs by name
-   instead of by ID.
+ * WALLET-23: Error messages from ACL operations should refer to the ACLs
+   by name instead of by ID.
 
- * Write the LDAP entitlement ACL verifier.
+ * WALLET-24: Write the PTS ACL verifier.
 
- * Write the PTS ACL verifier.
+ * WALLET-25: Rename Wallet::ACL::* to Wallet::Verifier::*.  Add
+   Wallet::ACL as a generic interface with Wallet::ACL::Database and
+   Wallet::ACL::List implementations (or some similar name) so that we can
+   create and check an ACL without having to write it into the database.
+   Redo default ACL creation using that functionality.
 
- * Rename Wallet::ACL::* to Wallet::Verifier::*.  Add Wallet::ACL as a
-   generic interface with Wallet::ACL::Database and Wallet::ACL::List
-   implementations (or some similar name) so that we can create and check
-   an ACL without having to write it into the database.  Redo default ACL
-   creation using that functionality.
+ * WALLET-26: Pass a reference to the object for which the ACL is
+   interpreted to the ACL API so that ACL APIs can make more complex
+   decisions.
 
- * Pass a reference to the object for which the ACL is interpreted to the
-   ACL API so that ACL APIs can make more complex decisions.
+ * WALLET-27: A group-in-groups ACL schema.
 
- * Support for pattern matching in ACLs.
+ * WALLET-28: Provide an API for verifiers to syntax-check the values
+   before an ACL is set and implement syntax checking for the krb5 and
+   ldap-attr verifiers.
 
- * A group-in-groups ACL schema.
-
- * Provide an API for verifiers to syntax-check the values before an ACL
-   is set and implement syntax checking for the Krb5 verifier.
-
- * Investigate how best to support client authentication using anonymous
-   PKINIT for things like initial system keying.
+ * WALLET-29: Investigate how best to support client authentication using
+   anonymous PKINIT for things like initial system keying.
 
 Database:
 
- * Fix case-insensitivity bug in unique keys with MySQL for objects.
+ * WALLET-30: Fix case-insensitivity bug in unique keys with MySQL for
+   objects.
 
- * Add the database schema version to a global table so that we can use it
-   to support schema upgrades in the future.
-
- * On upgrades, support adding new object types and ACL verifiers to the
-   class tables.
+ * WALLET-31: On upgrades, support adding new object types and ACL
+   verifiers to the class tables.
 
 Objects:
 
- * Check whether we can just drop the realm restriction on keytabs and
-   allow the name to contain the realm if the Kerberos type is Heimdal.
+ * WALLET-32: Check whether we can just drop the realm restriction on
+   keytabs and allow the name to contain the realm if the Kerberos type is
+   Heimdal.
 
- * Write a WebAuth keyring object store.  It should support attributes
-   saying how long to keep old keys and how far in advance to create new
-   keys and update the keyring as needed on object download.
+ * WALLET-4: Write a WebAuth keyring object store.  It should support
+   attributes saying how long to keep old keys and how far in advance to
+   create new keys and update the keyring as needed on object download.
 
- * Use the Perl Authen::Krb5::Admin module instead of rolling our own
-   kadmin code with Expect now that MIT Kerberos has made the kadmin API
-   public.
+ * WALLET-33: Use the Perl Authen::Krb5::Admin module instead of rolling
+   our own kadmin code with Expect now that MIT Kerberos has made the
+   kadmin API public.
 
- * Implement an ssh keypair wallet object.  The server can run ssh-keygen
-   to generate a public/private key pair and return both to the client,
-   which would split them apart.  Used primarily for host keys.  May need
-   a side table to store key types, or a naming convention.
+ * WALLET-34: Implement an ssh keypair wallet object.  The server can run
+   ssh-keygen to generate a public/private key pair and return both to the
+   client, which would split them apart.  Used primarily for host keys.
+   May need a side table to store key types, or a naming convention.
 
- * Implement an X.509 certificate object.  I expect this would store the
-   public and private key as a single file in the same format that Apache
-   can read for combined public and private keys.  There were requests for
-   storing the CSR, but I don't see why you'd want to do that.  Start with
-   store support.  The file code is mostly sufficient here, but it would
-   be nice to automatically support object expiration based on the
-   expiration time for the certificate.
+ * WALLET-35: Implement an X.509 certificate object.  I expect this would
+   store the public and private key as a single file in the same format
+   that Apache can read for combined public and private keys.  There were
+   requests for storing the CSR, but I don't see why you'd want to do
+   that.  Start with store support.  The file code is mostly sufficient
+   here, but it would be nice to automatically support object expiration
+   based on the expiration time for the certificate.
 
- * Implement an X.509 CA so that you can get certificate objects without
-   storing them first.  Need to resolve naming conventions if you want to
-   run multiple CAs on the same wallet server (but why?).  Should this be
-   a different type than stored certificates?
+ * WALLET-36: Implement an X.509 CA so that you can get certificate
+   objects without storing them first.  Need to resolve naming conventions
+   if you want to run multiple CAs on the same wallet server (but why?).
+   Should this be a different type than stored certificates?
+
+ * WALLET-37: Support returning the checksum of a file object stored in
+   wallet so that one can determine whether the version stored on disk is
+   identical.
+
+ * WALLET-60: Implement new password wallet object, which is like file
+   except that it generates a random, strong password when retrieved the
+   first time without being stored.
+
+ * WALLET-61: Support interrogating objects to find all host-based objects
+   for a particular host, allowing cleanup of all of those host's objects
+   after retiring the host.
 
 Reports:
 
- * Add audit for references to unknown ACLs, possibly introduced by
-   previous versions before ACL deletion was checked with database
-   backends that don't do referential integrity.
+ * WALLET-38: Add audit for references to unknown ACLs, possibly
+   introduced by previous versions before ACL deletion was checked with
+   database backends that don't do referential integrity.
 
- * Add report for all objects that have never been stored.
+ * WALLET-39: Add report for all objects that have never been stored.
 
- * Add report of all ACLs with identical contents.
+ * WALLET-40: For objects tied to hostnames, report on objects referring
+   to hosts which do not exist.  For the initial pass, this is probably
+   only keytab objects with names containing a slash where the part after
+   the slash looks like a hostname.  This may need some configuration
+   help.
 
- * For objects tied to hostnames, report on objects referring to hosts
-   which do not exist.  For the initial pass, this is probably only keytab
-   objects with names containing a slash where the part after the slash
-   looks like a hostname.  This may need some configuration help.
+ * WALLET-41: Make contrib/wallet-summary generic and include it in
+   wallet-report, with additional configuration in Wallet::Config.
+   Enhance it to report on any sort of object, not just on keytabs, and to
+   give numbers on downloaded versus not downloaded objects.
 
- * Make contrib/wallet-summary generic and include it in wallet-report,
-   with additional configuration in Wallet::Config.  Enhance it to report
-   on any sort of object, not just on keytabs, and to give numbers on
-   downloaded versus not downloaded objects.
+ * WALLET-62: Write a tool to mail the owners of wallet objects, taking
+   the list of objects and the mail message to send as inputs.  This could
+   possibly use the notification service, although a version that sends
+   mail directly would be useful external to Stanford.
 
 Administrative Interface:
 
- * Add a function to wallet-admin to purge expired entries.  Possibly also
-   check expiration before allowing anyone to get or store objects.
+ * WALLET-42: Add a function to wallet-admin to purge expired entries.
+   Possibly also check expiration before allowing anyone to get or store
+   objects.
+
+ * WALLET-3: Add a function or separate script to automate removal of
+   DNS-based objects for which the hosts no longer exist.  Will need to
+   support a site-specific callout to determine whether the host exists.
+
+ * WALLET-66: Database creation appears not to work without the SQL files,
+   but it's supposed to work directly from the classes.  Double-check
+   this.
 
 Documentation:
 
- * Write a conventions document for ACL naming, object naming, and similar
-   issues.
+ * WALLET-43: Write a conventions document for ACL naming, object naming,
+   and similar issues.
 
- * Write a future design and roadmap document to collect notes about how
-   unimplemented features should be handled.
+ * WALLET-44: Write a future design and roadmap document to collect notes
+   about how unimplemented features should be handled.
 
- * Document using the wallet system over something other than remctl.
+ * WALLET-45: Document using the wallet system over something other than
+   remctl.
 
- * Document all diagnostics for all wallet APIs.
+ * WALLET-46: Document all diagnostics for all wallet APIs.
 
 Code Style and Cleanup:
 
- * There is a lot of duplicate code in wallet-backend.  Convert that to
-   use some sort of data-driven model with argument count and flags so
-   that the method calls can be written only once.  Convert wallet-admin
-   to use the same code.
+ * WALLET-47: There is a lot of duplicate code in wallet-backend.  Convert
+   that to use some sort of data-driven model with argument count and
+   flags so that the method calls can be written only once.  Convert
+   wallet-admin to use the same code.
 
- * There's a lot of code duplication in the dispatch functions in the
-   Wallet::Server class.  Find a way to rewrite that so that the dispatch
-   doesn't duplicate the same code patterns.
+ * WALLET-48: There's a lot of code duplication in the dispatch functions
+   in the Wallet::Server class.  Find a way to rewrite that so that the
+   dispatch doesn't duplicate the same code patterns.
 
- * The wallet-backend and wallet documentation share the COMMANDS section.
-   Work out some means to assemble the documentation without duplicating
-   content.
+ * WALLET-49: The wallet-backend and wallet documentation share the
+   COMMANDS section.  Work out some means to assemble the documentation
+   without duplicating content.
 
- * The Wallet::Config class is very ugly and could use some better
-   internal API to reference the variables in it.
+ * WALLET-50: The Wallet::Config class is very ugly and could use some
+   better internal API to reference the variables in it.
 
- * Use Class::DBI and Class::Trigger to handle the data access layer
-   rather than writing SQL directly, and implement the logging
-   requirements with triggers rather than explicit SQL.  This may also
-   replace Wallet::Schema.
-
- * Consider using Class::Accessor to get rid of the scaffolding code to
-   access object data, and a Wallet::Base class to handle things like the
-   error() method common to many classes.
+ * WALLET-52: Consider using Class::Accessor to get rid of the scaffolding
+   code to access object data, and a Wallet::Base class to handle things
+   like the error() method common to many classes.
 
 Test Suite:
 
- * Add POD coverage testing using Test::POD::Coverage for the server
-   modules.
+ * WALLET-53: The ldap-attr verifier test case is awful and completely
+   specific to people with admin access to the Stanford LDAP tree.  Write
+   a real test.
 
- * Rewrite the client test suite to use Perl and to make better use of
-   shared code so that it can be broken into function components.
+ * WALLET-54: Rename the tests to use a subdirectory organization.
 
- * Refactor the test suite for the wallet backend to try to reduce the
-   duplicated code.
+ * WALLET-55: Add POD coverage testing using Test::POD::Coverage for the
+   server modules.
 
- * Pull common test suite code into a Perl library that can be reused.
+ * WALLET-56: Rewrite the client test suite to use Perl and to make better
+   use of shared code so that it can be broken into function components.
 
- * Write a test suite to scan all wallet code looking for diagnostics that
-   aren't in the documentation and warn about them.
+ * WALLET-57: Refactor the test suite for the wallet backend to try to
+   reduce the duplicated code.
+
+ * WALLET-58: Pull common test suite code into a Perl library that can be
+   reused.
+
+ * WALLET-59: Write a test suite to scan all wallet code looking for
+   diagnostics that aren't in the documentation and warn about them.

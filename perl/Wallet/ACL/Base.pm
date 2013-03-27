@@ -1,7 +1,8 @@
 # Wallet::ACL::Base -- Parent class for wallet ACL verifiers.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2010
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -60,7 +61,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-ACL Allbery
+ACL Allbery verifier verifiers
 
 =head1 NAME
 

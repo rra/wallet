@@ -62,107 +62,202 @@ Object Naming
     it should get its own object type first and to agree on a naming
     convention for that type of thing.
 
-    All file object names start with a short indicator of the responsible
-    group, a dash, and then either the short, unqualified hostname (if
-    they're only used on a single host) or the service name for which that
-    object is used.
+    There are two basic types of file objects: ones that are tied to a
+    particular system, and ones that are not.  For the ones that are tied
+    to a particular system, we use a naming convention very similar to
+    host-based Kerberos principals so that we can set up default ACLs
+    based on the host.  For ones that are not, we require an indication of
+    the repsonsible group in each file object, since the rest of the name
+    can often be ambiguous.
 
-    Then, we use the following naming conventions for different types of
-    objects:
+    File objects are named with two or more slash-separated components
+    (again, similar to Kerberos principals).  The first is the type of
+    file being stored.  The rest vary based on the file type.
 
-    <group>-<server>-htpasswd-<app>
+    We previously instead used <group>-<server>-<type>, but that caused
+    various problems in parsing because groups, servers, and types all
+    also contained dashes.  Slashes are much less ambiguous.  This
+    document shows both the new and the old form.
+
+    Host-based:
+
+    htpasswd/<server>/<app>
 
         An .htpasswd file for HTTP Basic Authentication for special-case
-        web configurations that require such a thing.
+        web configurations that require such a thing.  <server> is the
+        server (or group of servers) on which the file will be stored
 
-    <group>-<server>-pam-<app>
+        (OLD: <group>-<server>-htpasswd-<app>)
 
-        A PAM configuration for <app> that requires secure information,
-        such as a password for pam_msyql.  <server> may be either a
-        specific server name or a general class of servers (production and
-        test) that uses that PAM configuration.
+    password-ipmi/<server>
 
-    <group>-<server>-password-<account>
+        Stores the password for remote IPMI/iLO/ILOM access to the
+        system.
 
-        A password for some account that isn't covered by one of the more
-        specific naming conventions, such as a password used to connect to
-        a remote ssh service.
+        (OLD: <group>-<server>-password-ipmi)
 
-    <group>-<server>-ssh-<type>
+    password-root/<server>
+
+        Stores the root password for a given server.
+
+        (OLD: <group>-<server>-password-root)
+
+    password-tivoli/<server>
+
+        Stores the Tivoli TSM backup password for a given server.  See
+        also tivoli-key/<server>, but depending on what one wants to do
+        with the password, this may be a better representation.
+
+        (OLD: <group>-<server>-password-tivoli)
+
+    ssh-<type>/<server>
 
         Stores the SSH private key for <server>.  For shared private keys
         across a pool, <server> should be the name of the pool, or
         possibly some unambiguous name for the set of systems.  <type> is
-        the type of SSH key (RSA or DSA).
+        the type of SSH key (rsa or dsa, in lowercase).
 
-    <group>-<server>-ssl-key
+        (OLD: <group>-<server>-ssh-<type>)
 
-        Stores the SSL X.509 certificate private key for <server>.  Use
-        unix-star-ssl-key for the key for the *.stanford.edu certificate.
-        The public certificate we manage external to wallet since it
-        doesn't need to be protected or encrypted.
+    ssl-key/<server>[/<application>]
 
-    <group>-<server>-tivoli-key
+        Stores the SSL X.509 certificate private key for <server>.  Used
+        for Apache, Postfix, LDAP, and similar cases where the certificate
+        should match the host name.  The public certificate we manage
+        external to wallet since it doesn't need to be protected or
+        encrypted.  <server> here should be the CN of the certificate,
+        which may be different than the hostname (for hosts with multiple
+        virtual hosts, for example, or because the certificate is for a
+        load-balanced name).
+
+        An optional <application> component may be added if there are
+        multiple certificates with the same host name as the CN but with
+        different private keys.  (This may happen if, for example,
+        multiple services are running on the same FQDN but should have
+        isolated security contexts.)
+
+        Use ssl-key/starYYYY.stanford.edu for the key for the
+        *.stanford.edu certificate, where YYYY is the expiration year.
+
+        (OLD: <group>-<server>-ssl-key)
+
+    ssl-keypair/<server>[/<application>]
+
+        Same as ssl-key except that the signed certificate is included in
+        the same file as the private key.  This is used for convenience
+        with some applications that want to have both the signed
+        certificate and private key in the same file.
+
+        The meaning of <server> and <application> are the same as for
+        ssl-key.
+
+    tivoli-key/<server>
 
         The Tivoli password or backup encryption key for this server.
         Both the password and the encryption key, if used, are stored in
         the same file, so both are stored together.  This file is found at
         /etc/adsm/TSM.PWD.
 
-    <group>-<service>-config-<name>
+        (OLD: <group>-<server>-tivoli-key)
+
+    In all cases, <server> should be a fully-qualified domain name in the
+    new naming convention.  In the old naming convention, .stanford.edu
+    was omitted, but this adds unnecessary ambiguity.
+
+    Service-based:
+
+    config/<group>/<service>/<name>
 
         A configuration file named <name> that contains some secure
         information, such as a database password.  Ideally, the secure
         data should be stored in a separate file and assembled into the
-        configuration file, but that isn't always the path of least
-        resistance.  Only use this naming convention if there is not a
-        more specific one below.
+        configuration file.  This is reserved for configuration files that
+        hold nothing but authentication information.  Only use this naming
+        convention if there is not a more specific one below.
 
-    <group>-<service>-db-<name>
+        (OLD: <group>-<service>-config-<name>)
 
-        Stores the database password for the database named <name>.  This
-        may be a file containing only the database password or a Perl
-        AppConfig configuration file with the database connection
-        information including the password.
+    db/<group>/<service>/<database>
 
-    <group>-<service>-gpg-key
+        Stores the database password for <service> access to the database
+        named <database>.  This may be a file containing only the database
+        password or a Perl AppConfig configuration file with the database
+        connection information including the password.
+
+        (OLD: <group>-<service>-db-<database>)
+
+    gpg-key/<group>/<service>
 
         Stores the GnuPG private key for a service that needs to do GnuPG
         signing or encryption.
 
-    <group>-<service>-properties
+        (OLD: <group>-<service>-gpg-key)
+
+    password/<group>/<service>/<name>
+
+        A password for some account, service, keystore, or something
+        similar that is not covered by one of the more specific naming
+        conventions, such as a password used to connect to a remote ssh
+        service.  <service> is the service that uses this password and
+        <name> is the thing the password is used for (such as the remote
+        account name).  This may be a file containing only the password,
+        or a configuration file of some type that includes a field name
+        and the password.  (However, use the db type described above for
+        database passwords.)
+
+        (OLD: <group>-<server>-password-<account>)
+
+    properties/<group>/<service>[/<name>]
 
         The properties file for a Java application that contains some
         secure data (such as SSL key passwords or database passwords).
-        Ideally the secure data should be stored in separate files, but
-        sometimes it's too hard to separate out chunks of a properties
-        file.
+        This should only be used for a properties file that contains only
+        the password and closely-related information, such as database
+        connection information.  For anything else, switch to storing the
+        password separately using the password type above and building the
+        properties file dynamically from the password and a template.  The
+        optional <name> component is for when there are multiple files
+        stored for a particular service.
 
-    <group>-<service>-puppetconf
+        (OLD: <group>-<service>-properties)
 
-        A puppet.conf configuration file for Puppet that contains some
-        secure data (such as SSL key passwords or database passwords).
-        Ideally the secure data should be stored in separate files, but
-        Puppet likes to use a single configuration file.
+    ssl-keystore/<group>/<service>[/<name>]
 
-    <group>-<service>-shibboleth
+        The Java keystore file (containing both public and private key)
+        used by a service for authentication to other services.  If a
+        given service uses more than one, use the optional <name>
+        component to distinguish.
 
-        The shibboleth.xml configuration file for a service, when it
-        contains some secure data (such as database passwords for shared
-        sessions).  Ideally, the secure data should be stored in separate
-        files and assembled into a shibboleth.xml file, but that isn't
-        always the path of least resistance.
+        (OLD: <group>-<service>-ssl-keystore)
 
-    <group>-<service>-ssl-pkcs12
+    ssl-pkcs12/<group>/<service>[/<name>]
 
         The PKCS#12 file (containing both public and private key) used by
         a service for authentication to other services.  If a given
-        service uses more than one, include the purpose in the <service>
-        part of the name.
+        service uses more than one, use the optional <name> component to
+        distinguish.
 
-    In all cases, <server> is the server (or group of servers) on which
-    the file will be stored, not the server expecting that key material
-    for authentication.
+        (OLD: <group>-<service>-ssl-pkcs12)
+
+    If there are separate objects for different tiers, <service> should be
+    left unqualified for production and be qualified with a dash and the
+    tier for non-production.  For example, ssl-keystore/idg/accounts would
+    be the production keystore for the Accounts application, and
+    ssl-keystore/idg/accounts-uat would be the keystore for the UAT
+    version.
+
+    We previously stored a wider variety of configuration files before
+    developing a way to dynamically substitute the password into a larger
+    configuration file during deployment.  The following file types are
+    obsolete and should no longer be used; instead, the configuration file
+    should be constructed by substituting a password (usually stored as a
+    password or db type) into the configuration file.
+
+    Obsolete:
+
+    <group>-<server>-pam-<app>
+    <group>-<service>-puppetconf
+    <group>-<service>-shibboleth
 
 ACL Naming
 
@@ -222,3 +317,13 @@ ACL Naming
             krb5 host/example-dev.stanford.edu@stanford.edu
 
         Such an ACL would normally be named service/example.
+
+License
+
+    Copyright 2008, 2009, 2010, 2011, 2013
+        The Board of Trustees of the Leland Stanford Junior University
+
+    Copying and distribution of this file, with or without modification,
+    are permitted in any medium without royalty provided the copyright
+    notice and this notice are preserved.  This file is offered as-is,
+    without any warranty.

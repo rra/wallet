@@ -1,8 +1,8 @@
 # Automake makefile for wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008, 2010
-#     Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008, 2010, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -10,43 +10,68 @@
 # and are not generated or touched by configure.  They're listed here to be
 # added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			   \
-	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/Krb5/Regex.pm		   \
-	perl/Wallet/ACL/NetDB.pm perl/Wallet/ACL/NetDB/Root.pm		   \
-	perl/Wallet/Admin.pm perl/Wallet/Config.pm perl/Wallet/Database.pm \
-	perl/Wallet/Kadmin.pm perl/Wallet/Kadmin/Heimdal.pm		   \
-	perl/Wallet/Kadmin/MIT.pm perl/Wallet/Object/Base.pm		   \
-	perl/Wallet/Object/File.pm perl/Wallet/Object/Keytab.pm		   \
-	perl/Wallet/Report.pm perl/Wallet/Schema.pm perl/Wallet/Server.pm  \
-	perl/t/acl.t perl/t/admin.t perl/t/config.t perl/t/data/README	   \
-	perl/t/data/keytab-fake perl/t/data/keytab.conf			   \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/file.t	   \
-	perl/t/init.t perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm   \
-	perl/t/object.t perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t \
-	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		   \
-	perl/t/verifier.t
+PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
+	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/Krb5/Regex.pm		    \
+	perl/Wallet/ACL/LDAP/Attribute.pm perl/Wallet/ACL/NetDB.pm	    \
+	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm		    \
+	perl/Wallet/Config.pm perl/Wallet/Database.pm perl/Wallet/Kadmin.pm \
+	perl/Wallet/Kadmin/Heimdal.pm perl/Wallet/Kadmin/MIT.pm		    \
+	perl/Wallet/Object/Base.pm perl/Wallet/Object/File.pm		    \
+	perl/Wallet/Object/Keytab.pm perl/Wallet/Object/WAKeyring.pm	    \
+	perl/Wallet/Policy/Stanford.pm perl/Wallet/Report.pm		    \
+	perl/Wallet/Schema.pm perl/Wallet/Server.pm			    \
+	perl/Wallet/Schema/Result/Acl.pm				    \
+	perl/Wallet/Schema/Result/AclEntry.pm				    \
+	perl/Wallet/Schema/Result/AclHistory.pm				    \
+	perl/Wallet/Schema/Result/AclScheme.pm				    \
+	perl/Wallet/Schema/Result/Enctype.pm				    \
+	perl/Wallet/Schema/Result/Flag.pm				    \
+	perl/Wallet/Schema/Result/KeytabEnctype.pm			    \
+	perl/Wallet/Schema/Result/KeytabSync.pm				    \
+	perl/Wallet/Schema/Result/Object.pm				    \
+	perl/Wallet/Schema/Result/ObjectHistory.pm			    \
+	perl/Wallet/Schema/Result/SyncTarget.pm				    \
+	perl/Wallet/Schema/Result/Type.pm				    \
+	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			    \
+	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			    \
+	perl/sql/Wallet-Schema-0.07-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.07-SQLite.sql				    \
+	perl/sql/Wallet-Schema-0.08-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.08-SQLite.sql perl/t/acl.t perl/t/admin.t  \
+	perl/t/config.t perl/t/data/README perl/t/data/keytab-fake	    \
+	perl/t/data/keytab.conf perl/t/data/netdb.conf			    \
+	perl/t/data/netdb-fake perl/t/file.t perl/t/init.t perl/t/kadmin.t  \
+	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t		    \
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t perl/t/server.t  \
+	perl/t/stanford-naming.t perl/t/verifier-ldap-attr.t		    \
+	perl/t/verifier-netdb.t perl/t/verifier.t perl/t/wa-keyring.t
 
-AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		     \
-	client/wallet-rekey.pod config/allow-extract config/keytab	     \
-	config/keytab.acl config/wallet config/wallet-report.acl docs/design \
-	contrib/README contrib/convert-srvtab-db contrib/used-principals     \
-	contrib/wallet-contacts contrib/wallet-summary			     \
-	contrib/wallet-summary.8 contrib/wallet-unknown-hosts		     \
-	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	     \
-	docs/setup docs/stanford-naming examples/stanford.conf tests/TESTS   \
-	tests/data/README tests/data/allow-extract tests/data/basic.conf     \
-	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	     \
-	tests/data/fake-kadmin tests/data/fake-keytab			     \
-	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		     \
-	tests/data/fake-keytab-merge tests/data/fake-keytab-old		     \
-	tests/data/fake-keytab-partial tests/data/fake-keytab-partial-result \
-	tests/data/fake-keytab-rekey tests/data/fake-keytab-unknown	     \
-	tests/data/fake-srvtab tests/data/full.conf tests/data/wallet.conf   \
-	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	     \
-	tests/server/backend-t tests/server/keytab-t tests/server/report-t   \
-	tests/tap/kerberos.sh tests/tap/libtap.sh tests/tap/remctl.sh	     \
+EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
+	client/wallet-rekey.pod config/allow-extract config/keytab	   \
+	config/keytab.acl config/wallet config/wallet-report.acl	   \
+	docs/design contrib/README contrib/convert-srvtab-db		   \
+	contrib/used-principals contrib/wallet-contacts			   \
+	contrib/wallet-summary contrib/wallet-summary.8			   \
+	contrib/wallet-unknown-hosts contrib/wallet-unknown-hosts.8	   \
+	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	   \
+	docs/objects-and-schemes docs/setup docs/stanford-naming	   \
+	examples/stanford.conf perl/create-ddl tests/HOWTO tests/TESTS	   \
+	tests/config/README tests/data/allow-extract tests/data/basic.conf \
+	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	   \
+	tests/data/fake-kadmin tests/data/fake-keytab			   \
+	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		   \
+	tests/data/fake-keytab-merge tests/data/fake-keytab-old		   \
+	tests/data/fake-keytab-partial					   \
+	tests/data/fake-keytab-partial-result tests/data/fake-keytab-rekey \
+	tests/data/fake-keytab-unknown tests/data/fake-srvtab		   \
+	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf   \
+	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
+	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
+	tests/tap/kerberos.sh tests/tap/libtap.sh			   \
+	tests/tap/perl/Test/RRA.pm tests/tap/perl/Test/RRA/Automake.pm	   \
+	tests/tap/perl/Test/RRA/Config.pm tests/tap/remctl.sh		   \
 	tests/util/xmalloc-t $(PERL_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
@@ -55,9 +80,9 @@ portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
 	portable/system.h portable/uio.h
 portable_libportable_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 portable_libportable_a_LIBADD = $(LIBOBJS)
-util_libutil_a_SOURCES = util/concat.c util/concat.h util/macros.h	\
-	util/messages-krb5.c util/messages-krb5.h util/messages.c	\
-	util/messages.h util/xmalloc.c util/xmalloc.h
+util_libutil_a_SOURCES = util/macros.h util/messages-krb5.c		    \
+	util/messages-krb5.h util/messages.c util/messages.h util/xmalloc.c \
+	util/xmalloc.h
 util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
 noinst_LIBRARIES += client/libwallet.a
@@ -80,24 +105,37 @@ client_wallet_rekey_LDADD = client/libwallet.a util/libutil.a \
 dist_man_MANS = client/wallet.1 client/wallet-rekey.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
 
+# Install the SQL files that are used by the server code to do upgrades.
+dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
+	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql		\
+	perl/sql/Wallet-Schema-0.07-MySQL.sql			\
+	perl/sql/Wallet-Schema-0.07-SQLite.sql			\
+	perl/sql/Wallet-Schema-0.08-MySQL.sql			\
+	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql		\
+	perl/sql/Wallet-Schema-0.08-SQLite.sql
+
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
 # without optimization turned on.  Desirable warnings that can't be turned
 # on due to other problems:
 #
 #     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
 #
-# Last checked against gcc 4.4 (2010-08-15).
-WARNINGS = -g -O -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self \
-	-Wswitch-enum -Wdeclaration-after-statement -Wshadow -Wpointer-arith \
-	-Wbad-function-cast -Wwrite-strings -Wstrict-prototypes \
-	-Wmissing-prototypes -Wnested-externs -Werror
+# Last checked against gcc 4.6.1 (2011-05-04).  -D_FORTIFY_SOURCE=2 enables
+# warn_unused_result attribute markings on glibc functions on Linux, which
+# catches a few more issues.
+WARNINGS = -g -O -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wendif-labels	    \
+	-Wformat=2 -Winit-self -Wswitch-enum -Wdeclaration-after-statement  \
+	-Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align	    \
+	-Wwrite-strings -Wjump-misses-init -Wlogical-op			    \
+	-Wstrict-prototypes -Wmissing-prototypes -Wredundant-decls	    \
+	-Wnested-externs -Werror
 
 warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)'
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # Remove some additional files.
-DISTCLEANFILES = perl/Makefile tests/data/.placeholder
+DISTCLEANFILES = perl/Makefile
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 	build-aux/depcomp build-aux/install-sh build-aux/missing	     \
 	client/wallet.1 config.h.in config.h.in~ configure		     \
@@ -111,22 +149,24 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 all-local: perl/blib/lib/Wallet/Config.pm
 
 perl/blib/lib/Wallet/Config.pm:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5 \
-		perl/Wallet/ACL/NetDB perl/Wallet/Kadmin perl/Wallet/Object \
-		perl/t perl/t/data perl/t/lib 2>/dev/null || true ; \
-	    for f in $(PERL_FILES) ; do \
-		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
-	    done \
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		     \
+	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5	     \
+		perl/Wallet/ACL/LDAP perl/Wallet/ACL/NetDB		     \
+		perl/Wallet/Kadmin perl/Wallet/Object perl/Wallet/Policy     \
+		perl/Wallet/Schema perl/Wallet/Schema/Result perl/sql perl/t \
+		perl/t/data perl/t/lib 2>/dev/null || true ;		     \
+	    for f in $(PERL_FILES) ; do					     \
+		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			     \
+	    done							     \
 	fi
 	cd perl && perl Makefile.PL
 	cd perl && $(MAKE)
 
 install-data-local:
-	if [ x"$(DESTDIR)" != x ] ; then \
-	    cd perl && $(MAKE) install DESTDIR=$(DESTDIR)/ ; \
-	else \
-	    cd perl && $(MAKE) install ; \
+	if [ x"$(DESTDIR)" != x ] ; then			\
+	    cd perl && $(MAKE) install DESTDIR=$(DESTDIR)/ ;	\
+	else							\
+	    cd perl && $(MAKE) install ;			\
 	fi
 
 # ExtUtils::MakeMaker really likes moving the Makefile aside.
@@ -136,23 +176,24 @@ clean-local:
 
 # Remove the files that we copy over if and only if builddir != srcdir.
 distclean-local:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    rm -f $(PERL_FILES) ; \
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then	\
+	    rm -f $(PERL_FILES) ;				\
 	fi
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/portable/asprintf-t		    \
-	tests/portable/mkstemp-t tests/portable/setenv-t		    \
-	tests/portable/snprintf-t tests/portable/strlcat-t		    \
-	tests/portable/strlcpy-t tests/util/concat-t			    \
-	tests/util/messages-krb5-t tests/util/messages-t tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/portable/asprintf-t	\
+	tests/portable/mkstemp-t tests/portable/setenv-t	\
+	tests/portable/snprintf-t tests/portable/strlcat-t	\
+	tests/portable/strlcpy-t tests/util/messages-krb5-t	\
+	tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
-	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/messages.c	\
-	tests/tap/messages.h tests/tap/process.c tests/tap/process.h
+	tests/tap/kerberos.c tests/tap/kerberos.h tests/tap/macros.h	\
+	tests/tap/messages.c tests/tap/messages.h tests/tap/process.c	\
+	tests/tap/process.h tests/tap/string.c tests/tap/string.h
 
 # All of the test programs.
 tests_portable_asprintf_t_SOURCES = tests/portable/asprintf-t.c \
@@ -173,8 +214,6 @@ tests_portable_strlcat_t_LDADD = tests/tap/libtap.a portable/libportable.a
 tests_portable_strlcpy_t_SOURCES = tests/portable/strlcpy-t.c \
 	tests/portable/strlcpy.c
 tests_portable_strlcpy_t_LDADD = tests/tap/libtap.a portable/libportable.a
-tests_util_concat_t_LDADD = tests/tap/libtap.a util/libutil.a \
-	portable/libportable.a
 tests_util_messages_krb5_t_CPPFLAGS = $(KRB5_CPPFLAGS)
 tests_util_messages_krb5_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_util_messages_krb5_t_LDADD = tests/tap/libtap.a util/libutil.a \
