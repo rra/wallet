@@ -18,12 +18,24 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			   \
 	perl/Wallet/Kadmin/MIT.pm perl/Wallet/Object/Base.pm		   \
 	perl/Wallet/Object/File.pm perl/Wallet/Object/Keytab.pm		   \
 	perl/Wallet/Report.pm perl/Wallet/Schema.pm perl/Wallet/Server.pm  \
-	perl/t/acl.t perl/t/admin.t perl/t/config.t perl/t/data/README	   \
-	perl/t/data/keytab-fake perl/t/data/keytab.conf			   \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/file.t	   \
-	perl/t/init.t perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm   \
-	perl/t/object.t perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t \
-	perl/t/server.t perl/t/verifier-netdb.t perl/t/verifier.t
+	perl/Wallet/Schema/Result/Acl.pm				   \
+	perl/Wallet/Schema/Result/AclEntry.pm				   \
+	perl/Wallet/Schema/Result/AclHistory.pm				   \
+	perl/Wallet/Schema/Result/AclScheme.pm				   \
+	perl/Wallet/Schema/Result/Enctype.pm				   \
+	perl/Wallet/Schema/Result/Flag.pm				   \
+	perl/Wallet/Schema/Result/KeytabEnctype.pm			   \
+	perl/Wallet/Schema/Result/KeytabSync.pm				   \
+	perl/Wallet/Schema/Result/Object.pm				   \
+	perl/Wallet/Schema/Result/ObjectHistory.pm			   \
+	perl/Wallet/Schema/Result/SyncTarget.pm				   \
+	perl/Wallet/Schema/Result/Type.pm perl/t/acl.t perl/t/admin.t	   \
+	perl/t/config.t perl/t/data/README perl/t/data/keytab-fake	   \
+	perl/t/data/keytab.conf perl/t/data/netdb.conf			   \
+	perl/t/data/netdb-fake perl/t/file.t perl/t/init.t perl/t/kadmin.t \
+	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t		   \
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t perl/t/server.t \
+	perl/t/verifier-netdb.t perl/t/verifier.t
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
@@ -126,22 +138,23 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 all-local: perl/blib/lib/Wallet/Config.pm
 
 perl/blib/lib/Wallet/Config.pm:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5 \
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		    \
+	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5	    \
 		perl/Wallet/ACL/NetDB perl/Wallet/Kadmin perl/Wallet/Object \
-		perl/t perl/t/data perl/t/lib 2>/dev/null || true ; \
-	    for f in $(PERL_FILES) ; do \
-		cp "$(srcdir)/$$f" "$(builddir)/$$f" ; \
-	    done \
+		perl/Wallet/Schema perl/Wallet/Schema/Result perl/t	    \
+		perl/t/data perl/t/lib 2>/dev/null || true ;		    \
+	    for f in $(PERL_FILES) ; do					    \
+		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			    \
+	    done							    \
 	fi
 	cd perl && perl Makefile.PL
 	cd perl && $(MAKE)
 
 install-data-local:
-	if [ x"$(DESTDIR)" != x ] ; then \
-	    cd perl && $(MAKE) install DESTDIR=$(DESTDIR)/ ; \
-	else \
-	    cd perl && $(MAKE) install ; \
+	if [ x"$(DESTDIR)" != x ] ; then			\
+	    cd perl && $(MAKE) install DESTDIR=$(DESTDIR)/ ;	\
+	else							\
+	    cd perl && $(MAKE) install ;			\
 	fi
 
 # ExtUtils::MakeMaker really likes moving the Makefile aside.
@@ -151,8 +164,8 @@ clean-local:
 
 # Remove the files that we copy over if and only if builddir != srcdir.
 distclean-local:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then \
-	    rm -f $(PERL_FILES) ; \
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then	\
+	    rm -f $(PERL_FILES) ;				\
 	fi
 
 # The bits below are for the test suite, not for the main package.
