@@ -7,6 +7,8 @@ wallet (1.0-1) UNRELEASED; urgency=low
     - New ACL type ldap-attr to check whether the caller has an attribute
       in an LDAP directory (needs libauthen-sasl-perl and libnet-ldap-perl
       and only works with GSS-API binds).
+    - New object type wa-keyring to store WebAuth keyrings (needs
+      libwebauth-perl).
     - New acl check command that returns whether the named ACL exists.
     - New comments field for objects and wallet commands to set and
       retrieve it.

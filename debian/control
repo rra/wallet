@@ -4,7 +4,8 @@ Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>= 9), libdatetime-format-sqlite-perl,
  libdbd-sqlite3-perl, libdbi-perl, libdbix-class-perl, libkrb5-dev,
- libremctl-dev, libsql-translator-perl, libtest-pod-perl, perl
+ libremctl-dev, libsql-translator-perl, libtest-pod-perl, libwebauth-perl,
+ perl
 Standards-Version: 3.9.4
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
 Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian
@@ -48,7 +49,8 @@ Depends: ${misc:Depends}, ${perl:Depends},
  libdbix-class-perl, libsql-translator-perl, remctl-server
 Recommends: libdatetime-format-sqlite-perl,
  krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
-Suggests: libauthen-sasl-perl, libnet-ldap-perl, libnet-remctl-perl
+Suggests: libauthen-sasl-perl, libnet-ldap-perl, libnet-remctl-perl,
+ libwebauth-perl
 Description: Kerberos-authenticated secure data management server
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions
