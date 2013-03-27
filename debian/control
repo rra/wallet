@@ -3,7 +3,7 @@ Section: net
 Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>= 9), libdatetime-format-sqlite-perl,
- libdbd-sqlite3-perl, libdbi-perl, libdbx-class-perl, libkrb5-dev,
+ libdbd-sqlite3-perl, libdbi-perl, libdbix-class-perl, libkrb5-dev,
  libremctl-dev, libsql-translator-perl, libtest-pod-perl, perl
 Standards-Version: 3.9.4
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
