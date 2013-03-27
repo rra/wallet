@@ -10,7 +10,8 @@ wallet (1.0-1) UNRELEASED; urgency=low
     - New acl check command that returns whether the named ACL exists.
     - New comments field for objects and wallet commands to set and
       retrieve it.
-  * Switch to xz compression for the upstream and Debian tarballs.
+  * Switch to xz compression for the upstream and Debian tarballs and
+    binary packages.
   * Update debhelper compatibility level to V9.
     - Enable all hardening build flags.
     - Enable parallel builds.
