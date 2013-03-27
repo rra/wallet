@@ -3,7 +3,7 @@
 # Tests for the kadmin object implementation.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009, 2010, 2012
+# Copyright 2009, 2010, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -73,7 +73,7 @@ SKIP: {
 # implementation is configured.  This retests some things that are also tested
 # by the keytab test, but specifically through the Wallet::Kadmin API.
 SKIP: {
-    skip 'no keytab configuration', 15 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 16 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';

@@ -3,7 +3,7 @@
 # Tests for the keytab object implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2009, 2010
+# Copyright 2007, 2008, 2009, 2010, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -386,7 +386,7 @@ EOO
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
 # can't find remctld.
 SKIP: {
-    skip 'no keytab configuration', 27 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 31 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
