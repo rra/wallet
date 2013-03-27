@@ -46,7 +46,9 @@ EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	tests/data/full.conf tests/data/wallet.conf			   \
 	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
 	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
-	tests/tap/kerberos.sh tests/tap/libtap.sh tests/tap/remctl.sh	   \
+	tests/tap/kerberos.sh tests/tap/libtap.sh			   \
+	tests/tap/perl/Test/RRA.pm tests/tap/perl/Test/RRA/Automake.pm	   \
+	tests/tap/perl/Test/RRA/Config.pm tests/tap/remctl.sh		   \
 	tests/util/xmalloc-t $(PERL_FILES)
 
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
