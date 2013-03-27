@@ -1,206 +1,96 @@
-# Wallet::Schema -- Database schema for the wallet system.
+# Database schema and connector for the wallet system.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2012, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-##############################################################################
-# Modules and declarations
-##############################################################################
-
 package Wallet::Schema;
-require 5.006;
 
 use strict;
-use vars qw(@SQL @TABLES $VERSION);
+use warnings;
 
-use DBI;
+use Wallet::Config;
+
+use base 'DBIx::Class::Schema';
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.06';
+our $VERSION = '0.08';
+
+__PACKAGE__->load_namespaces;
+__PACKAGE__->load_components (qw/Schema::Versioned/);
 
 ##############################################################################
-# Data manipulation
+# Core overrides
 ##############################################################################
 
-# Create a new Wallet::Schema object, parse the SQL out of the documentation,
-# and store it in the object.  We have to store the SQL in a static variable,
-# since we can't read DATA multiple times.
-sub new {
+# Override DBI::connect to supply our own connect string, username, and
+# password and to set some standard options.  Takes no arguments other than
+# the implicit class argument.
+sub connect {
     my ($class) = @_;
-    unless (@SQL) {
-        local $_;
-        my $found;
-        my $command = '';
-        while (<DATA>) {
-            if (not $found and /^=head1 SCHEMA/) {
-                $found = 1;
-            } elsif ($found and /^=head1 /) {
-                last;
-            } elsif ($found and /^  /) {
-                s/^  //;
-                $command .= $_;
-                if (/;$/) {
-                    push (@SQL, $command);
-                    $command = '';
-                }
-            }
-        }
-        close DATA;
+    unless ($Wallet::Config::DB_DRIVER
+            and (defined ($Wallet::Config::DB_INFO)
+                 or defined ($Wallet::Config::DB_NAME))) {
+        die "database connection information not configured\n";
     }
-    my $self = { sql => [ @SQL ] };
-    bless ($self, $class);
-    return $self;
-}
-
-# Returns the SQL as a list of commands.
-sub sql {
-    my ($self) = @_;
-    return @{ $self->{sql} };
-}
-
-##############################################################################
-# Initialization and cleanup
-##############################################################################
-
-# Given a database handle, try to create our database by running the SQL.  Do
-# this in a transaction regardless of the database settings and throw an
-# exception if this fails.  We have to do a bit of fiddling to get syntax that
-# works with both MySQL and SQLite.
-sub create {
-    my ($self, $dbh) = @_;
-    my $driver = $dbh->{Driver}->{Name};
-    eval {
-        $dbh->begin_work if $dbh->{AutoCommit};
-        my @sql = @{ $self->{sql} };
-        for my $sql (@sql) {
-            if ($driver eq 'SQLite') {
-                $sql =~ s{auto_increment primary key}
-                         {primary key autoincrement};
-            } elsif ($driver eq 'mysql' and $sql =~ /^\s*create\s+table\s/) {
-                $sql =~ s/;$/ engine=InnoDB;/;
-            }
-            $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
-        }
-        $dbh->commit;
-    };
+    my $dsn = "DBI:$Wallet::Config::DB_DRIVER:";
+    if (defined $Wallet::Config::DB_INFO) {
+        $dsn .= $Wallet::Config::DB_INFO;
+    } else {
+        $dsn .= "database=$Wallet::Config::DB_NAME";
+        $dsn .= ";host=$Wallet::Config::DB_HOST" if $Wallet::Config::DB_HOST;
+        $dsn .= ";port=$Wallet::Config::DB_PORT" if $Wallet::Config::DB_PORT;
+    }
+    my $user = $Wallet::Config::DB_USER;
+    my $pass = $Wallet::Config::DB_PASSWORD;
+    my %attrs = (PrintError => 0, RaiseError => 1);
+    my $schema = eval { $class->SUPER::connect ($dsn, $user, $pass, \%attrs) };
     if ($@) {
-        $dbh->rollback;
-        die "$@\n";
+        die "cannot connect to database: $@\n";
     }
+    return $schema;
 }
 
-# Given a database handle, try to remove the wallet database tables by
-# reversing the SQL.  Do this in a transaction regardless of the database
-# settings and throw an exception if this fails.
-sub drop {
-    my ($self, $dbh) = @_;
-    my @drop = map {
-        if (/^\s*create\s+table\s+(\S+)/i) {
-            "drop table if exists $1;";
-        } else {
-            ();
-        }
-    } reverse @{ $self->{sql} };
-    eval {
-        $dbh->begin_work if $dbh->{AutoCommit};
-        for my $sql (@drop) {
-            $dbh->do ($sql, { RaiseError => 1, PrintError => 0 });
-        }
-        $dbh->commit;
-    };
-    if ($@) {
-        $dbh->rollback;
-        die "$@\n";
-    }
-}
-
-##############################################################################
-# Schema
-##############################################################################
-
-# The following POD is also parsed by the code to extract SQL blocks.  Don't
-# add any verbatim blocks to this documentation in the SCHEMA section that
-# aren't intended to be SQL.
+__END__
 
 1;
-__DATA__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=for stopwords
+RaiseError PrintError AutoCommit ACL verifier API APIs enums keytab backend
+enctypes DBI Allbery
 
 =head1 NAME
 
-Wallet::Schema - Database schema for the wallet system
-
-=for stopwords
-SQL ACL API APIs enums Enums Keytab Backend keytab backend enctypes
-enctype Allbery
+Wallet::Schema - Database schema and connector for the wallet system
 
 =head1 SYNOPSIS
 
     use Wallet::Schema;
-    my $schema = Wallet::Schema->new;
-    my @sql = $schema->sql;
-    $schema->create ($dbh);
+    my $schema = Wallet::Schema->connect;
 
 =head1 DESCRIPTION
 
 This class encapsulates the database schema for the wallet system.  The
-documentation you're reading explains and comments the schema.  The Perl
-object extracts the schema from the documentation and can either return it
-as a list of SQL commands to run or run those commands given a connected
-database handle.
+documentation you're reading explains and comments the schema.  The
+class runs using the DBIx::Class module.
 
-This schema attempts to be portable SQL, but it is designed for use with
-MySQL and may require some modifications for other databases.
-
-=head1 METHODS
-
-=over 4
-
-=item new()
-
-Instantiates a new Wallet::Schema object.  This parses the documentation
-and extracts the schema, but otherwise doesn't do anything.
-
-=item create(DBH)
-
-Given a connected database handle, runs the SQL commands necessary to
-create the wallet database in an otherwise empty database.  This method
-will not drop any existing tables and will therefore fail if a wallet
-database has already been created.  On any error, this method will throw a
-database exception.
-
-=item drop(DBH)
-
-Given a connected database handle, drop all of the wallet tables from that
-database if any of those tables exist.  This method will only remove
-tables that are part of the current schema or one of the previous known
-schema and won't remove other tables.  On any error, this method will
-throw a database exception.
-
-=item sql()
-
-Returns the schema and the population of the normalization tables as a
-list of SQL commands to run to create the wallet database in an otherwise
-empty database.
-
-=back
+connect() will obtain the database connection information from the wallet
+configuration; see L<Wallet::Config> for more details.  It will also
+automatically set the RaiseError attribute to true and the PrintError and
+AutoCommit attributes to false, matching the assumptions made by the
+wallet database code.
 
 =head1 SCHEMA
 
 =head2 Normalization Tables
-
-The following are normalization tables used to constrain the values in
-other tables.
-
-Holds the supported flag names:
-
-  create table flag_names
-     (fn_name             varchar(32) primary key);
-  insert into flag_names (fn_name) values ('locked');
-  insert into flag_names (fn_name) values ('unchanging');
 
 Holds the supported object types and their corresponding Perl classes:
 
@@ -221,6 +111,8 @@ Holds the supported ACL schemes and their corresponding Perl classes:
       values ('krb5', 'Wallet::ACL::Krb5');
   insert into acl_schemes (as_name, as_class)
       values ('krb5-regex', 'Wallet::ACL::Krb5::Regex');
+  insert into acl_schemes (as_name, as_class)
+      values ('ldap-attr', 'Wallet::ACL::LDAP::Attribute');
   insert into acl_schemes (as_name, as_class)
       values ('netdb', 'Wallet::ACL::NetDB');
   insert into acl_schemes (as_name, as_class)
@@ -314,6 +206,7 @@ table:
       ob_downloaded_by    varchar(255) default null,
       ob_downloaded_from  varchar(255) default null,
       ob_downloaded_on    datetime default null,
+      ob_comment          varchar(255) default null,
       primary key (ob_name, ob_type));
   create index ob_owner on objects (ob_owner);
   create index ob_expires on objects (ob_expires);
@@ -332,8 +225,8 @@ object may have zero or more flags associated with it:
           not null references objects(ob_type),
       fl_name             varchar(255)
           not null references objects(ob_name),
-      fl_flag             varchar(32)
-          not null references flag_names(fn_name),
+      fl_flag             enum('locked', 'unchanging')
+          not null,
       primary key (fl_type, fl_name, fl_flag));
   create index fl_object on flags (fl_type, fl_name);
 
@@ -419,9 +312,22 @@ To use this functionality, you will need to populate the enctypes table
 with the enctypes that a keytab may be restricted to.  Currently, there is
 no automated mechanism to do this.
 
+=head1 CLASS METHODS
+
+=over 4
+
+=item connect()
+
+Opens a new database connection and returns the database object.  On any
+failure, throws an exception.  Unlike the DBI method, connect() takes no
+arguments; all database connection information is derived from the wallet
+configuration.
+
+=back
+
 =head1 SEE ALSO
 
-wallet-backend(8)
+wallet-backend(8), Wallet::Config(3)
 
 This module is part of the wallet system.  The current version is
 available from L<http://www.eyrie.org/~eagle/software/wallet/>.

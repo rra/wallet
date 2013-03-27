@@ -1,7 +1,8 @@
 # Utility class for wallet tests.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -45,6 +46,7 @@ sub contents {
 # for testing by default, but support t/data/test.database as a configuration
 # file to use another database backend.
 sub db_setup {
+    $Wallet::Config::DB_DDL_DIRECTORY = 'sql/';
     if (-f 't/data/test.database') {
         open (DB, '<', 't/data/test.database')
             or die "cannot open t/data/test.database: $!";
@@ -60,6 +62,10 @@ sub db_setup {
         $Wallet::Config::DB_USER = $user if $user;
         $Wallet::Config::DB_PASSWORD = $password if $password;
     } else {
+
+        # If we have a new SQLite db by default, disable version checking.
+        $ENV{DBIC_NO_VERSION_CHECK} = 1;
+
         $Wallet::Config::DB_DRIVER = 'SQLite';
         $Wallet::Config::DB_INFO = 'wallet-db';
         unlink 'wallet-db';
@@ -74,6 +80,7 @@ sub db_setup {
 sub getcreds {
     my ($file, $principal) = @_;
     my @commands = (
+        "kinit --no-afslog -k -t $file $principal >/dev/null 2>&1 </dev/null",
         "kinit -k -t $file $principal >/dev/null 2>&1 </dev/null",
         "kinit -t $file $principal >/dev/null 2>&1 </dev/null",
         "kinit -T /bin/true -k -K $file $principal >/dev/null 2>&1 </dev/null",

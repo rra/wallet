@@ -6,4 +6,4 @@
 wallet store /usr/sbin/wallet-backend stdin=4 ANYUSER
 wallet ALL /usr/sbin/wallet-backend ANYUSER
 
-wallet-report /usr/sbin/wallet-report /etc/remctl/acl/wallet-report
+wallet-report ALL /usr/sbin/wallet-report /etc/remctl/acl/wallet-report

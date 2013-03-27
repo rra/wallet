@@ -1,7 +1,8 @@
 # Wallet::Object::File -- File object implementation for the wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2010
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -143,7 +144,7 @@ API HOSTNAME DATETIME keytab remctld backend nul Allbery wallet-backend
 
     my @name = qw(file mysql-lsdb)
     my @trace = ($user, $host, time);
-    my $object = Wallet::Object::Keytab->create (@name, $dbh, @trace);
+    my $object = Wallet::Object::Keytab->create (@name, $schema, @trace);
     unless ($object->store ("the-password\n")) {
         die $object->error, "\n";
     }

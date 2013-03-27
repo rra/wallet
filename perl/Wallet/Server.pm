@@ -1,7 +1,8 @@
 # Wallet::Server -- Wallet system server implementation.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -17,13 +18,12 @@ use vars qw(%MAPPING $VERSION);
 
 use Wallet::ACL;
 use Wallet::Config;
-use Wallet::Database;
 use Wallet::Schema;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.09';
+$VERSION = '0.11';
 
 ##############################################################################
 # Utility methods
@@ -37,13 +37,13 @@ $VERSION = '0.09';
 # for various things.  Throw an exception if anything goes wrong.
 sub new {
     my ($class, $user, $host) = @_;
-    my $dbh = Wallet::Database->connect;
-    my $acl = Wallet::ACL->new ('ADMIN', $dbh);
+    my $schema = Wallet::Schema->connect;
+    my $acl = Wallet::ACL->new ('ADMIN', $schema);
     my $self = {
-        dbh   => $dbh,
-        user  => $user,
-        host  => $host,
-        admin => $acl,
+        schema => $schema,
+        user   => $user,
+        host   => $host,
+        admin  => $acl,
     };
     bless ($self, $class);
     return $self;
@@ -52,7 +52,13 @@ sub new {
 # Returns the database handle (used mostly for testing).
 sub dbh {
     my ($self) = @_;
-    return $self->{dbh};
+    return $self->{schema}->storage->dbh;
+}
+
+# Returns the DBIx::Class-based database schema object.
+sub schema {
+    my ($self) = @_;
+    return $self->{schema};
 }
 
 # Set or return the error stashed in the object.
@@ -70,8 +76,9 @@ sub error {
 # Disconnect the database handle on object destruction to avoid warnings.
 sub DESTROY {
     my ($self) = @_;
-    if ($self->{dbh} and not $self->{dbh}->{InactiveDestroy}) {
-        $self->{dbh}->disconnect;
+
+    if ($self->{schema}) {
+        $self->{schema}->storage->dbh->disconnect;
     }
 }
 
@@ -85,13 +92,14 @@ sub type_mapping {
     my ($self, $type) = @_;
     my $class;
     eval {
-        my $sql = 'select ty_class from types where ty_name = ?';
-        ($class) = $self->{dbh}->selectrow_array ($sql, undef, $type);
-        $self->{dbh}->commit;
+        my $guard = $self->{schema}->txn_scope_guard;
+        my %search = (ty_name => $type);
+        my $type_rec = $self->{schema}->resultset('Type')->find (\%search);
+        $class = $type_rec->ty_class;
+        $guard->commit;
     };
     if ($@) {
         $self->error ($@);
-        $self->{dbh}->rollback;
         return;
     }
     if (defined $class) {
@@ -116,7 +124,7 @@ sub create_check {
     my ($self, $type, $name) = @_;
     my $user = $self->{user};
     my $host = $self->{host};
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     unless (defined (&Wallet::Config::default_owner)) {
         $self->error ("$user not authorized to create ${type}:${name}");
         return;
@@ -126,9 +134,9 @@ sub create_check {
         $self->error ("$user not authorized to create ${type}:${name}");
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($aname, $dbh) };
+    my $acl = eval { Wallet::ACL->new ($aname, $schema) };
     if ($@) {
-        $acl = eval { Wallet::ACL->create ($aname, $dbh, $user, $host) };
+        $acl = eval { Wallet::ACL->create ($aname, $schema, $user, $host) };
         if ($@) {
             $self->error ($@);
             return;
@@ -179,10 +187,10 @@ sub create_object {
         $self->error ("unknown object type $type");
         return;
     }
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my $user = $self->{user};
     my $host = $self->{host};
-    my $object = eval { $class->create ($type, $name, $dbh, $user, $host) };
+    my $object = eval { $class->create ($type, $name, $schema, $user, $host) };
     if ($@) {
         $self->error ($@);
         return;
@@ -244,7 +252,7 @@ sub retrieve {
         $self->error ("unknown object type $type");
         return;
     }
-    my $object = eval { $class->new ($type, $name, $self->{dbh}) };
+    my $object = eval { $class->new ($type, $name, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -274,9 +282,11 @@ sub object_error {
 # the internal error message.  Note that we do not allow any special access to
 # admins for get and store; if they want to do that with objects, they need to
 # set the ACL accordingly.
-sub acl_check {
+sub acl_verify {
     my ($self, $object, $action) = @_;
-    unless ($action =~ /^(get|store|show|destroy|flags|setattr|getattr)\z/) {
+    my %actions = map { $_ => 1 }
+        qw(get store show destroy flags setattr getattr comment);
+    unless ($actions{$action}) {
         $self->error ("unknown action $action");
         return;
     }
@@ -288,17 +298,17 @@ sub acl_check {
         $id = $object->acl ('show');
     } elsif ($action eq 'setattr') {
         $id = $object->acl ('store');
-    } else {
+    } elsif ($action ne 'comment') {
         $id = $object->acl ($action);
     }
-    if (! defined ($id) and $action =~ /^(get|(get|set)attr|store|show)\z/) {
+    if (! defined ($id) and $action ne 'flags') {
         $id = $object->owner;
     }
     unless (defined $id) {
         $self->object_error ($object, $action);
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -346,7 +356,7 @@ sub attr {
     my $user = $self->{user};
     my $host = $self->{host};
     if (@values) {
-        return unless $self->acl_check ($object, 'setattr');
+        return unless $self->acl_verify ($object, 'setattr');
         if (@values == 1 and $values[0] eq '') {
             @values = ();
         }
@@ -354,7 +364,7 @@ sub attr {
         $self->error ($object->error) unless $result;
         return $result;
     } else {
-        return unless $self->acl_check ($object, 'getattr');
+        return unless $self->acl_verify ($object, 'getattr');
         my @result = $object->attr ($attr);
         if (not @result and $object->error) {
             $self->error ($object->error);
@@ -363,6 +373,26 @@ sub attr {
             return @result;
         }
     }
+}
+
+# Retrieves or sets the comment of an object.
+sub comment {
+    my ($self, $type, $name, $comment) = @_;
+    undef $self->{error};
+    my $object = $self->retrieve ($type, $name);
+    return unless defined $object;
+    my $result;
+    if (defined $comment) {
+        return unless $self->acl_verify ($object, 'comment');
+        $result = $object->comment ($comment, $self->{user}, $self->{host});
+    } else {
+        return unless $self->acl_verify ($object, 'show');
+        $result = $object->comment;
+    }
+    if (not defined ($result) and $object->error) {
+        $self->error ($object->error);
+    }
+    return $result;
 }
 
 # Retrieves or sets the expiration of an object.
@@ -433,7 +463,7 @@ sub get {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'get');
+    return unless $self->acl_verify ($object, 'get');
     my $result = $object->get ($self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -448,7 +478,7 @@ sub store {
     my ($self, $type, $name, $data) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'store');
+    return unless $self->acl_verify ($object, 'store');
     if (not defined ($data)) {
         $self->{error} = "no data supplied to store";
         return;
@@ -465,7 +495,7 @@ sub show {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'show');
+    return unless $self->acl_verify ($object, 'show');
     my $result = $object->show;
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -478,7 +508,7 @@ sub history {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'show');
+    return unless $self->acl_verify ($object, 'show');
     my $result = $object->history;
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -490,7 +520,7 @@ sub destroy {
     my ($self, $type, $name) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'destroy');
+    return unless $self->acl_verify ($object, 'destroy');
     my $result = $object->destroy ($self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -506,7 +536,7 @@ sub flag_clear {
     my ($self, $type, $name, $flag) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'flags');
+    return unless $self->acl_verify ($object, 'flags');
     my $result = $object->flag_clear ($flag, $self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -518,7 +548,7 @@ sub flag_set {
     my ($self, $type, $name, $flag) = @_;
     my $object = $self->retrieve ($type, $name);
     return unless defined $object;
-    return unless $self->acl_check ($object, 'flags');
+    return unless $self->acl_verify ($object, 'flags');
     my $result = $object->flag_set ($flag, $self->{user}, $self->{host});
     $self->error ($object->error) unless defined $result;
     return $result;
@@ -527,6 +557,22 @@ sub flag_set {
 ##############################################################################
 # ACL methods
 ##############################################################################
+
+# Checks for the existence of an ACL.  Returns 1 if it does, 0 if it doesn't,
+# and undef if there was an error in checking the existence of the object.
+sub acl_check {
+    my ($self, $id) = @_;
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
+    if ($@) {
+        if ($@ =~ /^ACL .* not found/) {
+            return 0;
+        } else {
+            $self->error ($@);
+            return;
+        }
+    }
+    return 1;
+}
 
 # Create a new empty ACL in the database.  Returns true on success and undef
 # on failure, setting the internal error.
@@ -545,8 +591,8 @@ sub acl_create {
             return;
         }
     }
-    my $dbh = $self->{dbh};
-    my $acl = eval { Wallet::ACL->create ($name, $dbh, $user, $host) };
+    my $schema = $self->{schema};
+    my $acl = eval { Wallet::ACL->create ($name, $schema, $user, $host) };
     if ($@) {
         $self->error ($@);
         return;
@@ -577,7 +623,7 @@ sub acl_history {
         $self->acl_error ($id, 'history');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -597,7 +643,7 @@ sub acl_show {
         $self->acl_error ($id, 'show');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -618,7 +664,7 @@ sub acl_rename {
         $self->acl_error ($id, 'rename');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -649,7 +695,7 @@ sub acl_destroy {
         $self->acl_error ($id, 'destroy');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -673,7 +719,7 @@ sub acl_add {
         $self->acl_error ($id, 'add');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -693,7 +739,7 @@ sub acl_remove {
         $self->acl_error ($id, 'remove');
         return;
     }
-    my $acl = eval { Wallet::ACL->new ($id, $self->{dbh}) };
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
     if ($@) {
         $self->error ($@);
         return;
@@ -730,7 +776,7 @@ Wallet::Server - Wallet system server implementation
 
 =for stopwords
 keytabs metadata backend HOSTNAME ACL timestamp ACL's nul Allbery
-backend-specific wallet-backend
+backend-specific wallet-backend verifier
 
 =head1 SYNOPSIS
 
@@ -895,6 +941,20 @@ Check whether an object of type TYPE and name NAME exists.  Returns 1 if
 it does, 0 if it doesn't, and undef if some error occurred while checking
 for the existence of the object.
 
+=item comment(TYPE, NAME, [COMMENT])
+
+Gets or sets the comment for the object identified by TYPE and NAME.  If
+COMMENT is not given, returns the current comment or undef if no comment
+is set or on an error.  To distinguish between an expiration that isn't
+set and a failure to retrieve the expiration, the caller should call
+error() after an undef return.  If error() also returns undef, no comment
+was set; otherwise, error() will return the error message.
+
+If COMMENT is given, sets the comment to COMMENT.  Pass in the empty
+string for COMMENT to clear the comment.  To set a comment, the current
+user must be the object owner or be on the ADMIN ACL.  Returns true for
+success and false for failure.
+
 =item create(TYPE, NAME)
 
 Creates a new object of type TYPE and name NAME.  TYPE must be a
@@ -910,9 +970,10 @@ owner as determined by the wallet configuration.
 Destroys the object identified by TYPE and NAME.  This destroys any data
 that the wallet had saved about the object, may remove the underlying
 object from other external systems, and destroys the wallet database entry
-for the object.  To destroy an object, the current user must be authorized
-by the ADMIN ACL or the destroy ACL on the object; the owner ACL is not
-sufficient.  Returns true on success and false on failure.
+for the object.  To destroy an object, the current user must be a member
+of the ADMIN ACL, authorized by the destroy ACL, or authorized by the
+owner ACL; however, if the destroy ACL is set, the owner ACL will not be
+checked.  Returns true on success and false on failure.
 
 =item dbh()
 
@@ -933,12 +994,12 @@ Gets or sets the expiration for the object identified by TYPE and NAME.
 If EXPIRES is not given, returns the current expiration or undef if no
 expiration is set or on an error.  To distinguish between an expiration
 that isn't set and a failure to retrieve the expiration, the caller should
-call error() after an undef return.  If error() also returns undef, that
-ACL wasn't set; otherwise, error() will return the error message.
+call error() after an undef return.  If error() also returns undef, the
+expiration wasn't set; otherwise, error() will return the error message.
 
 If EXPIRES is given, sets the expiration to EXPIRES.  EXPIRES must be in
 the format C<YYYY-MM-DD +HH:MM:SS>, although the time portion may be
-omitted.  Pass in the empty +string for EXPIRES to clear the expiration
+omitted.  Pass in the empty string for EXPIRES to clear the expiration
 date.  To set an expiration, the current user must be authorized by the
 ADMIN ACL.  Returns true for success and false for failure.
 
@@ -993,6 +1054,10 @@ failure.
 The owner of an object is permitted to get, store, and show that object,
 but cannot destroy or set flags on that object without being listed on
 those ACLs as well.
+
+=item schema()
+
+Returns the DBIx::Class schema object.
 
 =item show(TYPE, NAME)
 

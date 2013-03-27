@@ -1,13 +1,30 @@
 /*
  * Test suite for xmalloc and family.
  *
- * Copyright 2008 Board of Trustees, Leland Stanford Jr. University
- * Copyright 2004, 2005, 2006
- *     by Internet Systems Consortium, Inc. ("ISC")
- * Copyright 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
- *     2003 by The Internet Software Consortium and Rich Salz
+ * The canonical version of this file is maintained in the rra-c-util package,
+ * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
- * See LICENSE for licensing terms.
+ * Copyright 2000, 2001, 2006 Russ Allbery <rra@stanford.edu>
+ * Copyright 2008, 2012
+ *     The Board of Trustees of the Leland Stanford Junior University
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #line 1 "xmalloc.c"
@@ -62,9 +79,9 @@ test_malloc(size_t size)
 
 
 /*
- * Allocate half the memory given, write to it, then reallocate to the desired
- * size, writing to the rest and then checking it all.  Returns true on
- * success, false on any failure.
+ * Allocate 10 bytes of memory given, write to it, then reallocate to the
+ * desired size, writing to the rest and then checking it all.  Returns true
+ * on success, false on any failure.
  */
 static int
 test_realloc(size_t size)
@@ -119,15 +136,34 @@ test_strdup(size_t size)
 
 /*
  * Generate a string of the size indicated plus some, call xstrndup on it, and
- * then ensure the result matches.  Returns true on success, false on any
- * failure.
+ * then ensure the result matches.  Also test xstrdup on a string that's
+ * shorter than the specified size and ensure that we don't copy too much, and
+ * on a string that's not nul-terminated.  Returns true on success, false on
+ * any failure.
  */
 static int
 test_strndup(size_t size)
 {
     char *string, *copy;
-    int match, toomuch;
+    int shortmatch, nonulmatch, match, toomuch;
 
+    /* Copy a short string. */
+    string = xmalloc(5);
+    memcpy(string, "test", 5);
+    copy = xstrndup(string, size);
+    shortmatch = strcmp(string, copy);
+    free(string);
+    free(copy);
+
+    /* Copy a string that's not nul-terminated. */
+    string = xmalloc(4);
+    memcpy(string, "test", 4);
+    copy = xstrndup(string, 4);
+    nonulmatch = strcmp(copy, "test");
+    free(string);
+    free(copy);
+
+    /* Now the test of running out of memory. */
     string = xmalloc(size + 1);
     if (string == NULL)
         return 0;
@@ -141,7 +177,7 @@ test_strndup(size_t size)
     toomuch = strcmp(string, copy);
     free(string);
     free(copy);
-    return (match == 0 && toomuch != 0);
+    return (shortmatch == 0 && nonulmatch == 0 && match == 0 && toomuch != 0);
 }
 
 
@@ -177,13 +213,12 @@ static int
 test_asprintf(size_t size)
 {
     char *copy, *string;
-    int status;
     size_t i;
 
     string = xmalloc(size);
     memset(string, 42, size - 1);
     string[size - 1] = '\0';
-    status = xasprintf(&copy, "%s", string);
+    xasprintf(&copy, "%s", string);
     free(string);
     for (i = 0; i < size - 1; i++)
         if (copy[i] != 42)
@@ -196,16 +231,14 @@ test_asprintf(size_t size)
 
 
 /* Wrapper around vasprintf to do the va_list stuff. */
-static int
+static void
 xvasprintf_wrapper(char **strp, const char *format, ...)
 {
     va_list args;
-    int status;
 
     va_start(args, format);
-    status = xvasprintf(strp, format, args);
+    xvasprintf(strp, format, args);
     va_end(args);
-    return status;
 }
 
 
@@ -217,13 +250,12 @@ static int
 test_vasprintf(size_t size)
 {
     char *copy, *string;
-    int status;
     size_t i;
 
     string = xmalloc(size);
     memset(string, 42, size - 1);
     string[size - 1] = '\0';
-    status = xvasprintf_wrapper(&copy, "%s", string);
+    xvasprintf_wrapper(&copy, "%s", string);
     free(string);
     for (i = 0; i < size - 1; i++)
         if (copy[i] != 42)
@@ -300,8 +332,8 @@ main(int argc, char *argv[])
         if (size < limit || code == 'r') {
             tmp = malloc(code == 'r' ? 10 : size);
             if (tmp == NULL) {
-                syswarn("Can't allocate initial memory of %lu",
-                        (unsigned long) size);
+                syswarn("Can't allocate initial memory of %lu (limit %lu)",
+                        (unsigned long) size, (unsigned long) limit);
                 exit(2);
             }
             free(tmp);

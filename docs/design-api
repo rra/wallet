@@ -167,3 +167,13 @@ Registering New Implementations
 
     where <type> or <scheme> is the object type or ACL scheme and <class>
     is the Perl class which implements that object type or ACL verifier.
+
+License
+
+    Copyright 2006, 2007, 2008, 2013
+        The Board of Trustees of the Leland Stanford Junior University
+
+    Copying and distribution of this file, with or without modification,
+    are permitted in any medium without royalty provided the copyright
+    notice and this notice are preserved.  This file is offered as-is,
+    without any warranty.

@@ -1,11 +1,11 @@
-=head1 NAME
-
-wallet - Client for retrieving secure data from a central server
-
 =for stopwords
 -hv srvtab arg keytabs metadata keytab ACL PTS kinit klist remctl PKINIT
 acl timestamp autocreate backend-specific setacl enctypes enctype ktadd
-KDC appdefaults remctld Allbery uuencode getacl backend ACL's
+KDC appdefaults remctld Allbery uuencode getacl backend ACL's DES
+
+=head1 NAME
+
+wallet - Client for retrieving secure data from a central server
 
 =head1 SYNOPSIS
 
@@ -151,24 +151,27 @@ options and commands are ignored.
 =head1 COMMANDS
 
 As mentioned above, most commands are only available to wallet
-administrators.  The exceptions are C<get>, C<store>, C<show>, C<destroy>,
-C<flag clear>, C<flag set>, C<getattr>, C<setattr>, and C<history>.  All
-of those commands have their own ACLs except C<getattr> and C<history>,
-which use the C<show> ACL, and C<setattr>, which uses the C<store> ACL.
-If the appropriate ACL is set, it alone is checked to see if the user has
-access.  Otherwise, C<get>, C<store>, C<show>, C<getattr>, C<setattr>, and
-C<history> access is permitted if the user is authorized by the owner ACL
-of the object.
+administrators.  The exceptions are C<acl check>, C<check>, C<get>,
+C<store>, C<show>, C<destroy>, C<flag clear>, C<flag set>, C<getattr>,
+C<setattr>, and C<history>.  C<acl check> and C<check> can be run by
+anyone.  All of the rest of those commands have their own ACLs except
+C<getattr> and C<history>, which use the C<show> ACL, C<setattr>, which
+uses the C<store> ACL, and C<comment>, which uses the owner or C<show> ACL
+depending on whether one is setting or retrieving the comment.  If the
+appropriate ACL is set, it alone is checked to see if the user has access.
+Otherwise, C<destroy>, C<get>, C<store>, C<show>, C<getattr>, C<setattr>,
+C<history>, and C<comment> access is permitted if the user is authorized
+by the owner ACL of the object.
 
 Administrators can run any command on any object or ACL except for C<get>
-and C<store>.  For C<get> and C<show>, they must still be authorized by
+and C<store>.  For C<get> and C<store>, they must still be authorized by
 either the appropriate specific ACL or the owner ACL.
 
 If the locked flag is set on an object, no commands can be run on that
 object that change data except the C<flags> commands, nor can the C<get>
 command be used on that object.  C<show>, C<history>, C<getacl>,
-C<getattr>, and C<owner> or C<expires> without an argument can still be
-used on that object.
+C<getattr>, and C<owner>, C<expires>, or C<comment> without an argument
+can still be used on that object.
 
 For more information on attributes, see L<ATTRIBUTES>.
 
@@ -176,8 +179,13 @@ For more information on attributes, see L<ATTRIBUTES>.
 
 =item acl add <id> <scheme> <identifier>
 
-Adds an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
+Add an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
 either the name of an ACL or its numeric identifier.
+
+=item acl check <id>
+
+Check whether an ACL with the ID <id> already exists.  If it does, prints
+C<yes>; if not, prints C<no>.
 
 =item acl create <name>
 
@@ -237,6 +245,15 @@ already exist.
 
 Check whether an object of type <type> and name <name> already exists.  If
 it does, prints C<yes>; if not, prints C<no>.
+
+=item comment <type> <name> [<comment>]
+
+If <comment> is not given, displays the current comment for the object
+identified by <type> and <name>, or C<No comment set> if none is set.
+
+If <comment> is given, sets the comment on the object identified by
+<type> and <name> to <comment>.  If <comment> is the empty string, clears
+the comment.
 
 =item create <type> <name>
 
@@ -440,6 +457,20 @@ overrides this setting.
 
 =back
 
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2007, 2008, 2010, 2011, 2012, 2013 The Board of Trustees of the
+Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.
+
 =head1 SEE ALSO
 
 kadmin(8), kinit(1), krb5.conf(5), remctl(1), remctld(8)
@@ -449,9 +480,5 @@ from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 B<wallet> uses the remctl protocol.  For more information about remctl,
 see L<http://www.eyrie.org/~eagle/software/remctl/>.
-
-=head1 AUTHOR
-
-Russ Allbery <rra@stanford.edu>
 
 =cut

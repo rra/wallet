@@ -3,13 +3,13 @@
 # Tests for the wallet-backend dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008, 2009, 2010
-#     Board of Trustees, Leland Stanford Jr. University
+# Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 1269;
+use Test::More tests => 1314;
 
 # Create a dummy class for Wallet::Server that prints what method was called
 # with its arguments and returns data for testing.
@@ -44,6 +44,18 @@ sub acl_remove
     { shift; print "acl_remove @_\n"; ($_[0] eq 'error') ? undef : 1 }
 sub acl_rename
     { shift; print "acl_rename @_\n"; ($_[0] eq 'error') ? undef : 1 }
+
+sub acl_check {
+    shift;
+    print "acl_check @_\n";
+    if ($_[0] eq 'error') {
+        return;
+    } elsif ($_[0] eq 'unknown') {
+        return 0;
+    } else {
+        return 1;
+    }
+}
 
 sub acl_history {
     shift;
@@ -107,6 +119,19 @@ sub check {
         return 0;
     } else {
         return 1;
+    }
+}
+
+sub comment {
+    shift;
+    print "comment @_\n";
+    if ($_[0] eq 'error') {
+        return;
+    } elsif ($_[1] eq 'empty') {
+        $okay = 1;
+        return;
+    } else {
+        return 'comment';
     }
 }
 
@@ -216,6 +241,7 @@ is ($out, "$new\n", ' and nothing ran');
 # Check too few, too many, and bad arguments for every command.
 my %commands = (autocreate => [2, 2],
                 check      => [2, 2],
+                comment    => [2, 3],
                 create     => [2, 2],
                 destroy    => [2, 2],
                 expires    => [2, 4],
@@ -229,6 +255,7 @@ my %commands = (autocreate => [2, 2],
                 show       => [2, 2],
                 store      => [2, 3]);
 my %acl_commands = (add     => [3, 3],
+                    check   => [1, 1],
                     create  => [1, 1],
                     destroy => [1, 1],
                     history => [1, 1],
@@ -363,7 +390,8 @@ for my $command (qw/autocreate create destroy setacl setattr store/) {
         ' and ran the right method');
     $error++;
 }
-for my $command (qw/check expires get getacl getattr history owner show/) {
+for my $command (qw/check comment expires get getacl getattr history owner
+                    show/) {
     my $method = { getacl => 'acl', getattr => 'attr' }->{$command};
     $method ||= $command;
     my @extra = ('foo') x ($commands{$command}[0] - 2);
@@ -384,7 +412,8 @@ for my $command (qw/check expires get getacl getattr history owner show/) {
         is ($out, "$new\n$method type name$extra\n$method$newline",
             ' and ran the right method with output');
     }
-    if ($command eq 'expires' or $command eq 'owner') {
+    if ($command eq 'expires' or $command eq 'owner'
+        or $command eq 'comment') {
         ($out, $err) = run_backend ($command, 'type', 'name', @extra, 'foo');
         my $ran = "$command type name" . (@extra ? " @extra" : '') . ' foo';
         is ($err, '', "Command $command ran with no errors (setting)");
@@ -393,14 +422,16 @@ for my $command (qw/check expires get getacl getattr history owner show/) {
         is ($out, "$new\n$method type name$extra foo\n",
             ' and ran the right method');
     }
-    if ($command eq 'expires' or $command eq 'getacl' or $command eq 'owner') {
+    if ($command eq 'expires' or $command eq 'getacl'
+        or $command eq 'owner' or $command eq 'comment') {
         ($out, $err) = run_backend ($command, 'type', 'empty', @extra);
         my $ran = "$command type empty" . (@extra ? " @extra" : '');
         is ($err, '', "Command $command ran with no errors (empty)");
         is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
             ' and success logged');
         my $desc;
-        if    ($command eq 'expires') { $desc = 'expiration' }
+        if    ($command eq 'comment') { $desc = 'comment' }
+        elsif ($command eq 'expires') { $desc = 'expiration' }
         elsif ($command eq 'getacl')  { $desc = 'ACL' }
         elsif ($command eq 'owner')   { $desc = 'owner' }
         is ($out, "$new\n$method type empty$extra\nNo $desc set\n",
@@ -442,7 +473,9 @@ for my $command (sort keys %acl_commands) {
     is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
         ' and success logged');
     my $expected;
-    if ($command eq 'show') {
+    if ($command eq 'check') {
+        $expected = "$new\nacl_$command name$extra\nyes\n";
+    } elsif ($command eq 'show') {
         $expected = "$new\nacl_$command name$extra\nacl_show";
     } elsif ($command eq 'history') {
         $expected = "$new\nacl_$command name$extra\nacl_history";
@@ -458,6 +491,15 @@ for my $command (sort keys %acl_commands) {
     is ($out, "$new\nacl_$command error$extra\n",
         ' and ran the right method');
     $error++;
+    if ($command eq 'check') {
+        ($out, $err) = run_backend ('acl', $command, 'unknown');
+        my $ran = "acl $command unknown";
+        is ($err, '', "Command $command ran with no errors (unknown)");
+        is ($OUTPUT, "command $ran from admin (1.2.3.4) succeeded\n",
+            ' and success logged');
+        is ($out, "$new\nacl_$command unknown\nno\n",
+            ' and ran the right method with output');
+    }
 }
 for my $command (sort keys %flag_commands) {
     my @extra = ('foo') x ($flag_commands{$command}[0] - 2);

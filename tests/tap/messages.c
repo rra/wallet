@@ -5,24 +5,39 @@
  * into a buffer that can be inspected later, allowing testing of error
  * handling.
  *
- * Copyright 2006, 2007, 2009
- *     Board of Trustees, Leland Stanford Jr. University
- * Copyright (c) 2004, 2005, 2006
- *     by Internet Systems Consortium, Inc. ("ISC")
- * Copyright (c) 1991, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
- *     2002, 2003 by The Internet Software Consortium and Rich Salz
+ * The canonical version of this file is maintained in the rra-c-util package,
+ * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
- * See LICENSE for licensing terms.
+ * Copyright 2002, 2004, 2005 Russ Allbery <rra@stanford.edu>
+ * Copyright 2006, 2007, 2009, 2012
+ *     The Board of Trustees of the Leland Stanford Junior University
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include <config.h>
 #include <portable/system.h>
 
+#include <tests/tap/macros.h>
 #include <tests/tap/messages.h>
-#include <util/concat.h>
-#include <util/macros.h>
+#include <tests/tap/string.h>
 #include <util/messages.h>
-#include <util/xmalloc.h>
 
 /* A global buffer into which message_log_buffer stores error messages. */
 char *errors = NULL;
@@ -33,18 +48,18 @@ char *errors = NULL;
  * error_capture.
  */
 static void
-message_log_buffer(int len, const char *fmt, va_list args, int error UNUSED)
+message_log_buffer(int len UNUSED, const char *fmt, va_list args,
+                   int error UNUSED)
 {
     char *message;
 
-    message = xmalloc(len + 1);
-    vsnprintf(message, len + 1, fmt, args);
-    if (errors == NULL) {
-        errors = concat(message, "\n", (char *) 0);
-    } else {
+    bvasprintf(&message, fmt, args);
+    if (errors == NULL)
+        basprintf(&errors, "%s\n", message);
+    else {
         char *new_errors;
 
-        new_errors = concat(errors, message, "\n", (char *) 0);
+        basprintf(&new_errors, "%s%s\n", errors, message);
         free(errors);
         errors = new_errors;
     }

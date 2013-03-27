@@ -1,7 +1,8 @@
 # Wallet::Object::Base -- Parent class for any object stored in the wallet.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -17,12 +18,13 @@ use vars qw($VERSION);
 
 use DBI;
 use POSIX qw(strftime);
+use Text::Wrap qw(wrap);
 use Wallet::ACL;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 ##############################################################################
 # Constructors
@@ -34,15 +36,16 @@ $VERSION = '0.05';
 # type in the object.  If the object doesn't exist, returns undef.  This will
 # probably be usable as-is by most object types.
 sub new {
-    my ($class, $type, $name, $dbh) = @_;
-    my $sql = 'select ob_name from objects where ob_type = ? and ob_name = ?';
-    my $data = $dbh->selectrow_array ($sql, undef, $type, $name);
-    $dbh->commit;
-    die "cannot find ${type}:${name}\n" unless ($data and $data eq $name);
+    my ($class, $type, $name, $schema) = @_;
+    my %search = (ob_type => $type,
+                  ob_name => $name);
+    my $object = $schema->resultset('Object')->find (\%search);
+    die "cannot find ${type}:${name}\n"
+        unless ($object and $object->ob_name eq $name);
     my $self = {
-        dbh  => $dbh,
-        name => $name,
-        type => $type,
+        schema => $schema,
+        name   => $name,
+        type   => $type,
     };
     bless ($self, $class);
     return $self;
@@ -53,28 +56,37 @@ sub new {
 # specified class.  Stores the database handle to use, the name, and the type
 # in the object.  Subclasses may need to override this to do additional setup.
 sub create {
-    my ($class, $type, $name, $dbh, $user, $host, $time) = @_;
+    my ($class, $type, $name, $schema, $user, $host, $time) = @_;
     $time ||= time;
     die "invalid object type\n" unless $type;
     die "invalid object name\n" unless $name;
+    my $guard = $schema->txn_scope_guard;
     eval {
-        my $date = strftime ('%Y-%m-%d %T', localtime $time);
-        my $sql = 'insert into objects (ob_type, ob_name, ob_created_by,
-            ob_created_from, ob_created_on) values (?, ?, ?, ?, ?)';
-        $dbh->do ($sql, undef, $type, $name, $user, $host, $date);
-        $sql = "insert into object_history (oh_type, oh_name, oh_action,
-            oh_by, oh_from, oh_on) values (?, ?, 'create', ?, ?, ?)";
-        $dbh->do ($sql, undef, $type, $name, $user, $host, $date);
-        $dbh->commit;
+        my %record = (ob_type         => $type,
+                      ob_name         => $name,
+                      ob_created_by   => $user,
+                      ob_created_from => $host,
+                      ob_created_on   => strftime ('%Y-%m-%d %T',
+                                                   localtime $time));
+        $schema->resultset('Object')->create (\%record);
+
+        %record = (oh_type   => $type,
+                   oh_name   => $name,
+                   oh_action => 'create',
+                   oh_by     => $user,
+                   oh_from   => $host,
+                   oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
+        $schema->resultset('ObjectHistory')->create (\%record);
+
+        $guard->commit;
     };
     if ($@) {
-        $dbh->rollback;
         die "cannot create object ${type}:${name}: $@\n";
     }
     my $self = {
-        dbh  => $dbh,
-        name => $name,
-        type => $type,
+        schema => $schema,
+        name   => $name,
+        type   => $type,
     };
     bless ($self, $class);
     return $self;
@@ -124,30 +136,36 @@ sub log_action {
     # We have two traces to record, one in the object_history table and one in
     # the object record itself.  Commit both changes as a transaction.  We
     # assume that AutoCommit is turned off.
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
-        my $date = strftime ('%Y-%m-%d %T', localtime $time);
-        my $sql = 'insert into object_history (oh_type, oh_name, oh_action,
-            oh_by, oh_from, oh_on) values (?, ?, ?, ?, ?, ?)';
-        $self->{dbh}->do ($sql, undef, $self->{type}, $self->{name}, $action,
-                          $user, $host, $date);
+        my %record = (oh_type   => $self->{type},
+                      oh_name   => $self->{name},
+                      oh_action => $action,
+                      oh_by     => $user,
+                      oh_from   => $host,
+                      oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
+        $self->{schema}->resultset('ObjectHistory')->create (\%record);
+
+        my %search = (ob_type   => $self->{type},
+                      ob_name   => $self->{name});
+        my $object = $self->{schema}->resultset('Object')->find (\%search);
         if ($action eq 'get') {
-            $sql = 'update objects set ob_downloaded_by = ?,
-                ob_downloaded_from = ?, ob_downloaded_on = ? where
-                ob_type = ? and ob_name = ?';
-            $self->{dbh}->do ($sql, undef, $user, $host, $date, $self->{type},
-                              $self->{name});
+            $object->ob_downloaded_by   ($user);
+            $object->ob_downloaded_from ($host);
+            $object->ob_downloaded_on   (strftime ('%Y-%m-%d %T',
+                                                   localtime $time));
         } elsif ($action eq 'store') {
-            $sql = 'update objects set ob_stored_by = ?, ob_stored_from = ?,
-                ob_stored_on = ? where ob_type = ? and ob_name = ?';
-            $self->{dbh}->do ($sql, undef, $user, $host, $date, $self->{type},
-                              $self->{name});
+            $object->ob_stored_by   ($user);
+            $object->ob_stored_from ($host);
+            $object->ob_stored_on   (strftime ('%Y-%m-%d %T',
+                                               localtime $time));
         }
-        $self->{dbh}->commit;
+        $object->update;
+        $guard->commit;
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot update history for $id: $@");
-        $self->{dbh}->rollback;
         return;
     }
     return 1;
@@ -169,16 +187,22 @@ sub log_set {
     }
     my %fields = map { $_ => 1 }
         qw(owner acl_get acl_store acl_show acl_destroy acl_flags expires
-           flags type_data);
+           comment flags type_data);
     unless ($fields{$field}) {
         die "invalid history field $field";
     }
-    my $date = strftime ('%Y-%m-%d %T', localtime $time);
-    my $sql = "insert into object_history (oh_type, oh_name, oh_action,
-        oh_field, oh_type_field, oh_old, oh_new, oh_by, oh_from, oh_on)
-        values (?, ?, 'set', ?, ?, ?, ?, ?, ?, ?)";
-    $self->{dbh}->do ($sql, undef, $self->{type}, $self->{name}, $field,
-                      $type_field, $old, $new, $user, $host, $date);
+
+    my %record = (oh_type       => $self->{type},
+                  oh_name       => $self->{name},
+                  oh_action     => 'set',
+                  oh_field      => $field,
+                  oh_type_field => $type_field,
+                  oh_old        => $old,
+                  oh_new        => $new,
+                  oh_by         => $user,
+                  oh_from       => $host,
+                  oh_on         => strftime ('%Y-%m-%d %T', localtime $time));
+    $self->{schema}->resultset('ObjectHistory')->create (\%record);
 }
 
 ##############################################################################
@@ -200,20 +224,21 @@ sub _set_internal {
         $self->error ("cannot modify ${type}:${name}: object is locked");
         return;
     }
+
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
-        my $sql = "select ob_$attr from objects where ob_type = ? and
-            ob_name = ?";
-        my $old = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
-        $sql = "update objects set ob_$attr = ? where ob_type = ? and
-            ob_name = ?";
-        $self->{dbh}->do ($sql, undef, $value, $type, $name);
+        my %search = (ob_type => $type,
+                      ob_name => $name);
+        my $object = $self->{schema}->resultset('Object')->find (\%search);
+        my $old = $object->get_column ("ob_$attr");
+
+        $object->update ({ "ob_$attr" => $value });
         $self->log_set ($attr, $old, $value, $user, $host, $time);
-        $self->{dbh}->commit;
+        $guard->commit;
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot set $attr on $id: $@");
-        $self->{dbh}->rollback;
         return;
     }
     return 1;
@@ -234,14 +259,13 @@ sub _get_internal {
     my $type = $self->{type};
     my $value;
     eval {
-        my $sql = "select $attr from objects where ob_type = ? and
-            ob_name = ?";
-        $value = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
-        $self->{dbh}->commit;
+        my %search = (ob_type => $type,
+                      ob_name => $name);
+        my $object = $self->{schema}->resultset('Object')->find (\%search);
+        $value = $object->get_column ($attr);
     };
     if ($@) {
         $self->error ($@);
-        $self->{dbh}->rollback;
         return;
     }
     return $value;
@@ -258,7 +282,7 @@ sub acl {
     my $attr = "acl_$type";
     if ($id) {
         my $acl;
-        eval { $acl = Wallet::ACL->new ($id, $self->{dbh}) };
+        eval { $acl = Wallet::ACL->new ($id, $self->{schema}) };
         if ($@) {
             $self->error ($@);
             return;
@@ -291,6 +315,19 @@ sub attr_show {
     return '';
 }
 
+# Get or set the comment value of an object.  If setting it, trace information
+# must also be provided.
+sub comment {
+    my ($self, $comment, $user, $host, $time) = @_;
+    if ($comment) {
+        return $self->_set_internal ('comment', $comment, $user, $host, $time);
+    } elsif (defined $comment) {
+        return $self->_set_internal ('comment', undef, $user, $host, $time);
+    } else {
+        return $self->_get_internal ('comment');
+    }
+}
+
 # Get or set the expires value of an object.  Expects an expiration time in
 # seconds since epoch.  If setting the expiration, trace information must also
 # be provided.
@@ -315,7 +352,7 @@ sub owner {
     my ($self, $owner, $user, $host, $time) = @_;
     if ($owner) {
         my $acl;
-        eval { $acl = Wallet::ACL->new ($owner, $self->{dbh}) };
+        eval { $acl = Wallet::ACL->new ($owner, $self->{schema}) };
         if ($@) {
             $self->error ($@);
             return;
@@ -338,17 +375,21 @@ sub flag_check {
     my ($self, $flag) = @_;
     my $name = $self->{name};
     my $type = $self->{type};
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
     my $value;
     eval {
-        my $sql = 'select fl_flag from flags where fl_type = ? and fl_name = ?
-            and fl_flag = ?';
-        $value = $dbh->selectrow_array ($sql, undef, $type, $name, $flag);
-        $dbh->commit;
+        my %search = (fl_type => $type,
+                      fl_name => $name,
+                      fl_flag => $flag);
+        my $flag = $schema->resultset('Flag')->find (\%search);
+        if (not defined $flag) {
+            $value = 0;
+        } else {
+            $value = $flag->fl_flag;
+        }
     };
     if ($@) {
         $self->error ("cannot check flag $flag for ${type}:${name}: $@");
-        $dbh->rollback;
         return;
     } else {
         return ($value) ? 1 : 0;
@@ -362,23 +403,22 @@ sub flag_clear {
     $time ||= time;
     my $name = $self->{name};
     my $type = $self->{type};
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
+    my $guard = $schema->txn_scope_guard;
     eval {
-        my $sql = 'select * from flags where fl_type = ? and fl_name = ? and
-            fl_flag = ?';
-        my ($data) = $dbh->selectrow_array ($sql, undef, $type, $name, $flag);
-        unless (defined $data) {
+        my %search = (fl_type => $type,
+                      fl_name => $name,
+                      fl_flag => $flag);
+        my $flag = $schema->resultset('Flag')->find (\%search);
+        unless (defined $flag) {
             die "flag not set\n";
         }
-        $sql = 'delete from flags where fl_type = ? and fl_name = ? and
-            fl_flag = ?';
-        $dbh->do ($sql, undef, $type, $name, $flag);
-        $self->log_set ('flags', $flag, undef, $user, $host, $time);
-        $dbh->commit;
+        $flag->delete;
+        $self->log_set ('flags', $flag->fl_flag, undef, $user, $host, $time);
+        $guard->commit;
     };
     if ($@) {
         $self->error ("cannot clear flag $flag on ${type}:${name}: $@");
-        $dbh->rollback;
         return;
     }
     return 1;
@@ -392,20 +432,18 @@ sub flag_list {
     undef $self->{error};
     my @flags;
     eval {
-        my $sql = 'select fl_flag from flags where fl_type = ? and
-            fl_name = ? order by fl_flag';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute ($self->{type}, $self->{name});
-        my $flag;
-        while (defined ($flag = $sth->fetchrow_array)) {
-            push (@flags, $flag);
+        my %search = (fl_type => $self->{type},
+                      fl_name => $self->{name});
+        my %attrs  = (order_by => 'fl_flag');
+        my @flags_rs = $self->{schema}->resultset('Flag')->search (\%search,
+                                                                   \%attrs);
+        for my $flag (@flags_rs) {
+            push (@flags, $flag->fl_flag);
         }
-        $self->{dbh}->commit;
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot retrieve flags for $id: $@");
-        $self->{dbh}->rollback;
         return;
     } else {
         return @flags;
@@ -419,23 +457,22 @@ sub flag_set {
     $time ||= time;
     my $name = $self->{name};
     my $type = $self->{type};
-    my $dbh = $self->{dbh};
+    my $schema = $self->{schema};
+    my $guard = $schema->txn_scope_guard;
     eval {
-        my $sql = 'select * from flags where fl_type = ? and fl_name = ? and
-            fl_flag = ?';
-        my ($data) = $dbh->selectrow_array ($sql, undef, $type, $name, $flag);
-        if (defined $data) {
+        my %search = (fl_type => $type,
+                      fl_name => $name,
+                      fl_flag => $flag);
+        my $flag = $schema->resultset('Flag')->find (\%search);
+        if (defined $flag) {
             die "flag already set\n";
         }
-        $sql = 'insert into flags (fl_type, fl_name, fl_flag)
-            values (?, ?, ?)';
-        $dbh->do ($sql, undef, $type, $name, $flag);
-        $self->log_set ('flags', undef, $flag, $user, $host, $time);
-        $dbh->commit;
+        $flag = $schema->resultset('Flag')->create (\%search);
+        $self->log_set ('flags', undef, $flag->fl_flag, $user, $host, $time);
+        $guard->commit;
     };
     if ($@) {
         $self->error ("cannot set flag $flag on ${type}:${name}: $@");
-        $dbh->rollback;
         return;
     }
     return 1;
@@ -451,11 +488,10 @@ sub format_acl_id {
     my ($self, $id) = @_;
     my $name = $id;
 
-    my $sql = 'select ac_name from acls where ac_id = ?';
-    my $sth = $self->{dbh}->prepare ($sql);
-    $sth->execute ($id);
-    if (my @ref = $sth->fetchrow_array) {
-        $name = $ref[0] . " ($id)";
+    my %search = (ac_id => $id);
+    my $acl_rs = $self->{schema}->resultset('Acl')->find (\%search);
+    if (defined $acl_rs) {
+        $name = $acl_rs->ac_name . " ($id)";
     }
 
     return $name;
@@ -468,23 +504,29 @@ sub history {
     my ($self) = @_;
     my $output = '';
     eval {
-        my $sql = 'select oh_action, oh_field, oh_type_field, oh_old, oh_new,
-            oh_by, oh_from, oh_on from object_history where oh_type = ? and
-            oh_name = ? order by oh_on';
-        my $sth = $self->{dbh}->prepare ($sql);
-        $sth->execute ($self->{type}, $self->{name});
-        my @data;
-        while (@data = $sth->fetchrow_array) {
-            $output .= "$data[7]  ";
-            my ($old, $new) = @data[3..4];
-            if ($data[0] eq 'set' and $data[1] eq 'flags') {
-                if (defined ($data[4])) {
-                    $output .= "set flag $data[4]";
-                } elsif (defined ($data[3])) {
-                    $output .= "clear flag $data[3]";
+        my %search = (oh_type => $self->{type},
+                      oh_name => $self->{name});
+        my %attrs = (order_by => 'oh_on');
+        my @history = $self->{schema}->resultset('ObjectHistory')
+            ->search (\%search, \%attrs);
+
+        for my $history_rs (@history) {
+            $output .= sprintf ("%s %s  ", $history_rs->oh_on->ymd,
+                               $history_rs->oh_on->hms);
+
+            my $old    = $history_rs->oh_old;
+            my $new    = $history_rs->oh_new;
+            my $action = $history_rs->oh_action;
+            my $field  = $history_rs->oh_field;
+
+            if ($action eq 'set' and $field eq 'flags') {
+                if (defined ($new)) {
+                    $output .= "set flag $new";
+                } elsif (defined ($old)) {
+                    $output .= "clear flag $old";
                 }
-            } elsif ($data[0] eq 'set' and $data[1] eq 'type_data') {
-                my $attr = $data[2];
+            } elsif ($action eq 'set' and $field eq 'type_data') {
+                my $attr = $history_rs->oh_type_field;
                 if (defined ($old) and defined ($new)) {
                     $output .= "set attribute $attr to $new (was $old)";
                 } elsif (defined ($old)) {
@@ -492,9 +534,8 @@ sub history {
                 } elsif (defined ($new)) {
                     $output .= "add $new to attribute $attr";
                 }
-            } elsif ($data[0] eq 'set'
-                     and ($data[1] eq 'owner' or $data[1] =~ /^acl_/)) {
-                my $field = $data[1];
+            } elsif ($action eq 'set'
+                     and ($field eq 'owner' or $field =~ /^acl_/)) {
                 $old = $self->format_acl_id ($old) if defined ($old);
                 $new = $self->format_acl_id ($new) if defined ($new);
                 if (defined ($old) and defined ($new)) {
@@ -504,8 +545,7 @@ sub history {
                 } elsif (defined ($old)) {
                     $output .= "unset $field (was $old)";
                 }
-            } elsif ($data[0] eq 'set') {
-                my $field = $data[1];
+            } elsif ($action eq 'set') {
                 if (defined ($old) and defined ($new)) {
                     $output .= "set $field to $new (was $old)";
                 } elsif (defined ($new)) {
@@ -514,16 +554,15 @@ sub history {
                     $output .= "unset $field (was $old)";
                 }
             } else {
-                $output .= $data[0];
+                $output .= $action;
             }
-            $output .= "\n    by $data[5] from $data[6]\n";
+            $output .= sprintf ("\n    by %s from %s\n", $history_rs->oh_by,
+                               $history_rs->oh_from);
         }
-        $self->{dbh}->commit;
     };
     if ($@) {
         my $id = $self->{type} . ':' . $self->{name};
         $self->error ("cannot read history for $id: $@");
-        $self->{dbh}->rollback;
         return;
     }
     return $output;
@@ -565,6 +604,7 @@ sub show {
                  [ ob_acl_destroy     => 'Destroy ACL'     ],
                  [ ob_acl_flags       => 'Flags ACL'       ],
                  [ ob_expires         => 'Expires'         ],
+                 [ ob_comment         => 'Comment'         ],
                  [ ob_created_by      => 'Created by'      ],
                  [ ob_created_from    => 'Created from'    ],
                  [ ob_created_on      => 'Created on'      ],
@@ -576,15 +616,14 @@ sub show {
                  [ ob_downloaded_on   => 'Downloaded on'   ]);
     my $fields = join (', ', map { $_->[0] } @attrs);
     my @data;
+    my $object_rs;
     eval {
-        my $sql = "select $fields from objects where ob_type = ? and
-            ob_name = ?";
-        @data = $self->{dbh}->selectrow_array ($sql, undef, $type, $name);
-        $self->{dbh}->commit;
+        my %search = (ob_type => $type,
+                      ob_name => $name);
+        $object_rs = $self->{schema}->resultset('Object')->find (\%search);
     };
     if ($@) {
         $self->error ("cannot retrieve data for ${type}:${name}: $@");
-        $self->{dbh}->rollback;
         return;
     }
     my $output = '';
@@ -592,8 +631,19 @@ sub show {
 
     # Format the results.  We use a hack to insert the flags before the first
     # trace field since they're not a field in the object in their own right.
-    for my $i (0 .. $#data) {
-        if ($attrs[$i][0] eq 'ob_created_by') {
+    # The comment should be word-wrapped at 80 columns.
+    for my $i (0 .. $#attrs) {
+        my $field = $attrs[$i][0];
+        my $fieldtext = $attrs[$i][1];
+        next unless my $value = $object_rs->get_column ($field);
+
+        if ($field eq 'ob_comment' && length ($value) > 79 - 17) {
+            local $Text::Wrap::columns = 80;
+            local $Text::Wrap::unexpand = 0;
+            $value = wrap (' ' x 17, ' ' x 17, $value);
+            $value =~ s/^ {17}//;
+        }
+        if ($field eq 'ob_created_by') {
             my @flags = $self->flag_list;
             if (not @flags and $self->error) {
                 return;
@@ -607,15 +657,14 @@ sub show {
             }
             $output .= $attr_output;
         }
-        next unless defined $data[$i];
-        if ($attrs[$i][0] =~ /^ob_(owner|acl_)/) {
-            my $acl = eval { Wallet::ACL->new ($data[$i], $self->{dbh}) };
+        if ($field =~ /^ob_(owner|acl_)/) {
+            my $acl = eval { Wallet::ACL->new ($value, $self->{schema}) };
             if ($acl and not $@) {
-                $data[$i] = $acl->name || $data[$i];
-                push (@acls, [ $acl, $data[$i] ]);
+                $value = $acl->name || $value;
+                push (@acls, [ $acl, $value ]);
             }
         }
-        $output .= sprintf ("%15s: %s\n", $attrs[$i][1], $data[$i]);
+        $output .= sprintf ("%15s: %s\n", $fieldtext, $value);
     }
     if (@acls) {
         my %seen;
@@ -639,20 +688,31 @@ sub destroy {
         $self->error ("cannot destroy ${type}:${name}: object is locked");
         return;
     }
+    my $guard = $self->{schema}->txn_scope_guard;
     eval {
-        my $date = strftime ('%Y-%m-%d %T', localtime $time);
-        my $sql = 'delete from flags where fl_type = ? and fl_name = ?';
-        $self->{dbh}->do ($sql, undef, $type, $name);
-        $sql = 'delete from objects where ob_type = ? and ob_name = ?';
-        $self->{dbh}->do ($sql, undef, $type, $name);
-        $sql = "insert into object_history (oh_type, oh_name, oh_action,
-            oh_by, oh_from, oh_on) values (?, ?, 'destroy', ?, ?, ?)";
-        $self->{dbh}->do ($sql, undef, $type, $name, $user, $host, $date);
-        $self->{dbh}->commit;
+
+        # Remove any flags that may exist for the record.
+        my %search = (fl_type => $type,
+                      fl_name => $name);
+        $self->{schema}->resultset('Flag')->search (\%search)->delete;
+
+        # Remove any object records
+        %search = (ob_type => $type,
+                   ob_name => $name);
+        $self->{schema}->resultset('Object')->search (\%search)->delete;
+
+        # And create a new history object for the destroy action.
+        my %record = (oh_type => $type,
+                      oh_name => $name,
+                      oh_action => 'destroy',
+                      oh_by     => $user,
+                      oh_from   => $host,
+                      oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
+        $self->{schema}->resultset('ObjectHistory')->create (\%record);
+        $guard->commit;
     };
     if ($@) {
         $self->error ("cannot destroy ${type}:${name}: $@");
-        $self->{dbh}->rollback;
         return;
     }
     return 1;
@@ -671,7 +731,7 @@ Wallet::Object::Base - Generic parent class for wallet objects
 
 =for stopwords
 DBH HOSTNAME DATETIME ACL backend metadata timestamp Allbery wallet-backend
-backend-specific
+backend-specific subclasses
 
 =head1 SYNOPSIS
 
@@ -709,7 +769,7 @@ such object exits, throws an exception.  Otherwise, returns an object
 blessed into the class used for the new() call (so subclasses can leave
 this method alone and not override it).
 
-Takes a Wallet::Database object, which is stored in the object and used
+Takes a Wallet::Schema object, which is stored in the object and used
 for any further operations.
 
 =item create(TYPE, NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
@@ -777,6 +837,18 @@ always returns the empty string.  If there are any type-specific
 attributes set, this method should return that metadata, formatted as key:
 value pairs with the keys right-aligned in the first 15 characters,
 followed by a space, a colon, and the value.
+
+=item comment([COMMENT, PRINCIPAL, HOSTNAME [, DATETIME]])
+
+Sets or retrieves the comment associated with an object.  If no arguments
+are given, returns the current comment or undef if no comment is set.  If
+arguments are given, change the comment to COMMENT and return true on
+success and false on failure.  Pass in the empty string for COMMENT to
+clear the comment.
+
+The other arguments are used for logging and history and should indicate
+the user and host from which the change is made and the time of the
+change.
 
 =item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
 

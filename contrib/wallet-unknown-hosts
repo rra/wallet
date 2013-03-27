@@ -1,11 +1,6 @@
 #!/usr/bin/perl -w
 #
-# wallet-unknown-hosts -- Report host keytabs in wallet for unknown hosts.
-#
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2010 Board of Trustees, Leland Stanford Jr. University
-#
-# See LICENSE for licensing terms.
+# Report host keytabs in wallet for unknown hosts.
 
 ##############################################################################
 # Site configuration
@@ -182,3 +177,103 @@ if ($command eq 'check') {
 } else {
     die "$0: unknown command $command\n";
 }
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=for stopwords
+ACL API CNAME DNS IP env keytab keytabs timestamp MERCHANTABILITY
+NONINFRINGEMENT sublicense
+
+=head1 NAME
+
+wallet-unknown-hosts - Report host keytabs in wallet for unknown hosts
+
+=head1 SYNOPSIS
+
+B<wallet-unknown-hosts> check
+
+B<wallet-unknown-hosts> report I<min> I<date>
+
+env REMOTE_USER=I<principal> B<wallet-unknown-hosts> purge I<min> I<date>
+
+=head1 DESCRIPTION
+
+B<wallet-unknown-hosts> constructs a database recording host-based keytabs
+in wallet whose corresponding hosts are not found in DNS.  It records in
+that database the number of times the host wasn't found and the timestamp
+of the first time it was not found.  It can then generate a report of
+host-based keytab objects that have not been found for a minimum number of
+consecutive times and which were last found longer ago than a particular
+date.  Finally, it can purge from wallet all objects that meet those
+requirements.
+
+When run with the C<check> argument, B<wallet-unknown-hosts> traverses the
+wallet database looking for host-based keytabs, which it recognizes by
+looking for keytab objects for principals with at least one period (C<.>)
+after a slash (C</>).  It then applies a local check followed by a DNS
+check.  The DNS check is only successful (only considers the host to be
+found) if it resolves to an IP address (possibly through a CNAME).
+
+For any host that's not found, it records that host in its associated
+database.  If this is the first time it wasn't found, it records the first
+missing time as the current time and the missing count as 1.  If it
+previously wasn't found, it just increments the missing count.
+
+For any host that is found, it deletes any record for that keytab from the
+database.
+
+When run with the C<report> argument, B<wallet-unknown-hosts> takes two
+additional arguments: I<min> and I<date>.  I<min> is the minimum number of
+times that a host must be found missing for the corresponding keytabs to
+show up on the report.  I<date> is a cutoff date in seconds since epoch;
+keytabs will not be included in the report unless their first missing date
+is older than I<date>.  The output will be the name component of the
+keytab objects in the wallet that correspond to unknown hosts and meet
+those thresholds.
+
+When run with the C<purge> argument, B<wallet-unknown-hosts> will build a
+list of keytab objects the same as with the C<report> argument, using the
+same additional arguments, but rather than printing them out will instead
+delete them from the wallet database.  To run C<purge>, the environment
+variable REMOTE_USER must be set to a principal that's a member of the
+C<ADMIN> ACL.
+
+=head1 BUGS
+
+B<wallet-unknown-hosts> doesn't have any facility to purge from its
+database all objects that are no longer in the wallet.
+
+Having to specify an identity for purge mode is an artifact of the
+Wallet::Server API and needs to be fixed by providing some way to perform
+actions as a local administrator.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2010, 2013 The Board of Trustees of the Leland Stanford Junior
+University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+=cut

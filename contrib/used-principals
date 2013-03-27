@@ -3,7 +3,8 @@
 # used-principals -- Report which Kerberos v5 principals are in use.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -105,6 +106,9 @@ __END__
 ##############################################################################
 # Documentation
 ##############################################################################
+
+=for stopwords
+KDC bzip2
 
 =head1 NAME
 

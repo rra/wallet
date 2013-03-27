@@ -1,11 +1,6 @@
 #!/usr/bin/perl -w
 #
-# wallet-report -- Wallet server reporting interface.
-#
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
-#
-# See LICENSE for licensing terms.
+# Wallet server reporting interface.
 
 ##############################################################################
 # Declarations and globals
@@ -31,6 +26,7 @@ Wallet reporting help:
   objects owner <owner>         Objects owned by that owner
   objects type <type>           Objects of that type
   objects unused                Objects that have never been stored/gotten
+  owners <type> <name>          All ACL entries owning matching objects
 EOH
 
 ##############################################################################
@@ -112,6 +108,7 @@ wallet-report - Wallet server reporting interface
 
 =for stopwords
 metadata ACL hostname backend acl acls wildcard SQL Allbery remctl
+MERCHANTABILITY NONINFRINGEMENT sublicense
 
 =head1 SYNOPSIS
 
@@ -278,15 +275,38 @@ with duplicates suppressed.
 
 =back
 
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2008, 2009, 2010, 2013 The Board of Trustees of the Leland
+Stanford Junior University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
 =head1 SEE ALSO
 
 Wallet::Config(3), Wallet::Report(3), wallet-backend(8)
 
 This program is part of the wallet system.  The current version is
 available from L<http://www.eyrie.org/~eagle/software/wallet/>.
-
-=head1 AUTHOR
-
-Russ Allbery <rra@stanford.edu>
 
 =cut

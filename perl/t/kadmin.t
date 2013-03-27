@@ -3,12 +3,13 @@
 # Tests for the kadmin object implementation.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2009, 2010, 2012, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 32;
+use Test::More tests => 34;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
@@ -72,7 +73,7 @@ SKIP: {
 # implementation is configured.  This retests some things that are also tested
 # by the keytab test, but specifically through the Wallet::Kadmin API.
 SKIP: {
-    skip 'no keytab configuration', 14 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 16 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -90,10 +91,12 @@ SKIP: {
     is ($@, '', ' and there is no error');
     is ($kadmin->destroy ('wallet/one'), 1, 'Deleting wallet/one works');
     is ($kadmin->exists ('wallet/one'), 0, ' and it does not exist');
+    is ($kadmin->error, undef, ' with no error message');
 
     # Create the principal and check that keytab returns something.  We'll
     # check the details of the return in the keytab check.
     is ($kadmin->create ('wallet/one'), 1, 'Creating wallet/one works');
+    is ($kadmin->error, undef, ' with no error message');
     is ($kadmin->exists ('wallet/one'), 1, ' and it now exists');
     my $data = $kadmin->keytab_rekey ('wallet/one');
     ok (defined ($data), ' and retrieving a keytab works');

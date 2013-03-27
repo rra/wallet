@@ -1,12 +1,13 @@
 # Wallet::Database -- Wallet system database connection management.
 #
-# This module is a thin wrapper around DBI to handle determination of the
-# database driver and configuration settings automatically on connect.  The
+# This module is a thin wrapper around DBIx::Class to handle determination
+# of the database configuration settings automatically on connect.  The
 # intention is that Wallet::Database objects can be treated in all respects
-# like DBI objects in the rest of the code.
+# like DBIx::Class objects in the rest of the code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2012, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -14,32 +15,21 @@
 # Modules and declarations
 ##############################################################################
 
-# Set up the subclasses.  This is required to avoid warnings under DBI 1.40
-# and later, even though we don't actually make use of any overridden
-# statement handle or database handle methods.
-package Wallet::Database::st;
-use vars qw(@ISA);
-@ISA = qw(DBI::st);
-
-package Wallet::Database::db;
-use vars qw(@ISA);
-@ISA = qw(DBI::db);
-
 package Wallet::Database;
 require 5.006;
 
 use strict;
 use vars qw(@ISA $VERSION);
 
-use DBI;
+use Wallet::Schema;
 use Wallet::Config;
 
-@ISA = qw(DBI);
+@ISA = qw(Wallet::Schema);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ##############################################################################
 # Core overrides
@@ -65,7 +55,7 @@ sub connect {
     }
     my $user = $Wallet::Config::DB_USER;
     my $pass = $Wallet::Config::DB_PASSWORD;
-    my %attrs = (PrintError => 0, RaiseError => 1, AutoCommit => 0);
+    my %attrs = (PrintError => 0, RaiseError => 1);
     my $dbh = eval { $class->SUPER::connect ($dsn, $user, $pass, \%attrs) };
     if ($@) {
         die "cannot connect to database: $@\n";

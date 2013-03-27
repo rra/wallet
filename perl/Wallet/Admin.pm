@@ -1,7 +1,8 @@
 # Wallet::Admin -- Wallet system administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2008, 2009, 2010, 2011, 2012, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -16,13 +17,18 @@ use strict;
 use vars qw($VERSION);
 
 use Wallet::ACL;
-use Wallet::Database;
 use Wallet::Schema;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.05';
+$VERSION = '0.07';
+
+# The last non-DBIx::Class version of Wallet::Schema.  If a database has no
+# DBIx::Class versioning, we artificially install this version number before
+# starting the upgrade process so that the automated DBIx::Class upgrade will
+# work properly.
+our $BASE_VERSION = '0.07';
 
 ##############################################################################
 # Constructor, destructor, and accessors
@@ -33,8 +39,8 @@ $VERSION = '0.05';
 # Throw an exception if anything goes wrong.
 sub new {
     my ($class) = @_;
-    my $dbh = Wallet::Database->connect;
-    my $self = { dbh => $dbh };
+    my $schema = Wallet::Schema->connect;
+    my $self = { schema => $schema };
     bless ($self, $class);
     return $self;
 }
@@ -42,7 +48,13 @@ sub new {
 # Returns the database handle (used mostly for testing).
 sub dbh {
     my ($self) = @_;
-    return $self->{dbh};
+    return $self->{schema}->storage->dbh;
+}
+
+# Returns the DBIx::Class-based database schema object.
+sub schema {
+    my ($self) = @_;
+    return $self->{schema};
 }
 
 # Set or return the error stashed in the object.
@@ -60,7 +72,7 @@ sub error {
 # Disconnect the database handle on object destruction to avoid warnings.
 sub DESTROY {
     my ($self) = @_;
-    $self->{dbh}->disconnect unless $self->{dbh}->{InactiveDestroy};
+    $self->{schema}->storage->dbh->disconnect;
 }
 
 ##############################################################################
@@ -74,17 +86,50 @@ sub DESTROY {
 # true on success and false on failure, setting the object error.
 sub initialize {
     my ($self, $user) = @_;
-    my $schema = Wallet::Schema->new;
-    eval { $schema->create ($self->{dbh}) };
+
+    # Deploy the database schema from DDL files, if they exist.  If not then
+    # we automatically get the database from the Schema modules.
+    $self->{schema}->deploy ({}, $Wallet::Config::DB_DDL_DIRECTORY);
     if ($@) {
         $self->error ($@);
         return;
     }
-    my $acl = Wallet::ACL->create ('ADMIN', $self->{dbh}, $user, 'localhost');
+    $self->default_data;
+
+    # Create a default admin ACL.
+    my $acl = Wallet::ACL->create ('ADMIN', $self->{schema}, $user,
+                                   'localhost');
     unless ($acl->add ('krb5', $user, $user, 'localhost')) {
         $self->error ($acl->error);
         return;
     }
+
+    return 1;
+}
+
+# Load default data into various tables.  We'd like to do this more directly
+# in the schema definitions, but not yet seeing a good way to do that.
+sub default_data {
+    my ($self) = @_;
+
+    # acl_schemes default rows.
+    my ($r1) = $self->{schema}->resultset('AclScheme')->populate ([
+                       [ qw/as_name as_class/ ],
+                       [ 'krb5',       'Wallet::ACL::Krb5'            ],
+                       [ 'krb5-regex', 'Wallet::ACL::Krb5::Regex'     ],
+                       [ 'ldap-attr',  'Wallet::ACL::LDAP::Attribute' ],
+                       [ 'netdb',      'Wallet::ACL::NetDB'           ],
+                       [ 'netdb-root', 'Wallet::ACL::NetDB::Root'     ],
+                                                     ]);
+    warn "default AclScheme not installed" unless defined $r1;
+
+    # types default rows.
+    my @record = ([ qw/ty_name ty_class/ ],
+               [ 'file', 'Wallet::Object::File' ],
+               [ 'keytab', 'Wallet::Object::Keytab' ]);
+    ($r1) = $self->{schema}->resultset('Type')->populate (\@record);
+    warn "default Type not installed" unless defined $r1;
+
     return 1;
 }
 
@@ -101,12 +146,63 @@ sub reinitialize {
 # false on failure.
 sub destroy {
     my ($self) = @_;
-    my $schema = Wallet::Schema->new;
-    eval { $schema->drop ($self->{dbh}) };
+
+    # Get an actual DBI handle and use it to delete all tables.
+    my $dbh = $self->dbh;
+    my @tables = qw/acls acl_entries acl_history acl_schemes enctypes
+        flags keytab_enctypes keytab_sync objects object_history
+        sync_targets types dbix_class_schema_versions/;
+    for my $table (@tables) {
+        my $sql = "DROP TABLE IF EXISTS $table";
+        $dbh->do ($sql);
+    }
+
+    return 1;
+}
+
+# Save a DDL of the database in every supported database server.  Returns
+# true on success and false on failure.
+sub backup {
+    my ($self, $oldversion) = @_;
+
+    my @dbs = qw/MySQL SQLite PostgreSQL/;
+    my $version = $Wallet::Schema::VERSION;
+    $self->{schema}->create_ddl_dir (\@dbs, $version,
+                                     $Wallet::Config::DB_DDL_DIRECTORY,
+                                     $oldversion);
+
+    return 1;
+}
+
+# Upgrade the database to the latest schema version.  Returns true on success
+# and false on failure.
+sub upgrade {
+    my ($self) = @_;
+
+    # Check to see if the database is versioned.  If not, install the
+    # versioning table and default version.
+    if (!$self->{schema}->get_db_version) {
+        $self->{schema}->install ($BASE_VERSION);
+    }
+
+    # Suppress warnings that actually are just informational messages.
+    local $SIG{__WARN__} = sub {
+        my ($warn) = @_;
+        return if $warn =~ m{Upgrade not necessary};
+        return if $warn =~ m{Attempting upgrade};
+        warn $warn;
+    };
+
+    # Perform the actual upgrade.
+    if ($self->{schema}->get_db_version) {
+        $self->{schema}->upgrade_directory ($Wallet::Config::DB_DDL_DIRECTORY);
+        eval { $self->{schema}->upgrade; };
+    }
     if ($@) {
         $self->error ($@);
         return;
     }
+
     return 1;
 }
 
@@ -121,13 +217,14 @@ sub destroy {
 sub register_object {
     my ($self, $type, $class) = @_;
     eval {
-        my $sql = 'insert into types (ty_name, ty_class) values (?, ?)';
-        $self->{dbh}->do ($sql, undef, $type, $class);
-        $self->{dbh}->commit;
+        my $guard = $self->{schema}->txn_scope_guard;
+        my %record = (ty_name  => $type,
+                      ty_class => $class);
+        $self->{schema}->resultset('Type')->create (\%record);
+        $guard->commit;
     };
     if ($@) {
         $self->error ("cannot register $class for $type: $@");
-        $self->{dbh}->rollback;
         return;
     }
     return 1;
@@ -140,13 +237,14 @@ sub register_object {
 sub register_verifier {
     my ($self, $scheme, $class) = @_;
     eval {
-        my $sql = 'insert into acl_schemes (as_name, as_class) values (?, ?)';
-        $self->{dbh}->do ($sql, undef, $scheme, $class);
-        $self->{dbh}->commit;
+        my $guard = $self->{schema}->txn_scope_guard;
+        my %record = (as_name  => $scheme,
+                      as_class => $class);
+        $self->{schema}->resultset('AclScheme')->create (\%record);
+        $guard->commit;
     };
     if ($@) {
-        $self->error ("cannot registery $class for $scheme: $@");
-        $self->{dbh}->rollback;
+        $self->error ("cannot register $class for $scheme: $@");
         return;
     }
     return 1;
@@ -164,7 +262,7 @@ __DATA__
 Wallet::Admin - Wallet system administrative interface
 
 =for stopwords
-ACL hostname Allbery
+ACL hostname Allbery verifier
 
 =head1 SYNOPSIS
 
@@ -204,12 +302,12 @@ failure to get the error message.
 
 =over 4
 
-=item destroy()
+=item destroy ()
 
 Destroys the database, deleting all of its data and all of the tables used
 by the wallet server.  Returns true on success and false on failure.
 
-=item error()
+=item error ()
 
 Returns the error of the last failing operation or undef if no operations
 have failed.  Callers should call this function to get the error message
@@ -240,7 +338,7 @@ Register in the database a mapping from the ACL scheme SCHEME to the class
 CLASS.  Returns true on success and false on failure (including when the
 verifier is already registered).
 
-=item reinitialize(PRINCIPAL)
+=item reinitialize (PRINCIPAL)
 
 Performs the same actions as initialize(), but first drops any existing
 wallet database tables from the database, allowing this function to be
@@ -248,6 +346,11 @@ called on a prior wallet database.  All data stored in the database will
 be deleted and a fresh set of wallet database tables will be created.
 This method is equivalent to calling destroy() followed by initialize().
 Returns true on success and false on failure.
+
+=item upgrade ()
+
+Upgrades the database to the latest schema version, preserving data as
+much as possible.  Returns true on success and false on failure.
 
 =back
 

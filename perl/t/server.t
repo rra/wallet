@@ -3,11 +3,12 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007, 2008, 2010 Board of Trustees, Leland Stanford Jr. University
+# Copyright 2007, 2008, 2010, 2011, 2012, 2013
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 355;
+use Test::More tests => 382;
 
 use POSIX qw(strftime);
 use Wallet::Admin;
@@ -35,8 +36,8 @@ is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
 $server = eval { Wallet::Server->new (@trace) };
 is ($@, '', 'Reopening with new did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
-my $dbh = $server->dbh;
-ok (defined ($dbh), ' and returns a defined database handle');
+my $schema = $server->schema;
+ok (defined ($schema), ' and returns a defined schema object');
 
 # Allow creation of base objects for testing purposes.
 $setup->register_object ('base', 'Wallet::Object::Base');
@@ -65,7 +66,9 @@ is ($result, $history, ' including by number');
 is ($server->acl_create (3), undef, 'Cannot create ACL with a numeric name');
 is ($server->error, 'ACL name may not be all numbers',
     ' and returns the right error');
+is ($server->acl_check ('user1'), 0, 'user1 ACL does not exist');
 is ($server->acl_create ('user1'), 1, 'Can create regular ACL');
+is ($server->acl_check ('user1'), 1, 'user1 now exists');
 is ($server->acl_show ('user1'), "Members of ACL user1 (id: 2) are:\n",
     ' and show works');
 is ($server->acl_create ('user1'), undef, ' but not twice');
@@ -94,8 +97,10 @@ is ($server->acl_history ('test'), undef, ' and history fails');
 is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_destroy ('test'), undef, 'Destroying the old name fails');
 is ($server->error, 'ACL test not found', ' and returns the right error');
-is ($server->acl_destroy ('test2'), 1, ' but destroying another one works');
+is ($server->acl_check ('test2'), 1, ' but the other ACL exists');
+is ($server->acl_destroy ('test2'), 1, ' and destroying it works');
 is ($server->acl_destroy ('test2'), undef, ' but not twice');
+is ($server->acl_check ('test2'), 0, ' and now it does not exist');
 is ($server->error, 'ACL test2 not found', ' and returns the right error');
 is ($server->acl_add ('user1', 'krb4', $user1), undef,
     'Adding with a bad scheme fails');
@@ -198,6 +203,24 @@ is ($server->check ('base', 'service/test'), 0,
     ' and now check says it is not there');
 is ($server->destroy ('base', 'service/test'), undef, ' but not twice');
 is ($server->error, 'cannot find base:service/test', ' with the right error');
+
+# Test manipulating comments.
+is ($server->comment ('base', 'service/test'), undef,
+    'Retrieving comment on an unknown object fails');
+is ($server->error, 'cannot find base:service/test', ' with the right error');
+is ($server->comment ('base', 'service/test', 'this is a comment'), undef,
+    ' and setting it also fails');
+is ($server->error, 'cannot find base:service/test', ' with the right error');
+is ($server->comment ('base', 'service/admin'), undef,
+    'Retrieving comment for the right object returns undef');
+is ($server->error, undef, ' but there is no error');
+is ($server->comment ('base', 'service/admin', 'this is a comment'), 1,
+    ' and we can set it');
+is ($server->comment ('base', 'service/admin'), 'this is a comment',
+    ' and get the value back');
+is ($server->comment ('base', 'service/admin', ''), 1, ' and clear it');
+is ($server->comment ('base', 'service/admin'), undef, ' and now it is gone');
+is ($server->error, undef, ' and still no error');
 
 # Test manipulating expires.
 my $now = strftime ('%Y-%m-%d %T', localtime time);
@@ -393,6 +416,10 @@ is ($server->flag_clear ('base', 'service/admin', 'unchanging'), 1,
 $history = <<"EOO";
 DATE  create
     by $admin from $host
+DATE  set comment to this is a comment
+    by $admin from $host
+DATE  unset comment (was this is a comment)
+    by $admin from $host
 DATE  set expires to $now
     by $admin from $host
 DATE  unset expires (was $now)
@@ -470,10 +497,6 @@ is ($server->create ('base', 'service/test'), undef,
     ' nor can we create objects');
 is ($server->error, "$user1 not authorized to create base:service/test",
     ' with error');
-is ($server->destroy ('base', 'service/user1'), undef,
-    ' or destroy objects');
-is ($server->error, "$user1 not authorized to destroy base:service/user1",
-    ' with error');
 is ($server->owner ('base', 'service/user1', 'user2'), undef,
     ' or set the owner');
 is ($server->error,
@@ -510,12 +533,15 @@ is ($server->store ('base', 'service/user1', 'stuff'), undef,
 is ($server->error,
     "cannot store base:service/user1: object type is immutable",
     ' and the method is called');
+is ($server->comment ('base', 'service/user1', 'this is a comment'), 1,
+    ' and set a comment');
 $show = $server->show ('base', 'service/user1');
 $show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
 $expected = <<"EOO";
            Type: base
            Name: service/user1
           Owner: user1
+        Comment: this is a comment
      Created by: $admin
    Created from: $host
      Created on: 0
@@ -529,6 +555,8 @@ DATE  create
     by $admin from $host
 DATE  set owner to user1 (2)
     by $admin from $host
+DATE  set comment to this is a comment
+    by $user1 from $host
 EOO
 $seen = $server->history ('base', 'service/user1');
 $seen =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
@@ -565,6 +593,11 @@ is ($server->attr ('base', 'service/user2', 'foo', ''), undef,
     ' and set attributes');
 is ($server->error,
     "$user1 not authorized to set attributes for base:service/user2",
+    ' with the right error');
+is ($server->comment ('base', 'service/user2', 'this is a comment'), undef,
+    ' and set comment');
+is ($server->error,
+    "$user1 not authorized to set comment for base:service/user2",
     ' with the right error');
 
 # And only some things on an object we own with some ACLs.
@@ -702,8 +735,27 @@ is ($server->history ('base', 'service/user1'), undef,
     ' or see history for it');
 is ($server->error, "$user2 not authorized to show base:service/user1",
     ' with the right error');
+is ($server->comment ('base', 'service/user1', 'this is a comment'), undef,
+    ' or set a comment for it');
+is ($server->error,
+    "$user2 not authorized to set comment for base:service/user1",
+    ' with the right error');
 
-# And only some things on an object we own with some ACLs.
+# Test that setting a comment is controlled by the owner but retrieving it is
+# controlled by the show ACL.
+$result = eval { $server->get ('base', 'service/both') };
+is ($result, undef, 'We can get an object we jointly own');
+is ($@, "Do not instantiate Wallet::Object::Base directly\n",
+    ' and the method is called');
+is ($server->comment ('base', 'service/both', 'this is a comment'), 1,
+    ' and can set a comment on it');
+is ($server->error, undef, ' with no error');
+is ($server->comment ('base', 'service/both'), undef,
+    ' but cannot see the comment on it');
+is ($server->error, "$user2 not authorized to show base:service/both",
+    ' with the right error');
+
+# And can only do some things on an object we own with some ACLs.
 $result = eval { $server->get ('base', 'service/both') };
 is ($result, undef, 'We can get an object we jointly own');
 is ($@, "Do not instantiate Wallet::Object::Base directly\n",
@@ -745,6 +797,12 @@ is ($server->store ('base', 'service/both', 'stuff'), undef,
     ' or store it');
 is ($server->error, 'cannot find base:service/both', ' because it is gone');
 
+# Switch back to user1 and test destroy.
+$server = eval { Wallet::Server->new ($user1, $host) };
+is ($@, '', 'Switching users works');
+is ($server->destroy ('base', 'service/user1'), 1,
+    'Destroy of an object we own with no destroy ACLs works');
+
 # Test default ACLs on object creation.
 #
 # Create a default_acl sub that permits $user2 to create service/default with
@@ -780,8 +838,10 @@ sub default_owner {
 }
 package main;
 
-# We're still user2, so we should now be able to create service/default.  Make
-# sure we can and that the ACLs all look good.
+# Switch back to user2, so we should now be able to create service/default.
+# Make sure we can and that the ACLs all look good.
+$server = eval { Wallet::Server->new ($user2, $host) };
+is ($@, '', 'Switching users works');
 is ($server->create ('base', 'service/default'), undef,
     'Creating an object with the default ACL fails');
 is ($server->error, "$user2 not authorized to create base:service/default",
@@ -974,5 +1034,5 @@ is ($@, "database connection information not configured\n",
     ' or if DB_INFO is not set');
 $Wallet::Config::DB_INFO = 't';
 $server = eval { Wallet::Server->new ($user2, $host) };
-like ($@, qr/^cannot connect to database: /,
+like ($@, qr/unable to open database file/,
       ' or if the database connection fails');
