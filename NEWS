@@ -20,6 +20,13 @@ wallet 1.0 (2013-03-27)
     this ACL type for an existing wallet database, use wallet-admin to
     register the new verifier.
 
+    A new object type, wa-keyring (Wallet::Object::WAKeyring), is now
+    supported.  This stores a WebAuth keyring and handles both key
+    rotation and garbage collection of old keys on retrieval of the
+    keyring.  The WebAuth Perl module is required to use this object
+    type.  To enable this object type for an existing wallet database, use
+    wallet-admin to register the new object.
+
     Add a new acl check command which, given an ACL ID, prints yes if that
     ACL already exists and no otherwise.  This is parallel to the check
     command for objects.
