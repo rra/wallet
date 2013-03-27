@@ -23,8 +23,7 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			   \
 	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/file.t	   \
 	perl/t/init.t perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm   \
 	perl/t/object.t perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t \
-	perl/t/schema.t perl/t/server.t perl/t/verifier-netdb.t		   \
-	perl/t/verifier.t
+	perl/t/server.t perl/t/verifier-netdb.t perl/t/verifier.t
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
@@ -36,7 +35,7 @@ EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	contrib/wallet-unknown-hosts docs/design-acl docs/design-api	   \
 	docs/netdb-role-api docs/notes docs/objects-and-schemes docs/setup \
 	docs/stanford-naming examples/stanford.conf tests/TESTS		   \
-	tests/data/README tests/data/allow-extract tests/data/basic.conf   \
+	tests/config/README tests/data/allow-extract tests/data/basic.conf \
 	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	   \
 	tests/data/fake-kadmin tests/data/fake-keytab			   \
 	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		   \
