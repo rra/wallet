@@ -101,6 +101,9 @@ REQUIREMENTS
   binary that supports the -norandkey option to ktadd.  This option is
   included in MIT Kerberos 1.7 and later.
 
+  The WebAuth keyring object support in the wallet server requires the
+  WebAuth Perl module from WebAuth 4.4.0 or later.
+
   To support the LDAP attribute ACL verifier, the Authen::SASL and
   Net::LDAP Perl modules must be installed on the server.  This verifier
   only works with LDAP servers that support GSS-API binds.
