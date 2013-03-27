@@ -12,6 +12,7 @@ Vcs-Browser: http://git.eyrie.org/?p=kerberos/wallet.git
 
 Package: keytab-backend
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends}, ${perl:Depends}, krb5-admin-server, perl,
  remctl-server
 Description: Provide existing MIT Kerberos keytabs via remctl
@@ -24,6 +25,7 @@ Description: Provide existing MIT Kerberos keytabs via remctl
 
 Package: wallet-client
 Architecture: any
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Kerberos-authenticated secure data management client
  The wallet is a system for managing secure data, authorization rules to
@@ -40,6 +42,7 @@ Description: Kerberos-authenticated secure data management client
 
 Package: wallet-server
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends}, ${perl:Depends},
  libdbd-sqlite3-perl | libdbd-mysql-perl | libdbd-pg-perl,
  libdbix-class-perl, libsql-translator-perl, remctl-server
