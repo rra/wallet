@@ -1,10 +1,13 @@
 #!/usr/bin/make -f
 
+# Add hardening build flags.
+export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow,+pie
+
 %:
-	dh $@
+	dh $@ --parallel
 
 override_dh_auto_configure:
-	dh_auto_configure -- --enable-reduced-depends
+	dh_auto_configure --parallel -- --enable-reduced-depends
 
 # We rebuild the perl directory Makefile to encode the correct installation
 # paths, since otherwise it defaults to using the local site module path.
