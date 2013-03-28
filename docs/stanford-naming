@@ -6,7 +6,8 @@ Introduction
     wallet objects.  They may not be appropriate for every site using
     wallet, but they can serve as a starting point for your site-local
     conventions.  They are the conventions enforced by
-    examples/stanford.conf (to the extent it's possible to enforce them).
+    Wallet::Policy::Stanford (to the extent it's possible to enforce
+    them).
 
 Object Naming
 

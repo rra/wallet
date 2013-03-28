@@ -45,6 +45,13 @@ wallet 1.0 (2013-03-27)
     Add docs/objects-and-schemes, which provides a brief summary of the
     current supported object types and ACL schemes.
 
+    The Stanford wallet object and ACL naming policy is now available in
+    code form as the Wallet::Policy::Stanford module, which is installed
+    as part of the server.  As-is, it is only useful for sites that want
+    to adopt an identical naming policy (and will still require overriding
+    some of the internal data, like group names), but it may provide a
+    useful code example for others wanting to do something similar.
+
     Update to rra-c-util 4.8:
 
     * Look for krb5-config in /usr/kerberos/bin after the user's PATH.

@@ -11,13 +11,20 @@
 use strict;
 use warnings;
 
+use Test::More;
+
+BEGIN {
+    eval 'use WebAuth 3.06 qw(WA_KEY_AES WA_AES_128)';
+    plan skip_all => 'WebAuth 3.06 required for testing wa-keyring'
+      if $@;
+}
+
 use POSIX qw(strftime);
-use Test::More tests => 68;
-use WebAuth 3.06 qw(WA_KEY_AES WA_AES_128);
 use WebAuth::Key 1.01 ();
 use WebAuth::Keyring 1.02 ();
 
 BEGIN {
+    plan tests => 68;
     use_ok('Wallet::Admin');
     use_ok('Wallet::Config');
     use_ok('Wallet::Object::WAKeyring');
