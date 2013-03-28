@@ -26,7 +26,7 @@ wallet (1.0-1) unstable; urgency=low
   * Update standards version to 3.9.4.
     - Indicate the Debian packaging branch in the Vcs-Git header.
 
- -- Russ Allbery <rra@debian.org>  Wed, 27 Mar 2013 17:38:19 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 27 Mar 2013 19:07:36 -0700
 
 wallet (0.12-1) unstable; urgency=low
 
