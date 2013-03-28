@@ -39,8 +39,8 @@ DESCRIPTION
   ACL controls access to administrative actions.  An ACL consists of zero
   or more entries, each of which is a generic scheme and identifier pair,
   allowing the ACL system to be extended to use any existing authorization
-  infrastructure.  Currently, the only ACL type supported matches a single
-  Kerberos principal name, but this will be extended in future releases.
+  infrastructure.  Supported ACL types include Kerberos principal names,
+  regexes matching Kerberos principal names, and LDAP attribute checks.
 
   Currently, the object types supported are simple files, Kerberos
   keytabs, and WebAuth keyrings.  By default, whenever a Kerberos keytab
