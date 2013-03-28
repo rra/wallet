@@ -50,7 +50,7 @@ Depends: ${misc:Depends}, ${perl:Depends},
 Recommends: libdatetime-format-sqlite-perl,
  krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
 Suggests: libauthen-sasl-perl, libnet-ldap-perl, libnet-remctl-perl,
- libwebauth-perl
+ libwebauth-perl (>= 4.4.0)
 Description: Kerberos-authenticated secure data management server
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions
