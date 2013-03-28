@@ -7,5 +7,6 @@ debian/tmp/usr/share/man/man8/wallet-admin.8
 debian/tmp/usr/share/man/man8/wallet-backend.8
 debian/tmp/usr/share/man/man8/wallet-report.8
 debian/tmp/usr/share/perl5
+debian/tmp/usr/share/wallet
 
 config/wallet                   etc/remctl/conf.d

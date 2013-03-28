@@ -19,6 +19,10 @@ override_dh_auto_install:
 	install -m 0644 config/wallet-report.acl \
 	    debian/tmp/etc/remctl/acl/wallet-report
 
+# Override install to check for missing installed files.
+override_dh_install:
+	dh_install --fail-missing
+
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
 
