@@ -195,7 +195,7 @@ sub command {
             print $status ? "yes\n" : "no\n";
         }
     } elsif ($command eq 'comment') {
-        check_args (2, 3, [], @args);
+        check_args (2, 3, [3], @args);
         if (@args > 2) {
             $server->comment (@args) or failure ($server->error, @_);
         } else {

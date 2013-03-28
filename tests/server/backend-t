@@ -3,7 +3,7 @@
 # Tests for the wallet-backend dispatch code.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012
+# Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -283,11 +283,16 @@ for my $command (sort keys %commands) {
         my @args = @base;
         $args[$arg] = 'foo;bar';
         ($out, $err) = run_backend ($command, @args);
-        if ($command eq 'store' and $arg == 2) {
-            is ($err, '', 'Store allows any characters');
-            is ($OUTPUT, "command $command @args[0,1] from admin (1.2.3.4)"
-                . " succeeded\n", ' and success logged');
-            is ($out, "$new\nstore foobar foobar foo;bar\n",
+        if (($command eq 'store' or $command eq 'comment') and $arg == 2) {
+            is ($err, '', 'Store and comment allow any characters');
+            if ($command eq 'store') {
+                is ($OUTPUT, "command $command @args[0,1] from admin"
+                      . " (1.2.3.4) succeeded\n", ' and success logged');
+            } else {
+                is ($OUTPUT, "command $command @args from admin"
+                      . " (1.2.3.4) succeeded\n", ' and success logged');
+            }
+            is ($out, "$new\n$command foobar foobar foo;bar\n",
                 ' and calls the right method');
         } else {
             is ($err, "invalid characters in argument: foo;bar\n",
