@@ -8,7 +8,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 23;
+use Test::More tests => 24;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -57,18 +57,27 @@ is ($admin->register_verifier ('base', 'Wallet::ACL::Base'), undef,
 is ($server->acl_add ('ADMIN', 'base', 'foo'), 1,
     ' and adding a base ACL now works');
 
-# Test an upgrade.  Reinitialize to an older version, then test upgrade to
-# the current version.
+# Test re-initialization of the database.
 $Wallet::Schema::VERSION = '0.07';
 is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     ' and re-initialization succeeds');
 $Wallet::Schema::VERSION = '0.08';
+
+# Delete all tables and then redump them straight from the SQL file to avoid
+# getting the version table.
+unlink 'wallet-db';
+$admin = eval { Wallet::Admin->new };
+my $status = system ('/usr/bin/sqlite3', 'wallet-db',
+                     '.read sql/Wallet-Schema-0.07-SQLite.sql');
+is ($status, 0, 'Reinstalling database from non-versioned version succeds');
+
+# Test an upgrade.  Reinitialize to an older version, then test upgrade to
+# the current version.
 my $retval = $admin->upgrade;
-is ($retval, 1, 'Performing an upgrade succeeds');
-my $dbh = $admin->dbh;
+is ($retval, 1, ' and performing an upgrade succeeds');
 my $sql = "select version from dbix_class_schema_versions order by version "
     ."DESC";
-$version = $dbh->selectall_arrayref ($sql);
+$version = $admin->dbh->selectall_arrayref ($sql);
 is (@$version, 2, ' and versions table has correct number of rows');
 is (@{ $version->[0] }, 1, ' and correct number of columns');
 is ($version->[0][0], '0.08', ' and the schema version is correct');
