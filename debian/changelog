@@ -1,3 +1,10 @@
+wallet (1.0-2) unstable; urgency=low
+
+  * Cherry-pick upstream commits to fix the t/admin.t test with the
+    squeeze version of DBIx::Class.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 29 Mar 2013 13:58:42 -0700
+
 wallet (1.0-1) unstable; urgency=low
 
   * New upstream release.
