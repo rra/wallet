@@ -3,7 +3,7 @@
 # Tests for wallet administrative interface.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2009, 2010, 2011
+# Copyright 2008, 2009, 2010, 2011, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -63,24 +63,29 @@ is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     ' and re-initialization succeeds');
 $Wallet::Schema::VERSION = '0.08';
 
-# Delete all tables and then redump them straight from the SQL file to avoid
-# getting the version table.
-unlink 'wallet-db';
-$admin = eval { Wallet::Admin->new };
-my $status = system ('/usr/bin/sqlite3', 'wallet-db',
-                     '.read sql/Wallet-Schema-0.07-SQLite.sql');
-is ($status, 0, 'Reinstalling database from non-versioned version succeds');
+# Test an upgrade.  Reinitialize to an older version, then test upgrade to the
+# current version.
+SKIP: {
+    my @path = (split (':', $ENV{PATH}));
+    my ($sqlite) = grep { -x $_ } map { "$_/sqlite3" } @path;
+    skip 'sqlite3 not found', 5 unless $sqlite;
 
-# Test an upgrade.  Reinitialize to an older version, then test upgrade to
-# the current version.
-my $retval = $admin->upgrade;
-is ($retval, 1, ' and performing an upgrade succeeds');
-my $sql = "select version from dbix_class_schema_versions order by version "
-    ."DESC";
-$version = $admin->dbh->selectall_arrayref ($sql);
-is (@$version, 2, ' and versions table has correct number of rows');
-is (@{ $version->[0] }, 1, ' and correct number of columns');
-is ($version->[0][0], '0.08', ' and the schema version is correct');
+    # Delete all tables and then redump them straight from the SQL file to
+    # avoid getting the version table.
+    unlink 'wallet-db';
+    $admin = eval { Wallet::Admin->new };
+    my $status = system ('sqlite3', 'wallet-db',
+                         '.read sql/Wallet-Schema-0.07-SQLite.sql');
+    is ($status, 0, 'Reinstalling database from non-versioned SQL succeds');
+    my $retval = $admin->upgrade;
+    is ($retval, 1, ' and performing an upgrade succeeds');
+    my $sql = "select version from dbix_class_schema_versions order by"
+      . " version DESC";
+    $version = $admin->dbh->selectall_arrayref ($sql);
+    is (@$version, 2, ' and versions table has correct number of rows');
+    is (@{ $version->[0] }, 1, ' and correct number of columns');
+    is ($version->[0][0], '0.08', ' and the schema version is correct');
+}
 
 # Clean up.
 is ($admin->destroy, 1, 'Destruction succeeds');

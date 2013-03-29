@@ -117,11 +117,12 @@ REQUIREMENTS
   should be skipped, but not all the permutations have been checked.  The
   full test suite also requires the Test::Pod Perl module (available from
   CPAN), that remctld be installed and available on the user's path or in
-  /usr/local/sbin or /usr/sbin, that test cases can run services on and
-  connect to port 14373 on 127.0.0.1, and that kinit and either kvno or
-  kgetcred (which come with Kerberos) be installed and available on the
-  user's path.  The full test suite also requires a local keytab and some
-  additional configuration.
+  /usr/local/sbin or /usr/sbin, that sqlite3 be installed and available on
+  the user's path, that test cases can run services on and connect to port
+  14373 on 127.0.0.1, and that kinit and either kvno or kgetcred (which
+  come with Kerberos) be installed and available on the user's path.  The
+  full test suite also requires a local keytab and some additional
+  configuration.
 
   To bootstrap from a Git checkout, or if you change the Automake files
   and need to regenerate Makefile.in, you will need Automake 1.11 or
