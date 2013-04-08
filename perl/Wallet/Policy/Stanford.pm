@@ -43,7 +43,7 @@ our $DOMAIN = 'stanford.edu';
 # non-host-based objects owned by that group.  This default is entirely
 # Stanford-specific, even more so than the rest of this file.
 our %ACL_FOR_GROUP = (
-    'its-apps'    => 'group/sharedapps',
+    'its-apps'    => 'group/its-app-support',
     'its-crc-sg'  => 'group/crcsg',
     'its-idg'     => 'group/its-idg',
     'its-rc'      => 'group/its-rc',
