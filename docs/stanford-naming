@@ -126,10 +126,13 @@ Object Naming
         for Apache, Postfix, LDAP, and similar cases where the certificate
         should match the host name.  The public certificate we manage
         external to wallet since it doesn't need to be protected or
-        encrypted.  <server> here should be the CN of the certificate,
-        which may be different than the hostname (for hosts with multiple
-        virtual hosts, for example, or because the certificate is for a
-        load-balanced name).
+        encrypted. <server> here should be the fully-qualified DNS name
+        from the CN of the certificate, which may be different than the
+        hostname (for hosts with multiple virtual hosts, for example, or
+        because the certificate is for a load-balanced name).  For example,
+        ssl-key/ldap.stanford.edu for the X.509 private key for the
+        SSL certificate used across the ldap.stanford.edu load-balanced
+        pool.
 
         An optional <application> component may be added if there are
         multiple certificates with the same host name as the CN but with
