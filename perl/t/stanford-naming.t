@@ -16,7 +16,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Test::More tests => 99;
+use Test::More tests => 101;
 
 use lib 't/lib';
 use Util;
@@ -31,11 +31,12 @@ BEGIN {
 # Various valid keytab names.
 my @VALID_KEYTABS = qw(host/example.stanford.edu HTTP/example.stanford.edu
     service/example example/cgi class-example01/cgi dept-01example/cgi
-    group-example-01/cgi);
+    group-example-01/cgi afs/testcell.stanford.edu);
 
 # Various invalid keytab names.
 my @INVALID_KEYTABS = qw(example host/example service/example.stanford.edu
-    thisistoolong/cgi not-valid/cgi unknown/example.stanford.edu);
+    thisistoolong/cgi not-valid/cgi unknown/example.stanford.edu
+    afs/testcell);
 
 # Various valid file names.
 my @VALID_FILES = qw(htpasswd/example.stanford.edu/web

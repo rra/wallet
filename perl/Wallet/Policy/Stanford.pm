@@ -266,6 +266,10 @@ sub verify_name {
             if ($instance !~ /^[a-z0-9-]+\.[a-z0-9.-]+$/) {
                 return "host name $instance is not fully qualified";
             }
+        } elsif ($principal eq 'afs') {
+            if ($instance !~ /^[a-z0-9-]+\.[a-z0-9.-]+$/) {
+                return "AFS cell name $instance is not fully qualified";
+            }
         } elsif ($principal eq 'service') {
             if ($instance !~ /^[a-z0-9-]+$/) {
                 return "invalid service principal name $name";
