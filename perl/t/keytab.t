@@ -9,7 +9,7 @@
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 139;
+use Test::More tests => 140;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
@@ -124,7 +124,7 @@ sub enctypes {
 
     # If that failed, we may have a Heimdal user space instead, so try ktutil.
     # If we try this directly, it will just hang with MIT ktutil.
-    if ($? != 0) {
+    if ($? != 0 || !@enctypes) {
         @enctypes = ();
         open (KTUTIL, '-|', 'ktutil', '-k', 'keytab', 'list')
             or die "cannot run ktutil: $!\n";
@@ -619,18 +619,12 @@ EOO
     is ($one->history, $history, ' and history is still correct');
 
     # No enctypes we recognize?
-    skip 'no recognized enctypes', 33 unless @enctypes;
-
-    # We can test.  Add the enctypes we recognized to the enctypes table so
-    # that we'll be allowed to use them.
-    for my $enctype (@enctypes) {
-        my $sql = 'insert into enctypes (en_name) values (?)';
-        $dbh->do ($sql, undef, $enctype);
-    }
+    skip 'no recognized enctypes', 34 unless @enctypes;
 
     # Set those encryption types and make sure we get back a limited keytab.
     is ($one->attr ('enctypes', [ @enctypes ], @trace), 1,
         'Setting enctypes works');
+    is ($one->error, undef, ' with no error');
     for my $enctype (@enctypes) {
         $history .= "$date  add $enctype to attribute enctypes\n";
         $history .= "    by $user from $host\n";
