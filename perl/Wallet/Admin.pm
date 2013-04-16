@@ -131,6 +131,16 @@ sub default_data {
     ($r1) = $self->{schema}->resultset('Type')->populate (\@record);
     warn "default Type not installed" unless defined $r1;
 
+    # enctypes default rows.
+    @record = ([ qw/en_name/ ],
+                  [ 'aes128-cts-hmac-sha1-96' ],
+                  [ 'aes256-cts-hmac-sha1-96' ],
+                  [ 'arcfour-hmac-md5' ],
+                  [ 'des-cbc-crc' ],
+                  [ 'des3-cbc-sha1' ]);
+    ($r1) = $self->{schema}->resultset('Enctype')->populate (\@record);
+    warn "default Enctype not installed" unless defined $r1;
+
     return 1;
 }
 
