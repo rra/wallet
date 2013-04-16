@@ -42,7 +42,6 @@ sub enctypes_set {
     my %enctypes = map { $_ => 1 } @$enctypes;
     my $guard = $self->{schema}->txn_scope_guard;
     eval {
-
         # Find all enctypes for the given keytab.
         my %search = (ke_name => $name);
         my @enctypes = $self->{schema}->resultset('KeytabEnctype')
@@ -73,13 +72,14 @@ sub enctypes_set {
         # to make it easier to test.
         for my $enctype (sort keys %enctypes) {
             my %search = (en_name => $enctype);
-            my $enctype_rs = $self->{schema}->('Enctype')->find (\%search);
+            my $enctype_rs = $self->{schema}->resultset('Enctype')
+                ->find (\%search);
             unless (defined $enctype_rs) {
                 die "unknown encryption type $enctype\n";
             }
             my %record = (ke_name    => $name,
                           ke_enctype => $enctype);
-            $self->{schema}->resultset('Enctype')->create (\%record);
+            $self->{schema}->resultset('KeytabEnctype')->create (\%record);
             $self->log_set ('type_data enctypes', undef, $enctype, @trace);
         }
         $guard->commit;
