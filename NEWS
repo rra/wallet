@@ -1,5 +1,10 @@
                        User-Visible wallet Changes
 
+wallet 1.1 (unreleased)
+
+    Fix the code to set enctype restrictions for keytab objects in the
+    wallet server.
+
 wallet 1.0 (2013-03-27)
 
     Owners of wallet objects are now allowed to destroy them.  In previous
