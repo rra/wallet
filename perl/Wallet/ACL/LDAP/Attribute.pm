@@ -1,7 +1,7 @@
 # Wallet::ACL::LDAP::Attribute -- Wallet LDAP attribute ACL verifier.
 #
 # Written by Russ Allbery
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -19,6 +19,7 @@ use vars qw(@ISA $VERSION);
 use Authen::SASL ();
 use Net::LDAP qw(LDAP_COMPARE_TRUE);
 use Wallet::ACL::Base;
+use Wallet::Config;
 
 @ISA = qw(Wallet::ACL::Base);
 
