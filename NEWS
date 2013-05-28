@@ -5,6 +5,10 @@ wallet 1.1 (unreleased)
     Fix the code to set enctype restrictions for keytab objects in the
     wallet server.
 
+    Fix the Wallet::Config documentation for the ldap-attr verifier to
+    reference an ldap_map_principal hook, not ldap_map_attribute, matching
+    the implementation.
+
 wallet 1.0 (2013-03-27)
 
     Owners of wallet objects are now allowed to destroy them.  In previous

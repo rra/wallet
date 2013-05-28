@@ -511,7 +511,7 @@ matches the Kerberos principal.  The attribute designated by
 LDAP_FILTER_ATTR may instead hold a transformation of the principal name
 (such as the principal with the local realm stripped off, or rewritten
 into an LDAP DN form).  If this is the case, define a Perl function named
-ldap_map_attribute.  This function will be called whenever an LDAP
+ldap_map_principal.  This function will be called whenever an LDAP
 attribute ACL is being verified.  It will take one argument, the
 principal, and is expected to return the value to search for in the LDAP
 directory server.
@@ -520,7 +520,7 @@ For example, if the principal name without the local realm is stored in
 the C<uid> attribute in the directory, set LDAP_FILTER_ATTR to C<uid> and
 then define ldap_map_attribute as follows:
 
-    sub ldap_map_attribute {
+    sub ldap_map_principal {
         my ($principal) = @_;
         $principal =~ s/\@EXAMPLE\.COM$//;
         return $principal;
