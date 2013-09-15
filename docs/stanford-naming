@@ -157,10 +157,10 @@ Object Naming
 
     tivoli-key/<server>
 
-        The Tivoli password or backup encryption key for this server.
-        Both the password and the encryption key, if used, are stored in
-        the same file, so both are stored together.  This file is found at
-        /etc/adsm/TSM.PWD.
+        The Tivoli encryption key for this server.  We previously stored
+        the whole /etc/adsm/TSM.PWD file in this object, but now we store
+        only the encryption key in password form, since the file contains
+        both it and the server password and the latter keeps changing.
 
         (OLD: <group>-<server>-tivoli-key)
 
