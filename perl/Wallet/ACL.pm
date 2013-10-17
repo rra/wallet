@@ -245,7 +245,7 @@ sub destroy {
                       ah_action => 'destroy',
                       ah_by     => $user,
                       ah_from   => $host,
-                      ah_on     => $time);
+                      ah_on     => strftime ('%Y-%m-%d %T', localtime $time));
         $self->{schema}->resultset('AclHistory')->create (\%record);
         $guard->commit;
     };
