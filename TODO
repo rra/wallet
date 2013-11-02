@@ -27,6 +27,9 @@ Client:
    stored on the server is different than what's on disk.  This will
    require server support as well for returning the checksum of a file.
 
+ * WALLET-80: Incorporate the wallet-rekey-periodic script into the
+   package and teach it how to ignore foreign credentials.
+
 Server Interface:
 
  * WALLET-13: Provide a way to get history for deleted objects and ACLs.
@@ -67,6 +70,21 @@ Server Interface:
    keytab (maybe).  Or, alternately, maybe we allow get of any keytab?
    Requires more thought.
 
+ * WALLET-69: "owner" should print the name as well as the number of the
+   ACL.  Also check "getacl".
+
+ * WALLET-70: Add command to list available types and schemes.
+
+ * WALLET-72: Add a mechanism to automate owner updates based on
+   default_owner.
+
+ * WALLET-79: Partially merge create and autocreate.  create and autocreate
+   should do the same thing provided there is an autocreation configuration
+   available. If not, autocreate should fail and create should fall back on
+   checking for ADMIN privileges.
+
+ * WALLET-83: Support file object renaming.
+
 ACLs:
 
  * WALLET-23: Error messages from ACL operations should refer to the ACLs
@@ -93,6 +111,17 @@ ACLs:
  * WALLET-29: Investigate how best to support client authentication using
    anonymous PKINIT for things like initial system keying.
 
+ * WALLET-68: Generalize the current NetDB ACL type to allow a generic
+   remctl query for whether a particular user is authorized to create
+   host-based objects for a particular host.
+
+ * WALLET-71: Add ldap-group ACL scheme.
+
+ * WALLET-75: Provide a root-instance version of the ldap-attr (and
+   possibly the ldap-group) ACL schemes.
+
+ * WALLET-81: Add a comment field to ACLs.
+
 Database:
 
  * WALLET-30: Fix case-insensitivity bug in unique keys with MySQL for
@@ -100,6 +129,8 @@ Database:
 
  * WALLET-31: On upgrades, support adding new object types and ACL
    verifiers to the class tables.
+
+ * WALLET-76: Fix wallet-admin destroy with MySQL.
 
 Objects:
 
@@ -131,7 +162,8 @@ Objects:
  * WALLET-36: Implement an X.509 CA so that you can get certificate
    objects without storing them first.  Need to resolve naming conventions
    if you want to run multiple CAs on the same wallet server (but why?).
-   Should this be a different type than stored certificates?
+   Should this be a different type than stored certificates?  Consider
+   using hxtool as the underlying CA mechanism.
 
  * WALLET-37: Support returning the checksum of a file object stored in
    wallet so that one can determine whether the version stored on disk is
@@ -144,6 +176,9 @@ Objects:
  * WALLET-61: Support interrogating objects to find all host-based objects
    for a particular host, allowing cleanup of all of those host's objects
    after retiring the host.
+
+ * WALLET-76: Support setting the disallow-svr flag on created principals.
+   In general, support setting arbitrary principal flags.
 
 Reports:
 
@@ -216,7 +251,8 @@ Code Style and Cleanup:
 
  * WALLET-52: Consider using Class::Accessor to get rid of the scaffolding
    code to access object data, and a Wallet::Base class to handle things
-   like the error() method common to many classes.
+   like the error() method common to many classes.  Alternately, consider
+   using Moose.
 
 Test Suite:
 
