@@ -1,3 +1,11 @@
+wallet (1.0-3) UNRELEASED; urgency=low
+
+  * Cherry-pick upstream commits to fix ACL history entries with
+    PostgreSQL, an incorrect foreign key constraint for the object
+    history, and bugs in handling of enctype restrictions for keytabs.
+
+ -- Russ Allbery <rra@debian.org>  Tue, 05 Nov 2013 12:36:32 -0800
+
 wallet (1.0-2) unstable; urgency=low
 
   * Cherry-pick upstream commits to fix the t/admin.t test with the
