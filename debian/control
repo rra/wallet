@@ -45,10 +45,11 @@ Package: wallet-server
 Architecture: all
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${perl:Depends},
+ libdatetime-format-sqlite-perl | libdatetime-format-mysql-perl |
+ libdatetime-format-pg-perl,
  libdbd-sqlite3-perl | libdbd-mysql-perl | libdbd-pg-perl,
  libdbix-class-perl, libsql-translator-perl, remctl-server
-Recommends: libdatetime-format-sqlite-perl,
- krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
+Recommends: krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
 Suggests: libauthen-sasl-perl, libnet-ldap-perl, libnet-remctl-perl,
  libwebauth-perl (>= 4.4.0)
 Description: Kerberos-authenticated secure data management server
