@@ -2,8 +2,10 @@ wallet (1.0-4) unstable; urgency=low
 
   * Cherry-pick upstream commit to fix wallet-rekey when used with keytabs
     that contain multiple principals.
+  * Add libauthen-sasl-perl and libnet-ldap-perl to Build-Depends for the
+    test suite.
 
- -- Russ Allbery <rra@debian.org>  Mon, 06 Jan 2014 21:16:36 -0800
+ -- Russ Allbery <rra@debian.org>  Mon, 06 Jan 2014 21:27:50 -0800
 
 wallet (1.0-3) unstable; urgency=low
 

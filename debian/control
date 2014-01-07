@@ -2,10 +2,10 @@ Source: wallet
 Section: net
 Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 9), libdatetime-format-sqlite-perl,
- libdbd-sqlite3-perl, libdbi-perl, libdbix-class-perl, libkrb5-dev,
- libremctl-dev, libsql-translator-perl, libtest-pod-perl, libwebauth-perl,
- perl
+Build-Depends: debhelper (>= 9), libauthen-sasl-perl,
+ libdatetime-format-sqlite-perl, libdbd-sqlite3-perl, libdbi-perl,
+ libdbix-class-perl, libkrb5-dev, libnet-ldap-perl, libremctl-dev,
+ libsql-translator-perl, libtest-pod-perl, libwebauth-perl, perl
 Standards-Version: 3.9.4
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
 Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian
