@@ -2,6 +2,8 @@ wallet (1.0-4) unstable; urgency=low
 
   * Cherry-pick upstream commit to fix wallet-rekey when used with keytabs
     that contain multiple principals.
+  * Cherry-pick upstream commit to fix the skipped test count for the
+    ldap-attr verifier test.
   * Add libauthen-sasl-perl and libnet-ldap-perl to Build-Depends for the
     test suite.
 
