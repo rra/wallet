@@ -1,3 +1,10 @@
+wallet (1.0-4) unstable; urgency=low
+
+  * Cherry-pick upstream commit to fix wallet-rekey when used with keytabs
+    that contain multiple principals.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 06 Jan 2014 21:16:36 -0800
+
 wallet (1.0-3) unstable; urgency=low
 
   * Cherry-pick upstream commits to fix ACL history entries with
