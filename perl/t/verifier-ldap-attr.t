@@ -6,7 +6,7 @@
 # access to the LDAP server and will be skipped in all other environments.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -44,7 +44,7 @@ package main;
 # Determine the local principal.
 my $klist = `klist 2>&1` || '';
 SKIP: {
-    skip "tests useful only with Stanford Kerberos tickets", 4
+    skip "tests useful only with Stanford Kerberos tickets", 9
         unless ($klist =~ /[Pp]rincipal: \S+\@stanford\.edu$/m);
 
     # Set up our configuration.
