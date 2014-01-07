@@ -184,7 +184,7 @@ if ($command eq 'check') {
 
 =for stopwords
 ACL API CNAME DNS IP env keytab keytabs timestamp MERCHANTABILITY
-NONINFRINGEMENT sublicense
+NONINFRINGEMENT sublicense Allbery
 
 =head1 NAME
 

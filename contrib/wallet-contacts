@@ -137,7 +137,7 @@ print join ("\n", @email, '');
 ##############################################################################
 
 =for stopwords
-ACL NetDB SQL hostname lookup swhois whois
+ACL NetDB SQL hostname lookup swhois whois Allbery
 
 =head1 NAME
 
