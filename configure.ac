@@ -1,7 +1,7 @@
 dnl Autoconf configuration for wallet.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2006, 2007, 2008, 2010, 2013
+dnl Copyright 2006, 2007, 2008, 2010, 2013, 2014
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
@@ -15,9 +15,12 @@ AM_INIT_AUTOMAKE([1.11 check-news dist-xz foreign silent-rules subdir-objects
     -Wall -Wno-override -Werror])
 AM_MAINTAINER_MODE
 
+dnl AM_PROG_AR is required for Automake 1.12 by Libtool but not defined at all
+dnl (or needed) in Automake 1.11.  Work around this bug.
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
 AM_PROG_CC_C_O
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
