@@ -2,7 +2,7 @@
  * Implementation of keytab handling for the wallet client.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2007, 2008, 2010, 2013
+ * Copyright 2007, 2008, 2010, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -218,7 +218,7 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
 {
     char *realm = NULL;
     char *data = NULL;
-    char *tempfile, *backupfile;
+    char *tempfile;
     size_t length = 0;
     int status;
     bool error = false, rekeyed = false;
@@ -231,15 +231,25 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
         status = download_keytab(r, type, current->princ, &data, &length);
         if (status != 0) {
             warn("error rekeying for principal %s", current->princ);
-            if (!rekeyed)
-                die("aborting, keytab unchanged");
             error = true;
-        } else if (data != NULL) {
-            if (access(tempfile, F_OK) == 0)
-                append_file(tempfile, data, length);
-            else
-                write_file(tempfile, data, length);
-            rekeyed = true;
+            continue;
+        }
+        write_file(tempfile, data, length);
+        rekeyed = true;
+
+        /*
+         * Now merge the original keytab file with the one containing the new
+         * keys from the rekeying of this principal.
+         */
+        if (access(file, F_OK) != 0) {
+            if (link(tempfile, file) < 0)
+                sysdie("rename of temporary keytab %s to %s failed", tempfile,
+                       file);
+        } else {
+            merge_keytab(ctx, tempfile, file);
+            if (unlink(tempfile) < 0)
+                syswarn("unlink of temporary keytab file %s failed",
+                        tempfile);
         }
     }
 
@@ -247,28 +257,6 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
     if (!rekeyed)
         die("no rekeyable principals found");
 
-    /*
-     * Now merge the original keytab file with the one containing the new
-     * keys.  If there is an error, first make a backup of the current keytab
-     * file as keytab.old.
-     */
-    if (access(file, F_OK) != 0) {
-        if (link(tempfile, file) < 0)
-            sysdie("rename of temporary keytab %s to %s failed", tempfile,
-                   file);
-    } else {
-        if (error) {
-            data = read_file(file, &length);
-            xasprintf(&backupfile, "%s.old", file);
-            overwrite_file(backupfile, data, length);
-            warn("partial failure to rekey keytab %s, old keytab left in %s",
-                 file, backupfile);
-            free(backupfile);
-        }
-        merge_keytab(ctx, tempfile, file);
-    }
-    if (unlink(tempfile) < 0)
-        sysdie("unlink of temporary keytab file %s failed", tempfile);
     free(tempfile);
     return !error;
 }

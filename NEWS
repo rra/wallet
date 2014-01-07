@@ -2,6 +2,14 @@
 
 wallet 1.1 (unreleased)
 
+    Fix wallet-rekey on keytabs containing multiple principals.  Previous
+    versions assumed one could concatenate keytab files together to make a
+    valid keytab file, which doesn't work with some Kerberos libraries.
+    This caused new keys downloaded for principals after the first to be
+    discarded.  As a side effect of this fix, wallet-rekey always appends
+    new keys directly to the existing keytab file, and never creates a
+    backup copy of that file.
+
     Fix the code to set enctype restrictions for keytab objects in the
     wallet server.
 
