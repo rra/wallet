@@ -17,6 +17,13 @@ wallet 1.1 (unreleased)
     reference an ldap_map_principal hook, not ldap_map_attribute, matching
     the implementation.
 
+    When creating new principals in a Heimdal KDC, generate a long, random
+    password as the temporary password of the disabled principal before
+    randomizing keys.  This is necessary if password quality is being
+    enforced on create calls.  Since the principal is always inactive
+    until the keys have been randomized, the password should not need to
+    be secure (and indeed is not cryptographically random).
+
 wallet 1.0 (2013-03-27)
 
     Owners of wallet objects are now allowed to destroy them.  In previous
