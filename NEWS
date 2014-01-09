@@ -13,6 +13,13 @@ wallet 1.1 (unreleased)
     Fix the code to set enctype restrictions for keytab objects in the
     wallet server.
 
+    When creating new principals in a Heimdal KDC, generate a long, random
+    password as the temporary password of the disabled principal before
+    randomizing keys.  This is necessary if password quality is being
+    enforced on create calls.  Since the principal is always inactive
+    until the keys have been randomized, the password should not need to
+    be secure (and indeed is not cryptographically random).
+
 wallet 1.0 (2013-03-27)
 
     Owners of wallet objects are now allowed to destroy them.  In previous

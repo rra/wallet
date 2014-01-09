@@ -1,7 +1,7 @@
 # Wallet::Kadmin::Heimdal -- Wallet Kerberos administration API for Heimdal.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009, 2010
+# Copyright 2009, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -40,6 +40,34 @@ sub canonicalize_principal {
     return $principal;
 }
 
+# Generate a long random password.
+#
+# Please note: This is not a cryptographically secure password!  It's used
+# only because the Heimdal kadmin interface requires a password on create.
+# The keys will be set before the principal is ever set active, so it will
+# never be possible to use the password.  It just needs to be random in case
+# password quality checks are applied to it.
+#
+# Make the password reasonably long and include a variety of character classes
+# so that it should pass any password strength checking.
+sub insecure_random_password {
+    my ($self) = @_;
+    my @classes = (
+        'abcdefghijklmnopqrstuvwxyz',
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        '0123456789',
+        '~`!@#$%^&*()-_+={[}]|:;<,>.?/'
+    );
+    my $password = q{};
+    for my $i (1..20) {
+        my $class = $i % scalar (@classes);
+        my $alphabet = $classes[$class];
+        my $letter = substr ($alphabet, int (rand (length $alphabet)), 1);
+        $password .= $letter;
+    }
+    return $password;
+}
+
 ##############################################################################
 # Public interfaces
 ##############################################################################
@@ -71,18 +99,17 @@ sub create {
     return 1 if $exists;
 
     # The way Heimdal::Kadm5 works, we create a principal object, create the
-    # actual principal set inactive, then randomize it and activate it.
-    #
-    # TODO - Paranoia makes me want to set the password to something random
-    #        on creation even if it is inactive until after randomized by
-    #        module.
+    # actual principal set inactive, then randomize it and activate it.  We
+    # have to set a password, even though we're about to replace it with
+    # random keys, but since the principal is created inactive, it doesn't
+    # have to be a very good one.
     my $kadmin = $self->{client};
     eval {
         my $princdata = $kadmin->makePrincipal ($principal);
         my $attrs = $princdata->getAttributes;
         $attrs |= KRB5_KDB_DISALLOW_ALL_TIX;
         $princdata->setAttributes ($attrs);
-        my $password = 'inactive';
+        my $password = $self->insecure_random_password;
         $kadmin->createPrincipal ($princdata, $password, 0);
         $kadmin->randKeyPrincipal ($principal);
         $kadmin->enablePrincipal ($principal);
