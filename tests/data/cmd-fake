@@ -3,7 +3,7 @@
 # This is a fake wallet backend that returns bogus data for verification by
 # the client test suite.  It doesn't test any of the wallet server code.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2008, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #

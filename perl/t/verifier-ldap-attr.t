@@ -5,7 +5,7 @@
 # This test can only be run by someone local to Stanford with appropriate
 # access to the LDAP server and will be skipped in all other environments.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -28,7 +28,7 @@ require_ok ('Wallet::ACL::LDAP::Attribute');
 my $host   = 'ldap.stanford.edu';
 my $base   = 'cn=people,dc=stanford,dc=edu';
 my $filter = 'uid';
-my $user   = 'rra@stanford.edu';
+my $user   = 'eagle@eyrie.org';
 my $attr   = 'suPrivilegeGroup';
 my $value  = 'stanford:stanford';
 

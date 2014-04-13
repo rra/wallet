@@ -2,7 +2,7 @@
 #
 # Tests for the wallet-admin dispatch code.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2009, 2010, 2011
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -140,7 +140,7 @@ seek (STDIN, 0, 0);
 ($out, $err) = run_admin ('initialize', 'rra');
 is ($err, "invalid admin principal rra\n", 'Initialize requires a principal');
 is ($out, "new\n", ' and nothing was run');
-($out, $err) = run_admin ('initialize', 'rra@stanford.edu');
+($out, $err) = run_admin ('initialize', 'eagle@eyrie.org');
 is ($err, '', 'Initialize succeeds with a principal');
 is ($out, "new\ninitialize rra\@stanford.edu\n", ' and runs the right code');
 
@@ -170,7 +170,7 @@ is ($err, "some error\n", 'Error handling succeeds for destroy');
 is ($out, "new\n"
     . 'This will delete all data in the wallet database.'
     . '  Are you sure (N/y)? ' . "destroy\n", ' and calls the right methods');
-($out, $err) = run_admin ('initialize', 'rra@stanford.edu');
+($out, $err) = run_admin ('initialize', 'eagle@eyrie.org');
 is ($err, "some error\n", 'Error handling succeeds for initialize');
 is ($out, "new\ninitialize rra\@stanford.edu\n",
     ' and calls the right methods');

@@ -4,7 +4,7 @@
  * This file provides the functions to set default options from the krb5.conf
  * file for both wallet and wallet-rekey.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2006, 2007, 2008, 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *

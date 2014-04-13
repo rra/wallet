@@ -309,6 +309,6 @@ available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 
-Russ Allbery <rra@stanford.edu> and Jon Robertson <jonrober@stanford.edu>.
+Russ Allbery <eagle@eyrie.org> and Jon Robertson <jonrober@stanford.edu>.
 
 =cut

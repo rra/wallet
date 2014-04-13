@@ -1,6 +1,6 @@
 # Wallet::ACL::NetDB::Root -- Wallet NetDB role ACL verifier (root instances).
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -123,6 +123,6 @@ available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =cut

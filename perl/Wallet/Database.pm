@@ -5,7 +5,7 @@
 # intention is that Wallet::Database objects can be treated in all respects
 # like DBIx::Class objects in the rest of the code.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2009, 2010, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -118,6 +118,6 @@ available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =cut

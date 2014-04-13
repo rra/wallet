@@ -1,6 +1,6 @@
 # Wallet::Kadmin::MIT -- Wallet Kerberos administration API for MIT.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Pulled into a module by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2007, 2008, 2009, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
@@ -318,6 +318,6 @@ available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 
-Russ Allbery <rra@stanford.edu> and Jon Robertson <jonrober@stanford.edu>.
+Russ Allbery <eagle@eyrie.org> and Jon Robertson <jonrober@stanford.edu>.
 
 =cut

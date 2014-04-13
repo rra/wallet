@@ -1,6 +1,6 @@
 # Wallet::Report -- Wallet system reporting interface.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2009, 2010, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -675,6 +675,6 @@ available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu> and Jon Robertson <jonrober@stanford.edu>.
+Russ Allbery <eagle@eyrie.org> and Jon Robertson <jonrober@stanford.edu>.
 
 =cut

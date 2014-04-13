@@ -6,7 +6,7 @@
 # access to the NetDB role server and will be skipped in all other
 # environments.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2008
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -21,7 +21,7 @@ use Util;
 
 my $netdb = 'netdb-node-roles-rc.stanford.edu';
 my $host  = 'windlord.stanford.edu';
-my $user  = 'rra@stanford.edu';
+my $user  = 'eagle@eyrie.org';
 
 # Determine the local principal.
 my $klist = `klist 2>&1` || '';

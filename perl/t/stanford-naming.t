@@ -6,7 +6,7 @@
 # sites, but it's used at Stanford and this test suite is used to verify
 # behavior at Stanford.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #

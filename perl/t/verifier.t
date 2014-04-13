@@ -2,7 +2,7 @@
 #
 # Tests for the basic wallet ACL verifiers.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2008, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -23,37 +23,37 @@ use Util;
 my $verifier = Wallet::ACL::Base->new;
 ok (defined $verifier, 'Wallet::ACL::Base creation');
 ok ($verifier->isa ('Wallet::ACL::Base'), ' and class verification');
-is ($verifier->check ('rra@stanford.edu', 'rra@stanford.edu'), 0,
+is ($verifier->check ('eagle@eyrie.org', 'eagle@eyrie.org'), 0,
     'Default check declines');
 is ($verifier->error, undef, 'No error set');
 
 $verifier = Wallet::ACL::Krb5->new;
 ok (defined $verifier, 'Wallet::ACL::Krb5 creation');
 ok ($verifier->isa ('Wallet::ACL::Krb5'), ' and class verification');
-is ($verifier->check ('rra@stanford.edu', 'rra@stanford.edu'), 1,
+is ($verifier->check ('eagle@eyrie.org', 'eagle@eyrie.org'), 1,
     'Simple check');
-is ($verifier->check ('rra@stanford.edu', 'thoron@stanford.edu'), 0,
+is ($verifier->check ('eagle@eyrie.org', 'thoron@stanford.edu'), 0,
     'Simple failure');
 is ($verifier->error, undef, 'No error set');
-is ($verifier->check (undef, 'rra@stanford.edu'), undef,
+is ($verifier->check (undef, 'eagle@eyrie.org'), undef,
     'Undefined principal');
 is ($verifier->error, 'no principal specified', ' and right error');
-is ($verifier->check ('rra@stanford.edu', ''), undef, 'Empty ACL');
+is ($verifier->check ('eagle@eyrie.org', ''), undef, 'Empty ACL');
 is ($verifier->error, 'malformed krb5 ACL', ' and right error');
 
 $verifier = Wallet::ACL::Krb5::Regex->new;
 isa_ok ($verifier, 'Wallet::ACL::Krb5::Regex', 'krb5-regex verifier');
-is ($verifier->check ('rra@stanford.edu', '.*@stanford\.edu\z'), 1,
+is ($verifier->check ('eagle@eyrie.org', '.*@stanford\.edu\z'), 1,
     'Simple check');
-is ($verifier->check ('rra@stanford.edu', '^a.*@stanford\.edu'), 0,
+is ($verifier->check ('eagle@eyrie.org', '^a.*@stanford\.edu'), 0,
     'Simple failure');
 is ($verifier->error, undef, 'No error set');
 is ($verifier->check (undef, '^rra@stanford\.edu\z'), undef,
     'Undefined principal');
 is ($verifier->error, 'no principal specified', ' and right error');
-is ($verifier->check ('rra@stanford.edu', ''), undef, 'Empty ACL');
+is ($verifier->check ('eagle@eyrie.org', ''), undef, 'Empty ACL');
 is ($verifier->error, 'no ACL specified', ' and right error');
-is ($verifier->check ('rra@stanford.edu', '(rra'), undef, 'Malformed regex');
+is ($verifier->check ('eagle@eyrie.org', '(rra'), undef, 'Malformed regex');
 is ($verifier->error, 'malformed krb5-regex ACL', ' and right error');
 
 # Tests for the NetDB verifiers.  Skip these if we don't have a keytab or if

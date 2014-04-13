@@ -12,7 +12,7 @@ WriteMakefile(
     NAME     => 'Wallet',
     VERSION  => $version,
     ABSTRACT => 'Wallet: a secure credential management system',
-    AUTHOR   => 'Russ Allbery (rra@stanford.edu)',
+    AUTHOR   => 'Russ Allbery (eagle@eyrie.org)',
     (($prefix ne '/usr' && $prefix ne '/usr/local') ?
      (PREFIX => $prefix) : ())
 );
