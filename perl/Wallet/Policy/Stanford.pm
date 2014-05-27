@@ -279,6 +279,11 @@ sub verify_name {
                 and $principal !~ /^(class|dept|group)-[a-z0-9_-]+$/) {
                 return "invalid CGI principal name $name";
             }
+        } elsif ($instance eq 'cron') {
+            if ($principal !~ /^[a-z][a-z0-9]{1,7}$/
+                and $principal !~ /^(class|dept|group)-[a-z0-9_-]+$/) {
+                return "invalid cron principal name $name";
+            }
         } else {
             return "unknown principal type $principal";
         }

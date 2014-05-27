@@ -15,6 +15,7 @@ $ADDRESS = 'nobody@example.com';
 # The various classification patterns for srvtabs.
 @PATTERNS
     = ([qr(/cgi\z),       '*/cgi',        'CGI users'],
+       [qr(/cron\z),      '*/cron',       'Cron users'],
        [qr(^(?i)http/),   'HTTP/*',       'HTTP Negotiate-Auth'],
        [qr(^cifs/),       'cifs/*',       'CIFS'],
        [qr(^host/),       'host/*',       'Host login'],
