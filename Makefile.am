@@ -32,14 +32,26 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
 	perl/Wallet/Schema/Result/Object.pm				    \
 	perl/Wallet/Schema/Result/ObjectHistory.pm			    \
 	perl/Wallet/Schema/Result/SyncTarget.pm				    \
-	perl/Wallet/Schema/Result/Type.pm perl/sql perl/t/acl.t		    \
-	perl/t/admin.t perl/t/config.t perl/t/data/README		    \
-	perl/t/data/duo/integration.json perl/t/data/duo/keys.json	    \
-	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/duo.t	    \
-	perl/t/file.t perl/t/init.t perl/t/kadmin.t perl/t/keytab.t	    \
-	perl/t/lib/Util.pm perl/t/object.t perl/t/pod-spelling.t	    \
-	perl/t/pod.t perl/t/report.t perl/t/server.t			    \
+	perl/Wallet/Schema/Result/Type.pm				    \
+	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			    \
+	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			    \
+	perl/sql/Wallet-Schema-0.07-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.07-SQLite.sql				    \
+	perl/sql/Wallet-Schema-0.08-0.09-MySQL.sql			    \
+	perl/sql/Wallet-Schema-0.08-0.09-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.08-0.09-SQLite.sql			    \
+	perl/sql/Wallet-Schema-0.08-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.08-SQLite.sql				    \
+	perl/sql/Wallet-Schema-0.09-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.09-SQLite.sql perl/t/acl.t perl/t/admin.t  \
+	perl/t/config.t perl/t/data/README perl/t/data/duo/integration.json \
+	perl/t/data/duo/keys.json perl/t/data/keytab-fake		    \
+	perl/t/data/keytab.conf perl/t/data/netdb.conf			    \
+	perl/t/data/netdb-fake perl/t/duo.t perl/t/file.t perl/t/init.t	    \
+	perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t  \
+	perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t perl/t/server.t  \
 	perl/t/stanford-naming.t perl/t/verifier-ldap-attr.t		    \
 	perl/t/verifier-netdb.t perl/t/verifier.t perl/t/wa-keyring.t
 
