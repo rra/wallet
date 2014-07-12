@@ -3,7 +3,7 @@
 # End-to-end tests for the wallet client.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2010
+# Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -188,8 +188,12 @@ SKIP: {
     # All done.
     remctld_stop;
     $admin->destroy;
-    unlink ('wallet-db', 'krb5cc_test', 'test-pid');
     if (-d 'test-files') {
         system ('rm', '-r', 'test-files');
     }
+}
+
+# Clean up the database and other test files at the end of the test.
+END {
+    unlink ('wallet-db', 'krb5cc_test', 'test-pid');
 }

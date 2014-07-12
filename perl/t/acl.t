@@ -227,4 +227,6 @@ like ($acl->id, qr{\A[23]\z}, ' and an ID of 2 or 3');
 
 # Clean up.
 $setup->destroy;
-unlink 'wallet-db';
+END {
+    unlink 'wallet-db';
+}

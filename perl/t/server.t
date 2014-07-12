@@ -1020,7 +1020,9 @@ is ($server->acl_destroy ('test-naming'), 1, 'Destroying it succeeds');
 
 # Clean up.
 $setup->destroy;
-unlink 'wallet-db';
+END {
+    unlink 'wallet-db';
+}
 
 # Now test handling of some configuration errors.
 undef $Wallet::Config::DB_DRIVER;

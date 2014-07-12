@@ -3,7 +3,7 @@
 # Tests for the wallet reporting interface.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2009, 2010
+# Copyright 2008, 2009, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -324,5 +324,7 @@ is ($report->error, undef, ' and no error');
 
 # Clean up.
 $admin->destroy;
-unlink 'wallet-db';
 system ('rm -r test-files') == 0 or die "cannot remove test-files\n";
+END {
+    unlink 'wallet-db';
+}

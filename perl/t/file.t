@@ -3,7 +3,7 @@
 # Tests for the file object implementation.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008
+# Copyright 2008, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -145,4 +145,6 @@ is ($object->destroy (@trace), 1, ' but destroying the object succeeds');
 
 # Clean up.
 $admin->destroy;
-unlink ('wallet-db');
+END {
+    unlink ('wallet-db');
+}

@@ -3,7 +3,7 @@
 # Tests for database initialization.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008
+# Copyright 2007, 2008, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -53,4 +53,6 @@ is ($admin->destroy, 1, 'Destroying the database works');
 $acl = eval { Wallet::ACL->new ('ADMIN', $admin->schema) };
 like ($@, qr/^cannot search for ACL ADMIN: /,
       ' and now the database is gone');
-unlink 'wallet-db';
+END {
+    unlink 'wallet-db';
+}

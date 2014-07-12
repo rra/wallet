@@ -7,7 +7,7 @@
 # behavior at Stanford.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2013
+# Copyright 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -255,4 +255,6 @@ for my $type (qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key)) {
 
 # Clean up.
 $setup->destroy;
-unlink 'wallet-db';
+END {
+    unlink 'wallet-db';
+}

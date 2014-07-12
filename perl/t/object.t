@@ -3,7 +3,7 @@
 # Tests for the basic object implementation.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2011
+# Copyright 2007, 2008, 2011, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -348,4 +348,6 @@ is ($object->history, $output, ' and the history is correct');
 
 # Clean up.
 $admin->destroy;
-unlink 'wallet-db';
+END {
+    unlink 'wallet-db';
+}

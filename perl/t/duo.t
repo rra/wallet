@@ -149,9 +149,9 @@ TODO: {
 
 # Clean up.
 $admin->destroy;
-undef $admin;
-undef $object;
-unlink ('wallet-db');
+END {
+    unlink ('wallet-db');
+}
 
 # Done testing.
 done_testing ();

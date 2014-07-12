@@ -766,4 +766,6 @@ EOO
 
 # Clean up.
 $admin->destroy;
-unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
+END {
+    unlink ('wallet-db', 'krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
+}

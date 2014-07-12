@@ -101,4 +101,6 @@ SKIP: {
 
 # Clean up.
 is ($admin->destroy, 1, 'Destruction succeeds');
-unlink 'wallet-db';
+END {
+    unlink 'wallet-db';
+}
