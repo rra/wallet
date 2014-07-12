@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the file object implementation.
 #
@@ -7,6 +7,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use POSIX qw(strftime);
 use Test::More tests => 56;
@@ -39,7 +42,7 @@ my $history = '';
 my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 
 # Test error handling in the absence of configuration.
-$object = eval {
+my $object = eval {
     Wallet::Object::File->create ('file', 'test', $schema, @trace)
   };
 ok (defined ($object), 'Creating a basic file object succeeds');

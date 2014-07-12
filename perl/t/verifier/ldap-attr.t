@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the LDAP attribute ACL verifier.
 #
@@ -10,6 +10,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use Test::More;
 

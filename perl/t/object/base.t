@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the basic object implementation.
 #
@@ -7,6 +7,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use POSIX qw(strftime);
 use Test::More tests => 137;

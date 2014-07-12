@@ -1,12 +1,15 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the wallet server configuration.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2010
+# Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use Test::More tests => 6;
 

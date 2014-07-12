@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the wallet reporting interface.
 #
@@ -7,6 +7,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use Test::More tests => 197;
 
@@ -39,7 +42,7 @@ is ($acls[0][0], 1, ' and that is ACL ID 1');
 is ($acls[0][1], 'ADMIN', ' with the right name');
 
 # Create an object.
-$server = eval { Wallet::Server->new ('admin@EXAMPLE.COM', 'localhost') };
+my $server = eval { Wallet::Server->new ('admin@EXAMPLE.COM', 'localhost') };
 is ($@, '', 'Creating a server instance did not die');
 is ($server->create ('base', 'service/admin'), 1,
     ' and creating base:service/admin succeeds');

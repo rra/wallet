@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the keytab object implementation.
 #
@@ -7,6 +7,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use POSIX qw(strftime);
 use Test::More tests => 141;
@@ -117,7 +120,7 @@ sub enctypes {
         next unless /^ *\d+ /;
         my ($string) = /\((.*)\)\s*$/;
         next unless $string;
-        $enctype = $enctype{lc $string} || 'UNKNOWN';
+        my $enctype = $enctype{lc $string} || 'UNKNOWN';
         push (@enctypes, $enctype);
     }
     close KLIST;
@@ -174,7 +177,7 @@ SKIP: {
 
     # Test that object creation without KEYTAB_TMP fails.
     undef $Wallet::Config::KEYTAB_TMP;
-    $object = eval {
+    my $object = eval {
         Wallet::Object::Keytab->create ('keytab', 'wallet/one', $schema,
                                         @trace)
       };
@@ -634,7 +637,7 @@ EOO
     is ("@values", "@enctypes", ' and we get back the right enctype list');
     my $eshow = join ("\n" . (' ' x 17), @enctypes);
     $eshow =~ s/\s+\z/\n/;
-    $expected = <<"EOO";
+    my $expected = <<"EOO";
            Type: keytab
            Name: wallet/one
        Enctypes: $eshow

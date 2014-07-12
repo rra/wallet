@@ -1,7 +1,7 @@
 # Wallet::Kadmin -- Kerberos administration API for wallet keytab backend.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009, 2010
+# Copyright 2009, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,6 +14,7 @@ package Wallet::Kadmin;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw($VERSION);
 
 use Wallet::Config ();

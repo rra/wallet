@@ -1,6 +1,21 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Summarize keytabs in the wallet database.
+
+##############################################################################
+# Modules and declarations
+##############################################################################
+
+require 5.005;
+
+use strict;
+use vars qw($ADDRESS $DUMPFILE @PATTERNS $REPORTS);
+use warnings;
+
+use Getopt::Long qw(GetOptions);
+use File::Path qw(mkpath);
+use POSIX qw(strftime);
+use Wallet::Report ();
 
 ##############################################################################
 # Site configuration
@@ -28,20 +43,6 @@ $ADDRESS = 'nobody@example.com';
        [qr(^smtp/),       'smtp/*',       'SMTP'],
        [qr(^webauth/),    'webauth/*',    'WebAuth v3'],
        [qr(^service/),    'service/*',    'Service principals']);
-
-##############################################################################
-# Modules and declarations
-##############################################################################
-
-require 5.005;
-
-use strict;
-use vars qw($ADDRESS $DUMPFILE @PATTERNS $REPORTS);
-
-use Getopt::Long qw(GetOptions);
-use File::Path qw(mkpath);
-use POSIX qw(strftime);
-use Wallet::Report ();
 
 ##############################################################################
 # Database queries
@@ -145,7 +146,7 @@ if ($mail) {
 }
 
 # Run the report.
-my @principals = read_dump;
+my @principals = read_dump ();
 report_principals (@principals);
 
 # If -m was given, take the saved report and mail it as well.

@@ -2,7 +2,7 @@
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Pulled into a module by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2007, 2008, 2009, 2010
+# Copyright 2007, 2008, 2009, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -15,6 +15,7 @@ package Wallet::Kadmin::MIT;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA $VERSION);
 
 use Wallet::Config ();

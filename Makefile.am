@@ -66,6 +66,7 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		   \
 	perl/t/general/server.t perl/t/lib/Util.pm perl/t/object/base.t	   \
 	perl/t/object/duo.t perl/t/object/file.t perl/t/object/keytab.t	   \
 	perl/t/object/wa-keyring.t perl/t/policy/stanford.t		   \
+	perl/t/style/minimum-version.t perl/t/style/strict.t		   \
 	perl/t/util/kadmin.t perl/t/verifier/basic.t			   \
 	perl/t/verifier/ldap-attr.t perl/t/verifier/netdb.t
 
@@ -99,9 +100,10 @@ EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	tests/data/fake-keytab-partial-result tests/data/fake-keytab-rekey \
 	tests/data/fake-keytab-unknown tests/data/fake-srvtab		   \
 	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf   \
-	tests/docs/pod-spelling-t tests/docs/pod-t tests/server/admin-t	   \
-	tests/server/backend-t tests/server/keytab-t tests/server/report-t \
-	tests/tap/kerberos.sh tests/tap/libtap.sh			   \
+	tests/docs/pod-spelling-t tests/docs/pod-t			   \
+	tests/perl/minimum-version-t tests/perl/strict-t		   \
+	tests/server/admin-t tests/server/backend-t tests/server/keytab-t  \
+	tests/server/report-t tests/tap/kerberos.sh tests/tap/libtap.sh	   \
 	tests/tap/perl/Test/RRA.pm tests/tap/perl/Test/RRA/Automake.pm	   \
 	tests/tap/perl/Test/RRA/Config.pm tests/tap/remctl.sh		   \
 	tests/util/xmalloc-t $(PERL_FILES)

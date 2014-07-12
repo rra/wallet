@@ -1,7 +1,7 @@
 # Wallet::Object::Base -- Parent class for any object stored in the wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2011
+# Copyright 2007, 2008, 2010, 2011, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,6 +14,7 @@ package Wallet::Object::Base;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw($VERSION);
 
 use DBI;

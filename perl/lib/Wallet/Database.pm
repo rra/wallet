@@ -6,7 +6,7 @@
 # like DBIx::Class objects in the rest of the code.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2009, 2010, 2012, 2013
+# Copyright 2008, 2009, 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -19,6 +19,7 @@ package Wallet::Database;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA $VERSION);
 
 use Wallet::Schema;

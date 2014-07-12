@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # End-to-end tests for the wallet client.
 #
@@ -8,12 +8,14 @@
 #
 # See LICENSE for licensing terms.
 
+use strict;
+use warnings;
+
 # Point to our server configuration.  This must be done before Wallet::Config
 # is loaded, and it's pulled in as a prerequisite for Wallet::Admin.
 BEGIN { $ENV{WALLET_CONFIG} = "$ENV{SOURCE}/data/wallet.conf" }
 
-BEGIN { our $total = 59 }
-use Test::More tests => $total;
+use Test::More tests => 59;
 
 use lib "$ENV{SOURCE}/../perl/lib";
 use Wallet::Admin;
@@ -56,10 +58,10 @@ sub wallet {
 chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
 
 SKIP: {
-    skip 'no keytab configuration', $total
+    skip 'no keytab configuration', 59
         unless -f "$ENV{BUILD}/config/keytab";
     my $remctld = '@REMCTLD@';
-    skip 'remctld not found', $total unless $remctld;
+    skip 'remctld not found', 59 unless $remctld;
 
     # Spawn remctld and get local tickets.  Don't destroy the user's Kerberos
     # ticket cache.

@@ -14,6 +14,7 @@ package Wallet::Object::Duo;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA $VERSION);
 
 use JSON;

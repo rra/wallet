@@ -1,12 +1,15 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the kadmin object implementation.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2009, 2010, 2012, 2013
+# Copyright 2009, 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use POSIX qw(strftime);
 use Test::More tests => 34;

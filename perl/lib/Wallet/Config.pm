@@ -10,6 +10,7 @@ package Wallet::Config;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw($PATH $VERSION);
 
 # This version should be increased on any code change to this module.  Always

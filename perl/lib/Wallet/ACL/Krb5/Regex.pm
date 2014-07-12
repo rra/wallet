@@ -1,7 +1,7 @@
 # Wallet::ACL::Krb5::Regex -- Wallet Kerberos v5 principal regex ACL verifier
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2010
+# Copyright 2007, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,6 +14,7 @@ package Wallet::ACL::Krb5::Regex;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA $VERSION);
 
 use Wallet::ACL::Krb5;

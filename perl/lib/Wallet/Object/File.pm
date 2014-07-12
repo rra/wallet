@@ -1,7 +1,7 @@
 # Wallet::Object::File -- File object implementation for the wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2010
+# Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,6 +14,7 @@ package Wallet::Object::File;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA $VERSION);
 
 use Digest::MD5 qw(md5_hex);

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the NetDB wallet ACL verifiers.
 #
@@ -11,6 +11,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use Test::More tests => 5;
 
@@ -35,7 +38,7 @@ SKIP: {
     $Wallet::Config::NETDB_REMCTL_HOST  = $netdb;
 
     # Finally, we can test.
-    $verifier = eval { Wallet::ACL::NetDB->new };
+    my $verifier = eval { Wallet::ACL::NetDB->new };
     ok (defined $verifier, ' and now creation succeeds');
     is ($@, q{}, ' with no errors');
     ok ($verifier->isa ('Wallet::ACL::NetDB'), ' and returns the right class');

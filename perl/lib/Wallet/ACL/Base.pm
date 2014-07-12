@@ -1,7 +1,7 @@
 # Wallet::ACL::Base -- Parent class for wallet ACL verifiers.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2010
+# Copyright 2007, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,6 +14,7 @@ package Wallet::ACL::Base;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw($VERSION);
 
 # This version should be increased on any code change to this module.  Always

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Tests for the wallet server API.
 #
@@ -7,6 +7,9 @@
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 use Test::More tests => 382;
 
@@ -33,7 +36,7 @@ is ($@, '', 'Database initialization did not die');
 is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
 
 # Now test the new method.
-$server = eval { Wallet::Server->new (@trace) };
+my $server = eval { Wallet::Server->new (@trace) };
 is ($@, '', 'Reopening with new did not die');
 ok ($server->isa ('Wallet::Server'), ' and returned the right class');
 my $schema = $server->schema;

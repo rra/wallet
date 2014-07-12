@@ -1,7 +1,7 @@
 # Wallet::Object::Keytab -- Keytab object implementation for the wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2009, 2010, 2013
+# Copyright 2007, 2008, 2009, 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,6 +14,7 @@ package Wallet::Object::Keytab;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA $VERSION);
 
 use Wallet::Config ();

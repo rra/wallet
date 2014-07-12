@@ -8,6 +8,9 @@
 #
 # See LICENSE for licensing terms.
 
+use strict;
+use warnings;
+
 use Test::More tests => 26;
 
 use Wallet::Admin;
@@ -44,7 +47,7 @@ is ($admin->register_object ('base', 'Wallet::Object::Base'), 1,
     'Registering Wallet::Object::Base works');
 is ($admin->register_object ('base', 'Wallet::Object::Base'), undef,
     ' and cannot be registered twice');
-$server = eval { Wallet::Server->new ('admin@EXAMPLE.COM', 'localhost') };
+my $server = eval { Wallet::Server->new ('admin@EXAMPLE.COM', 'localhost') };
 is ($@, '', 'Creating a server instance did not die');
 is ($server->create ('base', 'service/admin'), 1,
     ' and creating base:service/admin succeeds');
@@ -83,7 +86,7 @@ SKIP: {
     is ($retval, 1, ' and performing an upgrade to 0.08 succeeds');
     my $sql = "select version from dbix_class_schema_versions order by"
       . " version DESC";
-    $version = $admin->dbh->selectall_arrayref ($sql);
+    my $version = $admin->dbh->selectall_arrayref ($sql);
     is (@$version, 2, ' and versions table has correct number of rows');
     is (@{ $version->[0] }, 1, ' and correct number of columns');
     is ($version->[0][0], '0.08', ' and the schema version is correct');

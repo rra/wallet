@@ -14,6 +14,7 @@ package Wallet::Kadmin::Heimdal;
 require 5.006;
 
 use strict;
+use warnings;
 use vars qw(@ISA $VERSION);
 
 use Heimdal::Kadm5 qw(KRB5_KDB_DISALLOW_ALL_TIX);
