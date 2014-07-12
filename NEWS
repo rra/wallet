@@ -39,6 +39,14 @@ wallet 1.1 (unreleased)
     and an incorrect linkage in the schema for the ACL history, and add
     indices for the object type, name, and ACL instead.
 
+    The wallet server now requires Perl 5.8 or later (instead of 5.006 in
+    previous versions) and is now built with Module::Build instead of
+    ExtUtils::MakeMaker.  This should be transparent to anyone not working
+    with the source code, since Perl 5.8 was released in 2002, but
+    Module::Build is now required to build the wallet server.  It is
+    included in some versions of Perl, or can be installed separately from
+    CPAN, distribution packages, or other sources.
+
     Update to rra-c-util 5.5:
 
     * Use Lancaster Consensus environment variables to control tests.

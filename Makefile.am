@@ -6,54 +6,78 @@
 #
 # See LICENSE for licensing terms.
 
+# These variables exist only for the use of the Debian packaging and similar
+# situations and aren't normally set.  We want to honor them if they're set
+# in the environment, as well as via make arguments.
+#
+# WALLET_PERL_FLAGS are additional flags to pass to Build.PL when building
+# the Makefile.
+WALLET_PERL_FLAGS ?=
+
 # These two lists of files are needed for Perl builds and for the test suite
 # and are not generated or touched by configure.  They're listed here to be
 # added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
-	perl/Wallet/ACL/Krb5.pm perl/Wallet/ACL/Krb5/Regex.pm		    \
-	perl/Wallet/ACL/LDAP/Attribute.pm perl/Wallet/ACL/NetDB.pm	    \
-	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm		    \
-	perl/Wallet/Config.pm perl/Wallet/Database.pm perl/Wallet/Kadmin.pm \
-	perl/Wallet/Kadmin/Heimdal.pm perl/Wallet/Kadmin/MIT.pm		    \
-	perl/Wallet/Object/Base.pm perl/Wallet/Object/Duo.pm		    \
-	perl/Wallet/Object/File.pm perl/Wallet/Object/Keytab.pm		    \
-	perl/Wallet/Object/WAKeyring.pm perl/Wallet/Policy/Stanford.pm	    \
-	perl/Wallet/Report.pm perl/Wallet/Schema.pm perl/Wallet/Server.pm   \
-	perl/Wallet/Schema/Result/Acl.pm				    \
-	perl/Wallet/Schema/Result/AclEntry.pm				    \
-	perl/Wallet/Schema/Result/AclHistory.pm				    \
-	perl/Wallet/Schema/Result/AclScheme.pm				    \
-	perl/Wallet/Schema/Result/Duo.pm				    \
-	perl/Wallet/Schema/Result/Enctype.pm				    \
-	perl/Wallet/Schema/Result/Flag.pm				    \
-	perl/Wallet/Schema/Result/KeytabEnctype.pm			    \
-	perl/Wallet/Schema/Result/KeytabSync.pm				    \
-	perl/Wallet/Schema/Result/Object.pm				    \
-	perl/Wallet/Schema/Result/ObjectHistory.pm			    \
-	perl/Wallet/Schema/Result/SyncTarget.pm				    \
-	perl/Wallet/Schema/Result/Type.pm				    \
-	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			    \
-	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			    \
-	perl/sql/Wallet-Schema-0.07-MySQL.sql				    \
-	perl/sql/Wallet-Schema-0.07-SQLite.sql				    \
-	perl/sql/Wallet-Schema-0.08-0.09-MySQL.sql			    \
-	perl/sql/Wallet-Schema-0.08-0.09-PostgreSQL.sql			    \
-	perl/sql/Wallet-Schema-0.08-0.09-SQLite.sql			    \
-	perl/sql/Wallet-Schema-0.08-MySQL.sql				    \
-	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			    \
-	perl/sql/Wallet-Schema-0.08-SQLite.sql				    \
-	perl/sql/Wallet-Schema-0.09-MySQL.sql				    \
-	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql			    \
-	perl/sql/Wallet-Schema-0.09-SQLite.sql perl/t/acl.t perl/t/admin.t  \
-	perl/t/config.t perl/t/data/README perl/t/data/duo/integration.json \
-	perl/t/data/duo/keys.json perl/t/data/keytab-fake		    \
-	perl/t/data/keytab.conf perl/t/data/netdb.conf			    \
-	perl/t/data/netdb-fake perl/t/duo.t perl/t/file.t perl/t/init.t	    \
-	perl/t/kadmin.t perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t  \
-	perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t perl/t/server.t  \
-	perl/t/stanford-naming.t perl/t/verifier-ldap-attr.t		    \
-	perl/t/verifier-netdb.t perl/t/verifier.t perl/t/wa-keyring.t
+PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		   \
+	perl/lib/Wallet/ACL.pm perl/lib/Wallet/ACL/Base.pm		   \
+	perl/lib/Wallet/ACL/Krb5.pm perl/lib/Wallet/ACL/Krb5/Regex.pm	   \
+	perl/lib/Wallet/ACL/LDAP/Attribute.pm perl/lib/Wallet/ACL/NetDB.pm \
+	perl/lib/Wallet/ACL/NetDB/Root.pm perl/lib/Wallet/Admin.pm	   \
+	perl/lib/Wallet/Config.pm perl/lib/Wallet/Database.pm		   \
+	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/Heimdal.pm	   \
+	perl/lib/Wallet/Kadmin/MIT.pm perl/lib/Wallet/Object/Base.pm	   \
+	perl/lib/Wallet/Object/Duo.pm perl/lib/Wallet/Object/File.pm	   \
+	perl/lib/Wallet/Object/Keytab.pm				   \
+	perl/lib/Wallet/Object/WAKeyring.pm				   \
+	perl/lib/Wallet/Policy/Stanford.pm perl/lib/Wallet/Report.pm	   \
+	perl/lib/Wallet/Schema.pm perl/lib/Wallet/Server.pm		   \
+	perl/lib/Wallet/Schema/Result/Acl.pm				   \
+	perl/lib/Wallet/Schema/Result/AclEntry.pm			   \
+	perl/lib/Wallet/Schema/Result/AclHistory.pm			   \
+	perl/lib/Wallet/Schema/Result/AclScheme.pm			   \
+	perl/lib/Wallet/Schema/Result/Duo.pm				   \
+	perl/lib/Wallet/Schema/Result/Enctype.pm			   \
+	perl/lib/Wallet/Schema/Result/Flag.pm				   \
+	perl/lib/Wallet/Schema/Result/KeytabEnctype.pm			   \
+	perl/lib/Wallet/Schema/Result/KeytabSync.pm			   \
+	perl/lib/Wallet/Schema/Result/Object.pm				   \
+	perl/lib/Wallet/Schema/Result/ObjectHistory.pm			   \
+	perl/lib/Wallet/Schema/Result/SyncTarget.pm			   \
+	perl/lib/Wallet/Schema/Result/Type.pm				   \
+	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			   \
+	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			   \
+	perl/sql/Wallet-Schema-0.07-MySQL.sql				   \
+	perl/sql/Wallet-Schema-0.07-SQLite.sql				   \
+	perl/sql/Wallet-Schema-0.08-0.09-MySQL.sql			   \
+	perl/sql/Wallet-Schema-0.08-0.09-PostgreSQL.sql			   \
+	perl/sql/Wallet-Schema-0.08-0.09-SQLite.sql			   \
+	perl/sql/Wallet-Schema-0.08-MySQL.sql				   \
+	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			   \
+	perl/sql/Wallet-Schema-0.08-SQLite.sql				   \
+	perl/sql/Wallet-Schema-0.09-MySQL.sql				   \
+	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql			   \
+	perl/sql/Wallet-Schema-0.09-SQLite.sql perl/t/data/README	   \
+	perl/t/data/duo/integration.json perl/t/data/duo/keys.json	   \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf			   \
+	perl/t/data/netdb.conf perl/t/data/netdb-fake			   \
+	perl/t/docs/pod-spelling.t perl/t/docs/pod.t perl/t/general/acl.t  \
+	perl/t/general/admin.t perl/t/general/config.t			   \
+	perl/t/general/init.t perl/t/general/report.t			   \
+	perl/t/general/server.t perl/t/lib/Util.pm perl/t/object/base.t	   \
+	perl/t/object/duo.t perl/t/object/file.t perl/t/object/keytab.t	   \
+	perl/t/object/wa-keyring.t perl/t/policy/stanford.t		   \
+	perl/t/util/kadmin.t perl/t/verifier/basic.t			   \
+	perl/t/verifier/ldap-attr.t perl/t/verifier/netdb.t
+
+# Directories that have to be created in builddir != srcdir builds before
+# copying PERL_FILES over.
+PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	\
+	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		\
+	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		\
+	perl/lib/Wallet/Object perl/lib/Wallet/Policy			\
+	perl/lib/Wallet/Schema perl/lib/Wallet/Schema/Result perl/sql	\
+	perl/t perl/t/data perl/t/docs perl/t/general perl/t/lib	\
+	perl/t/object perl/t/policy perl/t/util perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
@@ -82,6 +106,7 @@ EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	tests/tap/perl/Test/RRA/Config.pm tests/tap/remctl.sh		   \
 	tests/util/xmalloc-t $(PERL_FILES)
 
+# Supporting convenience libraries used by other targets.
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
 portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
 	portable/krb5.h portable/macros.h portable/stdbool.h		\
@@ -93,11 +118,13 @@ util_libutil_a_SOURCES = util/macros.h util/messages-krb5.c		    \
 	util/xmalloc.h
 util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 
+# The private library used by both wallet and wallet-rekey.
 noinst_LIBRARIES += client/libwallet.a
 client_libwallet_a_SOURCES = client/file.c client/internal.h client/keytab.c \
 	client/krb5.c client/options.c client/remctl.c client/srvtab.c
 client_libwallet_a_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
 
+# The client and server programs.
 bin_PROGRAMS = client/wallet client/wallet-rekey
 dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
 	server/wallet-backend server/wallet-report
@@ -110,6 +137,7 @@ client_wallet_rekey_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
 client_wallet_rekey_LDADD = client/libwallet.a util/libutil.a \
 	portable/libportable.a $(REMCTL_LIBS) $(KRB5_LIBS)
 
+# The manual pages.
 dist_man_MANS = client/wallet.1 client/wallet-rekey.1 server/keytab-backend.8 \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
 
@@ -151,7 +179,8 @@ warnings:
 	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)' $(check_PROGRAMS)
 
 # Remove some additional files.
-DISTCLEANFILES = perl/Makefile
+CLEANFILES = perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm \
+	perl/t/lib/Test/RRA/Config.pm
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 	build-aux/depcomp build-aux/install-sh build-aux/missing	     \
 	client/wallet.1 config.h.in config.h.in~ configure		     \
@@ -164,19 +193,18 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 # packaging.
 all-local: perl/blib/lib/Wallet/Config.pm
 
-perl/blib/lib/Wallet/Config.pm:
-	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		     \
-	    mkdir perl/Wallet perl/Wallet/ACL perl/Wallet/ACL/Krb5	     \
-		perl/Wallet/ACL/LDAP perl/Wallet/ACL/NetDB		     \
-		perl/Wallet/Kadmin perl/Wallet/Object perl/Wallet/Policy     \
-		perl/Wallet/Schema perl/Wallet/Schema/Result perl/sql perl/t \
-		perl/t/data perl/t/lib 2>/dev/null || true ;		     \
-	    for f in $(PERL_FILES) ; do					     \
-		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			     \
-	    done							     \
+perl/blib/lib/Wallet/Config.pm: $(srcdir)/perl/lib/Wallet/Config.pm
+	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then		\
+	    for d in $(PERL_DIRECTORIES) ; do				\
+		[ -d "$(builddir)/$$d" ] || mkdir "$(builddir)/$$d" ;	\
+	    done ;							\
+	    for f in $(PERL_FILES) ; do					\
+		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
+	    done ;							\
 	fi
-	cd perl && perl Makefile.PL
-	cd perl && $(MAKE)
+	cp -R $(srcdir)/tests/tap/perl/* perl/t/lib/
+	cd perl && perl Build.PL $(WALLET_PERL_FLAGS)
+	cd perl && ./Build
 
 install-data-local:
 	if [ x"$(DESTDIR)" != x ] ; then			\
@@ -187,13 +215,16 @@ install-data-local:
 
 # ExtUtils::MakeMaker really likes moving the Makefile aside.
 clean-local:
-	[ ! -f perl/Makefile ] || ( set -e; cd perl && $(MAKE) clean )
-	cd perl && ( [ ! -f Makefile.old ] || mv Makefile.old Makefile )
+	set -e; if [ -f "perl/Build" ] ; then		\
+	    cd perl && ./Build realclean ;		\
+	fi
 
 # Remove the files that we copy over if and only if builddir != srcdir.
 distclean-local:
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then	\
-	    rm -f $(PERL_FILES) ;				\
+	    for f in $(PERL_FILES) ; do				\
+		rm -f "$(builddir)/$$f" ;			\
+	    done ;						\
 	fi
 
 # The bits below are for the test suite, not for the main package.
@@ -241,7 +272,7 @@ tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.a
 check-local: $(check_PROGRAMS)
 	cd tests && ./runtests -l $(abs_top_srcdir)/tests/TESTS
 	@echo ''
-	cd perl && $(MAKE) test
+	cd perl && ./Build test
 
 # Alas, we have to disable this check because there's no way to do an
 # uninstall from Perl.

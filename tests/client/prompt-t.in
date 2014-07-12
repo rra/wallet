@@ -3,7 +3,7 @@
 # Password prompting tests for the wallet client.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2010
+# Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -11,7 +11,7 @@
 BEGIN { our $total = 5 }
 use Test::More tests => $total;
 
-use lib "$ENV{SOURCE}/..//perl";
+use lib "$ENV{SOURCE}/../perl/lib";
 use Wallet::Admin;
 
 use lib "$ENV{SOURCE}/../perl/t/lib";

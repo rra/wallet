@@ -15,7 +15,7 @@ BEGIN { $ENV{WALLET_CONFIG} = "$ENV{SOURCE}/data/wallet.conf" }
 BEGIN { our $total = 59 }
 use Test::More tests => $total;
 
-use lib "$ENV{SOURCE}/../perl";
+use lib "$ENV{SOURCE}/../perl/lib";
 use Wallet::Admin;
 
 use lib "$ENV{SOURCE}/../perl/t/lib";
