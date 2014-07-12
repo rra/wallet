@@ -3,7 +3,7 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2011, 2012, 2013
+# Copyright 2007, 2008, 2010, 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -79,14 +79,14 @@ like ($server->error, qr/^cannot create ACL ADMIN: /,
       ' and returns a good error');
 is ($server->acl_create ('user2'), 1, 'Create another ACL');
 is ($server->acl_create ('both'), 1, ' and one for both users');
-is ($server->acl_create ('test'), 1, ' and an empty one');
-is ($server->acl_create ('test2'), 1, ' and another test one');
+is ($server->acl_create ('test2'), 1, ' and an empty one');
+is ($server->acl_create ('test'), 1, ' and another test one');
 is ($server->acl_rename ('empty', 'test'), undef,
     'Cannot rename nonexistent ACL');
 is ($server->error, 'ACL empty not found', ' and returns the right error');
 is ($server->acl_rename ('test', 'test2'), undef,
     ' and cannot rename to an existing name');
-like ($server->error, qr/^cannot rename ACL 5 to test2: /,
+like ($server->error, qr/^cannot rename ACL 6 to test2: /,
       ' and returns the right error');
 is ($server->acl_rename ('test', 'empty'), 1, 'Renaming does work');
 is ($server->acl_rename ('test', 'empty'), undef, ' but not twice');
@@ -135,19 +135,19 @@ is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_remove ('empty', 'krb5', $user2), undef,
     ' and removing an entry not there fails');
 is ($server->error,
-    "cannot remove krb5:$user2 from 5: entry not found in ACL",
+    "cannot remove krb5:$user2 from 6: entry not found in ACL",
     ' and returns the right error');
 is ($server->acl_show ('empty'),
-    "Members of ACL empty (id: 5) are:\n  krb5 $user1\n",
+    "Members of ACL empty (id: 6) are:\n  krb5 $user1\n",
     ' and show returns the correct status');
 is ($server->acl_remove ('empty', 'krb5', $user1), 1,
     ' but removing a good one works');
 is ($server->acl_remove ('empty', 'krb5', $user1), undef,
     ' but does not work twice');
 is ($server->error,
-    "cannot remove krb5:$user1 from 5: entry not found in ACL",
+    "cannot remove krb5:$user1 from 6: entry not found in ACL",
     ' and returns the right error');
-is ($server->acl_show ('empty'), "Members of ACL empty (id: 5) are:\n",
+is ($server->acl_show ('empty'), "Members of ACL empty (id: 6) are:\n",
     ' and show returns the correct status');
 
 # Make sure we can't cripple the ADMIN ACL.
@@ -434,11 +434,11 @@ DATE  unset acl_store (was ADMIN (1))
     by $admin from $host
 DATE  set owner to ADMIN (1)
     by $admin from $host
-DATE  set acl_get to empty (5)
+DATE  set acl_get to empty (6)
     by $admin from $host
-DATE  set acl_store to empty (5)
+DATE  set acl_store to empty (6)
     by $admin from $host
-DATE  unset acl_store (was empty (5))
+DATE  unset acl_store (was empty (6))
     by $admin from $host
 DATE  unset owner (was ADMIN (1))
     by $admin from $host
