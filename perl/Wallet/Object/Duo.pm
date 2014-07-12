@@ -211,7 +211,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-Allbery Duo integration
+Allbery Duo integration DBH keytab
 
 =head1 NAME
 
