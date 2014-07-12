@@ -1,7 +1,7 @@
 # Automake makefile for wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2006, 2007, 2008, 2010, 2013
+# Copyright 2006, 2007, 2008, 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -16,14 +16,15 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
 	perl/Wallet/ACL/NetDB/Root.pm perl/Wallet/Admin.pm		    \
 	perl/Wallet/Config.pm perl/Wallet/Database.pm perl/Wallet/Kadmin.pm \
 	perl/Wallet/Kadmin/Heimdal.pm perl/Wallet/Kadmin/MIT.pm		    \
-	perl/Wallet/Object/Base.pm perl/Wallet/Object/File.pm		    \
-	perl/Wallet/Object/Keytab.pm perl/Wallet/Object/WAKeyring.pm	    \
-	perl/Wallet/Policy/Stanford.pm perl/Wallet/Report.pm		    \
-	perl/Wallet/Schema.pm perl/Wallet/Server.pm			    \
+	perl/Wallet/Object/Base.pm perl/Wallet/Object/Duo.pm		    \
+	perl/Wallet/Object/File.pm perl/Wallet/Object/Keytab.pm		    \
+	perl/Wallet/Object/WAKeyring.pm perl/Wallet/Policy/Stanford.pm	    \
+	perl/Wallet/Report.pm perl/Wallet/Schema.pm perl/Wallet/Server.pm   \
 	perl/Wallet/Schema/Result/Acl.pm				    \
 	perl/Wallet/Schema/Result/AclEntry.pm				    \
 	perl/Wallet/Schema/Result/AclHistory.pm				    \
 	perl/Wallet/Schema/Result/AclScheme.pm				    \
+	perl/Wallet/Schema/Result/Duo.pm				    \
 	perl/Wallet/Schema/Result/Enctype.pm				    \
 	perl/Wallet/Schema/Result/Flag.pm				    \
 	perl/Wallet/Schema/Result/KeytabEnctype.pm			    \
@@ -31,19 +32,14 @@ PERL_FILES = perl/Wallet/ACL.pm perl/Wallet/ACL/Base.pm			    \
 	perl/Wallet/Schema/Result/Object.pm				    \
 	perl/Wallet/Schema/Result/ObjectHistory.pm			    \
 	perl/Wallet/Schema/Result/SyncTarget.pm				    \
-	perl/Wallet/Schema/Result/Type.pm				    \
-	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			    \
-	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			    \
-	perl/sql/Wallet-Schema-0.07-MySQL.sql				    \
-	perl/sql/Wallet-Schema-0.07-SQLite.sql				    \
-	perl/sql/Wallet-Schema-0.08-MySQL.sql				    \
-	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			    \
-	perl/sql/Wallet-Schema-0.08-SQLite.sql perl/t/acl.t perl/t/admin.t  \
-	perl/t/config.t perl/t/data/README perl/t/data/keytab-fake	    \
-	perl/t/data/keytab.conf perl/t/data/netdb.conf			    \
-	perl/t/data/netdb-fake perl/t/file.t perl/t/init.t perl/t/kadmin.t  \
-	perl/t/keytab.t perl/t/lib/Util.pm perl/t/object.t		    \
-	perl/t/pod-spelling.t perl/t/pod.t perl/t/report.t perl/t/server.t  \
+	perl/Wallet/Schema/Result/Type.pm perl/sql perl/t/acl.t		    \
+	perl/t/admin.t perl/t/config.t perl/t/data/README		    \
+	perl/t/data/duo/integration.json perl/t/data/duo/keys.json	    \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
+	perl/t/data/netdb.conf perl/t/data/netdb-fake perl/t/duo.t	    \
+	perl/t/file.t perl/t/init.t perl/t/kadmin.t perl/t/keytab.t	    \
+	perl/t/lib/Util.pm perl/t/object.t perl/t/pod-spelling.t	    \
+	perl/t/pod.t perl/t/report.t perl/t/server.t			    \
 	perl/t/stanford-naming.t perl/t/verifier-ldap-attr.t		    \
 	perl/t/verifier-netdb.t perl/t/verifier.t perl/t/wa-keyring.t
 
@@ -110,9 +106,15 @@ dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
 	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql		\
 	perl/sql/Wallet-Schema-0.07-MySQL.sql			\
 	perl/sql/Wallet-Schema-0.07-SQLite.sql			\
+	perl/sql/Wallet-Schema-0.08-0.09-MySQL.sql		\
+	perl/sql/Wallet-Schema-0.08-0.09-PostgreSQL.sql		\
+	perl/sql/Wallet-Schema-0.08-0.09-SQLite.sql		\
 	perl/sql/Wallet-Schema-0.08-MySQL.sql			\
 	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql		\
-	perl/sql/Wallet-Schema-0.08-SQLite.sql
+	perl/sql/Wallet-Schema-0.08-SQLite.sql			\
+	perl/sql/Wallet-Schema-0.09-MySQL.sql			\
+	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql		\
+	perl/sql/Wallet-Schema-0.09-SQLite.sql
 
 # A set of flags for warnings.  Add -O because gcc won't find some warnings
 # without optimization turned on.  Desirable warnings that can't be turned

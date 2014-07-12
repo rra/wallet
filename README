@@ -3,10 +3,10 @@
 
                 Written by Russ Allbery <eagle@eyrie.org>
 
-  Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013 The Board of Trustees
-  of the Leland Stanford Junior University.  This software is distributed
-  under a BSD-style license.  Please see the section LICENSE below for
-  more information.
+  Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014 The Board of
+  Trustees of the Leland Stanford Junior University.  This software is
+  distributed under a BSD-style license.  Please see the section LICENSE
+  below for more information.
 
 BLURB
 
@@ -43,15 +43,16 @@ DESCRIPTION
   regexes matching Kerberos principal names, and LDAP attribute checks.
 
   Currently, the object types supported are simple files, Kerberos
-  keytabs, and WebAuth keyrings.  By default, whenever a Kerberos keytab
-  object is retrieved from the wallet, the key is changed in the Kerberos
-  KDC and the wallet returns a keytab for the new key.  However, a keytab
-  object can also be configured to preserve the existing keys when
-  retrieved.  Included in the wallet distribution is a script that can be
-  run via remctl on an MIT Kerberos KDC to extract the existing key for a
-  principal, and the wallet system will use that interface to retrieve the
-  current key if the unchanging flag is set on a Kerberos keytab object
-  for MIT Kerberos.  (Heimdal doesn't require any special support.)
+  keytabs, WebAuth keyrings, and Duo integrations.  By default, whenever a
+  Kerberos keytab object is retrieved from the wallet, the key is changed
+  in the Kerberos KDC and the wallet returns a keytab for the new key.
+  However, a keytab object can also be configured to preserve the existing
+  keys when retrieved.  Included in the wallet distribution is a script
+  that can be run via remctl on an MIT Kerberos KDC to extract the
+  existing key for a principal, and the wallet system will use that
+  interface to retrieve the current key if the unchanging flag is set on a
+  Kerberos keytab object for MIT Kerberos.  (Heimdal doesn't require any
+  special support.)
 
 REQUIREMENTS
 
@@ -103,6 +104,9 @@ REQUIREMENTS
 
   The WebAuth keyring object support in the wallet server requires the
   WebAuth Perl module from WebAuth 4.4.0 or later.
+
+  The Duo integration object support in the wallet server requires the
+  Net::Duo Perl module.
 
   To support the LDAP attribute ACL verifier, the Authen::SASL and
   Net::LDAP Perl modules must be installed on the server.  This verifier
@@ -323,7 +327,7 @@ LICENSE
   The wallet distribution as a whole is covered by the following copyright
   statement and license:
 
-    Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013
+    Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014
         The Board of Trustees of the Leland Stanford Junior University
 
     Permission is hereby granted, free of charge, to any person obtaining

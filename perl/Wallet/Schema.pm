@@ -18,7 +18,7 @@ use base 'DBIx::Class::Schema';
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 __PACKAGE__->load_namespaces;
 __PACKAGE__->load_components (qw/Schema::Versioned/);
@@ -271,6 +271,21 @@ have the name of the flag.
 oh_by stores the authenticated identity that made the change, oh_from
 stores the host from which they made the change, and oh_on stores the time
 the change was made.
+
+=head2 Duo Backend Data
+
+Duo integration objects store some additional metadata about the
+integration to aid in synchronization with Duo.
+
+  create table duo
+     (du_name             varchar(255)
+          not null references objects(ob_name),
+      du_key              varchar(255) not null);
+  create index du_key on duo (du_key);
+
+du_key holds the Duo integration key, which is the unique name of the
+integration within Duo.  Additional data may be added later to represent
+the other possible settings within Duo.
 
 =head2 Keytab Backend Data
 

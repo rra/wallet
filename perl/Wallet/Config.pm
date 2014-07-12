@@ -1,7 +1,7 @@
 # Wallet::Config -- Configuration handling for the wallet server.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2013
+# Copyright 2007, 2008, 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -178,6 +178,51 @@ backends, particularly SQLite, do not need this.
 =cut
 
 our $DB_PASSWORD;
+
+=back
+
+=head1 DUO OBJECT CONFIGURATION
+
+These configuration variables only need to be set if you intend to use the
+C<duo> object type (the Wallet::Object::Duo class).
+
+=over 4
+
+=item DUO_AGENT
+
+If this configuration variable is set, its value should be an object that
+is call-compatible with LWP::UserAgent.  This object will be used instead
+of LWP::UserAgent to make API calls to Duo.  This is primarily useful for
+testing, allowing replacement of the user agent with a mock implementation
+so that a test can run without needing a Duo account.
+
+=cut
+
+our $DUO_AGENT;
+
+=item DUO_KEY_FILE
+
+The path to a file in JSON format that contains the key and hostname data
+for the Duo Admin API integration used to manage integrations via wallet.
+This file should be in the format expected by the C<key_file> parameter
+to the Net::Duo::Admin constructor.  See L<Net::Duo::Admin> for more
+information.
+
+DUO_KEY_FILE must be set to use Duo objects.
+
+=cut
+
+our $DUO_KEY_FILE;
+
+=item DUO_TYPE
+
+The type of integration to create.  Currently, only one type of integration
+can be created by one wallet configuration.  This restriction may be relaxed
+in the future.  The default value is C<unix> to create UNIX integrations.
+
+=cut
+
+our $DUO_TYPE = 'unix';
 
 =back
 

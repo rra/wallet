@@ -2,6 +2,16 @@
 
 wallet 1.1 (unreleased)
 
+    A new object type, duo (Wallet::Object::Duo), is now supported.  This
+    creates an integration with the Duo Security cloud multifactor
+    authentication service and allows retrieval of the integration key,
+    secret key, and admin hostname.  Currently, only UNIX integration
+    types are supported.  The Net::Duo Perl module is required to use this
+    object type.  New configuration settings are required as well; see
+    Wallet::Config for more information.  To enable this object type for
+    an existing wallet database, use wallet-admin to register the new
+    object.
+
     Fix wallet-rekey on keytabs containing multiple principals.  Previous
     versions assumed one could concatenate keytab files together to make a
     valid keytab file, which doesn't work with some Kerberos libraries.
