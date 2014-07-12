@@ -28,7 +28,7 @@ require_ok ('Wallet::ACL::LDAP::Attribute');
 my $host   = 'ldap.stanford.edu';
 my $base   = 'cn=people,dc=stanford,dc=edu';
 my $filter = 'uid';
-my $user   = 'eagle@eyrie.org';
+my $user   = 'rra@stanford.edu';
 my $attr   = 'suPrivilegeGroup';
 my $value  = 'stanford:stanford';
 
