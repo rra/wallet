@@ -3,12 +3,12 @@
 # Tests for wallet administrative interface.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2009, 2010, 2011, 2013
+# Copyright 2008, 2009, 2010, 2011, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 24;
+use Test::More tests => 26;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -61,7 +61,6 @@ is ($server->acl_add ('ADMIN', 'base', 'foo'), 1,
 $Wallet::Schema::VERSION = '0.07';
 is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     ' and re-initialization succeeds');
-$Wallet::Schema::VERSION = '0.08';
 
 # Test an upgrade.  Reinitialize to an older version, then test upgrade to the
 # current version.
@@ -73,18 +72,31 @@ SKIP: {
     # Delete all tables and then redump them straight from the SQL file to
     # avoid getting the version table.
     unlink 'wallet-db';
-    $admin = eval { Wallet::Admin->new };
     my $status = system ('sqlite3', 'wallet-db',
                          '.read sql/Wallet-Schema-0.07-SQLite.sql');
     is ($status, 0, 'Reinstalling database from non-versioned SQL succeds');
+
+    # Upgrade to 0.08.
+    $Wallet::Schema::VERSION = '0.08';
+    $admin = eval { Wallet::Admin->new };
     my $retval = $admin->upgrade;
-    is ($retval, 1, ' and performing an upgrade succeeds');
+    is ($retval, 1, ' and performing an upgrade to 0.08 succeeds');
     my $sql = "select version from dbix_class_schema_versions order by"
       . " version DESC";
     $version = $admin->dbh->selectall_arrayref ($sql);
     is (@$version, 2, ' and versions table has correct number of rows');
     is (@{ $version->[0] }, 1, ' and correct number of columns');
     is ($version->[0][0], '0.08', ' and the schema version is correct');
+
+    # Upgrade to 0.09.
+    $Wallet::Schema::VERSION = '0.09';
+    $admin = eval { Wallet::Admin->new };
+    $retval = $admin->upgrade;
+    is ($retval, 1, ' and performing an upgrade to 0.09 succeeds');
+    $sql = "select version from dbix_class_schema_versions order by"
+      . " version DESC";
+    $version = $admin->dbh->selectall_arrayref ($sql);
+    is ($version->[0][0], '0.09', ' and the schema version is correct');
 }
 
 # Clean up.
