@@ -1,7 +1,7 @@
 # Wallet schema for ACL history.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -103,10 +103,11 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("ah_id");
 
-__PACKAGE__->might_have(
-                        'acls',
-                        'Wallet::Schema::Result::Acl',
-                        { 'foreign.ac_id' => 'self.ah_id' },
-                       );
+# Add an index on the ACL.
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    my $name = 'acl_history_idx_ah_acl';
+    $sqlt_table->add_index (name => $name, fields => [qw(ah_acl)]);
+}
 
 1;

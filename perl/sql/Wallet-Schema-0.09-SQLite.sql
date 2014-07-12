@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Jul 11 16:33:48 2014
+-- Created on Fri Jul 11 19:17:16 2014
 -- 
 
 BEGIN TRANSACTION;
@@ -31,6 +31,8 @@ CREATE TABLE acl_history (
   ah_from varchar(255) NOT NULL,
   ah_on datetime NOT NULL
 );
+
+CREATE INDEX acl_history_idx_ah_acl ON acl_history (ah_acl);
 
 --
 -- Table: acl_schemes
@@ -98,6 +100,27 @@ CREATE TABLE keytab_sync (
   ks_target varchar(255) NOT NULL,
   PRIMARY KEY (ks_name, ks_target)
 );
+
+--
+-- Table: object_history
+--
+DROP TABLE IF EXISTS object_history;
+
+CREATE TABLE object_history (
+  oh_id INTEGER PRIMARY KEY NOT NULL,
+  oh_type varchar(16) NOT NULL,
+  oh_name varchar(255) NOT NULL,
+  oh_action varchar(16) NOT NULL,
+  oh_field varchar(16),
+  oh_type_field varchar(255),
+  oh_old varchar(255),
+  oh_new varchar(255),
+  oh_by varchar(255) NOT NULL,
+  oh_from varchar(255) NOT NULL,
+  oh_on datetime NOT NULL
+);
+
+CREATE INDEX object_history_idx_oh_type_oh_name ON object_history (oh_type, oh_name);
 
 --
 -- Table: sync_targets
@@ -186,27 +209,5 @@ CREATE INDEX objects_idx_ob_acl_show ON objects (ob_acl_show);
 CREATE INDEX objects_idx_ob_acl_store ON objects (ob_acl_store);
 
 CREATE INDEX objects_idx_ob_type ON objects (ob_type);
-
---
--- Table: object_history
---
-DROP TABLE IF EXISTS object_history;
-
-CREATE TABLE object_history (
-  oh_id INTEGER PRIMARY KEY NOT NULL,
-  oh_type varchar(16) NOT NULL,
-  oh_name varchar(255) NOT NULL,
-  oh_action varchar(16) NOT NULL,
-  oh_field varchar(16),
-  oh_type_field varchar(255),
-  oh_old varchar(255),
-  oh_new varchar(255),
-  oh_by varchar(255) NOT NULL,
-  oh_from varchar(255) NOT NULL,
-  oh_on datetime NOT NULL,
-  FOREIGN KEY (oh_type, oh_name) REFERENCES objects(ob_type, ob_name)
-);
-
-CREATE INDEX object_history_idx_oh_type_oh_name ON object_history (oh_type, oh_name);
 
 COMMIT;

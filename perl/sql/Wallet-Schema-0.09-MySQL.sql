@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Fri Jul 11 16:33:47 2014
+-- Created on Fri Jul 11 19:17:16 2014
 -- 
 SET foreign_key_checks=0;
 
@@ -18,6 +18,7 @@ CREATE TABLE `acl_history` (
   `ah_by` varchar(255) NOT NULL,
   `ah_from` varchar(255) NOT NULL,
   `ah_on` datetime NOT NULL,
+  INDEX `acl_history_idx_ah_acl` (`ah_acl`),
   PRIMARY KEY (`ah_id`)
 );
 
@@ -99,6 +100,27 @@ CREATE TABLE `keytab_sync` (
   PRIMARY KEY (`ks_name`, `ks_target`)
 );
 
+DROP TABLE IF EXISTS `object_history`;
+
+--
+-- Table: `object_history`
+--
+CREATE TABLE `object_history` (
+  `oh_id` integer NOT NULL auto_increment,
+  `oh_type` varchar(16) NOT NULL,
+  `oh_name` varchar(255) NOT NULL,
+  `oh_action` varchar(16) NOT NULL,
+  `oh_field` varchar(16) NULL,
+  `oh_type_field` varchar(255) NULL,
+  `oh_old` varchar(255) NULL,
+  `oh_new` varchar(255) NULL,
+  `oh_by` varchar(255) NOT NULL,
+  `oh_from` varchar(255) NOT NULL,
+  `oh_on` datetime NOT NULL,
+  INDEX `object_history_idx_oh_type_oh_name` (`oh_type`, `oh_name`),
+  PRIMARY KEY (`oh_id`)
+);
+
 DROP TABLE IF EXISTS `sync_targets`;
 
 --
@@ -176,28 +198,6 @@ CREATE TABLE `objects` (
   CONSTRAINT `objects_fk_ob_acl_show` FOREIGN KEY (`ob_acl_show`) REFERENCES `acls` (`ac_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `objects_fk_ob_acl_store` FOREIGN KEY (`ob_acl_store`) REFERENCES `acls` (`ac_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `objects_fk_ob_type` FOREIGN KEY (`ob_type`) REFERENCES `types` (`ty_name`)
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `object_history`;
-
---
--- Table: `object_history`
---
-CREATE TABLE `object_history` (
-  `oh_id` integer NOT NULL auto_increment,
-  `oh_type` varchar(16) NOT NULL,
-  `oh_name` varchar(255) NOT NULL,
-  `oh_action` varchar(16) NOT NULL,
-  `oh_field` varchar(16) NULL,
-  `oh_type_field` varchar(255) NULL,
-  `oh_old` varchar(255) NULL,
-  `oh_new` varchar(255) NULL,
-  `oh_by` varchar(255) NOT NULL,
-  `oh_from` varchar(255) NOT NULL,
-  `oh_on` datetime NOT NULL,
-  INDEX `object_history_idx_oh_type_oh_name` (`oh_type`, `oh_name`),
-  PRIMARY KEY (`oh_id`),
-  CONSTRAINT `object_history_fk_oh_type_oh_name` FOREIGN KEY (`oh_type`, `oh_name`) REFERENCES `objects` (`ob_type`, `ob_name`)
 ) ENGINE=InnoDB;
 
 SET foreign_key_checks=1;

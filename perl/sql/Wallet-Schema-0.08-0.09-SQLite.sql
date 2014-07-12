@@ -8,4 +8,6 @@ CREATE TABLE duo (
   PRIMARY KEY (du_name)
 );
 
+CREATE INDEX acl_history_idx_ah_acl ON acl_history (ah_acl);
+
 COMMIT;

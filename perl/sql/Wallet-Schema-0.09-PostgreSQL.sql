@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Fri Jul 11 16:33:49 2014
+-- Created on Fri Jul 11 19:17:17 2014
 -- 
 --
 -- Table: duo.
@@ -27,6 +27,7 @@ CREATE TABLE "acl_history" (
   "ah_on" timestamp NOT NULL,
   PRIMARY KEY ("ah_id")
 );
+CREATE INDEX "acl_history_idx_ah_acl" on "acl_history" ("ah_acl");
 
 --
 -- Table: acl_schemes.
@@ -88,6 +89,26 @@ CREATE TABLE "keytab_sync" (
   "ks_target" character varying(255) NOT NULL,
   PRIMARY KEY ("ks_name", "ks_target")
 );
+
+--
+-- Table: object_history.
+--
+DROP TABLE "object_history" CASCADE;
+CREATE TABLE "object_history" (
+  "oh_id" serial NOT NULL,
+  "oh_type" character varying(16) NOT NULL,
+  "oh_name" character varying(255) NOT NULL,
+  "oh_action" character varying(16) NOT NULL,
+  "oh_field" character varying(16),
+  "oh_type_field" character varying(255),
+  "oh_old" character varying(255),
+  "oh_new" character varying(255),
+  "oh_by" character varying(255) NOT NULL,
+  "oh_from" character varying(255) NOT NULL,
+  "oh_on" timestamp NOT NULL,
+  PRIMARY KEY ("oh_id")
+);
+CREATE INDEX "object_history_idx_oh_type_oh_name" on "object_history" ("oh_type", "oh_name");
 
 --
 -- Table: sync_targets.
@@ -154,26 +175,6 @@ CREATE INDEX "objects_idx_ob_owner" on "objects" ("ob_owner");
 CREATE INDEX "objects_idx_ob_acl_show" on "objects" ("ob_acl_show");
 CREATE INDEX "objects_idx_ob_acl_store" on "objects" ("ob_acl_store");
 CREATE INDEX "objects_idx_ob_type" on "objects" ("ob_type");
-
---
--- Table: object_history.
---
-DROP TABLE "object_history" CASCADE;
-CREATE TABLE "object_history" (
-  "oh_id" serial NOT NULL,
-  "oh_type" character varying(16) NOT NULL,
-  "oh_name" character varying(255) NOT NULL,
-  "oh_action" character varying(16) NOT NULL,
-  "oh_field" character varying(16),
-  "oh_type_field" character varying(255),
-  "oh_old" character varying(255),
-  "oh_new" character varying(255),
-  "oh_by" character varying(255) NOT NULL,
-  "oh_from" character varying(255) NOT NULL,
-  "oh_on" timestamp NOT NULL,
-  PRIMARY KEY ("oh_id")
-);
-CREATE INDEX "object_history_idx_oh_type_oh_name" on "object_history" ("oh_type", "oh_name");
 
 --
 -- Foreign Key Definitions

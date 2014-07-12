@@ -34,6 +34,11 @@ wallet 1.1 (unreleased)
     until the keys have been randomized, the password should not need to
     be secure (and indeed is not cryptographically random).
 
+    Previous versions had erroneous foreign key constraints between the
+    object history table and the objects table.  Remove those constraints,
+    and an incorrect linkage in the schema for the ACL history, and add
+    indices for the object type, name, and ACL instead.
+
 wallet 1.0 (2013-03-27)
 
     Owners of wallet objects are now allowed to destroy them.  In previous

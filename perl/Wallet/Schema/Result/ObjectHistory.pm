@@ -1,7 +1,7 @@
 # Wallet schema for object history.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -125,11 +125,11 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("oh_id");
 
-__PACKAGE__->might_have(
-                        'objects',
-                        'Wallet::Schema::Result::Object',
-                        { 'foreign.ob_type' => 'self.oh_type',
-                          'foreign.ob_name' => 'self.oh_name' },
-                       );
+# Add an index on object type and object name.
+sub sqlt_deploy_hook {
+    my ($self, $sqlt_table) = @_;
+    my $name = 'object_history_idx_oh_type_oh_name';
+    $sqlt_table->add_index (name => $name, fields => [qw(oh_type oh_name)]);
+}
 
 1;
