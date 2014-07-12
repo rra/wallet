@@ -128,25 +128,27 @@ dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
 	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql		\
 	perl/sql/Wallet-Schema-0.09-SQLite.sql
 
-# A set of flags for warnings.  Add -O because gcc won't find some warnings
+# A set of flags for warnings.	Add -O because gcc won't find some warnings
 # without optimization turned on.  Desirable warnings that can't be turned
 # on due to other problems:
 #
-#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
+#     -Wconversion	http://bugs.debian.org/488884 (htons warnings)
 #
-# Last checked against gcc 4.6.1 (2011-05-04).  -D_FORTIFY_SOURCE=2 enables
+# Last checked against gcc 4.8.2 (2014-04-12).	-D_FORTIFY_SOURCE=2 enables
 # warn_unused_result attribute markings on glibc functions on Linux, which
 # catches a few more issues.
-WARNINGS = -g -O -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wendif-labels	    \
-	-Wformat=2 -Winit-self -Wswitch-enum -Wdeclaration-after-statement  \
+WARNINGS = -g -O -fstrict-overflow -fstrict-aliasing -D_FORTIFY_SOURCE=2    \
+	-Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self -Wswitch-enum   \
+	-Wstrict-overflow=5 -Wfloat-equal -Wdeclaration-after-statement	    \
 	-Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align	    \
-	-Wwrite-strings -Wjump-misses-init -Wlogical-op			    \
-	-Wstrict-prototypes -Wmissing-prototypes -Wredundant-decls	    \
-	-Wnested-externs -Werror
+	-Wwrite-strings -Wjump-misses-init -Wlogical-op -Wstrict-prototypes \
+	-Wold-style-definition -Wmissing-prototypes -Wnormalized=nfc	    \
+	-Wpacked -Wredundant-decls -Wnested-externs -Winline -Wvla -Werror
 
 warnings:
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)'
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
+	$(MAKE) V=0 CFLAGS='$(WARNINGS)' KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)'
+	$(MAKE) V=0 CFLAGS='$(WARNINGS)' \
+	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)' $(check_PROGRAMS)
 
 # Remove some additional files.
 DISTCLEANFILES = perl/Makefile
@@ -237,7 +239,7 @@ tests_util_messages_t_LDADD = tests/tap/libtap.a util/libutil.a \
 tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.a
 
 check-local: $(check_PROGRAMS)
-	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS
+	cd tests && ./runtests -l $(abs_top_srcdir)/tests/TESTS
 	@echo ''
 	cd perl && $(MAKE) test
 

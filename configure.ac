@@ -19,11 +19,14 @@ dnl AM_PROG_AR is required for Automake 1.12 by Libtool but not defined at all
 dnl (or needed) in Automake 1.11.  Work around this bug.
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
+AC_SYS_LARGEFILE
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
+dnl Allow modification of the default wallet port, and setting a default
+dnl wallet server when none is defined in krb5.conf.
 AC_ARG_WITH([wallet-server],
     [AC_HELP_STRING([--with-wallet-server=HOST], [Default wallet server])],
     [AS_IF([test x"$withval" != xno && test x"$withval" != xyes],
@@ -36,6 +39,7 @@ AC_ARG_WITH([wallet-port],
         [AC_DEFINE_UNQUOTED([WALLET_PORT], [$withval],
             [Define to the default server port.])])])
 
+dnl Probe for required libraries.
 RRA_LIB_REMCTL
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
@@ -49,6 +53,7 @@ AC_CHECK_DECLS([krb5_kt_free_entry])
 AC_CHECK_MEMBERS([krb5_keytab_entry.keyblock], [], [], [RRA_INCLUDES_KRB5])
 RRA_LIB_KRB5_RESTORE
 
+dnl Probe for properties of the C library.
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/bitypes.h sys/uio.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
@@ -59,14 +64,16 @@ AC_CHECK_TYPES([ssize_t], [], [],
     [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
 AC_CHECK_FUNCS([setrlimit])
-AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp reallocarray setenv strlcat strlcpy])
 
+dnl Find a remctld binary for the test suite.
 AC_ARG_VAR([REMCTLD], [Path to the remctld binary])
-AC_PATH_PROG([REMCTLD], [remctld], , [$PATH:/usr/sbin:/usr/local/sbin])
+AC_PATH_PROG([REMCTLD], [remctld], [], [$PATH:/usr/sbin:/usr/local/sbin])
 AS_IF([test x"$REMCTLD" != x],
     [AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
         [Define to the full path to remctld to run remctl tests.])])
 
+dnl Output section.
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile perl/Makefile.PL])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])

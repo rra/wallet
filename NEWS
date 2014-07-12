@@ -39,6 +39,28 @@ wallet 1.1 (unreleased)
     and an incorrect linkage in the schema for the ACL history, and add
     indices for the object type, name, and ACL instead.
 
+    Update to rra-c-util 5.5:
+
+    * Use Lancaster Consensus environment variables to control tests.
+    * Use calloc or reallocarray for protection against integer overflows.
+    * Suppress warnings from Kerberos headers in non-system paths.
+    * Assume calloc initializes pointers to NULL.
+    * Assume free(NULL) is properly ignored.
+    * Improve error handling in xasprintf and xvasprintf.
+    * Check the return status of snprintf and vsnprintf properly.
+    * Preserve errno if snprintf fails in vasprintf replacement.
+
+    Update to C TAP Harness 3.1:
+
+    * Reopen standard input to /dev/null when running a test list.
+    * Don't leak extraneous file descriptors to tests.
+    * Suppress lazy plans and test summaries if the test failed with bail.
+    * runtests now treats the command line as a list of tests by default.
+    * The full test executable path can now be passed to runtests -o.
+    * Improved harness output for tests with lazy plans.
+    * Improved harness output to a terminal for some abort cases.
+    * Flush harness output after each test even when not on a terminal.
+
 wallet 1.0 (2013-03-27)
 
     Owners of wallet objects are now allowed to destroy them.  In previous
