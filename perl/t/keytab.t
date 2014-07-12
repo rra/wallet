@@ -3,13 +3,13 @@
 # Tests for the keytab object implementation.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2009, 2010, 2013
+# Copyright 2007, 2008, 2009, 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use POSIX qw(strftime);
-use Test::More tests => 140;
+use Test::More tests => 141;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
@@ -471,7 +471,7 @@ SKIP: {
     # Now Heimdal.  Since the keytab contains timestamps, before testing for
     # equality we have to substitute out the timestamps.
   SKIP: {
-        skip 'skipping Heimdal unchanging tests for MIT', 10
+        skip 'skipping Heimdal unchanging tests for MIT', 11
             if (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'mit');
         my $data = $one->get (@trace);
         ok (defined $data, 'Get of unchanging keytab works');
@@ -480,7 +480,8 @@ SKIP: {
         ok (defined $second, ' and second retrieval also works');
         $data =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
         $second =~ s/one.{8}/one\000\000\000\000\000\000\000\000/g;
-        is ($data, $second, ' and the keytab matches');
+        ok (keytab_valid ($second, 'wallet/one'), ' and the keytab is valid');
+        ok (keytab_valid ($data, 'wallet/one'), ' as is the first keytab');
         is ($one->flag_clear ('unchanging', @trace), 1,
             'Clearing the unchanging flag works');
         $data = $one->get (@trace);
