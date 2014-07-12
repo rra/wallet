@@ -12,7 +12,7 @@
 #
 # See LICENSE for licensing terms.
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 use Wallet::ACL::NetDB;
 
@@ -26,7 +26,7 @@ my $user  = 'rra@stanford.edu';
 # Determine the local principal.
 my $klist = `klist 2>&1` || '';
 SKIP: {
-    skip "tests useful only with Stanford Kerberos tickets", 4
+    skip "tests useful only with Stanford Kerberos tickets", 5
         unless ($klist =~ /^(Default p|\s+P)rincipal: \S+\@stanford\.edu$/m);
 
     # Set up our configuration.
@@ -37,6 +37,7 @@ SKIP: {
     # Finally, we can test.
     $verifier = eval { Wallet::ACL::NetDB->new };
     ok (defined $verifier, ' and now creation succeeds');
+    is ($@, q{}, ' with no errors');
     ok ($verifier->isa ('Wallet::ACL::NetDB'), ' and returns the right class');
     is ($verifier->check ($user, $host), 1, "Checking $host succeeds");
     is ($verifier->check ('test-user@stanford.edu', $host), 0,
