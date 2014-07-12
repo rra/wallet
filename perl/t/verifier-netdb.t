@@ -7,7 +7,7 @@
 # environments.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008
+# Copyright 2008, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -21,13 +21,13 @@ use Util;
 
 my $netdb = 'netdb-node-roles-rc.stanford.edu';
 my $host  = 'windlord.stanford.edu';
-my $user  = 'eagle@eyrie.org';
+my $user  = 'rra@stanford.edu';
 
 # Determine the local principal.
 my $klist = `klist 2>&1` || '';
 SKIP: {
     skip "tests useful only with Stanford Kerberos tickets", 4
-        unless ($klist =~ /^Default principal: \S+\@stanford\.edu$/m);
+        unless ($klist =~ /^(Default p|\s+P)rincipal: \S+\@stanford\.edu$/m);
 
     # Set up our configuration.
     $Wallet::Config::NETDB_REALM = 'stanford.edu';
