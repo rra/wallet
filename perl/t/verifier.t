@@ -3,7 +3,7 @@
 # Tests for the basic wallet ACL verifiers.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010
+# Copyright 2007, 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -43,9 +43,9 @@ is ($verifier->error, 'malformed krb5 ACL', ' and right error');
 
 $verifier = Wallet::ACL::Krb5::Regex->new;
 isa_ok ($verifier, 'Wallet::ACL::Krb5::Regex', 'krb5-regex verifier');
-is ($verifier->check ('eagle@eyrie.org', '.*@stanford\.edu\z'), 1,
+is ($verifier->check ('rra@stanford.edu', '.*@stanford\.edu\z'), 1,
     'Simple check');
-is ($verifier->check ('eagle@eyrie.org', '^a.*@stanford\.edu'), 0,
+is ($verifier->check ('rra@stanford.edu', '^a.*@stanford\.edu'), 0,
     'Simple failure');
 is ($verifier->error, undef, 'No error set');
 is ($verifier->check (undef, '^rra@stanford\.edu\z'), undef,
