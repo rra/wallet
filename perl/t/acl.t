@@ -3,7 +3,7 @@
 # Tests for the wallet ACL API.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008
+# Copyright 2007, 2008, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -223,7 +223,7 @@ $acl = eval { Wallet::ACL->create ('example', $schema, @trace) };
 ok (defined ($acl), ' and creating another with the same name works');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');
-is ($acl->id, 3, ' and a new ID');
+like ($acl->id, qr{\A[23]\z}, ' and an ID of 2 or 3');
 
 # Clean up.
 $setup->destroy;
