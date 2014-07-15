@@ -47,6 +47,9 @@ wallet 1.1 (unreleased)
     included in some versions of Perl, or can be installed separately from
     CPAN, distribution packages, or other sources.
 
+    Add a new contrib script, wallet-rekey-periodic, which is used at
+    Stanford to periodically rekey hosts from cron.
+
     Update to rra-c-util 5.5:
 
     * Use Lancaster Consensus environment variables to control tests.
