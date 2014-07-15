@@ -11,7 +11,6 @@
 use strict;
 use warnings;
 
-use POSIX qw(strftime);
 use Test::More tests => 34;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }

@@ -19,7 +19,6 @@ BEGIN {
       if $@;
 }
 
-use POSIX qw(strftime);
 use WebAuth::Key 1.01 ();
 use WebAuth::Keyring 1.02 ();
 
