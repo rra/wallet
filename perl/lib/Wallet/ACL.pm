@@ -17,13 +17,13 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
+use DateTime;
 use DBI;
-use POSIX qw(strftime);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 ##############################################################################
 # Constructors
@@ -78,7 +78,7 @@ sub create {
         die "unable to retrieve new ACL ID" unless defined $id;
 
         # Add to the history table.
-        my $date = strftime ('%Y-%m-%d %T', localtime $time);
+        my $date = DateTime->from_epoch (epoch => $time);
         %record = (ah_acl    => $id,
                    ah_action => 'create',
                    ah_by     => $user,
@@ -86,7 +86,6 @@ sub create {
                    ah_on     => $date);
         my $history = $schema->resultset('AclHistory')->create (\%record);
         die "unable to create new history entry" unless defined $history;
-
         $guard->commit;
     };
     if ($@) {
@@ -164,13 +163,14 @@ sub log_acl {
     unless ($action =~ /^(add|remove)\z/) {
         die "invalid history action $action";
     }
+    my $date = DateTime->from_epoch (epoch => $time);
     my %record = (ah_acl        => $self->{id},
                   ah_action     => $action,
                   ah_scheme     => $scheme,
                   ah_identifier => $identifier,
                   ah_by         => $user,
                   ah_from       => $host,
-                  ah_on         => strftime ('%Y-%m-%d %T', localtime $time));
+                  ah_on         => $date);
     $self->{schema}->resultset('AclHistory')->create (\%record);
 }
 
@@ -242,11 +242,12 @@ sub destroy {
         $entry->delete if defined $entry;
 
         # Create new history line for the deletion.
+        my $date = DateTime->from_epoch (epoch => $time);
         my %record = (ah_acl => $self->{id},
                       ah_action => 'destroy',
                       ah_by     => $user,
                       ah_from   => $host,
-                      ah_on     => strftime ('%Y-%m-%d %T', localtime $time));
+                      ah_on     => $date);
         $self->{schema}->resultset('AclHistory')->create (\%record);
         $guard->commit;
     };

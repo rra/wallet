@@ -68,10 +68,11 @@ REQUIREMENTS
   plus Module::Build to build.  It uses DBIx::Class and DBI to talk to a
   database, and therefore the DBIx::Class and DBI modules (and their
   dependencies) and a DBD module for the database it will use must be
-  installed.  The SQL::Translator Perl module is also required for schema
-  deployment and database upgrades.  If the wallet server is used with a
-  SQLite 3 database, the Perl module DateTime::Format::SQLite should also
-  be installed.
+  installed.  The DateTime module is required for date handling, and the
+  SQL::Translator Perl module is also required for schema deployment and
+  database upgrades.  You will also need the DateTime::Format::* module
+  corresponding to your DBD module (such as DateTime::Format::SQLite or
+  DateTime::Format::PG).
 
   Currently, the server has only been tested against SQLite 3, MySQL 5,
   and PostgreSQL, and prebuilt SQL files (for database upgrades) are only

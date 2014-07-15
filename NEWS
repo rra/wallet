@@ -40,6 +40,12 @@ wallet 1.1 (unreleased)
     and an incorrect linkage in the schema for the ACL history, and add
     indices for the object type, name, and ACL instead.
 
+    Pass in DateTime objects for the date fields in the database instead
+    of formatted time strings.  This provides better compatibility with
+    different database engines.  Document in README the need to install
+    the DateTime::Format::* module corresponding to the DBD::* module used
+    for the server database.
+
     The wallet server now requires Perl 5.8 or later (instead of 5.006 in
     previous versions) and is now built with Module::Build instead of
     ExtUtils::MakeMaker.  This should be transparent to anyone not working

@@ -17,15 +17,15 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
+use DateTime;
 use DBI;
-use POSIX qw(strftime);
 use Text::Wrap qw(wrap);
 use Wallet::ACL;
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 ##############################################################################
 # Constructors
@@ -63,22 +63,20 @@ sub create {
     die "invalid object name\n" unless $name;
     my $guard = $schema->txn_scope_guard;
     eval {
+        my $date = DateTime->from_epoch (epoch => $time);
         my %record = (ob_type         => $type,
                       ob_name         => $name,
                       ob_created_by   => $user,
                       ob_created_from => $host,
-                      ob_created_on   => strftime ('%Y-%m-%d %T',
-                                                   localtime $time));
+                      ob_created_on   => $date);
         $schema->resultset('Object')->create (\%record);
-
         %record = (oh_type   => $type,
                    oh_name   => $name,
                    oh_action => 'create',
                    oh_by     => $user,
                    oh_from   => $host,
-                   oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
+                   oh_on     => $date);
         $schema->resultset('ObjectHistory')->create (\%record);
-
         $guard->commit;
     };
     if ($@) {
@@ -139,27 +137,27 @@ sub log_action {
     # assume that AutoCommit is turned off.
     my $guard = $self->{schema}->txn_scope_guard;
     eval {
+        my $date = DateTime->from_epoch (epoch => $time);
         my %record = (oh_type   => $self->{type},
                       oh_name   => $self->{name},
                       oh_action => $action,
                       oh_by     => $user,
                       oh_from   => $host,
-                      oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
+                      oh_on     => $date);
         $self->{schema}->resultset('ObjectHistory')->create (\%record);
 
+        # Add in more timestamps based on the action type.
         my %search = (ob_type   => $self->{type},
                       ob_name   => $self->{name});
         my $object = $self->{schema}->resultset('Object')->find (\%search);
         if ($action eq 'get') {
             $object->ob_downloaded_by   ($user);
             $object->ob_downloaded_from ($host);
-            $object->ob_downloaded_on   (strftime ('%Y-%m-%d %T',
-                                                   localtime $time));
+            $object->ob_downloaded_on   ($date);
         } elsif ($action eq 'store') {
             $object->ob_stored_by   ($user);
             $object->ob_stored_from ($host);
-            $object->ob_stored_on   (strftime ('%Y-%m-%d %T',
-                                               localtime $time));
+            $object->ob_stored_on   ($date);
         }
         $object->update;
         $guard->commit;
@@ -193,6 +191,7 @@ sub log_set {
         die "invalid history field $field";
     }
 
+    my $date = DateTime->from_epoch (epoch => $time);
     my %record = (oh_type       => $self->{type},
                   oh_name       => $self->{name},
                   oh_action     => 'set',
@@ -202,7 +201,7 @@ sub log_set {
                   oh_new        => $new,
                   oh_by         => $user,
                   oh_from       => $host,
-                  oh_on         => strftime ('%Y-%m-%d %T', localtime $time));
+                  oh_on         => $date);
     $self->{schema}->resultset('ObjectHistory')->create (\%record);
 }
 
@@ -703,12 +702,13 @@ sub destroy {
         $self->{schema}->resultset('Object')->search (\%search)->delete;
 
         # And create a new history object for the destroy action.
+        my $date = DateTime->from_epoch (epoch => $time);
         my %record = (oh_type => $type,
                       oh_name => $name,
                       oh_action => 'destroy',
                       oh_by     => $user,
                       oh_from   => $host,
-                      oh_on     => strftime ('%Y-%m-%d %T', localtime $time));
+                      oh_on     => $date);
         $self->{schema}->resultset('ObjectHistory')->create (\%record);
         $guard->commit;
     };
