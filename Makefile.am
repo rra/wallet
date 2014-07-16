@@ -77,8 +77,9 @@ PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	\
 	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		\
 	perl/lib/Wallet/Object perl/lib/Wallet/Policy			\
 	perl/lib/Wallet/Schema perl/lib/Wallet/Schema/Result perl/sql	\
-	perl/t perl/t/data perl/t/docs perl/t/general perl/t/lib	\
-	perl/t/object perl/t/policy perl/t/util perl/t/verifier
+	perl/t perl/t/data perl/t/data/duo perl/t/docs perl/t/general	\
+	perl/t/lib perl/t/object perl/t/policy perl/t/style perl/t/util	\
+	perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
