@@ -21,16 +21,19 @@ my $build = Module::Build->new(
     dist_name            => 'Wallet',
     dist_version         => '1.01',
     license              => 'mit',
+    module_name          => 'Wallet::Server',
     recursive_test_files => 1,
 
     # Other package relationships.
     configure_requires => { 'Module::Build' => 0.28 },
     requires           => {
+        'Date::Parse'     => 0,
+        DateTime          => 0,
         'DBIx::Class'     => 0,
         DBI               => 0,
         'Digest::MD5'     => 0,
         'SQL::Translator' => 0,
-        perl              => '5.006',
+        perl              => '5.008',
     },
     recommends => {
         'Authen::SASL'   => 0,
