@@ -105,7 +105,7 @@ sub create {
     # Create the object in Duo.
     require Net::Duo::Admin::Integration;
     my %data = (
-        name  => $name,
+        name  => "$name ($Wallet::Config::DUO_TYPE)",
         notes => 'Managed by wallet',
         type  => $Wallet::Config::DUO_TYPE,
     );
