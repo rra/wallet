@@ -2,7 +2,7 @@
  * The client program for the wallet system.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2006, 2007, 2008, 2010
+ * Copyright 2006, 2007, 2008, 2010, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -181,7 +181,7 @@ main(int argc, char *argv[])
             else if (argc < 4)
                 count++;
         }
-        command = xmalloc(sizeof(struct iovec) * count);
+        command = xcalloc(count, sizeof(struct iovec));
         command[0].iov_base = (char *) options.type;
         command[0].iov_len = strlen(options.type);
         for (i = 0; i < argc; i++) {
