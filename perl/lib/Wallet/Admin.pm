@@ -23,7 +23,7 @@ use Wallet::Schema;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 # The last non-DBIx::Class version of Wallet::Schema.  If a database has no
 # DBIx::Class versioning, we artificially install this version number before
@@ -125,6 +125,7 @@ sub default_data {
 
     # types default rows.
     my @record = ([ qw/ty_name ty_class/ ],
+               [ 'duo',        'Wallet::Object::Duo' ],
                [ 'file',       'Wallet::Object::File' ],
                [ 'keytab',     'Wallet::Object::Keytab' ],
                [ 'wa-keyring', 'Wallet::Object::WAKeyring' ]);
