@@ -205,12 +205,28 @@ perl/blib/lib/Wallet/Config.pm: $(srcdir)/perl/lib/Wallet/Config.pm
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done ;							\
 	fi
-	cp -R $(srcdir)/tests/tap/perl/* perl/t/lib/
+	mkdir perl/t/lib/Test
+	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA.pm perl/t/lib/Test/
+	mkdir perl/t/lib/Test/RRA
+	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA/Config.pm \
+	    perl/t/lib/Test/RRA/
 	cd perl && perl Build.PL $(WALLET_PERL_FLAGS)
 	cd perl && ./Build
 
+# This is a really ugly hack to only honor prefix when running make install
+# under Automake's distcheck.
+#
+# Automake insists on not using DESTDIR for distcheck and instead relying on
+# prefix, but we don't want Perl module installation to follow prefix since
+# that may result in a module install directory that isn't in Perl's search
+# path.  So, if and only if we're running under distcheck, we pass the
+# prefix in as --install_base.
 install-data-local:
-	cd perl && ./Build install --destdir '$(DESTDIR)'
+	set -e; flags= ;						\
+	case "$(prefix)" in						\
+	    */_inst) flags="--install_base $(prefix)" ;;		\
+	esac ;								\
+	cd perl && ./Build install $$flags --destdir '$(DESTDIR)'
 
 # ExtUtils::MakeMaker really likes moving the Makefile aside.
 clean-local:
