@@ -1,3 +1,32 @@
+wallet (1.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+    - New object type, duo, which creates a UNIX integration with the Duo
+      Security cloud multifactor authentication service.
+    - The owner and getacl commands now return the name of the ACL.
+    - The date passed to expires can be any date format understood by
+      Date::Parse.
+    - wallet-rekey now works properly with keytabs containing multiple
+      principals and does not store new principals in a separate file
+      first.
+    - Fix setting enctype restrictions on keytab objects and populate the
+      reference table for valid enctypes on database creation.
+    - Fix Wallet::Config documentation of ldap_map_principal.
+    - Generate a long, random password when creating new principals in the
+      Heimdal KDC to avoid problems with password quality checks.
+    - Remove erroneous foreign key constraints between the object history
+      and objects table, an incorrect linkage in the ACL history table,
+      and add indices for object type, name, and ACL.
+    - Use DateTime objects uniformly in the database layer.
+    - ACL renames are now recorded in the ACL history.
+    - Fix wallet-backend parsing of the expires command to expect only one
+      argument.
+    - Fix ordering of table drops during wallet-admin destroy to honor
+      foreign key reference constraints.
+    - The initial ADMIN ACL creation is no longer documented in history.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 16 Jul 2014 13:51:23 -0700
+
 wallet (1.0-5) unstable; urgency=low
 
   * Cherry-pick upstream commit to randomize the password used for initial
