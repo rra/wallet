@@ -12,7 +12,9 @@ CREATE TABLE duo (
 
 SET foreign_key_checks=1;
 
-ALTER TABLE acl_history ADD INDEX acl_history_idx_ah_acl (ah_acl);
+ALTER TABLE acl_history ADD COLUMN ah_name varchar(255) NULL,
+                        ADD INDEX acl_history_idx_ah_acl (ah_acl),
+                        ADD INDEX acl_history_idx_ah_name (ah_name);
 
 ALTER TABLE object_history DROP FOREIGN KEY object_history_fk_oh_type_oh_name,
                            ALTER TABLE object_history;

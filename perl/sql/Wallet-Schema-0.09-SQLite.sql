@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::SQLite
--- Created on Fri Jul 11 19:17:16 2014
+-- Created on Tue Jul 15 17:41:02 2014
 -- 
 
 BEGIN TRANSACTION;
@@ -24,6 +24,7 @@ DROP TABLE IF EXISTS acl_history;
 CREATE TABLE acl_history (
   ah_id INTEGER PRIMARY KEY NOT NULL,
   ah_acl integer NOT NULL,
+  ah_name varchar(255),
   ah_action varchar(16) NOT NULL,
   ah_scheme varchar(32),
   ah_identifier varchar(255),
@@ -33,6 +34,8 @@ CREATE TABLE acl_history (
 );
 
 CREATE INDEX acl_history_idx_ah_acl ON acl_history (ah_acl);
+
+CREATE INDEX acl_history_idx_ah_name ON acl_history (ah_name);
 
 --
 -- Table: acl_schemes

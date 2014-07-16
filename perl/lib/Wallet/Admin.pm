@@ -98,13 +98,22 @@ sub initialize {
     $self->default_data;
 
     # Create a default admin ACL.
-    my $acl = Wallet::ACL->create ('ADMIN', $self->{schema}, $user,
-                                   'localhost');
-    unless ($acl->add ('krb5', $user, $user, 'localhost')) {
-        $self->error ($acl->error);
+    eval {
+        my $guard = $self->{schema}->txn_scope_guard;
+        $self->{schema}->resultset ('Acl')->populate ([
+            [ qw/ac_id ac_name/ ],
+            [ 1, 'ADMIN'        ],
+        ]);
+        $self->{schema}->resultset ('AclEntry')->populate ([
+            [ qw/ae_id ae_scheme ae_identifier/ ],
+            [ 1, 'krb5', $user                  ],
+        ]);
+        $guard->commit;
+    };
+    if ($@) {
+        $self->error ("cannot add ADMIN ACL: $@");
         return;
     }
-
     return 1;
 }
 

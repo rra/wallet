@@ -80,6 +80,7 @@ sub create {
         # Add to the history table.
         my $date = DateTime->from_epoch (epoch => $time);
         %record = (ah_acl    => $id,
+                   ah_name   => $name,
                    ah_action => 'create',
                    ah_by     => $user,
                    ah_from   => $host,
@@ -165,6 +166,7 @@ sub log_acl {
     }
     my $date = DateTime->from_epoch (epoch => $time);
     my %record = (ah_acl        => $self->{id},
+                  ah_name       => $self->{name},
                   ah_action     => $action,
                   ah_scheme     => $scheme,
                   ah_identifier => $identifier,
@@ -243,7 +245,8 @@ sub destroy {
 
         # Create new history line for the deletion.
         my $date = DateTime->from_epoch (epoch => $time);
-        my %record = (ah_acl => $self->{id},
+        my %record = (ah_acl    => $self->{id},
+                      ah_name   => $self->{name},
                       ah_action => 'destroy',
                       ah_by     => $user,
                       ah_from   => $host,

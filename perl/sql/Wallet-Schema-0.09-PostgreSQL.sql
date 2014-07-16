@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::PostgreSQL
--- Created on Fri Jul 11 19:17:17 2014
+-- Created on Tue Jul 15 17:41:03 2014
 -- 
 --
 -- Table: duo.
@@ -19,6 +19,7 @@ DROP TABLE "acl_history" CASCADE;
 CREATE TABLE "acl_history" (
   "ah_id" serial NOT NULL,
   "ah_acl" integer NOT NULL,
+  "ah_name" character varying(255),
   "ah_action" character varying(16) NOT NULL,
   "ah_scheme" character varying(32),
   "ah_identifier" character varying(255),
@@ -28,6 +29,7 @@ CREATE TABLE "acl_history" (
   PRIMARY KEY ("ah_id")
 );
 CREATE INDEX "acl_history_idx_ah_acl" on "acl_history" ("ah_acl");
+CREATE INDEX "acl_history_idx_ah_name" on "acl_history" ("ah_name");
 
 --
 -- Table: acl_schemes.

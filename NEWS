@@ -46,6 +46,11 @@ wallet 1.1 (unreleased)
     the DateTime::Format::* module corresponding to the DBD::* module used
     for the server database.
 
+    The initial creation and membership of the ADMIN ACL during database
+    initialization or reinitialization is no longer recorded in the
+    acl_history table.  (This is fallout from making a specific type of
+    upgrade testable, and may be fixed in the future.)
+
     The wallet server now requires Perl 5.8 or later (instead of 5.006 in
     previous versions) and is now built with Module::Build instead of
     ExtUtils::MakeMaker.  This should be transparent to anyone not working

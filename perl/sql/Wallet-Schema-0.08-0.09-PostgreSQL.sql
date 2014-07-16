@@ -8,7 +8,11 @@ CREATE TABLE "duo" (
   PRIMARY KEY ("du_name")
 );
 
+ALTER TABLE acl_history ADD COLUMN ah_name character varying(255);
+
 CREATE INDEX acl_history_idx_ah_acl on acl_history (ah_acl);
+
+CREATE INDEX acl_history_idx_ah_name on acl_history (ah_name);
 
 
 COMMIT;

@@ -1,6 +1,6 @@
 -- 
 -- Created by SQL::Translator::Producer::MySQL
--- Created on Fri Jul 11 19:17:16 2014
+-- Created on Tue Jul 15 17:41:01 2014
 -- 
 SET foreign_key_checks=0;
 
@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS `acl_history`;
 CREATE TABLE `acl_history` (
   `ah_id` integer NOT NULL auto_increment,
   `ah_acl` integer NOT NULL,
+  `ah_name` varchar(255) NULL,
   `ah_action` varchar(16) NOT NULL,
   `ah_scheme` varchar(32) NULL,
   `ah_identifier` varchar(255) NULL,
@@ -19,6 +20,7 @@ CREATE TABLE `acl_history` (
   `ah_from` varchar(255) NOT NULL,
   `ah_on` datetime NOT NULL,
   INDEX `acl_history_idx_ah_acl` (`ah_acl`),
+  INDEX `acl_history_idx_ah_name` (`ah_name`),
   PRIMARY KEY (`ah_id`)
 );
 
