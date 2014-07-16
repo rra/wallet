@@ -3,6 +3,9 @@
 # Add hardening build flags.
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow,+pie
 
+# Enable some additional Perl tests.
+export AUTOMATED_TESTING = 1
+
 %:
 	dh $@ --parallel
 
