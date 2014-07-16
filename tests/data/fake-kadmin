@@ -1,12 +1,15 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Fake kadmin.local used to test the keytab backend.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2007
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2007, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 unless ($ARGV[0] eq '-q' && @ARGV == 2) {
     die "invalid arguments\n";

@@ -2,7 +2,7 @@
 #
 # wallet-contacts -- Report contact addresses for matching wallet objects.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2009
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -137,7 +137,7 @@ print join ("\n", @email, '');
 ##############################################################################
 
 =for stopwords
-ACL NetDB SQL hostname lookup swhois whois
+ACL NetDB SQL hostname lookup swhois whois Allbery
 
 =head1 NAME
 
@@ -192,6 +192,6 @@ output format.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =cut

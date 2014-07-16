@@ -1,6 +1,6 @@
 =for stopwords
 wallet-rekey rekey rekeying keytab -hv Heimdal remctl remctld PKINIT kinit
-appdefaults Allbery
+appdefaults Allbery kadmin
 
 =head1 NAME
 
@@ -21,11 +21,8 @@ from the local default realm, requests new wallet keytab objects for each
 principal (removing the realm when naming the keytab), and merges the new
 keys into the keytab.
 
-If an error occurs before any new keys were downloaded, B<wallet-rekey>
-aborts.  If some new keys were successfully downloaded, B<wallet-rekey>
-warns about errors but continues to rekey all principals that it can.  In
-this case, a copy of the existing keytab prior to the rekeying is saved in
-a file named by appending C<.old> to the file name.
+If an error occurs, B<wallet-rekey> continues to rekey all principals that
+it can, producing error messages for those that it cannot rekey.
 
 If no keytab file name is given on the command line, B<wallet-rekey>
 attempts to rekey F</etc/krb5.keytab>, the system default keytab file.
@@ -43,8 +40,10 @@ or:
 
     ktutil -k <keytab> purge
 
-for Heimdal.  This functionality will eventually be provided by
-B<wallet-rekey> directly.
+for Heimdal.  The Heimdal command can be run by any user with access to
+the keytab, but the MIT Kerberos command unfortunately has to be run by a
+someone with direct B<kadmin> access.  This functionality will eventually
+be provided by B<wallet-rekey> directly.
 
 =head1 OPTIONS
 
@@ -150,7 +149,7 @@ overrides this setting.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 

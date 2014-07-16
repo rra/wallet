@@ -1,7 +1,7 @@
 /*
  * A specialized wallet client for rekeying a keytab.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  *        and Jon Robertson <jonrober@stanford.edu>
  * Copyright 2010
  *     The Board of Trustees of the Leland Stanford Junior University

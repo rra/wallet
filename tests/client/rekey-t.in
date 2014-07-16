@@ -2,7 +2,7 @@
 #
 # Test suite for the wallet-rekey command-line client.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2006, 2007, 2008, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -45,7 +45,7 @@ elif [ -z '@REMCTLD@' ] ; then
     rm krb5.conf
     skip_all 'No remctld found'
 else
-    plan 9
+    plan 8
 fi
 remctld_start '@REMCTLD@' "$SOURCE/data/basic.conf"
 wallet="$BUILD/../client/wallet-rekey"
@@ -68,31 +68,27 @@ ok '...and the keytab was untouched' cmp keytab data/fake-keytab-foreign
 rm -f keytab
 
 # Rekeying a keytab where we can't retrieve the principal should produce an
-# error message and abort when it's the first principal.
+# error message.
 cp data/fake-keytab-unknown keytab
 ok_program 'unknown wallet-rekey' 1 \
 'wallet: Unknown keytab service/real-keytab
 wallet: error rekeying for principal service/real-keytab
-wallet: aborting, keytab unchanged' \
+wallet: no rekeyable principals found' \
     "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet keytab
 ok '...and the keytab was untouched' cmp keytab data/fake-keytab-unknown
 rm -f keytab
 
-# Rekeying a keytab where we can't retrieve a later principal should leave the
-# original keytab as keytab.old and store, in the new keytab, only the things
-# that it was able to rekey.
+# Rekeying a keytab where we can't retrieve a later principal should add the
+# things we were able to download and produce a warning.
 cp data/fake-keytab-partial keytab
 ok_program 'partial wallet-rekey' 1 \
 'wallet: Unknown keytab service/real-keytab
-wallet: error rekeying for principal service/real-keytab
-wallet: partial failure to rekey keytab keytab, old keytab left in keytab.old'\
+wallet: error rekeying for principal service/real-keytab'\
     "$wallet" -k "$principal" -p 14373 -s localhost -c fake-wallet keytab
 ktutil_list keytab klist-seen
 ktutil_list data/fake-keytab-partial-result klist-good
 ok '...and the rekeyed keytab is correct' cmp klist-seen klist-good
-ok '...and the backup keytab is correct' \
-    cmp keytab.old data/fake-keytab-partial
-rm -f keytab keytab.old klist-seen klist-good
+rm -f keytab klist-seen klist-good
 
 # Clean up.
 rm -f autocreated krb5.conf

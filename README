@@ -1,12 +1,12 @@
-                            wallet release 1.0
+                            wallet release 1.1
                      (secure data management system)
 
-                Written by Russ Allbery <rra@stanford.edu>
+                Written by Russ Allbery <eagle@eyrie.org>
 
-  Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013 The Board of Trustees
-  of the Leland Stanford Junior University.  This software is distributed
-  under a BSD-style license.  Please see the section LICENSE below for
-  more information.
+  Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014 The Board of
+  Trustees of the Leland Stanford Junior University.  This software is
+  distributed under a BSD-style license.  Please see the section LICENSE
+  below for more information.
 
 BLURB
 
@@ -39,19 +39,20 @@ DESCRIPTION
   ACL controls access to administrative actions.  An ACL consists of zero
   or more entries, each of which is a generic scheme and identifier pair,
   allowing the ACL system to be extended to use any existing authorization
-  infrastructure.  Currently, the only ACL type supported matches a single
-  Kerberos principal name, but this will be extended in future releases.
+  infrastructure.  Supported ACL types include Kerberos principal names,
+  regexes matching Kerberos principal names, and LDAP attribute checks.
 
   Currently, the object types supported are simple files, Kerberos
-  keytabs, and WebAuth keyrings.  By default, whenever a Kerberos keytab
-  object is retrieved from the wallet, the key is changed in the Kerberos
-  KDC and the wallet returns a keytab for the new key.  However, a keytab
-  object can also be configured to preserve the existing keys when
-  retrieved.  Included in the wallet distribution is a script that can be
-  run via remctl on an MIT Kerberos KDC to extract the existing key for a
-  principal, and the wallet system will use that interface to retrieve the
-  current key if the unchanging flag is set on a Kerberos keytab object
-  for MIT Kerberos.  (Heimdal doesn't require any special support.)
+  keytabs, WebAuth keyrings, and Duo integrations.  By default, whenever a
+  Kerberos keytab object is retrieved from the wallet, the key is changed
+  in the Kerberos KDC and the wallet returns a keytab for the new key.
+  However, a keytab object can also be configured to preserve the existing
+  keys when retrieved.  Included in the wallet distribution is a script
+  that can be run via remctl on an MIT Kerberos KDC to extract the
+  existing key for a principal, and the wallet system will use that
+  interface to retrieve the current key if the unchanging flag is set on a
+  Kerberos keytab object for MIT Kerberos.  (Heimdal doesn't require any
+  special support.)
 
 REQUIREMENTS
 
@@ -63,13 +64,16 @@ REQUIREMENTS
 
   The wallet client will build with either MIT Kerberos or Heimdal.
 
-  The wallet server is written in Perl and requires Perl 5.6.0 or later.
-  It uses DBIx::Class and DBI to talk to a database, and therefore the
-  DBIx::Class and DBI modules (and their dependencies) and a DBD module
-  for the database it will use must be installed.  The SQL::Translator
+  The wallet server is written in Perl and requires Perl 5.6.0 or later
+  plus Module::Build to build.  It uses DBIx::Class and DBI to talk to a
+  database, and therefore the DBIx::Class and DBI modules (and their
+  dependencies) and a DBD module for the database it will use must be
+  installed.  The Date::Parse (part of the TimeDate distribution) and
+  DateTime modules are required for date handling, and the SQL::Translator
   Perl module is also required for schema deployment and database
-  upgrades.  If the wallet server is used with a SQLite 3 database, the
-  Perl module DateTime::Format::SQLite should also be installed.
+  upgrades.  You will also need the DateTime::Format::* module
+  corresponding to your DBD module (such as DateTime::Format::SQLite or
+  DateTime::Format::PG).
 
   Currently, the server has only been tested against SQLite 3, MySQL 5,
   and PostgreSQL, and prebuilt SQL files (for database upgrades) are only
@@ -104,6 +108,9 @@ REQUIREMENTS
   The WebAuth keyring object support in the wallet server requires the
   WebAuth Perl module from WebAuth 4.4.0 or later.
 
+  The Duo integration object support in the wallet server requires the
+  Net::Duo Perl module.
+
   To support the LDAP attribute ACL verifier, the Authen::SASL and
   Net::LDAP Perl modules must be installed on the server.  This verifier
   only works with LDAP servers that support GSS-API binds.
@@ -113,15 +120,30 @@ REQUIREMENTS
   server.
 
   To run the full test suite, all of the above software requirements must
-  be met.  Tests requiring some bit of software that's not installed
-  should be skipped, but not all the permutations have been checked.  The
-  full test suite also requires the Test::Pod Perl module (available from
-  CPAN), that remctld be installed and available on the user's path or in
-  /usr/local/sbin or /usr/sbin, that test cases can run services on and
-  connect to port 14373 on 127.0.0.1, and that kinit and either kvno or
-  kgetcred (which come with Kerberos) be installed and available on the
-  user's path.  The full test suite also requires a local keytab and some
-  additional configuration.
+  be met.  The full test suite also requires that remctld be installed and
+  available on the user's path or in /usr/local/sbin or /usr/sbin, that
+  sqlite3 be installed and available on the user's path, that test cases
+  can run services on and connect to port 14373 on 127.0.0.1, and that
+  kinit and either kvno or kgetcred (which come with Kerberos) be
+  installed and available on the user's path.  The full test suite also
+  requires a local keytab and some additional configuration.
+
+  The following additional Perl modules will be used if present:
+
+      Test::MinimumVersion
+      Test::Pod
+      Test::Spelling
+      Test::Strict
+
+  All are available on CPAN.  Those tests will be skipped if the modules
+  are not available.
+
+  To enable tests that don't detect functionality problems but are used to
+  sanity-check the release, set the environment variable RELEASE_TESTING
+  to a true value.  To enable tests that may be sensitive to the local
+  environment or that produce a lot of false positives without uncovering
+  many problems, set the environment variable AUTHOR_TESTING to a true
+  value.
 
   To bootstrap from a Git checkout, or if you change the Automake files
   and need to regenerate Makefile.in, you will need Automake 1.11 or
@@ -277,7 +299,7 @@ SUPPORT
   list and discussion of the wallet (particularly the keytab components)
   are welcome there.
 
-  I welcome bug reports and patches for this package at rra@stanford.edu.
+  I welcome bug reports and patches for this package at eagle@eyrie.org.
   However, please be aware that I tend to be extremely busy and work
   projects often take priority.  I'll save your mail and get to it as soon
   as I can, but it may take me a couple of months.
@@ -322,7 +344,7 @@ LICENSE
   The wallet distribution as a whole is covered by the following copyright
   statement and license:
 
-    Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013
+    Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014
         The Board of Trustees of the Leland Stanford Junior University
 
     Permission is hereby granted, free of charge, to any person obtaining

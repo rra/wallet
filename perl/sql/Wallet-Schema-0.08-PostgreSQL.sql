@@ -1,8 +1,8 @@
--- 
+--
 -- Created by SQL::Translator::Producer::PostgreSQL
 -- Created on Fri Jan 25 14:12:02 2013
 --
--- Copyright 2012, 2013
+-- Copyright 2012, 2013, 2014
 --     The Board of Trustees of the Leland Stanford Junior University
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,7 @@
 -- CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 -- TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 -- SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
--- 
+--
 --
 -- Table: acl_history
 --
@@ -217,7 +217,4 @@ ALTER TABLE "objects" ADD FOREIGN KEY ("ob_acl_store")
 
 ALTER TABLE "objects" ADD FOREIGN KEY ("ob_type")
   REFERENCES "types" ("ty_name") DEFERRABLE;
-
-ALTER TABLE "object_history" ADD FOREIGN KEY ("oh_type", "oh_name")
-  REFERENCES "objects" ("ob_type", "ob_name") DEFERRABLE;
 
