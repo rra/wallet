@@ -12,6 +12,9 @@ wallet 1.1 (unreleased)
     an existing wallet database, use wallet-admin to register the new
     object.
 
+    The owner and getacl commands now return the current name of the ACL
+    instead of its numeric ID, matching the documentation of owner.
+
     The date passed to expires can now be any date format understood by
     Date::Parse, and Date::Parse (part of the TimeDate CPAN distribution)
     is now a required prerequisite for the wallet server.

@@ -70,7 +70,7 @@ if ($object->owner ('ADMIN', @trace)) {
 } else {
     is ($object->error, '', ' and setting it to ADMIN works');
 }
-is ($object->owner, $acl->id, ' at which point it is ADMIN');
+is ($object->owner, $acl->name, ' at which point it is ADMIN');
 ok (! $object->owner ('unknown', @trace),
     ' but setting it to something bogus fails');
 is ($object->error, 'ACL unknown not found', ' with the right error');
@@ -128,7 +128,7 @@ for my $type (qw/get store show destroy flags/) {
     } else {
         is ($object->error, '', ' and setting it to ADMIN (numeric) works');
     }
-    is ($object->acl ($type), $acl->id, ' at which point it is ADMIN');
+    is ($object->acl ($type), $acl->name, ' at which point it is ADMIN');
     ok (! $object->acl ($type, 22, @trace),
         ' but setting it to something bogus fails');
     is ($object->error, 'ACL 22 not found', ' with the right error');
@@ -138,8 +138,8 @@ for my $type (qw/get store show destroy flags/) {
         is ($object->error, '', ' and clearing it works');
     }
     is ($object->acl ($type), undef, ' at which point it is cleared');
-    is ($object->acl ($type, $acl->id, @trace), 1,
-        ' and setting it again works');
+    is ($object->acl ($type, $acl->name, @trace), 1,
+        ' and setting it again by name works');
 }
 
 # Flags.
@@ -189,7 +189,7 @@ is ($object->error, "cannot store keytab:${princ}: object is locked",
 is ($object->owner ('', @trace), undef, ' and setting owner fails');
 is ($object->error, "cannot modify keytab:${princ}: object is locked",
     ' for the same reason');
-is ($object->owner, 1, ' but retrieving the owner works');
+is ($object->owner, 'ADMIN', ' but retrieving the owner works');
 is ($object->expires ('', @trace), undef, ' and setting expires fails');
 is ($object->error, "cannot modify keytab:${princ}: object is locked",
     ' for the same reason');
@@ -198,7 +198,7 @@ for my $acl (qw/get store show destroy flags/) {
     is ($object->acl ($acl, '', @trace), undef, " and setting $acl ACL fails");
     is ($object->error, "cannot modify keytab:${princ}: object is locked",
         ' for the same reason');
-    is ($object->acl ($acl), 1, " but retrieving $acl ACL works");
+    is ($object->acl ($acl), 'ADMIN', " but retrieving $acl ACL works");
 }
 is ($object->flag_check ('locked'), 1, ' and checking flags works');
 @flags = $object->flag_list;

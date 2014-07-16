@@ -26,7 +26,7 @@ use Wallet::ACL;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 ##############################################################################
 # Constructors
@@ -302,7 +302,14 @@ sub acl {
     } elsif (defined $id) {
         return $self->_set_internal ($attr, undef, $user, $host, $time);
     } else {
-        return $self->_get_internal ($attr);
+        my $id = $self->_get_internal ($attr);
+        return unless defined $id;
+        my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
+        if ($@) {
+            $self->error ($@);
+            return;
+        }
+        return $acl->name;
     }
 }
 
@@ -380,7 +387,14 @@ sub owner {
     } elsif (defined $owner) {
         return $self->_set_internal ('owner', undef, $user, $host, $time);
     } else {
-        return $self->_get_internal ('owner');
+        my $id = $self->_get_internal ('owner');
+        return unless defined $id;
+        my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
+        if ($@) {
+            $self->error ($@);
+            return;
+        }
+        return $acl->name;
     }
 }
 

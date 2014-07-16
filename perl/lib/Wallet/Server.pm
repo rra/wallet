@@ -831,7 +831,7 @@ failure to get the error message.
 Gets or sets the ACL type ACL to ID for the object identified by TYPE and
 NAME.  ACL should be one of C<get>, C<store>, C<show>, C<destroy>, or
 C<flags>.  If ID is not given, returns the current setting of that ACL as
-a numeric ACL ID or undef if that ACL isn't set or on failure.  To
+the name of the ACL or undef if that ACL isn't set or on failure.  To
 distinguish between an ACL that isn't set and a failure to retrieve the
 ACL, the caller should call error() after an undef return.  If error()
 also returns undef, that ACL wasn't set; otherwise, error() will return
@@ -1041,9 +1041,9 @@ owner ACL will not be checked.
 =item owner(TYPE, NAME [, OWNER])
 
 Gets or sets the owner for the object identified by TYPE and NAME.  If
-OWNER is not given, returns the current owner as a numeric ACL ID or undef
-if no owner is set or on an error.  To distinguish between an owner that
-isn't set and a failure to retrieve the owner, the caller should call
+OWNER is not given, returns the current owner as the name of the ACL or
+undef if no owner is set or on an error.  To distinguish between an owner
+that isn't set and a failure to retrieve the owner, the caller should call
 error() after an undef return.  If error() also returns undef, that ACL
 wasn't set; otherwise, error() will return the error message.
 
