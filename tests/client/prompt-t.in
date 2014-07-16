@@ -1,17 +1,19 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Password prompting tests for the wallet client.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2010
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
-BEGIN { our $total = 5 }
-use Test::More tests => $total;
+use strict;
+use warnings;
 
-use lib "$ENV{SOURCE}/..//perl";
+use Test::More tests => 5;
+
+use lib "$ENV{SOURCE}/../perl/lib";
 use Wallet::Admin;
 
 use lib "$ENV{SOURCE}/../perl/t/lib";
@@ -21,12 +23,12 @@ use Util;
 chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
 
 SKIP: {
-    skip 'no password configuration', $total
+    skip 'no password configuration', 5
         unless -f "$ENV{BUILD}/config/password";
     my $remctld = '@REMCTLD@';
-    skip 'remctld not found', $total unless $remctld;
+    skip 'remctld not found', 5 unless $remctld;
     eval { require Expect };
-    skip 'Expect module not found', $total if $@;
+    skip 'Expect module not found', 5 if $@;
 
     # Disable sending of wallet's output to our standard output.  Do this
     # twice to avoid Perl warnings.

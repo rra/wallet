@@ -1,21 +1,23 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # End-to-end tests for the wallet client.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2008, 2010
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
+
+use strict;
+use warnings;
 
 # Point to our server configuration.  This must be done before Wallet::Config
 # is loaded, and it's pulled in as a prerequisite for Wallet::Admin.
 BEGIN { $ENV{WALLET_CONFIG} = "$ENV{SOURCE}/data/wallet.conf" }
 
-BEGIN { our $total = 59 }
-use Test::More tests => $total;
+use Test::More tests => 59;
 
-use lib "$ENV{SOURCE}/../perl";
+use lib "$ENV{SOURCE}/../perl/lib";
 use Wallet::Admin;
 
 use lib "$ENV{SOURCE}/../perl/t/lib";
@@ -56,10 +58,10 @@ sub wallet {
 chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
 
 SKIP: {
-    skip 'no keytab configuration', $total
+    skip 'no keytab configuration', 59
         unless -f "$ENV{BUILD}/config/keytab";
     my $remctld = '@REMCTLD@';
-    skip 'remctld not found', $total unless $remctld;
+    skip 'remctld not found', 59 unless $remctld;
 
     # Spawn remctld and get local tickets.  Don't destroy the user's Kerberos
     # ticket cache.
@@ -188,8 +190,12 @@ SKIP: {
     # All done.
     remctld_stop;
     $admin->destroy;
-    unlink ('wallet-db', 'krb5cc_test', 'test-pid');
     if (-d 'test-files') {
         system ('rm', '-r', 'test-files');
     }
+}
+
+# Clean up the database and other test files at the end of the test.
+END {
+    unlink ('wallet-db', 'krb5cc_test', 'test-pid');
 }

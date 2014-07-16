@@ -1,6 +1,23 @@
                        User-Visible wallet Changes
 
-wallet 1.1 (unreleased)
+wallet 1.1 (2014-07-16)
+
+    A new object type, duo (Wallet::Object::Duo), is now supported.  This
+    creates an integration with the Duo Security cloud multifactor
+    authentication service and allows retrieval of the integration key,
+    secret key, and admin hostname.  Currently, only UNIX integration
+    types are supported.  The Net::Duo Perl module is required to use this
+    object type.  New configuration settings are required as well; see
+    Wallet::Config for more information.  To enable this object type for
+    an existing wallet database, use wallet-admin to register the new
+    object.
+
+    The owner and getacl commands now return the current name of the ACL
+    instead of its numeric ID, matching the documentation of owner.
+
+    The date passed to expires can now be any date format understood by
+    Date::Parse, and Date::Parse (part of the TimeDate CPAN distribution)
+    is now a required prerequisite for the wallet server.
 
     Fix wallet-rekey on keytabs containing multiple principals.  Previous
     versions assumed one could concatenate keytab files together to make a
@@ -11,7 +28,12 @@ wallet 1.1 (unreleased)
     backup copy of that file.
 
     Fix the code to set enctype restrictions for keytab objects in the
-    wallet server.
+    wallet server and populate the reference table for valid enctypes on
+    initial database creation.
+
+    Fix the Wallet::Config documentation for the ldap-attr verifier to
+    reference an ldap_map_principal hook, not ldap_map_attribute, matching
+    the implementation.
 
     When creating new principals in a Heimdal KDC, generate a long, random
     password as the temporary password of the disabled principal before
@@ -19,6 +41,69 @@ wallet 1.1 (unreleased)
     enforced on create calls.  Since the principal is always inactive
     until the keys have been randomized, the password should not need to
     be secure (and indeed is not cryptographically random).
+
+    Previous versions had erroneous foreign key constraints between the
+    object history table and the objects table.  Remove those constraints,
+    and an incorrect linkage in the schema for the ACL history, and add
+    indices for the object type, name, and ACL instead.
+
+    Pass in DateTime objects for the date fields in the database instead
+    of formatted time strings.  This provides better compatibility with
+    different database engines.  Document in README the need to install
+    the DateTime::Format::* module corresponding to the DBD::* module used
+    for the server database.
+
+    ACL renames are now recorded in the ACL history.
+
+    Fix wallet-backend parsing of the expires command to expect only one
+    argument as the expiration.  This was correctly documented in the
+    wallet client man page, but not in wallet-backend, and it accepted two
+    arguments (a date and time).  However, Wallet::Server did not and
+    would just ignore the time.  Now wallet-backend correctly requires the
+    date and time be passed as a single argument.
+
+    Fix the ordering of table drops during a wallet-admin destroy action
+    to remove tables with foreign key references before the tables they
+    are referencing.  Should fix destroy in MySQL and other database
+    engines that enforce referential integrity.
+
+    The initial creation and membership of the ADMIN ACL during database
+    initialization or reinitialization is no longer recorded in the
+    acl_history table.  (This is fallout from making a specific type of
+    upgrade testable, and may be fixed in the future.)
+
+    The wallet server now requires Perl 5.8 or later (instead of 5.006 in
+    previous versions) and is now built with Module::Build instead of
+    ExtUtils::MakeMaker.  This should be transparent to anyone not working
+    with the source code, since Perl 5.8 was released in 2002, but
+    Module::Build is now required to build the wallet server.  It is
+    included in some versions of Perl, or can be installed separately from
+    CPAN, distribution packages, or other sources.
+
+    Add a new contrib script, wallet-rekey-periodic, which is used at
+    Stanford to periodically rekey hosts from cron.
+
+    Update to rra-c-util 5.5:
+
+    * Use Lancaster Consensus environment variables to control tests.
+    * Use calloc or reallocarray for protection against integer overflows.
+    * Suppress warnings from Kerberos headers in non-system paths.
+    * Assume calloc initializes pointers to NULL.
+    * Assume free(NULL) is properly ignored.
+    * Improve error handling in xasprintf and xvasprintf.
+    * Check the return status of snprintf and vsnprintf properly.
+    * Preserve errno if snprintf fails in vasprintf replacement.
+
+    Update to C TAP Harness 3.1:
+
+    * Reopen standard input to /dev/null when running a test list.
+    * Don't leak extraneous file descriptors to tests.
+    * Suppress lazy plans and test summaries if the test failed with bail.
+    * runtests now treats the command line as a list of tests by default.
+    * The full test executable path can now be passed to runtests -o.
+    * Improved harness output for tests with lazy plans.
+    * Improved harness output to a terminal for some abort cases.
+    * Flush harness output after each test even when not on a terminal.
 
 wallet 1.0 (2013-03-27)
 

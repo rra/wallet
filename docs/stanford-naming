@@ -126,10 +126,13 @@ Object Naming
         for Apache, Postfix, LDAP, and similar cases where the certificate
         should match the host name.  The public certificate we manage
         external to wallet since it doesn't need to be protected or
-        encrypted.  <server> here should be the CN of the certificate,
-        which may be different than the hostname (for hosts with multiple
-        virtual hosts, for example, or because the certificate is for a
-        load-balanced name).
+        encrypted. <server> here should be the fully-qualified DNS name
+        from the CN of the certificate, which may be different than the
+        hostname (for hosts with multiple virtual hosts, for example, or
+        because the certificate is for a load-balanced name).  For example,
+        ssl-key/ldap.stanford.edu for the X.509 private key for the
+        SSL certificate used across the ldap.stanford.edu load-balanced
+        pool.
 
         An optional <application> component may be added if there are
         multiple certificates with the same host name as the CN but with
@@ -154,10 +157,10 @@ Object Naming
 
     tivoli-key/<server>
 
-        The Tivoli password or backup encryption key for this server.
-        Both the password and the encryption key, if used, are stored in
-        the same file, so both are stored together.  This file is found at
-        /etc/adsm/TSM.PWD.
+        The Tivoli encryption key for this server.  We previously stored
+        the whole /etc/adsm/TSM.PWD file in this object, but now we store
+        only the encryption key in password form, since the file contains
+        both it and the server password and the latter keeps changing.
 
         (OLD: <group>-<server>-tivoli-key)
 

@@ -13,8 +13,9 @@ for doc in client/wallet client/wallet-rekey ; do
     pod2man --release="$version" --center=wallet \
         --name=`basename "$doc" | tr a-z A-Z` "$doc".pod > "$doc".1
 done
-for doc in contrib/wallet-summary contrib/wallet-unknown-hosts \
-           server/keytab-backend server/wallet-admin server/wallet-backend \
+for doc in contrib/wallet-rekey-periodic contrib/wallet-summary \
+           contrib/wallet-unknown-hosts server/keytab-backend   \
+           server/wallet-admin server/wallet-backend            \
            server/wallet-report ; do
     pod2man --release="$version" --center=wallet --section=8 \
         --name=`basename "$doc" | tr a-z A-Z` "$doc" > "$doc".8

@@ -5,7 +5,7 @@
  * given principal and store it in memory for use by the rest of the wallet
  * client.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2007, 2008, 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *

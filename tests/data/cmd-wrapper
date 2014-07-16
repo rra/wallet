@@ -5,4 +5,4 @@
 
 WALLET_CONFIG="$SOURCE/data/wallet.conf"
 export WALLET_CONFIG
-exec perl -I"$SOURCE/../perl" "$SOURCE/../server/wallet-backend" -q "$@"
+exec perl -I"$SOURCE/../perl/lib" "$SOURCE/../server/wallet-backend" -q "$@"

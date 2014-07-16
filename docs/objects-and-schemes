@@ -10,6 +10,18 @@ Introduction
 
 Object Types
 
+  duo
+
+    Stores the configuration for a Duo Security integration.  Duo is a
+    cloud provider of multifactor authentication services.  A Duo
+    integration consists of some local configuration and a secret key that
+    permits verification of a second factor using the Duo cloud service.
+    Currently, only UNIX integrations are supported.  In the future, this
+    object type will likely be split into several object types
+    corresponding to the supported types of Duo integrations.
+
+    Implemented via Wallet::Object::Duo.
+
   file
 
     Stores an arbitrary file and allows retrieval of that file.  The file
@@ -91,7 +103,7 @@ ACL Schemes
 
 License
 
-    Copyright 2012, 2013
+    Copyright 2012, 2013, 2014
         The Board of Trustees of the Leland Stanford Junior University
 
     Copying and distribution of this file, with or without modification,

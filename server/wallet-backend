@@ -7,6 +7,7 @@
 ##############################################################################
 
 use strict;
+use warnings;
 
 use Getopt::Long qw(GetOptions);
 use Sys::Syslog qw(openlog syslog);
@@ -215,7 +216,7 @@ sub command {
         check_args (2, 2, [], @args);
         $server->destroy (@args) or failure ($server->error, @_);
     } elsif ($command eq 'expires') {
-        check_args (2, 4, [], @args);
+        check_args (2, 3, [], @args);
         if (@args > 2) {
             $server->expires (@args) or failure ($server->error, @_);
         } else {
@@ -489,9 +490,10 @@ identified by <type> and <name>, or C<No expiration set> if none is set.
 The expiration will be displayed in seconds since epoch.
 
 If <date> is given, sets the expiration on the object identified by <type>
-and <name> to <date> and (if given) <time>.  <date> must be in the format
-C<YYYY-MM-DD> and <time> in the format C<HH:MM:SS>.  If <date> is the
-empty string, clears the expiration of the object.
+and <name> to <date> and (if given) <time>.  <date> and <time> must be in
+some format that can be parsed by the Perl Date::Parse module.  Most
+common formats are supported; if in doubt, use C<YYYY-MM-DD HH:MM:SS>.  If
+<date> is the empty string, clears the expiration of the object.
 
 Currently, the expiration of an object is not used.
 
@@ -614,7 +616,7 @@ enctypes than those requested by this attribute.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 

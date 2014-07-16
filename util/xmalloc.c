@@ -33,6 +33,10 @@
  * allocation function will try its allocation again (calling the handler
  * again if it still fails).
  *
+ * xreallocarray behaves the same as the OpenBSD reallocarray function but for
+ * the same error checking, which in turn is the same as realloc but with
+ * calloc-style arguments and size overflow checking.
+ *
  * xstrndup behaves like xstrdup but only copies the given number of
  * characters.  It allocates an additional byte over its second argument and
  * always nul-terminates the string.
@@ -58,7 +62,7 @@
  * The canonical version of this file is maintained in the rra-c-util package,
  * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
- * Copyright 2012
+ * Copyright 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  * Copyright (c) 2004, 2005, 2006
  *     by Internet Systems Consortium, Inc. ("ISC")
@@ -84,8 +88,6 @@
 #include <config.h>
 #include <portable/system.h>
 
-#include <errno.h>
-
 #include <util/messages.h>
 #include <util/xmalloc.h>
 
@@ -96,8 +98,12 @@
 void
 xmalloc_fail(const char *function, size_t size, const char *file, int line)
 {
-    sysdie("failed to %s %lu bytes at %s line %d", function,
-           (unsigned long) size, file, line);
+    if (size == 0)
+        sysdie("failed to format output with %s at %s line %d", function,
+               file, line);
+    else
+        sysdie("failed to %s %lu bytes at %s line %d", function,
+               (unsigned long) size, file, line);
 }
 
 /* Assign to this variable to choose a handler other than the default. */
@@ -145,6 +151,20 @@ x_realloc(void *p, size_t size, const char *file, int line)
     while (newp == NULL && size > 0) {
         (*xmalloc_error_handler)("realloc", size, file, line);
         newp = realloc(p, size);
+    }
+    return newp;
+}
+
+
+void *
+x_reallocarray(void *p, size_t n, size_t size, const char *file, int line)
+{
+    void *newp;
+
+    newp = reallocarray(p, n, size);
+    while (newp == NULL && size > 0 && n > 0) {
+        (*xmalloc_error_handler)("reallocarray", n * size, file, line);
+        newp = reallocarray(p, n, size);
     }
     return newp;
 }
@@ -208,7 +228,8 @@ x_vasprintf(char **strp, const char *fmt, va_list args, const char *file,
         va_copy(args_copy, args);
         status = vsnprintf(NULL, 0, fmt, args_copy);
         va_end(args_copy);
-        (*xmalloc_error_handler)("vasprintf", status + 1, file, line);
+        status = (status < 0) ? 0 : status + 1;
+        (*xmalloc_error_handler)("vasprintf", status, file, line);
         va_copy(args_copy, args);
         status = vasprintf(strp, fmt, args_copy);
         va_end(args_copy);
@@ -231,7 +252,8 @@ x_asprintf(char **strp, const char *file, int line, const char *fmt, ...)
         va_copy(args_copy, args);
         status = vsnprintf(NULL, 0, fmt, args_copy);
         va_end(args_copy);
-        (*xmalloc_error_handler)("asprintf", status + 1, file, line);
+        status = (status < 0) ? 0 : status + 1;
+        (*xmalloc_error_handler)("asprintf", status, file, line);
         va_copy(args_copy, args);
         status = vasprintf(strp, fmt, args_copy);
         va_end(args_copy);
@@ -252,7 +274,8 @@ x_asprintf(char **strp, const char *fmt, ...)
         va_copy(args_copy, args);
         status = vsnprintf(NULL, 0, fmt, args_copy);
         va_end(args_copy);
-        (*xmalloc_error_handler)("asprintf", status + 1, __FILE__, __LINE__);
+        status = (status < 0) ? 0 : status + 1;
+        (*xmalloc_error_handler)("asprintf", status, __FILE__, __LINE__);
         va_copy(args_copy, args);
         status = vasprintf(strp, fmt, args_copy);
         va_end(args_copy);

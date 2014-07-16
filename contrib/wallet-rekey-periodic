@@ -1,0 +1,262 @@
+#!/bin/sh
+#
+# Rekey all principals on a system at a random but constrained interval.
+#
+# This script is a wrapper around wallet-rekey that adds some additional
+# functionality: rekeying of all keytabs at known locations on the system,
+# skipping keytabs that are marked unchanging, rekeying any keytabs with DES
+# keys immediately but otherwise only rekeying once a month based on a random
+# interval based on the hostname, and cleaning up old keys.
+#
+# It's primarily meant to be run daily from cron, but can also be run manually
+# from the command line to rekey specific keytab files.
+#
+# This script assumes Linux, and the test for Heimdal assumes that the
+# Kerberos clients are installed in /usr/bin.  At sites other than Stanford,
+# change the principal setting near the top of the script to use your local
+# realm.
+
+set -e
+
+# Red Hat puts its Kerberos binaries in an odd place.  Make sure that we
+# prefer the system binaries everwhere.
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/kerberos/bin; export PATH
+
+# The rekeying interval.  Rekeying will be done, on average, every this number
+# of days.
+INTERVAL=30
+
+# Under normal circumstances, we don't want to rekey every host at the same
+# time.  We therefore run this script daily, but we only do the rekeying if
+# it's our day to do so.
+#
+# For the decision whether we should go on this day, we want to do something
+# relatively random, but zero-intervention and with no state.  We therefore
+# hash the hostname with MD5 and mod it with $INTERVAL, which gives us a
+# number between 0 and $INTERVAL - 1.  Then, take the mod of the day of the
+# year.  If the result matches the number we got, we rekey.
+#
+# We do the check later, since we always want to rekey if we see DES keys.
+hostnum=$(hostname | md5sum | awk '{print $1}')
+DAY=$(awk "END { print 0x$hostnum % $INTERVAL }" </dev/null)
+
+# Get the principal with which we're going to run all of our commands.  We
+# can't just blindly use the first key in /etc/krb5.keytab, since Heimdal
+# sometimes reorders the principals in unuseful ways and the host/* key isn't
+# first.
+hostname=$(hostname --fqdn)
+principal="host/${hostname}@stanford.edu"
+
+# Do the actual check to see if this is our day to go.
+is_active_day () {
+    if expr \( $(date +%j) % "$INTERVAL" \) = "$DAY" >/dev/null ; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Returns whether the installed Kerberos implementation on the local system is
+# Heimdal.
+is_heimdal () {
+    if [ -x '/usr/bin/kgetcred' ] ; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Print the list of principals in a keytab.
+principals () {
+    if is_heimdal ; then
+        ktutil -k "$1" list | awk '{
+            if (FNR > 3) {
+                princ = $3
+                sub(/@.*/, "", princ)
+                print princ
+            }
+        }' | sort -u
+    else
+        klist -k "$1" | awk '{
+            if (FNR > 3) {
+                princ = $2
+                sub(/@.*/, "", princ)
+                print princ
+            }
+        }' | sort -u
+    fi
+}
+
+# Run a command under k5start using the host/* principal for the current
+# hostname as the authentication credentials.
+run_k5start () {
+    k5start -qf /etc/krb5.keytab "$principal" -- "$@"
+}
+
+# Check all of the principals in a keytab and see if any of them are
+# unchanging.  If any are, we skip rekeying this keytab, since otherwise we're
+# going to accumulate multiple copies of the same key and the cleanup
+# functions won't remove the excess keys.
+is_unchanging () {
+    princs=$(principals "$1")
+    for princ in $princs ; do
+        if run_k5start wallet show keytab "$princ" 2>&1 \
+                | grep -q 'Flags: unchanging' ; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Check whether any of the principals in this keytab have DES keys.  This is a
+# bit complicated, since we don't want to trigger this if there are DES keys
+# but ones with old kvnos.
+#
+# We get a list of all the unique kvnos in the file, and then a list of all
+# the unique kvnos of DES keys in the file.  If those lists match, we consider
+# this a DES keytab; if not, there's at least one kvno with non-DES keys, so
+# we consider this a non-DES keytab.
+is_des () {
+    if is_heimdal ; then
+        all=$(ktutil -k "$1" list | sed '1,3d' | awk '{print $1}' | sort -nu)
+        des=$(ktutil -k "$1" list | grep des-cbc-crc | awk '{print $1}' \
+                | sort -nu)
+    else
+        all=$(klist -k "$1" | sed '1,3d' | awk '{print $1}' | sort -nu)
+        des=$(klist -ke "$1" | egrep '\(DES cbc|des-cbc-crc' \
+                | awk '{print $1}' | sort -nu)
+    fi
+    if [ "$all" = "$des" ] ; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Rekey the given keytab file if it exists, this is either the active day or
+# the keytab contains DES keys, and it isn't unchanging.  On Heimdal, we'll
+# also purge old keys.  We can't do this on MIT because the kadmin routine
+# that purges old keys requires admin authentication.
+rekey () {
+    if [ -f "$1" ] ; then
+        if is_des "$1" || is_active_day ; then
+            if ! is_unchanging "$1" ; then
+                if is_heimdal ; then
+                    ktutil -k "$1" purge
+                fi
+                run_k5start wallet-rekey "$1"
+            fi
+        fi
+    fi
+}
+
+# The default action is to rekey the host keytab, the WebAuth keytab, and any
+# keytabs found in /etc/keytabs/*.  But if we're given keytabs on the command
+# line, we'll rekey those instead.  (This won't generally be used since we're
+# installed as a cron job.)
+if [ -z "$1" ] ; then
+    for file in /etc/webauth/keytab /etc/keytabs/* /etc/krb5.keytab ; do
+        rekey "$file"
+    done
+else
+    for file in "$@" ; do
+        rekey "$file"
+    done
+fi
+
+# Documentation.  Use a hack to hide this from the shell.  Because of the
+# above exit line, this should never be executed.
+DOCS=<<__END_OF_DOCS__
+
+=for stopwords
+Allbery DES Heimdal hostname keytab keytabs ktutil rekey rekeyable
+rekeying wallet-rekey wallet-rekey-periodic
+
+=head1 NAME
+
+wallet-rekey-periodic - Periodically rekey all system keytabs
+
+=head1 SYNOPSIS
+
+B<wallet-rekey-periodic> [I<keytab> ...]
+
+=head1 DESCRIPTION
+
+B<wallet-rekey-periodic> is a wrapper around wallet-rekey that adds some
+additional functionality: rekeying of all keytabs at known locations on
+the system, skipping keytabs that are marked unchanging, rekeying any
+keytabs with DES keys immediately but otherwise only rekeying once a month
+based on a random interval based on the hostname, and cleaning up old
+keys.
+
+It's primarily meant to be run daily from cron, but can also be run
+manually from the command line to rekey specific keytab files.
+
+B<wallet-rekey-periodic> will, for each keytab, find a list of all
+principals in that keytab and see if any of them still have DES keys.  If
+so, it will always attempt to rekey that keytab.  If not, it will only do
+so, for a given system, once every 30 days (based on a hash of the
+hostname).  It will also always skip keytabs that contain any principals
+that wallet says are unchanging, since otherwise the current wallet-rekey
+implementation will duplicate the existing keys.
+
+On Heimdal systems, this command will remove keys older than a week before
+rekeying the keytab.  This relies on B<ktutil> functionality that's
+available only in Heimdal, so MIT Kerberos keytabs will slowly grow unless
+they're manually pruned.  This will be fixed in a later release of
+B<wallet-rekey>.
+
+If no keytabs are given on the command line, B<wallet-rekey-periodic> will
+rekey a set of system keytabs described below under L</FILES>.  Otherwise,
+it will rekey the keytabs given.
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/keytabs/*>
+
+=item F</etc/krb5.keytab>
+
+=item F</etc/webauth/keytab>
+
+The default list of locations checked for rekeyable keytabs.  If run with
+no command-line arguments, B<wallet-rekey-periodic> will try to rekey
+every principal in each keytab found at any of these paths.
+
+=back
+
+=head1 AUTHOR
+
+Russ Allbery <eagle@eyrie.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2013, 2014 The Board of Trustees of the Leland Stanford Junior
+University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+=head1 SEE ALSO
+
+ktutil(8), wallet(1), wallet-rekey(1)
+
+=cut
+
+__END_OF_DOCS__

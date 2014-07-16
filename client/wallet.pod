@@ -274,10 +274,11 @@ If <expires> is not given, displays the current expiration of the object
 identified by <type> and <name>, or C<No expiration set> if none is set.
 The expiration will be displayed in seconds since epoch.
 
-If <date> is given, sets the expiration on the object identified by <type>
-and <name> to <date> and (if given) <time>.  <date> must be in the format
-C<YYYY-MM-DD> and <time> in the format C<HH:MM:SS>.  If <date> is the empty
-string, clears the expiration of the object.
+If <expires> is given, sets the expiration on the object identified by
+<type> and <name> to that date (and optionally time).  <expires> must be
+in some format that can be parsed by the Perl Date::Parse module.  Most
+common formats are supported; if in doubt, use C<YYYY-MM-DD HH:MM:SS>.  If
+<expires> is the empty string, clears the expiration of the object.
 
 Currently, the expiration of an object is not used.
 
@@ -459,7 +460,7 @@ overrides this setting.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 

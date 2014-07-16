@@ -1,6 +1,19 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Report host keytabs in wallet for unknown hosts.
+
+##############################################################################
+# Modules and declarations
+##############################################################################
+
+require 5.006;
+
+use strict;
+use warnings;
+
+use DB_File ();
+use Wallet::Report ();
+use Wallet::Server ();
 
 ##############################################################################
 # Site configuration
@@ -22,9 +35,10 @@ our $MIN       = 3;
 our $THRESHOLD = time - 30 * 24 * 60 * 60;
 
 # Set up a Net::DNS resolver that will be used by local_check_keytab.
+my $DNS;
 BEGIN {
     use Net::DNS;
-    our $DNS = Net::DNS::Resolver->new;
+    $DNS = Net::DNS::Resolver->new;
 }
 
 # Pre-filter.  This is called for all host-based keytabs and is the place to
@@ -53,18 +67,6 @@ sub local_check_keytab {
     # Do normal processing by default.
     return;
 }
-
-##############################################################################
-# Modules and declarations
-##############################################################################
-
-require 5.006;
-
-use strict;
-
-use DB_File ();
-use Wallet::Report ();
-use Wallet::Server ();
 
 ##############################################################################
 # Utility functions
@@ -97,6 +99,7 @@ sub check_host {
 # Do a scan of all host-based keytabs in wallet and record those that are not
 # found in DNS or which should not be used according to site configuration.
 sub check {
+    my %history;
     tie %history, 'DB_File', $HISTORY;
     my @keytabs = list_keytabs;
     for my $keytab (@keytabs) {
@@ -124,6 +127,7 @@ sub check {
 # list (given as a threshold time in seconds since epoch).
 sub report {
     my ($min, $threshold) = @_;
+    my %history;
     tie %history, 'DB_File', $HISTORY;
     for my $keytab (sort keys %history) {
         my ($count, $time) = split (',', $history{$keytab});
@@ -142,6 +146,7 @@ sub report {
 sub purge {
     my ($user, $min, $threshold) = @_;
     my $wallet = Wallet::Server->new ($user, 'localhost');
+    my %history;
     tie %history, 'DB_File', $HISTORY;
     for my $keytab (sort keys %history) {
         my ($count, $time) = split (',', $history{$keytab});
@@ -161,7 +166,7 @@ sub purge {
 
 my $command = shift or die "Usage: $0 (check | report | purge)\n";
 if ($command eq 'check') {
-    check;
+    check ();
 } elsif ($command eq 'report') {
     my ($min, $threshold) = @_;
     $min = $MIN unless defined ($min);
@@ -170,6 +175,7 @@ if ($command eq 'check') {
     report ($min, $threshold);
 } elsif ($command eq 'purge') {
     my $user = $ENV{REMOTE_USER} or die "$0: REMOTE_USER must be set\n";
+    my ($min, $threshold) = @_;
     $min = $MIN unless defined ($min);
     die "$0: minimum count must be at least 1\n" if $min < 1;
     $threshold = $THRESHOLD unless defined ($threshold);
@@ -184,7 +190,7 @@ if ($command eq 'check') {
 
 =for stopwords
 ACL API CNAME DNS IP env keytab keytabs timestamp MERCHANTABILITY
-NONINFRINGEMENT sublicense
+NONINFRINGEMENT sublicense Allbery
 
 =head1 NAME
 
@@ -251,7 +257,7 @@ actions as a local administrator.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 
