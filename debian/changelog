@@ -27,6 +27,7 @@ wallet (1.1-1) UNRELEASED; urgency=medium
   * Document in the wallet-server package description that a DBD::* module
     and corresponding DateTime::Format::* module are required.  (There
     isn't a way to fully represent the required dependency.)
+  * Rebuild Autoconf and Automake files during the build.
   * Define AUTOMATED_TESTING to enable some additional Perl tests.
   * Update standards version to 3.9.5 (no changes required).
 

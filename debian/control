@@ -2,7 +2,7 @@ Source: wallet
 Section: net
 Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 9), libauthen-sasl-perl,
+Build-Depends: debhelper (>= 9), dh-autoreconf, libauthen-sasl-perl,
  libdatetime-format-sqlite-perl, libdbd-sqlite3-perl, libdbi-perl,
  libdbix-class-perl, libdatetime-perl, libdatetime-format-sqlite-perl,
  libkrb5-dev, libnet-duo-perl, libnet-ldap-perl, libremctl-dev,
