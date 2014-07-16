@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 9), libauthen-sasl-perl,
  libkrb5-dev, libnet-duo-perl, libnet-ldap-perl, libremctl-dev,
  libsql-translator-perl, libtest-minimumversion-perl, libtest-pod-perl,
  libtest-strict-perl, libtimedate-perl, libwebauth-perl, perl
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
 Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/wallet.git
