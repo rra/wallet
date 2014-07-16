@@ -18,7 +18,7 @@ WALLET_PERL_FLAGS ?=
 # and are not generated or touched by configure.  They're listed here to be
 # added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
+PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/lib/Wallet/ACL.pm perl/lib/Wallet/ACL/Base.pm		    \
 	perl/lib/Wallet/ACL/Krb5.pm perl/lib/Wallet/ACL/Krb5/Regex.pm	    \
 	perl/lib/Wallet/ACL/LDAP/Attribute.pm perl/lib/Wallet/ACL/NetDB.pm  \
@@ -92,13 +92,12 @@ EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	contrib/wallet-unknown-hosts contrib/wallet-unknown-hosts.8	   \
 	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	   \
 	docs/objects-and-schemes docs/setup docs/stanford-naming	   \
-	examples/stanford.conf perl/create-ddl tests/HOWTO tests/TESTS	   \
-	tests/config/README tests/data/allow-extract tests/data/basic.conf \
-	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	   \
-	tests/data/fake-kadmin tests/data/fake-keytab			   \
-	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		   \
-	tests/data/fake-keytab-merge tests/data/fake-keytab-old		   \
-	tests/data/fake-keytab-partial					   \
+	examples/stanford.conf tests/HOWTO tests/TESTS tests/config/README \
+	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake \
+	tests/data/cmd-wrapper tests/data/fake-data tests/data/fake-kadmin \
+	tests/data/fake-keytab tests/data/fake-keytab-2			   \
+	tests/data/fake-keytab-foreign tests/data/fake-keytab-merge	   \
+	tests/data/fake-keytab-old tests/data/fake-keytab-partial	   \
 	tests/data/fake-keytab-partial-result tests/data/fake-keytab-rekey \
 	tests/data/fake-keytab-unknown tests/data/fake-srvtab		   \
 	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf   \
