@@ -27,8 +27,9 @@ Client:
    stored on the server is different than what's on disk.  This will
    require server support as well for returning the checksum of a file.
 
- * WALLET-80: Incorporate the wallet-rekey-periodic script into the
-   package and teach it how to ignore foreign credentials.
+ * WALLET-80: Incorporate the wallet-rekey-periodic script (currently in
+   contrib) into the package and teach it how to ignore foreign
+   credentials.
 
 Server Interface:
 
@@ -85,6 +86,18 @@ Server Interface:
 
  * WALLET-83: Support file object renaming.
 
+ * Rewrite server backends to use Net::Remctl::Backend.
+
+ * Merge the Wallet::Logger support written by Commerzbank AG: create a
+   new class that handles logging, probably based on Log::Log4perl, and
+   add logging points to all of the core classes.
+
+ * Support an authorization hook to determine whether or not to permit
+   autocreate.  One requested example feature is to limit autocreate of
+   keytab objects to certain hosts involved in deployment.  It should be
+   possible to write a hook that takes the information about what object
+   is being autocreated and can accept or decline.
+
 ACLs:
 
  * WALLET-23: Error messages from ACL operations should refer to the ACLs
@@ -137,10 +150,6 @@ Objects:
  * WALLET-32: Check whether we can just drop the realm restriction on
    keytabs and allow the name to contain the realm if the Kerberos type is
    Heimdal.
-
- * WALLET-4: Write a WebAuth keyring object store.  It should support
-   attributes saying how long to keep old keys and how far in advance to
-   create new keys and update the keyring as needed on object download.
 
  * WALLET-33: Use the Perl Authen::Krb5::Admin module instead of rolling
    our own kadmin code with Expect now that MIT Kerberos has made the
@@ -204,6 +213,9 @@ Reports:
    possibly use the notification service, although a version that sends
    mail directly would be useful external to Stanford.
 
+ * Merge the Commerzbank AG work to dump all the object history, applying
+   various search criteria to it, or clear parts of the object history.
+
 Administrative Interface:
 
  * WALLET-42: Add a function to wallet-admin to purge expired entries.
@@ -231,6 +243,8 @@ Documentation:
 
  * WALLET-46: Document all diagnostics for all wallet APIs.
 
+ * Document configuration with an Oracle database.
+
 Code Style and Cleanup:
 
  * WALLET-47: There is a lot of duplicate code in wallet-backend.  Convert
@@ -250,9 +264,10 @@ Code Style and Cleanup:
    better internal API to reference the variables in it.
 
  * WALLET-52: Consider using Class::Accessor to get rid of the scaffolding
-   code to access object data, and a Wallet::Base class to handle things
-   like the error() method common to many classes.  Alternately, consider
-   using Moose.
+   code to access object data.  Alternately, consider using Moose.
+
+ * Rewrite the error handling to use exceptions instead of the C-style
+   return value and separate error call.
 
 Test Suite:
 
@@ -269,7 +284,8 @@ Test Suite:
    use of shared code so that it can be broken into function components.
 
  * WALLET-57: Refactor the test suite for the wallet backend to try to
-   reduce the duplicated code.
+   reduce the duplicated code.  Using a real mock infrastructure should
+   make this test suite much easier to write.
 
  * WALLET-58: Pull common test suite code into a Perl library that can be
    reused.
