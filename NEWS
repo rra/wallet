@@ -59,6 +59,11 @@ wallet 1.1 (unreleased)
     would just ignore the time.  Now wallet-backend correctly requires the
     date and time be passed as a single argument.
 
+    Fix the ordering of table drops during a wallet-admin destroy action
+    to remove tables with foreign key references before the tables they
+    are referencing.  Should fix destroy in MySQL and other database
+    engines that enforce referential integrity.
+
     The initial creation and membership of the ADMIN ACL during database
     initialization or reinitialization is no longer recorded in the
     acl_history table.  (This is fallout from making a specific type of

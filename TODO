@@ -143,8 +143,6 @@ Database:
  * WALLET-31: On upgrades, support adding new object types and ACL
    verifiers to the class tables.
 
- * WALLET-76: Fix wallet-admin destroy with MySQL.
-
 Objects:
 
  * WALLET-32: Check whether we can just drop the realm restriction on
