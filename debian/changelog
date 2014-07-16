@@ -24,6 +24,9 @@ wallet (1.1-1) UNRELEASED; urgency=medium
     - Fix ordering of table drops during wallet-admin destroy to honor
       foreign key reference constraints.
     - The initial ADMIN ACL creation is no longer documented in history.
+  * Document in the wallet-server package description that a DBD::* module
+    and corresponding DateTime::Format::* module are required.  (There
+    isn't a way to fully represent the required dependency.)
 
  -- Russ Allbery <rra@debian.org>  Wed, 16 Jul 2014 13:51:23 -0700
 
