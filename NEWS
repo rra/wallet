@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 1.1 (unreleased)
+wallet 1.1 (2014-07-16)
 
     A new object type, duo (Wallet::Object::Duo), is now supported.  This
     creates an integration with the Duo Security cloud multifactor
