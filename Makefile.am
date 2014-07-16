@@ -87,6 +87,7 @@ EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
 	config/keytab.acl config/wallet config/wallet-report.acl	   \
 	docs/design contrib/README contrib/convert-srvtab-db		   \
 	contrib/used-principals contrib/wallet-contacts			   \
+	contrib/wallet-rekey-periodic contrib/wallet-rekey-periodic.8	   \
 	contrib/wallet-summary contrib/wallet-summary.8			   \
 	contrib/wallet-unknown-hosts contrib/wallet-unknown-hosts.8	   \
 	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	   \
