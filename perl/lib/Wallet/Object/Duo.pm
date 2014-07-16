@@ -190,7 +190,7 @@ sub get {
 
     # We also need the admin server name, which we can get from the Duo object
     # configuration with a bit of JSON decoding.
-    my $json = JSON->new->utf8 (1);
+    my $json = JSON->new->utf8 (1)->relaxed (1);
     my $config = $json->decode (scalar slurp $Wallet::Config::DUO_KEY_FILE);
 
     # Construct the returned file.
