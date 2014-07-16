@@ -30,6 +30,7 @@ wallet (1.1-1) UNRELEASED; urgency=medium
   * Rebuild Autoconf and Automake files during the build.
   * Define AUTOMATED_TESTING to enable some additional Perl tests.
   * Adjust debian/rules for the new Module::Build Perl build system.
+  * Drop now-unneeded dh_builddeb override for xz compression.
   * Update standards version to 3.9.5 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Wed, 16 Jul 2014 13:51:23 -0700
