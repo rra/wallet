@@ -3,6 +3,10 @@
 # Add hardening build flags.
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow,+pie
 
+# The additional flags to pass to Build.PL, picked up by the upstream build
+# system.
+export WALLET_PERL_FLAGS := --installdirs vendor --create_packlist 0
+
 # Enable some additional Perl tests.
 export AUTOMATED_TESTING = 1
 
@@ -12,10 +16,8 @@ export AUTOMATED_TESTING = 1
 override_dh_auto_configure:
 	dh_auto_configure --parallel -- --enable-reduced-depends
 
-# We rebuild the perl directory Makefile to encode the correct installation
-# paths, since otherwise it defaults to using the local site module path.
+# Install the remctl configuration as part of the build.
 override_dh_auto_install:
-	cd perl && perl Makefile.PL INSTALLDIRS=vendor
 	dh_auto_install
 	install -d debian/tmp/etc/remctl/acl
 	install -m 0644 config/keytab.acl debian/tmp/etc/remctl/acl/keytab
