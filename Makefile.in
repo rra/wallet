@@ -104,13 +104,13 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/tests/client/full-t.in \
 	$(top_srcdir)/tests/client/prompt-t.in \
 	$(top_srcdir)/tests/client/rekey-t.in \
-	$(top_srcdir)/portable/reallocarray.c \
-	$(top_srcdir)/portable/asprintf.c \
 	$(top_srcdir)/portable/snprintf.c \
-	$(top_srcdir)/portable/setenv.c \
 	$(top_srcdir)/portable/strlcpy.c \
+	$(top_srcdir)/portable/asprintf.c \
+	$(top_srcdir)/portable/strlcat.c \
+	$(top_srcdir)/portable/reallocarray.c \
 	$(top_srcdir)/portable/mkstemp.c \
-	$(top_srcdir)/portable/strlcat.c $(dist_sbin_SCRIPTS) \
+	$(top_srcdir)/portable/setenv.c $(dist_sbin_SCRIPTS) \
 	$(top_srcdir)/build-aux/depcomp $(dist_man_MANS) \
 	$(dist_pkgdata_DATA) NEWS README TODO build-aux/ar-lib \
 	build-aux/compile build-aux/depcomp build-aux/install-sh \

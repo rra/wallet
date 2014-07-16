@@ -70,7 +70,7 @@ $Wallet::Config::DUO_KEY_FILE = 't/data/duo/keys.json';
 # Test creating an integration.
 note ('Test creating an integration');
 my $expected = {
-    name  => 'test',
+    name  => 'test (unix)',
     notes => 'Managed by wallet',
     type  => 'unix',
 };
