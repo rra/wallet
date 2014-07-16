@@ -389,7 +389,7 @@ EOO
 # Tests for unchanging support.  Skip these if we don't have a keytab or if we
 # can't find remctld.
 SKIP: {
-    skip 'no keytab configuration', 31 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 32 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -589,7 +589,7 @@ EOO
 
 # Tests for enctype restriction.
 SKIP: {
-    skip 'no keytab configuration', 36 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 37 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
