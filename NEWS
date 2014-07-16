@@ -12,6 +12,10 @@ wallet 1.1 (unreleased)
     an existing wallet database, use wallet-admin to register the new
     object.
 
+    The date passed to expires can now be any date format understood by
+    Date::Parse, and Date::Parse (part of the TimeDate CPAN distribution)
+    is now a required prerequisite for the wallet server.
+
     Fix wallet-rekey on keytabs containing multiple principals.  Previous
     versions assumed one could concatenate keytab files together to make a
     valid keytab file, which doesn't work with some Kerberos libraries.

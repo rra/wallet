@@ -18,6 +18,7 @@ use warnings;
 use vars qw($VERSION);
 
 use DateTime;
+use Date::Parse qw(str2time);
 use DBI;
 use Text::Wrap qw(wrap);
 use Wallet::ACL;
@@ -230,10 +231,20 @@ sub _set_internal {
         my %search = (ob_type => $type,
                       ob_name => $name);
         my $object = $self->{schema}->resultset('Object')->find (\%search);
-        my $old = $object->get_column ("ob_$attr");
+        my $column = "ob_$attr";
+        my $old = $object->$column;
+        my $new = $value;
+        $object->update ({ $column => $value });
 
-        $object->update ({ "ob_$attr" => $value });
-        $self->log_set ($attr, $old, $value, $user, $host, $time);
+        if (ref ($old) && $old->isa ('DateTime')) {
+            $old->set_time_zone ('local');
+            $old = $old->ymd . q{ } . $old->hms;
+        }
+        if (ref ($new) && $new->isa ('DateTime')) {
+            $new->set_time_zone ('local');
+            $new = $new->ymd . q{ } . $new->hms;
+        }
+        $self->log_set ($attr, $old, $new, $user, $host, $time);
         $guard->commit;
     };
     if ($@) {
@@ -262,7 +273,7 @@ sub _get_internal {
         my %search = (ob_type => $type,
                       ob_name => $name);
         my $object = $self->{schema}->resultset('Object')->find (\%search);
-        $value = $object->get_column ($attr);
+        $value = $object->$attr;
     };
     if ($@) {
         $self->error ($@);
@@ -334,15 +345,23 @@ sub comment {
 sub expires {
     my ($self, $expires, $user, $host, $time) = @_;
     if ($expires) {
-        if ($expires !~ /^\d{4}-\d\d-\d\d( \d\d:\d\d:\d\d)?\z/) {
+        my $seconds = str2time ($expires);
+        unless (defined $seconds) {
             $self->error ("malformed expiration time $expires");
             return;
         }
-        return $self->_set_internal ('expires', $expires, $user, $host, $time);
+        my $date = DateTime->from_epoch (epoch => $seconds);
+        return $self->_set_internal ('expires', $date, $user, $host, $time);
     } elsif (defined $expires) {
         return $self->_set_internal ('expires', undef, $user, $host, $time);
     } else {
-        return $self->_get_internal ('expires');
+        my $date = $self->_get_internal ('expires');
+        if (defined $date) {
+            $date->set_time_zone ('local');
+            return $date->ymd . q{ } . $date->hms;
+        } else {
+            return;
+        }
     }
 }
 
@@ -506,13 +525,14 @@ sub history {
     eval {
         my %search = (oh_type => $self->{type},
                       oh_name => $self->{name});
-        my %attrs = (order_by => 'oh_on');
+        my %attrs = (order_by => 'oh_id');
         my @history = $self->{schema}->resultset('ObjectHistory')
             ->search (\%search, \%attrs);
 
         for my $history_rs (@history) {
-            $output .= sprintf ("%s %s  ", $history_rs->oh_on->ymd,
-                               $history_rs->oh_on->hms);
+            my $date = $history_rs->oh_on;
+            $date->set_time_zone ('local');
+            $output .= sprintf ("%s %s  ", $date->ymd, $date->hms);
 
             my $old    = $history_rs->oh_old;
             my $new    = $history_rs->oh_new;
@@ -635,15 +655,15 @@ sub show {
     for my $i (0 .. $#attrs) {
         my $field = $attrs[$i][0];
         my $fieldtext = $attrs[$i][1];
-        next unless my $value = $object_rs->get_column ($field);
+        my $value = $object_rs->$field;
+        next unless defined($value);
 
         if ($field eq 'ob_comment' && length ($value) > 79 - 17) {
             local $Text::Wrap::columns = 80;
             local $Text::Wrap::unexpand = 0;
             $value = wrap (' ' x 17, ' ' x 17, $value);
             $value =~ s/^ {17}//;
-        }
-        if ($field eq 'ob_created_by') {
+        } elsif ($field eq 'ob_created_by') {
             my @flags = $self->flag_list;
             if (not @flags and $self->error) {
                 return;
@@ -656,8 +676,10 @@ sub show {
                 return;
             }
             $output .= $attr_output;
-        }
-        if ($field =~ /^ob_(owner|acl_)/) {
+        } elsif (ref ($value) && $value->isa ('DateTime')) {
+            $value->set_time_zone ('local');
+            $value = sprintf ("%s %s", $value->ymd, $value->hms);
+        } elsif ($field =~ /^ob_(owner|acl_)/) {
             my $acl = eval { Wallet::ACL->new ($value, $self->{schema}) };
             if ($acl and not $@) {
                 $value = $acl->name || $value;

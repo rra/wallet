@@ -378,8 +378,9 @@ sub history {
         my @data = $self->{schema}->resultset('AclHistory')
             ->search (\%search, \%options);
         for my $data (@data) {
-            $output .= sprintf ("%s %s  ", $data->ah_on->ymd,
-                                $data->ah_on->hms);
+            my $date = $data->ah_on;
+            $date->set_time_zone ('local');
+            $output .= sprintf ("%s %s  ", $date->ymd, $date->hms);
             if ($data->ah_action eq 'add' || $data->ah_action eq 'remove') {
                 $output .= sprintf ("%s %s %s", $data->ah_action,
                                     $data->ah_scheme, $data->ah_identifier);
