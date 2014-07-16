@@ -54,8 +54,18 @@ is ($server->acl_show ('ADMIN'),
 is ($server->acl_show (1),
     "Members of ACL ADMIN (id: 1) are:\n  krb5 $admin\n",
     ' including by number');
-is ($server->acl_history ('ADMIN'), '', ' and initial history is empty');
-is ($server->acl_history (1), '', ' including by number');
+my $history = <<"EOO";
+DATE  create
+    by $admin from $host
+DATE  add krb5 $admin
+    by $admin from $host
+EOO
+my $result = $server->acl_history ('ADMIN');
+$result =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($result, $history, ' and displaying history works');
+$result = $server->acl_history (1);
+$result =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
+is ($result, $history, ' including by number');
 is ($server->acl_create (3), undef, 'Cannot create ACL with a numeric name');
 is ($server->error, 'ACL name may not be all numbers',
     ' and returns the right error');
@@ -107,7 +117,7 @@ is ($server->acl_add ('both', 'krb5', $user2), 1,
 is ($server->acl_show ('both'),
     "Members of ACL both (id: 4) are:\n  krb5 $user1\n  krb5 $user2\n",
     ' and show returns the correct result');
-my $history = <<"EOO";
+$history = <<"EOO";
 DATE  create
     by $admin from $host
 DATE  add krb5 $user1
@@ -115,7 +125,7 @@ DATE  add krb5 $user1
 DATE  add krb5 $user2
     by $admin from $host
 EOO
-my $result = $server->acl_history ('both');
+$result = $server->acl_history ('both');
 $result =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d/DATE/gm;
 is ($result, $history, ' as does history');
 is ($server->acl_add ('empty', 'krb5', $user1), 1, ' and another to empty');

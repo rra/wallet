@@ -61,7 +61,6 @@ is ($server->acl_add ('ADMIN', 'base', 'foo'), 1,
     ' and adding a base ACL now works');
 
 # Test re-initialization of the database.
-$Wallet::Schema::VERSION = '0.07';
 is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     ' and re-initialization succeeds');
 
