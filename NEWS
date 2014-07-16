@@ -52,6 +52,13 @@ wallet 1.1 (unreleased)
 
     ACL renames are now recorded in the ACL history.
 
+    Fix wallet-backend parsing of the expires command to expect only one
+    argument as the expiration.  This was correctly documented in the
+    wallet client man page, but not in wallet-backend, and it accepted two
+    arguments (a date and time).  However, Wallet::Server did not and
+    would just ignore the time.  Now wallet-backend correctly requires the
+    date and time be passed as a single argument.
+
     The initial creation and membership of the ADMIN ACL during database
     initialization or reinitialization is no longer recorded in the
     acl_history table.  (This is fallout from making a specific type of
