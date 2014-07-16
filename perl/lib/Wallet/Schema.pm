@@ -1,7 +1,7 @@
 # Database schema and connector for the wallet system.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -160,6 +160,7 @@ table.
   create table acl_history
      (ah_id               integer auto_increment primary key,
       ah_acl              integer not null,
+      ah_name             varchar(255) default null,
       ah_action           varchar(16) not null,
       ah_scheme           varchar(32) default null,
       ah_identifier       varchar(255) default null,
@@ -168,14 +169,13 @@ table.
       ah_on               datetime not null);
   create index ah_acl on acl_history (ah_acl);
 
-ah_action must be one of C<create>, C<destroy>, C<add>, or C<remove>
-(enums aren't used for compatibility with databases other than MySQL).
-For a change of type create or destroy, only the action and the trace
-records (by, from, and on) are stored.  For a change to the lines of an
-ACL, the scheme and identifier of the line that was added or removed is
-included.  Note that changes to the ACL name are not recorded; ACLs are
-always tracked by system-generated ID, so name changes are purely
-cosmetic.
+ah_action must be one of C<create>, C<destroy>, C<add>, C<remove>, or
+C<rename> (enums aren't used for compatibility with databases other than
+MySQL).  For a change of type create, destroy, or rename, only the action,
+the ACL name (in the case of rename, the old ACL name prior to the
+rename), and the trace records (by, from, and on) are stored.  For a
+change to the lines of an ACL, the scheme and identifier of the line that
+was added or removed are included.
 
 ah_by stores the authenticated identity that made the change, ah_from
 stores the host from which they made the change, and ah_on stores the time

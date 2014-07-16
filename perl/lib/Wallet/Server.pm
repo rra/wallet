@@ -681,7 +681,7 @@ sub acl_rename {
             return;
         }
     }
-    unless ($acl->rename ($name)) {
+    unless ($acl->rename ($name, $self->{user}, $self->{host})) {
         $self->error ($acl->error);
         return;
     }

@@ -63,7 +63,7 @@ ok ($acl->isa ('Wallet::ACL'), ' and the right class');
 is ($acl->name, 'test', ' and the right name');
 
 # Test rename.
-if ($acl->rename ('example')) {
+if ($acl->rename ('example', @trace)) {
     ok (1, 'Renaming the ACL');
 } else {
     is ($acl->error, '', 'Renaming the ACL');
@@ -83,7 +83,8 @@ ok (defined ($acl), ' and it can still found by ID');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');
 is ($acl->id, 2, ' and the right ID');
-ok (! $acl->rename ('ADMIN'), ' but renaming to an existing name fails');
+ok (! $acl->rename ('ADMIN', @trace),
+    ' but renaming to an existing name fails');
 like ($acl->error, qr/^cannot rename ACL 2 to ADMIN: /,
       ' with the right error');
 
@@ -194,6 +195,8 @@ is (scalar ($acl->check_errors), '', ' with no error message');
 my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 my $history = <<"EOO";
 $date  create
+    by $admin from $host
+$date  rename from test
     by $admin from $host
 $date  add krb5 $user1
     by $admin from $host

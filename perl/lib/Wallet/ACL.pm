@@ -161,7 +161,7 @@ sub scheme_mapping {
 # change and should be committed with that change.
 sub log_acl {
     my ($self, $action, $scheme, $identifier, $user, $host, $time) = @_;
-    unless ($action =~ /^(add|remove)\z/) {
+    unless ($action =~ /^(add|remove|rename)\z/) {
         die "invalid history action $action";
     }
     my $date = DateTime->from_epoch (epoch => $time);
@@ -184,7 +184,8 @@ sub log_acl {
 # logged since it isn't a change to any of the data stored in the wallet.
 # Returns true on success, false on failure.
 sub rename {
-    my ($self, $name) = @_;
+    my ($self, $name, $user, $host, $time) = @_;
+    $time ||= time;
     if ($name =~ /^\d+\z/) {
         $self->error ("ACL name may not be all numbers");
         return;
@@ -195,6 +196,7 @@ sub rename {
         my $acls = $self->{schema}->resultset('Acl')->find (\%search);
         $acls->ac_name ($name);
         $acls->update;
+        $self->log_acl ('rename', undef, undef, $user, $host, $time);
         $guard->commit;
     };
     if ($@) {
@@ -381,6 +383,8 @@ sub history {
             if ($data->ah_action eq 'add' || $data->ah_action eq 'remove') {
                 $output .= sprintf ("%s %s %s", $data->ah_action,
                                     $data->ah_scheme, $data->ah_identifier);
+            } elsif ($data->ah_action eq 'rename') {
+                $output .= 'rename from ' . $data->ah_name;
             } else {
                 $output .= $data->ah_action;
             }

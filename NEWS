@@ -46,6 +46,8 @@ wallet 1.1 (unreleased)
     the DateTime::Format::* module corresponding to the DBD::* module used
     for the server database.
 
+    ACL renames are now recorded in the ACL history.
+
     The initial creation and membership of the ADMIN ACL during database
     initialization or reinitialization is no longer recorded in the
     acl_history table.  (This is fallout from making a specific type of
