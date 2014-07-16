@@ -18,56 +18,56 @@ WALLET_PERL_FLAGS ?=
 # and are not generated or touched by configure.  They're listed here to be
 # added to EXTRA_DIST and so that they can be copied over properly for
 # builddir != srcdir builds.
-PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		   \
-	perl/lib/Wallet/ACL.pm perl/lib/Wallet/ACL/Base.pm		   \
-	perl/lib/Wallet/ACL/Krb5.pm perl/lib/Wallet/ACL/Krb5/Regex.pm	   \
-	perl/lib/Wallet/ACL/LDAP/Attribute.pm perl/lib/Wallet/ACL/NetDB.pm \
-	perl/lib/Wallet/ACL/NetDB/Root.pm perl/lib/Wallet/Admin.pm	   \
-	perl/lib/Wallet/Config.pm perl/lib/Wallet/Database.pm		   \
-	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/Heimdal.pm	   \
-	perl/lib/Wallet/Kadmin/MIT.pm perl/lib/Wallet/Object/Base.pm	   \
-	perl/lib/Wallet/Object/Duo.pm perl/lib/Wallet/Object/File.pm	   \
-	perl/lib/Wallet/Object/Keytab.pm				   \
-	perl/lib/Wallet/Object/WAKeyring.pm				   \
-	perl/lib/Wallet/Policy/Stanford.pm perl/lib/Wallet/Report.pm	   \
-	perl/lib/Wallet/Schema.pm perl/lib/Wallet/Server.pm		   \
-	perl/lib/Wallet/Schema/Result/Acl.pm				   \
-	perl/lib/Wallet/Schema/Result/AclEntry.pm			   \
-	perl/lib/Wallet/Schema/Result/AclHistory.pm			   \
-	perl/lib/Wallet/Schema/Result/AclScheme.pm			   \
-	perl/lib/Wallet/Schema/Result/Duo.pm				   \
-	perl/lib/Wallet/Schema/Result/Enctype.pm			   \
-	perl/lib/Wallet/Schema/Result/Flag.pm				   \
-	perl/lib/Wallet/Schema/Result/KeytabEnctype.pm			   \
-	perl/lib/Wallet/Schema/Result/KeytabSync.pm			   \
-	perl/lib/Wallet/Schema/Result/Object.pm				   \
-	perl/lib/Wallet/Schema/Result/ObjectHistory.pm			   \
-	perl/lib/Wallet/Schema/Result/SyncTarget.pm			   \
-	perl/lib/Wallet/Schema/Result/Type.pm				   \
-	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			   \
-	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			   \
-	perl/sql/Wallet-Schema-0.07-MySQL.sql				   \
-	perl/sql/Wallet-Schema-0.07-SQLite.sql				   \
-	perl/sql/Wallet-Schema-0.08-0.09-MySQL.sql			   \
-	perl/sql/Wallet-Schema-0.08-0.09-PostgreSQL.sql			   \
-	perl/sql/Wallet-Schema-0.08-0.09-SQLite.sql			   \
-	perl/sql/Wallet-Schema-0.08-MySQL.sql				   \
-	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			   \
-	perl/sql/Wallet-Schema-0.08-SQLite.sql				   \
-	perl/sql/Wallet-Schema-0.09-MySQL.sql				   \
-	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql			   \
-	perl/sql/Wallet-Schema-0.09-SQLite.sql perl/t/data/README	   \
-	perl/t/data/duo/integration.json perl/t/data/duo/keys.json	   \
-	perl/t/data/keytab-fake perl/t/data/keytab.conf			   \
-	perl/t/data/netdb.conf perl/t/data/netdb-fake			   \
-	perl/t/docs/pod-spelling.t perl/t/docs/pod.t perl/t/general/acl.t  \
-	perl/t/general/admin.t perl/t/general/config.t			   \
-	perl/t/general/init.t perl/t/general/report.t			   \
-	perl/t/general/server.t perl/t/lib/Util.pm perl/t/object/base.t	   \
-	perl/t/object/duo.t perl/t/object/file.t perl/t/object/keytab.t	   \
-	perl/t/object/wa-keyring.t perl/t/policy/stanford.t		   \
-	perl/t/style/minimum-version.t perl/t/style/strict.t		   \
-	perl/t/util/kadmin.t perl/t/verifier/basic.t			   \
+PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
+	perl/lib/Wallet/ACL.pm perl/lib/Wallet/ACL/Base.pm		    \
+	perl/lib/Wallet/ACL/Krb5.pm perl/lib/Wallet/ACL/Krb5/Regex.pm	    \
+	perl/lib/Wallet/ACL/LDAP/Attribute.pm perl/lib/Wallet/ACL/NetDB.pm  \
+	perl/lib/Wallet/ACL/NetDB/Root.pm perl/lib/Wallet/Admin.pm	    \
+	perl/lib/Wallet/Config.pm perl/lib/Wallet/Database.pm		    \
+	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/Heimdal.pm	    \
+	perl/lib/Wallet/Kadmin/MIT.pm perl/lib/Wallet/Object/Base.pm	    \
+	perl/lib/Wallet/Object/Duo.pm perl/lib/Wallet/Object/File.pm	    \
+	perl/lib/Wallet/Object/Keytab.pm				    \
+	perl/lib/Wallet/Object/WAKeyring.pm				    \
+	perl/lib/Wallet/Policy/Stanford.pm perl/lib/Wallet/Report.pm	    \
+	perl/lib/Wallet/Schema.pm perl/lib/Wallet/Server.pm		    \
+	perl/lib/Wallet/Schema/Result/Acl.pm				    \
+	perl/lib/Wallet/Schema/Result/AclEntry.pm			    \
+	perl/lib/Wallet/Schema/Result/AclHistory.pm			    \
+	perl/lib/Wallet/Schema/Result/AclScheme.pm			    \
+	perl/lib/Wallet/Schema/Result/Duo.pm				    \
+	perl/lib/Wallet/Schema/Result/Enctype.pm			    \
+	perl/lib/Wallet/Schema/Result/Flag.pm				    \
+	perl/lib/Wallet/Schema/Result/KeytabEnctype.pm			    \
+	perl/lib/Wallet/Schema/Result/KeytabSync.pm			    \
+	perl/lib/Wallet/Schema/Result/Object.pm				    \
+	perl/lib/Wallet/Schema/Result/ObjectHistory.pm			    \
+	perl/lib/Wallet/Schema/Result/SyncTarget.pm			    \
+	perl/lib/Wallet/Schema/Result/Type.pm				    \
+	perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql			    \
+	perl/sql/Wallet-Schema-0.07-0.08-SQLite.sql			    \
+	perl/sql/Wallet-Schema-0.07-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.07-SQLite.sql				    \
+	perl/sql/Wallet-Schema-0.08-0.09-MySQL.sql			    \
+	perl/sql/Wallet-Schema-0.08-0.09-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.08-0.09-SQLite.sql			    \
+	perl/sql/Wallet-Schema-0.08-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.08-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.08-SQLite.sql				    \
+	perl/sql/Wallet-Schema-0.09-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.09-SQLite.sql perl/t/data/README	    \
+	perl/t/data/duo/integration.json perl/t/data/duo/keys.json	    \
+	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
+	perl/t/data/netdb-fake perl/t/data/netdb.conf perl/t/data/perl.conf \
+	perl/t/docs/pod-spelling.t perl/t/docs/pod.t perl/t/general/acl.t   \
+	perl/t/general/admin.t perl/t/general/config.t			    \
+	perl/t/general/init.t perl/t/general/report.t			    \
+	perl/t/general/server.t perl/t/lib/Util.pm perl/t/object/base.t	    \
+	perl/t/object/duo.t perl/t/object/file.t perl/t/object/keytab.t	    \
+	perl/t/object/wa-keyring.t perl/t/policy/stanford.t		    \
+	perl/t/style/minimum-version.t perl/t/style/strict.t		    \
+	perl/t/util/kadmin.t perl/t/verifier/basic.t			    \
 	perl/t/verifier/ldap-attr.t perl/t/verifier/netdb.t
 
 # Directories that have to be created in builddir != srcdir builds before
