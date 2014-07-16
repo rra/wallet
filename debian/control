@@ -5,9 +5,10 @@ Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>= 9), dh-autoreconf, libauthen-sasl-perl,
  libdatetime-format-sqlite-perl, libdbd-sqlite3-perl, libdbi-perl,
  libdbix-class-perl, libdatetime-perl, libdatetime-format-sqlite-perl,
- libkrb5-dev, libnet-duo-perl, libnet-ldap-perl, libremctl-dev,
- libsql-translator-perl, libtest-minimumversion-perl, libtest-pod-perl,
- libtest-strict-perl, libtimedate-perl, libwebauth-perl, perl, sqlite3
+ libheimdal-kadm5-perl, libkrb5-dev, libnet-dns-perl, libnet-duo-perl,
+ libnet-ldap-perl, libremctl-dev, libsql-translator-perl,
+ libtest-minimumversion-perl, libtest-pod-perl, libtest-strict-perl,
+ libtimedate-perl, libwebauth-perl, perl, sqlite3
 Standards-Version: 3.9.5
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
 Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian
@@ -50,7 +51,8 @@ Depends: ${misc:Depends}, ${perl:Depends},
  libdatetime-format-sqlite-perl | libdatetime-format-mysql-perl |
  libdatetime-format-pg-perl,
  libdbd-sqlite3-perl | libdbd-mysql-perl | libdbd-pg-perl,
- libdbix-class-perl, libsql-translator-perl, remctl-server
+ libdbix-class-perl, libdatetime-perl, libsql-translator-perl,
+ libtimedate-perl, remctl-server
 Recommends: krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
 Suggests: libauthen-sasl-perl, libnet-duo-perl, libnet-ldap-perl,
  libnet-remctl-perl, libwebauth-perl (>= 4.4.0)
