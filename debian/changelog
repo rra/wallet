@@ -1,4 +1,4 @@
-wallet (1.1-1) UNRELEASED; urgency=medium
+wallet (1.1-1) unstable; urgency=medium
 
   * New upstream release.
     - New object type, duo, which creates a UNIX integration with the Duo
@@ -35,7 +35,7 @@ wallet (1.1-1) UNRELEASED; urgency=medium
     releases in debian/watch.
   * Update standards version to 3.9.5 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Wed, 16 Jul 2014 13:51:23 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 16 Jul 2014 17:08:35 -0700
 
 wallet (1.0-5) unstable; urgency=low
 
