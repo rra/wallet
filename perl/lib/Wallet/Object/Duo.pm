@@ -1,4 +1,4 @@
-# Wallet::Object::Duo -- Duo integration object implementation for the wallet.
+# Wallet::Object::Duo -- Base Duo object implementation for the wallet
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2014
@@ -29,7 +29,7 @@ use Wallet::Object::Base;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ##############################################################################
 # Core methods
@@ -84,7 +84,7 @@ sub new {
 # great here since we don't have a way to communicate the error back to the
 # caller.
 sub create {
-    my ($class, $type, $name, $schema, $creator, $host, $time) = @_;
+    my ($class, $type, $name, $schema, $creator, $host, $time, $duo_type) = @_;
 
     # We have to have a Duo integration key file set.
     if (not $Wallet::Config::DUO_KEY_FILE) {
@@ -104,10 +104,11 @@ sub create {
 
     # Create the object in Duo.
     require Net::Duo::Admin::Integration;
+    $duo_type ||= $Wallet::Config::DUO_TYPE;
     my %data = (
-        name  => "$name ($Wallet::Config::DUO_TYPE)",
+        name  => "$name ($duo_type)",
         notes => 'Managed by wallet',
-        type  => $Wallet::Config::DUO_TYPE,
+        type  => $duo_type,
     );
     my $integration = Net::Duo::Admin::Integration->create ($duo, \%data);
 
@@ -194,10 +195,10 @@ sub get {
     my $config = $json->decode (scalar slurp $Wallet::Config::DUO_KEY_FILE);
 
     # Construct the returned file.
-    my $output = "[duo]\n";
-    $output .= "ikey = $key\n";
-    $output .= 'skey = ' . $integration->secret_key . "\n";
-    $output .= "host = $config->{api_hostname}\n";
+    my $output;
+    $output .= "Integration key: $key\n";
+    $output .= 'Secret key:      ' . $integration->secret_key . "\n";
+    $output .= "Host:            $config->{api_hostname}\n";
 
     # Log the action and return.
     $self->log_action ('get', $user, $host, $time);
@@ -234,12 +235,11 @@ create a Duo integration, return a configuration file containing the key
 and API information for that integration, and delete the integration from
 Duo when the wallet object is destroyed.
 
-Currently, only one configured integration type can be managed by the
-wallet, and the integration information is always returned in the
-configuration file format expected by the Duo UNIX integration.  The
-results of retrieving this object will be text, suitable for putting in
-the UNIX integration configuration file, containing the integration key,
-secret key, and admin hostname for that integration.
+Usually you will want to use one of the subclasses of this module, which
+override the output to give you a configuration fragment suited for a
+specific application type.  However, you can always use this module for
+generic integrations where you don't mind massaging the output into the
+configuration for the application using Duo.
 
 This object can be retrieved repeatedly without changing the secret key,
 matching Duo's native behavior with integrations.  To change the keys of
@@ -258,7 +258,7 @@ implementation.
 
 =over 4
 
-=item create(TYPE, NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME])
+=item create(TYPE, NAME, DBH, PRINCIPAL, HOSTNAME [, DATETIME, INTEGRATION_TYPE])
 
 This is a class method and should be called on the Wallet::Object::Duo
 class.  It creates a new object with the given TYPE and NAME (TYPE is
@@ -272,9 +272,9 @@ time is used.
 When a new Duo integration object is created, a new integration will be
 created in the configured Duo account and the integration key will be
 stored in the wallet object.  If the integration already exists, create()
-will fail.  The new integration's type is controlled by the DUO_TYPE
-configuration variable, which defaults to C<unix>.  See L<Wallet::Config>
-for more information.
+will fail.  If an integration type isn't given, the new integration's type
+is controlled by the DUO_TYPE configuration variable, which defaults to
+C<unix>.  See L<Wallet::Config> for more information.
 
 If create() fails, it throws an exception.
 
@@ -314,9 +314,6 @@ isn't given, the current time is used.
 =head1 LIMITATIONS
 
 Only one Duo account is supported for a given wallet implementation.
-Currently, only one Duo integration type is supported as well.  Further
-development should expand the available integration types, possibly as
-additional wallet object types.
 
 =head1 SEE ALSO
 
