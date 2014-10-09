@@ -42,7 +42,7 @@ sub create {
 
     $time ||= time;
     my $self = $class->SUPER::create ($type, $name, $schema, $creator, $host,
-                                      $time, 'ldap');
+                                      $time, 'ldapproxy');
     return $self;
 }
 
