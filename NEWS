@@ -1,5 +1,14 @@
                        User-Visible wallet Changes
 
+wallet 1.11 (2014-10-08)
+
+    The duo object type has been split into several sub-types, each for a
+    specific type of Duo integration.  The old type's functionality has
+    been moved to duo-pam (Wallet::Object::Duo::PAM), and new types are
+    supported for Duo's auth proxy configurations for LDAP and Radius.
+    These types are duo-radius and duo-ldap
+    (Wallet::Object::Duo::RadiusProxy and Wallet::Object::Duo::LDAPProxy).
+
 wallet 1.1 (2014-07-16)
 
     A new object type, duo (Wallet::Object::Duo), is now supported.  This
