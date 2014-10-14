@@ -174,6 +174,13 @@ sub _host_for_keytab {
     return $host;
 }
 
+# Map a duo-type object name to a hostname.  Currently all Duo objects are
+# named just for the hostname, so this is easy.
+sub _host_for_file {
+    my ($name) = @_;
+    return $name;
+}
+
 # The default owner of host-based objects should be the host keytab and the
 # NetDB ACL for that host, with one twist.  If the creator of a new node is
 # using a root instance, we want to require everyone managing that node be
@@ -183,8 +190,13 @@ sub default_owner {
 
     # How to determine the host for host-based objects.
     my %host_for = (
-        keytab => \&_host_for_keytab,
-        file   => \&_host_for_file,
+        'keytab'     => \&_host_for_keytab,
+        'file'       => \&_host_for_file,
+        'duo'        => \&_host_for_duo,
+        'duo-pam'    => \&_host_for_duo,
+        'duo-radius' => \&_host_for_duo,
+        'duo-ldap'   => \&_host_for_duo,
+        'duo-rdp'    => \&_host_for_duo,
     );
 
     # If we have a possible host mapping, see if we can use that.
@@ -365,6 +377,14 @@ sub verify_name {
             } elsif ($name !~ /^$group_regex-.*-$type_regex(-.*)?$/) {
                 return "invalid file object name $name";
             }
+        }
+    }
+
+    # Check the naming conventions for all Duo object types.  The object
+    # should simply be the host name for now.
+    if ($type =~ m{^duo(-\w+)?$}) {
+        if ($name !~ m{ [.] }xms) {
+            return "host name $name is not fully qualified";
         }
     }
 
