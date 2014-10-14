@@ -41,7 +41,9 @@ sub attr_show {
     my $output = '';
     my $key;
     eval {
-        my %search = (du_name => $self->{name});
+        my %search = (du_name => $self->{name},
+                      du_type => $self->{type},
+                     );
         my $row = $self->{schema}->resultset ('Duo')->find (\%search);
         $key = $row->get_column ('du_key');
     };
@@ -122,6 +124,7 @@ sub create {
     eval {
         my %record = (
             du_name => $name,
+            du_type => $type,
             du_key  => $integration->integration_key,
         );
         $self->{schema}->resultset ('Duo')->create (\%record);
@@ -148,7 +151,9 @@ sub destroy {
     my $schema = $self->{schema};
     my $guard = $schema->txn_scope_guard;
     eval {
-        my %search = (du_name => $self->{name});
+        my %search = (du_name => $self->{name},
+                      du_type => $self->{type},
+                     );
         my $row = $schema->resultset ('Duo')->find (\%search);
         my $key = $row->get_column ('du_key');
         my $int = Net::Duo::Admin::Integration->new ($self->{duo}, $key);
@@ -179,7 +184,9 @@ sub get {
     # Retrieve the integration from Duo.
     my $key;
     eval {
-        my %search = (du_name => $self->{name});
+        my %search = (du_name => $self->{name},
+                      du_type => $self->{type},
+                     );
         my $row = $self->{schema}->resultset ('Duo')->find (\%search);
         $key = $row->get_column ('du_key');
     };
