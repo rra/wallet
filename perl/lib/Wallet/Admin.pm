@@ -126,9 +126,10 @@ sub default_data {
     # types default rows.
     my @record = ([ qw/ty_name ty_class/ ],
                [ 'duo',        'Wallet::Object::Duo' ],
+               [ 'duo-ldap',   'Wallet::Object::Duo::LDAPProxy' ],
                [ 'duo-pam',    'Wallet::Object::Duo::PAM' ],
                [ 'duo-radius', 'Wallet::Object::Duo::RadiusProxy' ],
-               [ 'duo-ldap',   'Wallet::Object::Duo::LDAPProxy' ],
+               [ 'duo-rdp',    'Wallet::Object::Duo::RDP' ],
                [ 'file',       'Wallet::Object::File' ],
                [ 'keytab',     'Wallet::Object::Keytab' ],
                [ 'wa-keyring', 'Wallet::Object::WAKeyring' ]);
