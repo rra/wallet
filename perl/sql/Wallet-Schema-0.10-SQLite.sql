@@ -1,14 +1,14 @@
--- 
+--
 -- Created by SQL::Translator::Producer::SQLite
 -- Created on Thu Oct  9 20:51:25 2014
--- 
+--
 
 BEGIN TRANSACTION;
 
 --
 -- Table: acl_history
 --
-DROP TABLE acl_history;
+DROP TABLE IF EXISTS acl_history;
 
 CREATE TABLE acl_history (
   ah_id INTEGER PRIMARY KEY NOT NULL,
@@ -29,7 +29,7 @@ CREATE INDEX acl_history_idx_ah_name ON acl_history (ah_name);
 --
 -- Table: acl_schemes
 --
-DROP TABLE acl_schemes;
+DROP TABLE IF EXISTS acl_schemes;
 
 CREATE TABLE acl_schemes (
   as_name varchar(32) NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE acl_schemes (
 --
 -- Table: acls
 --
-DROP TABLE acls;
+DROP TABLE IF EXISTS acls;
 
 CREATE TABLE acls (
   ac_id INTEGER PRIMARY KEY NOT NULL,
@@ -52,7 +52,7 @@ CREATE UNIQUE INDEX ac_name ON acls (ac_name);
 --
 -- Table: enctypes
 --
-DROP TABLE enctypes;
+DROP TABLE IF EXISTS enctypes;
 
 CREATE TABLE enctypes (
   en_name varchar(255) NOT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE enctypes (
 --
 -- Table: flags
 --
-DROP TABLE flags;
+DROP TABLE IF EXISTS flags;
 
 CREATE TABLE flags (
   fl_type varchar(16) NOT NULL,
@@ -74,7 +74,7 @@ CREATE TABLE flags (
 --
 -- Table: keytab_enctypes
 --
-DROP TABLE keytab_enctypes;
+DROP TABLE IF EXISTS keytab_enctypes;
 
 CREATE TABLE keytab_enctypes (
   ke_name varchar(255) NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE keytab_enctypes (
 --
 -- Table: keytab_sync
 --
-DROP TABLE keytab_sync;
+DROP TABLE IF EXISTS keytab_sync;
 
 CREATE TABLE keytab_sync (
   ks_name varchar(255) NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE keytab_sync (
 --
 -- Table: object_history
 --
-DROP TABLE object_history;
+DROP TABLE IF EXISTS object_history;
 
 CREATE TABLE object_history (
   oh_id INTEGER PRIMARY KEY NOT NULL,
@@ -117,7 +117,7 @@ CREATE INDEX object_history_idx_oh_type_oh_name ON object_history (oh_type, oh_n
 --
 -- Table: sync_targets
 --
-DROP TABLE sync_targets;
+DROP TABLE IF EXISTS sync_targets;
 
 CREATE TABLE sync_targets (
   st_name varchar(255) NOT NULL,
@@ -127,7 +127,7 @@ CREATE TABLE sync_targets (
 --
 -- Table: types
 --
-DROP TABLE types;
+DROP TABLE IF EXISTS types;
 
 CREATE TABLE types (
   ty_name varchar(16) NOT NULL,
@@ -138,7 +138,7 @@ CREATE TABLE types (
 --
 -- Table: acl_entries
 --
-DROP TABLE acl_entries;
+DROP TABLE IF EXISTS acl_entries;
 
 CREATE TABLE acl_entries (
   ae_id integer NOT NULL,
@@ -156,7 +156,7 @@ CREATE INDEX acl_entries_idx_ae_id ON acl_entries (ae_id);
 --
 -- Table: objects
 --
-DROP TABLE objects;
+DROP TABLE IF EXISTS objects;
 
 CREATE TABLE objects (
   ob_type varchar(16) NOT NULL,
@@ -205,7 +205,7 @@ CREATE INDEX objects_idx_ob_type ON objects (ob_type);
 --
 -- Table: duo
 --
-DROP TABLE duo;
+DROP TABLE IF EXISTS duo;
 
 CREATE TABLE duo (
   du_name varchar(255) NOT NULL,
