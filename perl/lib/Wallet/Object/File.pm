@@ -81,9 +81,13 @@ sub rename {
         $object->ob_name ($new_name);
 
         # Update the file to the path for the new name, and die if we can't.
-        $self->{name} = $new_name;
-        my $new_path = $self->file_path;
-        move($old_path, $new_path) or die $!;
+        # If the old path isn't there, then assume we haven't yet stored and
+        # keep going.
+        if ($old_path) {
+            $self->{name} = $new_name;
+            my $new_path = $self->file_path;
+            move($old_path, $new_path) or die $!;
+        }
 
         $object->update;
         $guard->commit;

@@ -255,7 +255,7 @@ sub rename {
     my $host = $self->{host};
 
     # Currently we only can rename file objects.
-    if (type ne 'file') {
+    if ($type ne 'file') {
         $self->error ('rename is only supported for file objects');
         return;
     }
@@ -282,7 +282,7 @@ sub rename {
     }
 
     # Rename the object.
-    $object = eval { $class->rename ($type, $name, $schema, $user, $host) };
+    eval { $object->rename ($new_name, $schema, $user, $host) };
     if ($@) {
         $self->error ($@);
         return;
