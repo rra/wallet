@@ -18,6 +18,7 @@ use warnings;
 use vars qw(@ISA $VERSION);
 
 use Digest::MD5 qw(md5_hex);
+use File::Copy qw(move);
 use Wallet::Config ();
 use Wallet::Object::Base;
 
@@ -53,6 +54,55 @@ sub file_path {
         return;
     }
     return "$Wallet::Config::FILE_BUCKET/$hash/$name";
+}
+
+# Rename a file object.  This includes renaming both the object itself, and
+# updating the file location for that object.
+sub rename {
+    my ($self, $new_name, $user, $host, $time) = @_;
+    $time ||= time;
+
+    my $old_name = $self->{name};
+    my $type     = $self->{type};
+    my $schema   = $self->{schema};
+    my $old_path = $self->file_path;
+
+    eval {
+
+        # Find the current object record.
+        my $guard = $schema->txn_scope_guard;
+        my %search = (ob_type => $type,
+                      ob_name => $old_name);
+        my $object = $schema->resultset('Object')->find (\%search);
+        die "cannot find ${type}:${old_name}\n"
+            unless ($object and $object->ob_name eq $old_name);
+
+        # Update the object name but don't yet commit.
+        $object->ob_name ($new_name);
+
+        # Update the file to the path for the new name, and die if we can't.
+        $self->{name} = $new_name;
+        my $new_path = $self->file_path;
+        move($old_path, $new_path) or die $!;
+
+        $object->update;
+        $guard->commit;
+    };
+    if ($@) {
+        $self->{name} = $old_name;
+        $self->error ("cannot rename object $type $old_name: $!");
+        return;
+    }
+
+    eval {
+        $self->log_set ('name', $old_name, $new_name, $user, $host, $time);
+    };
+    if ($@) {
+        $self->error ("object $type $old_name was renamed but not logged: $!");
+        return 1;
+    }
+
+    return 1;
 }
 
 ##############################################################################
@@ -145,7 +195,7 @@ API HOSTNAME DATETIME keytab remctld backend nul Allbery wallet-backend
 
     my @name = qw(file mysql-lsdb)
     my @trace = ($user, $host, time);
-    my $object = Wallet::Object::Keytab->create (@name, $schema, @trace);
+    my $object = Wallet::Object::File->create (@name, $schema, @trace);
     unless ($object->store ("the-password\n")) {
         die $object->error, "\n";
     }
