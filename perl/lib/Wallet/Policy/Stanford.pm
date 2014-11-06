@@ -176,7 +176,7 @@ sub _host_for_keytab {
 
 # Map a duo-type object name to a hostname.  Currently all Duo objects are
 # named just for the hostname, so this is easy.
-sub _host_for_file {
+sub _host_for_duo {
     my ($name) = @_;
     return $name;
 }
