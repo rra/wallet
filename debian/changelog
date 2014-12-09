@@ -5,6 +5,7 @@ wallet (1.2-1) UNRELEASED; urgency=medium
     - New rename command for file objects.
   * Add a gbp.conf file to reflect the branch layout and settings of the
     normal packaging repository.
+  * Update standards version to 3.9.6 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Mon, 08 Dec 2014 21:00:34 -0800
 
