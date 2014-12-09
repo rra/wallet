@@ -45,9 +45,19 @@ __PACKAGE__->table("duo");
 __PACKAGE__->add_columns(
   "du_name",
   { data_type => "varchar", is_nullable => 0, size => 255 },
+  "du_type",
+  { data_type => "varchar", is_nullable => 0, size => 16 },
   "du_key",
   { data_type => "varchar", is_nullable => 0, size => 255 },
 );
-__PACKAGE__->set_primary_key("du_name");
+__PACKAGE__->set_primary_key("du_name", "du_type");
 
+__PACKAGE__->belongs_to(
+                        'object',
+                        'Wallet::Schema::Result::Object',
+                        {
+                            'foreign.ob_type' => 'self.du_type',
+                            'foreign.ob_name' => 'self.du_name',
+                        },
+                       );
 1;

@@ -26,8 +26,11 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/lib/Wallet/Config.pm perl/lib/Wallet/Database.pm		    \
 	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/Heimdal.pm	    \
 	perl/lib/Wallet/Kadmin/MIT.pm perl/lib/Wallet/Object/Base.pm	    \
-	perl/lib/Wallet/Object/Duo.pm perl/lib/Wallet/Object/File.pm	    \
-	perl/lib/Wallet/Object/Keytab.pm				    \
+	perl/lib/Wallet/Object/Duo.pm					    \
+	perl/lib/Wallet/Object/Duo/LDAPProxy.pm				    \
+	perl/lib/Wallet/Object/Duo/PAM.pm perl/lib/Wallet/Object/Duo/RDP.pm \
+	perl/lib/Wallet/Object/Duo/RadiusProxy.pm			    \
+	perl/lib/Wallet/Object/File.pm perl/lib/Wallet/Object/Keytab.pm	    \
 	perl/lib/Wallet/Object/WAKeyring.pm				    \
 	perl/lib/Wallet/Policy/Stanford.pm perl/lib/Wallet/Report.pm	    \
 	perl/lib/Wallet/Schema.pm perl/lib/Wallet/Server.pm		    \
@@ -56,15 +59,26 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/sql/Wallet-Schema-0.08-SQLite.sql				    \
 	perl/sql/Wallet-Schema-0.09-MySQL.sql				    \
 	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql			    \
-	perl/sql/Wallet-Schema-0.09-SQLite.sql perl/t/data/README	    \
-	perl/t/data/duo/integration.json perl/t/data/duo/keys.json	    \
+	perl/sql/Wallet-Schema-0.09-SQLite.sql				    \
+	perl/sql/Wallet-Schema-0.09-0.10-MySQL.sql			    \
+	perl/sql/Wallet-Schema-0.09-0.10-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.09-0.10-SQLite.sql			    \
+	perl/sql/Wallet-Schema-0.10-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.10-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.10-SQLite.sql perl/t/data/README	    \
+	perl/t/data/duo/integration.json				    \
+	perl/t/data/duo/integration-ldap.json				    \
+	perl/t/data/duo/integration-radius.json				    \
+	perl/t/data/duo/integration-rdp.json perl/t/data/duo/keys.json	    \
 	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
 	perl/t/data/netdb-fake perl/t/data/netdb.conf perl/t/data/perl.conf \
 	perl/t/docs/pod-spelling.t perl/t/docs/pod.t perl/t/general/acl.t   \
 	perl/t/general/admin.t perl/t/general/config.t			    \
 	perl/t/general/init.t perl/t/general/report.t			    \
 	perl/t/general/server.t perl/t/lib/Util.pm perl/t/object/base.t	    \
-	perl/t/object/duo.t perl/t/object/file.t perl/t/object/keytab.t	    \
+	perl/t/object/duo.t perl/t/object/duo-ldap.t			    \
+	perl/t/object/duo-pam.t perl/t/object/duo-radius.t		    \
+	perl/t/object/duo-rdp.t perl/t/object/file.t perl/t/object/keytab.t \
 	perl/t/object/wa-keyring.t perl/t/policy/stanford.t		    \
 	perl/t/style/minimum-version.t perl/t/style/strict.t		    \
 	perl/t/util/kadmin.t perl/t/verifier/basic.t			    \
@@ -72,14 +86,14 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 
 # Directories that have to be created in builddir != srcdir builds before
 # copying PERL_FILES over.
-PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	\
-	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		\
-	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		\
-	perl/lib/Wallet/Object perl/lib/Wallet/Policy			\
-	perl/lib/Wallet/Schema perl/lib/Wallet/Schema/Result perl/sql	\
-	perl/t perl/t/data perl/t/data/duo perl/t/docs perl/t/general	\
-	perl/t/lib perl/t/object perl/t/policy perl/t/style perl/t/util	\
-	perl/t/verifier
+PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	    \
+	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		    \
+	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		    \
+	perl/lib/Wallet/Object perl/lib/Wallet/Object/Duo		    \
+	perl/lib/Wallet/Policy perl/lib/Wallet/Schema			    \
+	perl/lib/Wallet/Schema/Result perl/sql perl/t perl/t/data	    \
+	perl/t/data/duo perl/t/docs perl/t/general perl/t/lib perl/t/object \
+	perl/t/policy perl/t/style perl/t/util perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
@@ -205,9 +219,8 @@ perl/blib/lib/Wallet/Config.pm: $(srcdir)/perl/lib/Wallet/Config.pm
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done ;							\
 	fi
-	mkdir perl/t/lib/Test
+	$(MKDIR_P) perl/t/lib/Test/RRA
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA.pm perl/t/lib/Test/
-	mkdir perl/t/lib/Test/RRA
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA/Config.pm \
 	    perl/t/lib/Test/RRA/
 	cd perl && perl Build.PL $(WALLET_PERL_FLAGS)

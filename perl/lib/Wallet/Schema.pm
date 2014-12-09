@@ -18,7 +18,7 @@ use base 'DBIx::Class::Schema';
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 __PACKAGE__->load_namespaces;
 __PACKAGE__->load_components (qw/Schema::Versioned/);

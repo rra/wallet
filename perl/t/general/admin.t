@@ -69,7 +69,7 @@ is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
 SKIP: {
     my @path = (split (':', $ENV{PATH}));
     my ($sqlite) = grep { -x $_ } map { "$_/sqlite3" } @path;
-    skip 'sqlite3 not found', 5 unless $sqlite;
+    skip 'sqlite3 not found', 7 unless $sqlite;
 
     # Delete all tables and then redump them straight from the SQL file to
     # avoid getting the version table.
