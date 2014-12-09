@@ -86,14 +86,14 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 
 # Directories that have to be created in builddir != srcdir builds before
 # copying PERL_FILES over.
-PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	\
-	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		\
-	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		\
-	perl/lib/Wallet/Object perl/lib/Wallet/Policy			\
-	perl/lib/Wallet/Schema perl/lib/Wallet/Schema/Result perl/sql	\
-	perl/t perl/t/data perl/t/data/duo perl/t/docs perl/t/general	\
-	perl/t/lib perl/t/object perl/t/policy perl/t/style perl/t/util	\
-	perl/t/verifier
+PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	    \
+	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		    \
+	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		    \
+	perl/lib/Wallet/Object perl/lib/Wallet/Object/Duo		    \
+	perl/lib/Wallet/Policy perl/lib/Wallet/Schema			    \
+	perl/lib/Wallet/Schema/Result perl/sql perl/t perl/t/data	    \
+	perl/t/data/duo perl/t/docs perl/t/general perl/t/lib perl/t/object \
+	perl/t/policy perl/t/style perl/t/util perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
