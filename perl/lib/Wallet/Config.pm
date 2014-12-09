@@ -217,9 +217,9 @@ our $DUO_KEY_FILE;
 
 =item DUO_TYPE
 
-The type of integration to create.  Currently, only one type of integration
-can be created by one wallet configuration.  This restriction may be relaxed
-in the future.  The default value is C<unix> to create UNIX integrations.
+The type of integration to create.  The default value is C<unix> to create
+UNIX integrations, since this was the first integration created and users
+may rely on it to still be the default.
 
 =cut
 

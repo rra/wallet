@@ -244,6 +244,52 @@ sub autocreate {
     return 1;
 }
 
+# Rename an object.  We validate that the new name also falls within naming
+# constraints, then need to change all references to that.  If any updates
+# fail, we'll revert the entire commit.
+sub rename {
+    my ($self, $type, $name, $new_name) = @_;
+
+    my $schema = $self->{schema};
+    my $user = $self->{user};
+    my $host = $self->{host};
+
+    # Currently we only can rename file objects.
+    if ($type ne 'file') {
+        $self->error ('rename is only supported for file objects');
+        return;
+    }
+
+    # Validate the new name.
+    if (defined (&Wallet::Config::verify_name)) {
+        my $error = Wallet::Config::verify_name ($type, $new_name, $user);
+        if ($error) {
+            $self->error ("${type}:${name} rejected: $error");
+            return;
+        }
+    }
+
+    # Get the object and error if it does not already exist.
+    my $class = $self->type_mapping ($type);
+    unless ($class) {
+        $self->error ("unknown object type $type");
+        return;
+    }
+    my $object = eval { $class->new ($type, $name, $schema) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+
+    # Rename the object.
+    eval { $object->rename ($new_name, $schema, $user, $host) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+    return $object;
+}
+
 # Given the name and type of an object, returns a Perl object representing it
 # or returns undef and sets the internal error.
 sub retrieve {

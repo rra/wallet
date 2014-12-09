@@ -187,7 +187,7 @@ sub log_set {
     }
     my %fields = map { $_ => 1 }
         qw(owner acl_get acl_store acl_show acl_destroy acl_flags expires
-           comment flags type_data);
+           comment flags type_data name);
     unless ($fields{$field}) {
         die "invalid history field $field";
     }

@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use POSIX qw(strftime);
-use Test::More tests => 56;
+use Test::More tests => 60;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -101,9 +101,15 @@ is ($object->error, 'data exceeds maximum of 1024 bytes',
 is ($object->store ('', @trace), 1, 'Storing the empty object works');
 is ($object->get (@trace), '', ' and get returns the right thing');
 
+# Test renaming a file object.
+is ($object->rename ('test-rename', @trace), 1, 'Renaming the object works');
+is ($object->{name}, 'test-rename', ' and the object is renamed');
+ok (-f 'test-files/2b/test-rename', ' and the file is in the new location');
+ok (! -f 'test-files/09/test', ' and nothing is in the old location');
+
 # Test destruction.
 is ($object->destroy (@trace), 1, 'Destroying the object works');
-ok (! -f 'test-files/09/test', ' and the file is gone');
+ok (! -f 'test-files/2b/test-rename', ' and the file is gone');
 
 # Now try some aggressive names.
 $object = eval {
