@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Tests for the Duo integration object implementation.
+# Tests for the Duo Auth proxy Radius integration object implementation.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2014
@@ -26,7 +26,7 @@ BEGIN {
 BEGIN {
     use_ok('Wallet::Admin');
     use_ok('Wallet::Config');
-    use_ok('Wallet::Object::Duo');
+    use_ok('Wallet::Object::Duo::RadiusProxy');
 }
 
 use lib 't/lib';
@@ -53,14 +53,17 @@ my $mock = Net::Duo::Mock::Agent->new ({ key_file => 't/data/duo/keys.json' });
 
 # Test error handling in the absence of configuration.
 my $object = eval {
-    Wallet::Object::Duo->new ('duo', 'test', $schema);
+    Wallet::Object::Duo::RadiusProxy->new ('duo-raduys', 'test', $schema);
 };
-is ($object, undef, 'Wallet::Object::Duo new with no config failed');
+is ($object, undef,
+    'Wallet::Object::Duo::RadiusProxy new with no config failed');
 is ($@, "duo object implementation not configured\n", '...with correct error');
 $object = eval {
-    Wallet::Object::Duo->create ('duo', 'test', $schema, @trace);
+    Wallet::Object::Duo::RadiusProxy->create ('duo-radius', 'test', $schema,
+                                              @trace);
 };
-is ($object, undef, 'Wallet::Object::Duo creation with no config failed');
+is ($object, undef,
+    'Wallet::Object::Duo::RadiusProxy creation with no config failed');
 is ($@, "duo object implementation not configured\n", '...with correct error');
 
 # Set up the Duo configuration.
@@ -70,24 +73,25 @@ $Wallet::Config::DUO_KEY_FILE = 't/data/duo/keys.json';
 # Test creating an integration.
 note ('Test creating an integration');
 my $expected = {
-    name  => 'test (unix)',
+    name  => 'test (radius)',
     notes => 'Managed by wallet',
-    type  => 'unix',
+    type  => 'radius',
 };
 $mock->expect (
     {
         method        => 'POST',
         uri           => '/admin/v1/integrations',
         content       => $expected,
-        response_file => 't/data/duo/integration.json',
+        response_file => 't/data/duo/integration-radius.json',
     }
 );
-$object = Wallet::Object::Duo->create ('duo', 'test', $schema, @trace);
-isa_ok ($object, 'Wallet::Object::Duo');
+$object = Wallet::Object::Duo::RadiusProxy->create ('duo-radius', 'test',
+                                                    $schema, @trace);
+isa_ok ($object, 'Wallet::Object::Duo::RadiusProxy');
 
 # Check the metadata about the new wallet object.
 $expected = <<"EOO";
-           Type: duo
+           Type: duo-radius
            Name: test
         Duo key: DIRWIH0ZZPV4G88B37VQ
      Created by: $user
@@ -102,15 +106,17 @@ $mock->expect (
     {
         method        => 'GET',
         uri           => '/admin/v1/integrations/DIRWIH0ZZPV4G88B37VQ',
-        response_file => 't/data/duo/integration.json',
+        response_file => 't/data/duo/integration-radius.json',
     }
 );
 my $data = $object->get (@trace);
 ok (defined ($data), 'Retrieval succeeds');
 $expected = <<'EOO';
-Integration key: DIRWIH0ZZPV4G88B37VQ
-Secret key:      QO4ZLqQVRIOZYkHfdPDORfcNf8LeXIbCWwHazY7o
-Host:            example-admin.duosecurity.com
+[radius_server_challenge]
+ikey     = DIRWIH0ZZPV4G88B37VQ
+skey     = QO4ZLqQVRIOZYkHfdPDORfcNf8LeXIbCWwHazY7o
+api_host = example-admin.duosecurity.com
+client   = radius_client
 EOO
 is ($data, $expected, '...and integration data is correct');
 
@@ -118,13 +124,14 @@ is ($data, $expected, '...and integration data is correct');
 is ($object->flag_set ('locked', @trace), 1,
     'Setting object to locked succeeds');
 is ($object->get, undef, '...and now get fails');
-is ($object->error, 'cannot get duo:test: object is locked',
+is ($object->error, 'cannot get duo-radius:test: object is locked',
     '...with correct error');
 is ($object->flag_clear ('locked', @trace), 1,
     '...and clearing locked flag works');
 
 # Create a new object by wallet type and name.
-$object = Wallet::Object::Duo->new ('duo', 'test', $schema);
+$object = Wallet::Object::Duo::RadiusProxy->new ('duo-radius', 'test',
+                                                 $schema);
 
 # Test deleting an integration.  We can't test this entirely properly because
 # currently Net::Duo::Mock::Agent doesn't support stacking multiple expected
@@ -141,7 +148,9 @@ TODO: {
     local $TODO = 'Net::Duo::Mock::Agent not yet capable';
 
     is ($object->destroy (@trace), 1, 'Duo object deletion succeeded');
-    $object = eval { Wallet::Object::Duo->new ('duo', 'test', $schema) };
+    $object = eval {
+        Wallet::Object::Duo::RadiusProxy->new ('duo-radius', 'test', $schema);
+    };
     is ($object, undef, '...and now object cannot be retrieved');
     is ($@, "cannot find duo:test\n", '...with correct error');
 }

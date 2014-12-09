@@ -287,6 +287,9 @@ sub command {
                 failure ($server->error, @_);
             }
         }
+    } elsif ($command eq 'rename') {
+        check_args (3, 3, [], @args);
+        $server->rename (@args) or failure ($server->error, @_);
     } elsif ($command eq 'setacl') {
         check_args (4, 4, [], @args);
         $server->acl (@args) or failure ($server->error, @_);
@@ -551,6 +554,12 @@ result will be the name of an ACL.
 If <owner> is given, sets the owner of the object identified by <type> and
 <name> to <owner>.  If <owner> is the empty string, clears the owner of
 the object.
+
+=item rename <type> <name> <new-name>
+
+Renames an existing object.  This currently only supports file objects,
+where it renames the object itself, then the name and location of the
+object in the file store.
 
 =item setacl <type> <name> <acl> <id>
 

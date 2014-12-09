@@ -1,0 +1,11 @@
+{
+    "enroll_policy": "enroll",
+    "greeting": "",
+    "groups_allowed": [],
+    "integration_key": "DIRWIH0ZZPV4G88B37VQ",
+    "name": "Integration for Radius proxy",
+    "notes": "",
+    "secret_key": "QO4ZLqQVRIOZYkHfdPDORfcNf8LeXIbCWwHazY7o",
+    "type": "rdp",
+    "visual_style": "default"
+}
