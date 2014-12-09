@@ -1,5 +1,8 @@
-wallet (1.1-2) UNRELEASED; urgency=medium
+wallet (1.2-1) UNRELEASED; urgency=medium
 
+  * New upstream release.
+    - New object types duo-radius, duo-ldap, and duo-rdp.
+    - New rename command for file objects.
   * Add a gbp.conf file to reflect the branch layout and settings of the
     normal packaging repository.
 
