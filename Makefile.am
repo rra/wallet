@@ -26,8 +26,11 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/lib/Wallet/Config.pm perl/lib/Wallet/Database.pm		    \
 	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/Heimdal.pm	    \
 	perl/lib/Wallet/Kadmin/MIT.pm perl/lib/Wallet/Object/Base.pm	    \
-	perl/lib/Wallet/Object/Duo.pm perl/lib/Wallet/Object/File.pm	    \
-	perl/lib/Wallet/Object/Keytab.pm				    \
+	perl/lib/Wallet/Object/Duo.pm					    \
+	perl/lib/Wallet/Object/Duo/LDAPProxy.pm				    \
+	perl/lib/Wallet/Object/Duo/PAM.pm perl/lib/Wallet/Object/Duo/RDP.pm \
+	perl/lib/Wallet/Object/Duo/RadiusProxy.pm			    \
+	perl/lib/Wallet/Object/File.pm perl/lib/Wallet/Object/Keytab.pm	    \
 	perl/lib/Wallet/Object/WAKeyring.pm				    \
 	perl/lib/Wallet/Policy/Stanford.pm perl/lib/Wallet/Report.pm	    \
 	perl/lib/Wallet/Schema.pm perl/lib/Wallet/Server.pm		    \
@@ -56,15 +59,26 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/sql/Wallet-Schema-0.08-SQLite.sql				    \
 	perl/sql/Wallet-Schema-0.09-MySQL.sql				    \
 	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql			    \
-	perl/sql/Wallet-Schema-0.09-SQLite.sql perl/t/data/README	    \
-	perl/t/data/duo/integration.json perl/t/data/duo/keys.json	    \
+	perl/sql/Wallet-Schema-0.09-SQLite.sql				    \
+	perl/sql/Wallet-Schema-0.09-0.10-MySQL.sql			    \
+	perl/sql/Wallet-Schema-0.09-0.10-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.09-0.10-SQLite.sql			    \
+	perl/sql/Wallet-Schema-0.10-MySQL.sql				    \
+	perl/sql/Wallet-Schema-0.10-PostgreSQL.sql			    \
+	perl/sql/Wallet-Schema-0.10-SQLite.sql perl/t/data/README	    \
+	perl/t/data/duo/integration.json				    \
+	perl/t/data/duo/integration-ldap.json				    \
+	perl/t/data/duo/integration-radius.json				    \
+	perl/t/data/duo/integration-rdp.json perl/t/data/duo/keys.json	    \
 	perl/t/data/keytab-fake perl/t/data/keytab.conf			    \
 	perl/t/data/netdb-fake perl/t/data/netdb.conf perl/t/data/perl.conf \
 	perl/t/docs/pod-spelling.t perl/t/docs/pod.t perl/t/general/acl.t   \
 	perl/t/general/admin.t perl/t/general/config.t			    \
 	perl/t/general/init.t perl/t/general/report.t			    \
 	perl/t/general/server.t perl/t/lib/Util.pm perl/t/object/base.t	    \
-	perl/t/object/duo.t perl/t/object/file.t perl/t/object/keytab.t	    \
+	perl/t/object/duo.t perl/t/object/duo-ldap.t			    \
+	perl/t/object/duo-pam.t perl/t/object/duo-radius.t		    \
+	perl/t/object/duo-rdp.t perl/t/object/file.t perl/t/object/keytab.t \
 	perl/t/object/wa-keyring.t perl/t/policy/stanford.t		    \
 	perl/t/style/minimum-version.t perl/t/style/strict.t		    \
 	perl/t/util/kadmin.t perl/t/verifier/basic.t			    \
