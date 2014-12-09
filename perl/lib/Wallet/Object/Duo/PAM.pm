@@ -101,7 +101,7 @@ Allbery Duo integration DBH keytab
 
 =head1 NAME
 
-Wallet::Object::Duo::PAM -- Duo PAM int. object implementation for wallet
+Wallet::Object::Duo::PAM - Duo PAM int. object implementation for wallet
 
 =head1 SYNOPSIS
 

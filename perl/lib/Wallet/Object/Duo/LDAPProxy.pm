@@ -100,7 +100,7 @@ Allbery Duo integration DBH keytab LDAP auth
 
 =head1 NAME
 
-Wallet::Object::Duo::LDAPProxy -- Duo auth proxy integration for LDAP
+Wallet::Object::Duo::LDAPProxy - Duo auth proxy integration for LDAP
 
 =head1 SYNOPSIS
 

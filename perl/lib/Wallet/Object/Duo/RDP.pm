@@ -101,7 +101,7 @@ Allbery Duo integration DBH keytab RDP
 
 =head1 NAME
 
-Wallet::Object::Duo::RDP -- Duo RDP int. object implementation for wallet
+Wallet::Object::Duo::RDP - Duo RDP int. object implementation for wallet
 
 =head1 SYNOPSIS
 

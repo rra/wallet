@@ -101,7 +101,7 @@ Allbery Duo integration DBH keytab auth
 
 =head1 NAME
 
-Wallet::Object::Duo::RadiusProxy -- Duo auth proxy integration for RADIUS
+Wallet::Object::Duo::RadiusProxy - Duo auth proxy integration for RADIUS
 
 =head1 SYNOPSIS
 
