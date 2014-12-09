@@ -1,19 +1,23 @@
                        User-Visible wallet Changes
 
-wallet 1.2 (2014-10-08)
+wallet 1.2 (2014-12-08)
 
     The duo object type has been split into several sub-types, each for a
     specific type of Duo integration.  The old type's functionality has
     been moved to duo-pam (Wallet::Object::Duo::PAM), and new types are
-    supported for Duo's auth proxy configurations for LDAP and Radius,
-    and their RDP configuration.  These types are duo-radius, duo-ldap,
-    and duo-rdp (Wallet::Object::Duo::RadiusProxy,
+    supported for Duo's auth proxy configurations for LDAP and Radius, and
+    their RDP configuration.  These types are duo-radius, duo-ldap, and
+    duo-rdp (Wallet::Object::Duo::RadiusProxy,
     Wallet::Object::Duo::LDAPProxy, and Wallet::Object::Duo::RDP).  The
-    old duo type still exists for compatability.
+    old duo type still exists for compatability.  To enable these object
+    types for an existing wallet database, use wallet-admin to register the
+    new object.
 
-    A rename command has been added for file type objects.  This will
-    change the name of the object itself, and move any stored data for the
-    file to the correct location for the new name.
+    New rename command for file type objects.  This will change the name
+    of the object itself and move any stored data for the file to the
+    correct location for the new name.  Currently, rename is only
+    supported for file objects, but may be supported by other backends in
+    the future.
 
 wallet 1.1 (2014-07-16)
 
