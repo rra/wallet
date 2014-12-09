@@ -24,6 +24,7 @@ AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_INSTALL
 AC_PROG_RANLIB
+AC_PROG_MKDIR_P
 
 dnl Allow modification of the default wallet port, and setting a default
 dnl wallet server when none is defined in krb5.conf.

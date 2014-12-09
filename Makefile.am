@@ -205,9 +205,8 @@ perl/blib/lib/Wallet/Config.pm: $(srcdir)/perl/lib/Wallet/Config.pm
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done ;							\
 	fi
-	mkdir perl/t/lib/Test
+	$(MKDIR_P) perl/t/lib/Test/RRA
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA.pm perl/t/lib/Test/
-	mkdir perl/t/lib/Test/RRA
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA/Config.pm \
 	    perl/t/lib/Test/RRA/
 	cd perl && perl Build.PL $(WALLET_PERL_FLAGS)
