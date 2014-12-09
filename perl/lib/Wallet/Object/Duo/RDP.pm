@@ -97,7 +97,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-Allbery Duo integration DBH keytab
+Allbery Duo integration DBH keytab RDP
 
 =head1 NAME
 

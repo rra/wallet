@@ -97,11 +97,11 @@ __END__
 ##############################################################################
 
 =for stopwords
-Allbery Duo integration DBH keytab
+Allbery Duo integration DBH keytab auth
 
 =head1 NAME
 
-Wallet::Object::Duo::RadiusProxy -- Duo auth proxy integration for radius
+Wallet::Object::Duo::RadiusProxy -- Duo auth proxy integration for RADIUS
 
 =head1 SYNOPSIS
 

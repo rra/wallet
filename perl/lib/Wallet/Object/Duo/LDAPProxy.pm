@@ -96,7 +96,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-Allbery Duo integration DBH keytab
+Allbery Duo integration DBH keytab LDAP auth
 
 =head1 NAME
 
