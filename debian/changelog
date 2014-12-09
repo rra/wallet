@@ -1,4 +1,4 @@
-wallet (1.2-1) UNRELEASED; urgency=medium
+wallet (1.2-1) unstable; urgency=medium
 
   * New upstream release.
     - New object types duo-radius, duo-ldap, and duo-rdp.
@@ -7,7 +7,7 @@ wallet (1.2-1) UNRELEASED; urgency=medium
     normal packaging repository.
   * Update standards version to 3.9.6 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Mon, 08 Dec 2014 21:00:34 -0800
+ -- Russ Allbery <rra@debian.org>  Mon, 08 Dec 2014 21:13:21 -0800
 
 wallet (1.1-1) unstable; urgency=medium
 
