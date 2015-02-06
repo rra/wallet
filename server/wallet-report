@@ -25,7 +25,8 @@ Wallet reporting help:
   objects flag <flag>           Objects with that flag set
   objects owner <owner>         Objects owned by that owner
   objects type <type>           Objects of that type
-  objects unused                Objects that have never been stored/gotten
+  objects unused                Objects that have never been gotten
+  objects unstored              Objects that have never been stored
   owners <type> <name>          All ACL entries owning matching objects
 EOH
 
@@ -219,6 +220,8 @@ Displays a summary of all available commands.
 =item objects type <type>
 
 =item objects unused
+
+=item objects unstored
 
 Returns a list of objects in the database.  Objects will be listed in the
 form:
