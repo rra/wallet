@@ -734,6 +734,36 @@ sub acl_rename {
     return 1;
 }
 
+# Move all ACLs owned by one ACL to another, or return undef and set the
+# internal error.
+sub acl_replace {
+    my ($self, $old_id, $replace_id) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($old_id, 'replace');
+        return;
+    }
+    my $acl = eval { Wallet::ACL->new ($old_id, $self->{schema}) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+    if ($acl->name eq 'ADMIN') {
+        $self->error ('cannot replace the ADMIN ACL');
+        return;
+    }
+    my $replace_acl = eval { Wallet::ACL->new ($replace_id, $self->{schema}) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+
+    unless ($acl->replace ($replace_id, $self->{user}, $self->{host})) {
+        $self->error ($acl->error);
+        return;
+    }
+    return 1;
+}
+
 # Destroy an ACL, deleting it out of the database.  Returns true on success.
 # On failure, returns undef, setting the internal error.
 sub acl_destroy {
@@ -941,6 +971,14 @@ objects will be unchanged.  The ADMIN ACL may not be renamed.  OLD may be
 either the current name or the numeric ID.  NEW must not be all-numeric.
 To rename an ACL, the current user must be authorized by the ADMIN ACL.
 Returns true on success and false on failure.
+
+=item acl_replace(OLD, NEW)
+
+Moves any object owned by the ACL identified by OLD to be instead owned by
+NEW.  This goes through all objects owned by OLD and individually changes
+the owner, along with history updates.  OLD and NEW may be either the name
+or the numeric ID.  To replace an ACL, the current user must be authorized
+by the ADMIN ACL.  Returns true on success and false on failure.
 
 =item acl_show(ID)
 

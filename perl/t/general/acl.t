@@ -12,11 +12,11 @@ use strict;
 use warnings;
 
 use POSIX qw(strftime);
-use Test::More tests => 101;
+use Test::More tests => 109;
 
 use Wallet::ACL;
 use Wallet::Admin;
-use Wallet::Server;
+use Wallet::Object::Base;
 
 use lib 't/lib';
 use Util;
@@ -46,7 +46,7 @@ $acl = eval { Wallet::ACL->create (3, $schema, @trace) };
 ok (!defined ($acl), 'Creating with a numeric name');
 is ($@, "ACL name may not be all numbers\n", ' with the right error message');
 $acl = eval { Wallet::ACL->create ('test', $schema, @trace) };
-ok (!defined ($acl), 'Creating a duplicate object');
+ok (!defined ($acl), 'Creating a duplicate acl');
 like ($@, qr/^cannot create ACL test: /, ' with the right error message');
 $acl = eval { Wallet::ACL->new ('test2', $schema) };
 ok (!defined ($acl), 'Searching for a non-existent ACL');
@@ -230,6 +230,64 @@ ok (defined ($acl), ' and creating another with the same name works');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');
 like ($acl->id, qr{\A[23]\z}, ' and an ID of 2 or 3');
+
+# Test replace. by creating three acls, then assigning two objects to the
+# first, one to the second, and another to the third.  Then replace the first
+# acl with the second, so that we can verify that multiple objects are moved,
+# that an object already belonging to the new acl is okay, and that the
+# objects with unrelated ACL are unaffected.
+my ($acl_old, $acl_new, $acl_other, $obj_old_one, $obj_old_two, $obj_new,
+    $obj_unrelated);
+eval {
+    $acl_old   = Wallet::ACL->create ('example-old', $schema, @trace);
+    $acl_new   = Wallet::ACL->create ('example-new', $schema, @trace);
+    $acl_other = Wallet::ACL->create ('example-other', $schema, @trace);
+};
+is ($@, '', 'ACLs needed for testing replace are created');
+eval {
+    $obj_old_one   = Wallet::Object::Base->create ('keytab',
+                                                   'service/test1@EXAMPLE.COM',
+                                                   $schema, @trace);
+    $obj_old_two   = Wallet::Object::Base->create ('keytab',
+                                                   'service/test2@EXAMPLE.COM',
+                                                   $schema, @trace);
+    $obj_new       = Wallet::Object::Base->create ('keytab',
+                                                   'service/test3@EXAMPLE.COM',
+                                                   $schema, @trace);
+    $obj_unrelated = Wallet::Object::Base->create ('keytab',
+                                                   'service/test4@EXAMPLE.COM',
+                                                   $schema, @trace);
+};
+is ($@, '', ' and so were needed objects');
+if ($obj_old_one->owner ('example-old', @trace)
+    && $obj_old_two->owner ('example-old', @trace)
+    && $obj_new->owner ('example-new', @trace)
+    && $obj_unrelated->owner ('example-other', @trace)) {
+
+    ok (1, ' and setting initial ownership on the objects succeeds');
+}
+is ($acl_old->replace('example-new', @trace), 1,
+    ' and replace ran successfully');
+eval {
+    $obj_old_one   = Wallet::Object::Base->new ('keytab',
+                                                'service/test1@EXAMPLE.COM',
+                                                $schema);
+    $obj_old_two   = Wallet::Object::Base->new ('keytab',
+                                                'service/test2@EXAMPLE.COM',
+                                                $schema);
+    $obj_new       = Wallet::Object::Base->new ('keytab',
+                                                'service/test3@EXAMPLE.COM',
+                                                $schema);
+    $obj_unrelated = Wallet::Object::Base->new ('keytab',
+                                                'service/test4@EXAMPLE.COM',
+                                                $schema);
+};
+is ($obj_old_one->owner, 'example-new', ' and first replace is correct');
+is ($obj_old_two->owner, 'example-new', ' and second replace is correct');
+is ($obj_new->owner, 'example-new',
+    ' and object already with new acl is correct');
+is ($obj_unrelated->owner, 'example-other',
+    ' and unrelated object ownership is correct');
 
 # Clean up.
 $setup->destroy;

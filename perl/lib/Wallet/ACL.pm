@@ -17,6 +17,7 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
+use Wallet::Object::Base;
 use DateTime;
 use DBI;
 
@@ -204,6 +205,32 @@ sub rename {
         return;
     }
     $self->{name} = $name;
+    return 1;
+}
+
+# Moves everything owned by one ACL to instead be owned by another.  You'll
+# normally want to use rename, but this exists for cases where the replacing
+# ACL already exists and has things assigned to it.  Returns true on success,
+# false on failure.
+sub replace {
+    my ($self, $replace_id, $user, $host, $time) = @_;
+    $time ||= time;
+
+    my %search = (ob_owner => $self->{id});
+    my @objects = $self->{schema}->resultset('Object')->search (\%search);
+    if (@objects) {
+        for my $object (@objects) {
+            my $type   = $object->ob_type;
+            my $name   = $object->ob_name;
+            my $object = eval {
+                Wallet::Object::Base->new($type, $name, $self->{schema});
+            };
+            $object->owner ($replace_id, $user, $host, $time);
+        }
+    } else {
+        $self->error ("no objects found for ACL $self->{id}");
+        return;
+    }
     return 1;
 }
 
@@ -642,6 +669,14 @@ system-generated ACL IDs.  Returns true on success and false on failure.
 On failure, the caller should call error() to get the error message.
 
 Note that rename() operations are not logged in the ACL history.
+
+=item replace(ID)
+
+Replace this ACL with another.  This goes through each object owned by
+the ACL and changes its ownership to the new ACL, leaving this acl owning
+nothing (and probably then needing to be deleted).  Returns true on
+success and false on failure.  On failure, the caller should call error()
+to get the error message.
 
 =item show()
 
