@@ -260,6 +260,49 @@ our $FILE_MAX_SIZE;
 
 =back
 
+=head1 PASSWORD OBJECT CONFIGURATION
+
+These configuration variables only need to be set if you intend to use the
+C<password> object type (the Wallet::Object::Password class).  You will also
+need to set the FILE_MAX_SIZE value from the file object configuration, as
+that is inherited.
+
+=over 4
+
+=item PWD_FILE_BUCKET
+
+The directory into which to store password objects.  Password objects will
+be stored in subdirectories of this directory.  See
+L<Wallet::Object::Password> for the full details of the naming scheme.  This
+directory must be writable by the wallet server and the wallet server must
+be able to create subdirectories of it.
+
+PWD_FILE_BUCKET must be set to use file objects.
+
+=cut
+
+our $PWD_FILE_BUCKET;
+
+=item PWD_LENGTH_MIN
+
+The minimum length for any auto-generated password objects created when get
+is run before data is stored.
+
+=cut
+
+our $PWD_LENGTH_MIN = 20;
+
+=item PWD_LENGTH_MAX
+
+The maximum length for any auto-generated password objects created when get
+is run before data is stored.
+
+=cut
+
+our $PWD_LENGTH_MAX = 21;
+
+=back
+
 =head1 KEYTAB OBJECT CONFIGURATION
 
 These configuration variables only need to be set if you intend to use the

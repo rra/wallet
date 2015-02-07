@@ -131,6 +131,7 @@ sub default_data {
                [ 'duo-radius', 'Wallet::Object::Duo::RadiusProxy' ],
                [ 'duo-rdp',    'Wallet::Object::Duo::RDP' ],
                [ 'file',       'Wallet::Object::File' ],
+               [ 'password',   'Wallet::Object::Password' ],
                [ 'keytab',     'Wallet::Object::Keytab' ],
                [ 'wa-keyring', 'Wallet::Object::WAKeyring' ]);
     ($r1) = $self->{schema}->resultset('Type')->populate (\@record);
