@@ -75,6 +75,16 @@ our %FILE_TYPE = (
     'tivoli-key'      => { host => 1 },
 );
 
+# Password object types.  Most of these mimic file object types (which should
+# be gradually phased out).
+our %PASSWORD_TYPE = (
+    'ipmi'            => { host => 1 },
+    'root'            => { host => 1 },
+    'tivoli'          => { host => 1 },
+    'system'          => { host => 1, extra => 1, need_extra => 1 },
+    'app'             => {            extra => 1 },
+);
+
 # Host-based file object types for the legacy file object naming scheme.
 our @FILE_HOST_LEGACY = qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key);
 
@@ -144,6 +154,17 @@ sub _host_for_file_legacy {
     return $host;
 }
 
+# Map a password object name to a hostname.  Returns undef if this password
+# object name doesn't map to a hostname.
+sub _host_for_password {
+    my ($name) = @_;
+
+    # Parse the name and check whether this is a host-based object.
+    my ($type, $host) = split('/', $name);
+    return if !$PASSWORD_TYPE{$type}{host};
+    return $host;
+}
+
 # Map a file object name to a hostname.  Returns undef if this file object
 # name doesn't map to a hostname.
 sub _host_for_file {
@@ -192,6 +213,7 @@ sub default_owner {
     my %host_for = (
         'keytab'     => \&_host_for_keytab,
         'file'       => \&_host_for_file,
+        'password'   => \&_host_for_password,
         'duo'        => \&_host_for_duo,
         'duo-pam'    => \&_host_for_duo,
         'duo-radius' => \&_host_for_duo,
@@ -242,7 +264,7 @@ sub default_owner {
 # hostnames, limit the acceptable characters for service/* keytabs, and
 # enforce our naming constraints on */cgi principals.
 #
-# Also use this function to require that IDG staff always do implicit object
+# Also use this function to require that ACS staff always do implicit object
 # creation using a */root instance.
 sub verify_name {
     my ($type, $name, $user) = @_;
@@ -363,6 +385,8 @@ sub verify_name {
                 return "missing component in $name";
             }
             return;
+
+
         } else {
             # Legacy naming scheme.
             my %groups = map { $_ => 1 } @GROUPS_LEGACY;
@@ -377,6 +401,71 @@ sub verify_name {
             } elsif ($name !~ /^$group_regex-.*-$type_regex(-.*)?$/) {
                 return "invalid file object name $name";
             }
+        }
+    }
+
+    # Check password object naming conventions.
+    if ($type eq 'password') {
+        if ($name =~ m{ / }xms) {
+            my @name = split('/', $name);
+
+            # Names have between two and four components and all must be
+            # non-empty.
+            if (@name > 4) {
+                return "too many components in $name";
+            }
+            if (@name < 2) {
+                return "too few components in $name";
+            }
+            if (grep { $_ eq q{} } @name) {
+                return "empty component in $name";
+            }
+
+            # All objects start with the type.  First check if this is a
+            # host-based type.
+            my $type = shift @name;
+            if ($PASSWORD_TYPE{$type} && $PASSWORD_TYPE{$type}{host}) {
+                my ($host, $extra) = @name;
+                if ($host !~ m{ [.] }xms) {
+                    return "host name $host is not fully qualified";
+                }
+                if (defined($extra) && !$PASSWORD_TYPE{$type}{extra}) {
+                    return "extraneous component at end of $name";
+                }
+                if (!defined($extra) && $PASSWORD_TYPE{$type}{need_extra}) {
+                    return "missing component in $name";
+                }
+                return;
+            }
+
+            # Otherwise, the name is group-based.  There be at least two
+            # remaining components.
+            if (@name < 2) {
+                return "too few components in $name";
+            }
+            my ($group, $service, $extra) = @name;
+
+            # Check the group.
+            if (!$ACL_FOR_GROUP{$group}) {
+                return "unknown group $group";
+            }
+
+            # Check the type.  Be sure it's not host-based.
+            if (!$PASSWORD_TYPE{$type}) {
+                return "unknown type $type";
+            }
+            if ($PASSWORD_TYPE{$type}{host}) {
+                return "bad name for host-based file type $type";
+            }
+
+            # Check the extra data.
+            if (defined($extra) && !$PASSWORD_TYPE{$type}{extra}) {
+                return "extraneous component at end of $name";
+            }
+            if (!defined($extra) && $PASSWORD_TYPE{$type}{need_extra}) {
+                return "missing component in $name";
+            }
+            return;
         }
     }
 
