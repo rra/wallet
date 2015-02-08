@@ -242,6 +242,48 @@ sub objects {
     return @objects;
 }
 
+# Returns a list of all object_history records stored in the wallet database
+# including all of their fields.  On error and for an empty database, the
+# empty list will be returned.  To distinguish between an empty list and an
+# error, call error(), which will return undef if there was no error.
+# Farms out specific statement to another subroutine for specific search
+# types, but each case should return ob_type and ob_name in that order.
+sub objects_history {
+    my ($self, $type, @args) = @_;
+    undef $self->{error};
+
+    # All fields in the order we want to see them.
+    my @fields = ('oh_on', 'oh_by', 'oh_type', 'oh_name', 'oh_action',
+                  'oh_from');
+
+    # Get the search and options array refs from specific functions.
+    my %search  = ();
+    my %options = (order_by => \@fields,
+                   select   => \@fields);
+
+    # Perform the search and return on any errors.
+    my @objects;
+    my $schema = $self->{schema};
+    eval {
+        my @objects_rs
+            = $schema->resultset('ObjectHistory')->search (\%search,
+                                                           \%options);
+        for my $object_rs (@objects_rs) {
+            my @rec;
+            for my $field (@fields) {
+                push (@rec, $object_rs->get_column($field));
+            }
+            push (@objects, \@rec);
+        }
+    };
+    if ($@) {
+        $self->error ("cannot list objects: $@");
+        return;
+    }
+
+    return @objects;
+}
+
 ##############################################################################
 # ACL reports
 ##############################################################################

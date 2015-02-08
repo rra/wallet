@@ -23,6 +23,7 @@ Wallet reporting help:
   objects                       All objects
   objects acl <acl>             Objects granting permissions to that ACL
   objects flag <flag>           Objects with that flag set
+  objects history               History of all objects
   objects owner <owner>         Objects owned by that owner
   objects type <type>           Objects of that type
   objects unused                Objects that have never been gotten
@@ -75,7 +76,12 @@ sub command {
         print $HELP;
     } elsif ($command eq 'objects') {
         die "too many arguments to objects\n" if @args > 2;
-        my @objects = $report->objects (@args);
+        my @objects;
+        if (@args && $args[0] eq 'history') {
+            @objects = $report->objects_history (@args);
+        } else {
+            @objects = $report->objects (@args);
+        }
         if (!@objects and $report->error) {
             die $report->error, "\n";
         }
