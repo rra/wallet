@@ -285,6 +285,27 @@ sub objects_history {
 }
 
 ##############################################################################
+# Type reports
+##############################################################################
+
+# Return an alphabetical list of all valid types set up, along with the class
+# that they belong to.
+sub types {
+    my ($self) = @_;
+
+    my (@types);
+    my @types_rs = $self->{schema}->resultset('Type')->all;
+    for my $type_rs (@types_rs) {
+        my $name  = $type_rs->ty_name;
+        my $class = $type_rs->ty_class;
+        push(@types, [ $name, $class ]);
+    }
+
+    @types = sort { $a->[0] cmp $b->[0] } @types;
+    return @types;
+}
+
+##############################################################################
 # ACL reports
 ##############################################################################
 
@@ -525,6 +546,23 @@ sub owners {
         return;
     }
     return @owners;
+}
+
+# Return an alphabetical list of all valid types set up, along with the class
+# that they belong to.
+sub acl_schemes {
+    my ($self) = @_;
+
+    my (@schemes);
+    my @acls_rs = $self->{schema}->resultset('AclScheme')->all;
+    for my $acl_rs (@acls_rs) {
+        my $name  = $acl_rs->as_name;
+        my $class = $acl_rs->as_class;
+        push(@schemes, [ $name, $class ]);
+    }
+
+    @schemes = sort { $a->[0] cmp $b->[0] } @schemes;
+    return @schemes;
 }
 
 ##############################################################################

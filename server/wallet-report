@@ -29,6 +29,8 @@ Wallet reporting help:
   objects unused                Objects that have never been gotten
   objects unstored              Objects that have never been stored
   owners <type> <name>          All ACL entries owning matching objects
+  schemes                       All configured ACL schemes
+  types                         All configured wallet types
 EOH
 
 ##############################################################################
@@ -98,6 +100,20 @@ sub command {
         for my $entry (@entries) {
             print join (' ', @$entry), "\n";
         }
+    } elsif ($command eq 'schemes') {
+        die "too many arguments to schemes\n" if @args > 0;
+        my @schemes = $report->acl_schemes;
+        for my $entry (@schemes) {
+            print join (' ', @$entry), "\n";
+        }
+
+    } elsif ($command eq 'types') {
+        die "too many arguments to types\n" if @args > 0;
+        my @types = $report->types;
+        for my $entry (@types) {
+            print join (' ', @$entry), "\n";
+        }
+
     } else {
         die "unknown command $command\n";
     }
