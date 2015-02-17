@@ -82,7 +82,8 @@ our %PASSWORD_TYPE = (
     'root'            => { host => 1 },
     'tivoli'          => { host => 1 },
     'system'          => { host => 1, extra => 1, need_extra => 1 },
-    'app'             => {            extra => 1 },
+    'app'             => { host => 1, extra => 1, need_extra => 1 },
+    'service'         => {            extra => 1, need_extra => 1 },
 );
 
 # Host-based file object types for the legacy file object naming scheme.
