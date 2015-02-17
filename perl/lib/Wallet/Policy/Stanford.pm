@@ -68,6 +68,7 @@ our %FILE_TYPE = (
     properties        => {            extra => 1 },
     'ssh-dsa'         => { host => 1, extra => 1 },
     'ssh-rsa'         => { host => 1, extra => 1 },
+    'ssl-chain'       => { host => 1, extra => 1 },
     'ssl-key'         => { host => 1, extra => 1 },
     'ssl-keypair'     => { host => 1, extra => 1 },
     'ssl-keystore'    => {            extra => 1 },
