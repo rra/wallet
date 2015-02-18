@@ -315,6 +315,14 @@ sub command {
         }
         splice (@_, 3);
         $server->store (@args) or failure ($server->error, @_);
+    } elsif ($command eq 'update') {
+        check_args (2, 2, [], @args);
+        my $output = $server->update (@args);
+        if (defined $output) {
+            print $output;
+        } else {
+            failure ($server->error, @_);
+        }
     } else {
         error "unknown command $command";
     }
@@ -610,6 +618,14 @@ stored, and last downloaded.
 Stores <data> for the object identified by <type> and <name> for later
 retrieval with C<get>.  Not all object types support this.  If <data> is
 not given as an argument, it will be read from standard input.
+
+=item update <type> <name>
+
+Prints to standard output the data associated with the object identified
+by <type> and <name>.  If the object is one that can have changing
+information, such as a keytab or password, then we generate new data for
+that object regardless of whether there is current data or the unchanging
+flag is set.
 
 =back
 

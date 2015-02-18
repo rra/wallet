@@ -13,7 +13,7 @@ use strict;
 use warnings;
 
 use POSIX qw(strftime);
-use Test::More tests => 31;
+use Test::More tests => 33;
 
 use Wallet::Admin;
 use Wallet::Config;
@@ -110,6 +110,12 @@ is ($object->store ("bar\n\0baz\n", @trace), 1, ' but storing again works');
 ok (-f 'test-files/09/test', ' and the file exists');
 is (contents ('test-files/09/test'), 'bar', ' with the right contents');
 is ($object->get (@trace), "bar\n\0baz\n", ' and get returns correctly');
+
+# And check to make sure update changes the contents.
+$pwd = $object->update (@trace);
+isnt ($pwd, "bar\n\0baz\n", 'Update changes the contents');
+like ($pwd, qr{^.{$Wallet::Config::PWD_LENGTH_MIN}$},
+      ' to a random password string of the right length');
 
 # Clean up.
 $admin->destroy;

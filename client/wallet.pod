@@ -385,6 +385,19 @@ If an object with type <type> and name <name> does not already exist when
 this command is issued (as checked with the check interface), B<wallet>
 will attempt to automatically create it (using autocreate).
 
+=item update <type> <name>
+
+Prints to standard output the data associated with the object identified
+by <type> and <name>, or stores it in a file if the B<-f> option was
+given.  This will generate new data in the object, and only works for 
+objects that support generating new data automatically, such as keytabs or
+passwords.  Types that do not support generating new data will fail and
+direct you to use get instead.
+
+If an object with type <type> and name <name> does not already exist when
+this command is issued (as checked with the check interface), B<wallet>
+will attempt to automatically create it (using autocreate).
+
 =back
 
 =head1 ATTRIBUTES

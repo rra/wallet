@@ -57,12 +57,12 @@ sub file_path {
 }
 
 ##############################################################################
-# Core methods
+# Shared methods
 ##############################################################################
 
 # Return the contents of the file.
-sub get {
-    my ($self, $user, $host, $time) = @_;
+sub retrieve {
+    my ($self, $operation, $user, $host, $time) = @_;
     $time ||= time;
     my $id = $self->{type} . ':' . $self->{name};
     if ($self->flag_check ('locked')) {
@@ -72,13 +72,13 @@ sub get {
     my $path = $self->file_path;
     return unless $path;
 
-    # If nothing is yet stored, generate a random password and save it to
-    # the file.
+    # If nothing is yet stored, or we have requested an update, generate a
+    # random password and save it to the file.
     my $schema = $self->{schema};
     my %search = (ob_type => $self->{type},
                   ob_name => $self->{name});
     my $object = $schema->resultset('Object')->find (\%search);
-    unless ($object->ob_stored_on) {
+    if (!$object->ob_stored_on || $operation eq 'update') {
         unless (open (FILE, '>', $path)) {
             $self->error ("cannot store initial settings for $id: $!\n");
             return;
@@ -103,8 +103,26 @@ sub get {
         $self->error ("cannot get $id: $!");
         return;
     }
-    $self->log_action ('get', $user, $host, $time);
+    $self->log_action ($operation, $user, $host, $time);
     return $data;
+}
+
+##############################################################################
+# Core methods
+##############################################################################
+
+# Return the contents of the file.
+sub get {
+    my ($self, $user, $host, $time) = @_;
+    my $result = $self->retrieve ('get', $user, $host, $time);
+    return $result;
+}
+
+# Return the contents of the file after resetting them to a random string.
+sub update {
+    my ($self, $user, $host, $time) = @_;
+    my $result = $self->retrieve ('update', $user, $host, $time);
+    return $result;
 }
 
 1;

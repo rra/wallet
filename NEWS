@@ -7,6 +7,15 @@ wallet 1.3 (xxxx-xx-xx)
     generate content for the object if you do a get before storing any
     content inside it.
 
+    Added a new command to wallet-backend, update.  This will update the
+    contents of an object before running a get on it, and is only valid
+    for objects that can automatically get new content, such as keytab
+    and password objects.  A keytab will get a new kvno regardless of 
+    the unchanging flag if called with update.  In a future release get
+    will be changed to never update a keytab, and the unchanging flag
+    will be ignored.  Please start moving to use get or update as the
+    situation warrants.
+
     Added an acl replace command, to change all objects owned by one ACL
     to be owned by another.
 
