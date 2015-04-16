@@ -25,8 +25,8 @@ our (@EXPORT_OK, $VERSION);
 # against circular module loading (not that we load any modules, but
 # consistency is good).
 BEGIN {
-    $VERSION   = '1.00';
-    @EXPORT_OK = qw(default_owner verify_name);
+    $VERSION   = '1.01';
+    @EXPORT_OK = qw(default_owner verify_name is_for_host);
 }
 
 ##############################################################################
@@ -85,6 +85,18 @@ our %PASSWORD_TYPE = (
     'system'          => { host => 1, extra => 1, need_extra => 1 },
     'app'             => { host => 1, extra => 1, need_extra => 1 },
     'service'         => {            extra => 1, need_extra => 1 },
+);
+
+# Mappings that let us determine the host for a host-based object, if any.
+our %HOST_FOR = (
+    'keytab'     => \&_host_for_keytab,
+    'file'       => \&_host_for_file,
+    'password'   => \&_host_for_password,
+    'duo'        => \&_host_for_duo,
+    'duo-pam'    => \&_host_for_duo,
+    'duo-radius' => \&_host_for_duo,
+    'duo-ldap'   => \&_host_for_duo,
+    'duo-rdp'    => \&_host_for_duo,
 );
 
 # Host-based file object types for the legacy file object naming scheme.
@@ -204,6 +216,23 @@ sub _host_for_duo {
     return $name;
 }
 
+# Take a object type and name, along with a host name, and use these to
+# decide if the given object is host-based and matches the given host.
+sub is_for_host {
+    my ($type, $name, $host) = @_;
+
+    # If we have a possible host mapping, get the host and see if it matches.
+    if (defined($HOST_FOR{$type})) {
+        my $object_host = $HOST_FOR{$type}->($name);
+        return 0 unless $object_host;
+        if ($host eq $object_host) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 # The default owner of host-based objects should be the host keytab and the
 # NetDB ACL for that host, with one twist.  If the creator of a new node is
 # using a root instance, we want to require everyone managing that node be
@@ -211,21 +240,9 @@ sub _host_for_duo {
 sub default_owner {
     my ($type, $name) = @_;
 
-    # How to determine the host for host-based objects.
-    my %host_for = (
-        'keytab'     => \&_host_for_keytab,
-        'file'       => \&_host_for_file,
-        'password'   => \&_host_for_password,
-        'duo'        => \&_host_for_duo,
-        'duo-pam'    => \&_host_for_duo,
-        'duo-radius' => \&_host_for_duo,
-        'duo-ldap'   => \&_host_for_duo,
-        'duo-rdp'    => \&_host_for_duo,
-    );
-
     # If we have a possible host mapping, see if we can use that.
-    if (defined($host_for{$type})) {
-        my $host = $host_for{$type}->($name);
+    if (defined($HOST_FOR{$type})) {
+        my $host = $HOST_FOR{$type}->($name);
         if ($host) {
             my $acl_name = "host/$host";
             my @acl;

@@ -11,7 +11,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 215;
+use Test::More tests => 218;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -280,6 +280,22 @@ package main;
 is (scalar (@lines), 1, 'Searching for ACL naming violations finds one');
 is ($lines[0][0], 3, ' and the first has the right ID');
 is ($lines[0][1], 'second', ' and the right name');
+
+# Set a host-based object matching script so that we can test the host report.
+# The deactivation trick isn't needed here.
+package Wallet::Config;
+sub is_for_host {
+    my ($type, $name, $host) = @_;
+    my ($service, $principal) = split ('/', $name, 2);
+    return 0 unless $service && $principal;
+    return 1 if $host eq $principal;
+    return 0;
+}
+package main;
+@lines = $report->objects_hostname ('host', 'admin');
+is (scalar (@lines), 1, 'Searching for host-based objects finds one');
+is ($lines[0][0], 'base', ' and the first has the right type');
+is ($lines[0][1], 'service/admin', ' and the right name');
 
 # Set up a file bucket so that we can create an object we can retrieve.
 system ('rm -rf test-files') == 0 or die "cannot remove test-files\n";

@@ -792,6 +792,34 @@ keytab objects for particular principals have fully-qualified hostnames:
 Objects that aren't of type C<keytab> or which aren't for a host-based key
 have no naming requirements enforced by this example.
 
+=head1 OBJECT HOST-BASED NAMES
+
+The above demonstrates having a host-based naming convention, where we
+expect one part of an object name to be the name of the host that this
+object is for.  The most obvious examples are those keytab objects
+above, where we want certain keytab names to be in the form of
+<service>/<hostname>.  It's then also useful to provide a Perl function
+named is_for_host which then can be used to tell if a given object is a
+host-based keytab for a specific host.  This function is then called by
+the objects_hostname in Wallet::Report to give a list of all host-based
+objects for a given hostname.  It should return true if the given object
+is a host-based object for the hostname, otherwise false.
+
+An example that matches the same policy as the last verify_name example
+would be:
+
+    sub is_for_host {
+        my ($type, $name, $hostname) = @_;
+        my %host_based = map { $_ => 1 }
+            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
+        return 0 unless $type eq 'keytab';
+        return 0 unless $name =~ m%/%;
+        my ($service, $instance) = split ('/', $name, 2);
+        return 0 unless $host_based{$service};
+        return 1 if $hostname eq $instance;
+        return 0;
+    }
+
 =head1 ACL NAMING ENFORCEMENT
 
 Similar to object names, by default wallet permits administrators to

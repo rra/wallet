@@ -249,7 +249,7 @@ sub objects {
 # Farms out specific statement to another subroutine for specific search
 # types, but each case should return ob_type and ob_name in that order.
 sub objects_history {
-    my ($self, $type, @args) = @_;
+    my ($self, $search_type, @args) = @_;
     undef $self->{error};
 
     # All fields in the order we want to see them.
@@ -274,6 +274,56 @@ sub objects_history {
                 push (@rec, $object_rs->get_column($field));
             }
             push (@objects, \@rec);
+        }
+    };
+    if ($@) {
+        $self->error ("cannot list objects: $@");
+        return;
+    }
+
+    return @objects;
+}
+
+# Returns a list of all objects stored in the wallet database in the form of
+# type and name pairs.  On error and for an empty database, the empty list
+# will be returned.  To distinguish between an empty list and an error, call
+# error(), which will return undef if there was no error.  Farms out specific
+# statement to another subroutine for specific search types, but each case
+# should return ob_type and ob_name in that order.
+sub objects_hostname {
+    my ($self, $type, $hostname) = @_;
+    undef $self->{error};
+
+    # Make sure we have a given hostname.
+    if (!$hostname) {
+        $self->error ("object hosts requires one argument to search");
+        return;
+    }
+
+    # If we don't have a way to get host-based object lists, quit.
+    unless (defined &Wallet::Config::is_for_host) {
+        $self->error ('no host-based policy defined');
+        return;
+    }
+
+    # Search on all objects.
+    my %search = ();
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    my @objects;
+    my $schema = $self->{schema};
+    eval {
+        my @objects_rs = $schema->resultset('Object')->search (\%search,
+                                                               \%options);
+
+        # Check to see if an object is for the given host and add to list if
+        # so.
+        for my $object_rs (@objects_rs) {
+            my $type = $object_rs->ob_type;
+            my $name = $object_rs->ob_name;
+            next unless &Wallet::Config::is_for_host($type, $name, $hostname);
+            push (@objects, [ $type, $name ]);
         }
     };
     if ($@) {
@@ -747,6 +797,24 @@ and with values C<host/example.com> and C<foo>, objects() with no
 arguments would return:
 
     ([ 'keytab', 'host/example.com' ], [ 'keytab', 'foo' ])
+
+Returns the empty list on failure.  To distinguish between this and an
+empty search result, the caller should call error().  error() is
+guaranteed to return the error message if there was an error and undef if
+there was no error.
+
+=item objects_history(TYPE)
+
+Returns a dump of the entire object history table.  The return value is
+a list of references to each field in that table, in the following order:
+
+    oh_on, oh_by, oh_type, oh_name, oh_action, oh_from
+
+=item objects_hostname(TYPE, HOSTNAME)
+
+Returns a list of all host-based objects for a given hostname.  The
+output is identical to the general objects command, but we need to
+separate this out because the way it searches is very different.
 
 Returns the empty list on failure.  To distinguish between this and an
 empty search result, the caller should call error().  error() is
