@@ -673,7 +673,7 @@ Note that rename() operations are not logged in the ACL history.
 =item replace(ID)
 
 Replace this ACL with another.  This goes through each object owned by
-the ACL and changes its ownership to the new ACL, leaving this acl owning
+the ACL and changes its ownership to the new ACL, leaving this ACL owning
 nothing (and probably then needing to be deleted).  Returns true on
 success and false on failure.  On failure, the caller should call error()
 to get the error message.
