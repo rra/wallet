@@ -85,7 +85,7 @@ is ($acl->name, 'example', ' and the right name');
 is ($acl->id, 2, ' and the right ID');
 ok (! $acl->rename ('ADMIN', @trace),
     ' but renaming to an existing name fails');
-like ($acl->error, qr/^cannot rename ACL 2 to ADMIN: /,
+like ($acl->error, qr/^cannot rename ACL example to ADMIN: /,
       ' with the right error');
 
 # Test add, check, remove, list, and show.
@@ -131,7 +131,7 @@ EOE
 is ($acl->show, $expected, ' and show returns correctly');
 ok (! $acl->remove ('krb5', $admin, @trace),
     'Removing a nonexistent entry fails');
-is ($acl->error, "cannot remove krb5:$admin from 2: entry not found in ACL",
+is ($acl->error, "cannot remove krb5:$admin from example: entry not found in ACL",
     ' with the right error');
 if ($acl->remove ('krb5', $user1, @trace)) {
     ok (1, ' but removing the first user works');
@@ -145,7 +145,7 @@ is (scalar (@entries), 1, ' and now there is one entry');
 is ($entries[0][0], 'krb5', ' with the right scheme');
 is ($entries[0][1], $user2, ' and the right identifier');
 ok (! $acl->add ('krb5', $user2), 'Adding the same entry again fails');
-like ($acl->error, qr/^cannot add \Qkrb5:$user2\E to 2: /,
+like ($acl->error, qr/^cannot add \Qkrb5:$user2\E to example: /,
       ' with the right error');
 if ($acl->add ('krb5', '', @trace)) {
     ok (1, 'Adding a bad entry works');

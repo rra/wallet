@@ -1,7 +1,7 @@
 # Wallet::ACL -- Implementation of ACLs in the wallet system.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2013, 2014
+# Copyright 2007, 2008, 2010, 2013, 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -24,7 +24,7 @@ use DBI;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 ##############################################################################
 # Constructors
@@ -201,7 +201,7 @@ sub rename {
         $guard->commit;
     };
     if ($@) {
-        $self->error ("cannot rename ACL $self->{id} to $name: $@");
+        $self->error ("cannot rename ACL $self->{name} to $name: $@");
         return;
     }
     $self->{name} = $name;
@@ -228,7 +228,7 @@ sub replace {
             $object->owner ($replace_id, $user, $host, $time);
         }
     } else {
-        $self->error ("no objects found for ACL $self->{id}");
+        $self->error ("no objects found for ACL $self->{name}");
         return;
     }
     return 1;
@@ -284,7 +284,7 @@ sub destroy {
         $guard->commit;
     };
     if ($@) {
-        $self->error ("cannot destroy ACL $self->{id}: $@");
+        $self->error ("cannot destroy ACL $self->{name}: $@");
         return;
     }
     return 1;
@@ -312,7 +312,7 @@ sub add {
         $guard->commit;
     };
     if ($@) {
-        $self->error ("cannot add $scheme:$identifier to $self->{id}: $@");
+        $self->error ("cannot add $scheme:$identifier to $self->{name}: $@");
         return;
     }
     return 1;
@@ -339,7 +339,7 @@ sub remove {
     };
     if ($@) {
         my $entry = "$scheme:$identifier";
-        $self->error ("cannot remove $entry from $self->{id}: $@");
+        $self->error ("cannot remove $entry from $self->{name}: $@");
         return;
     }
     return 1;
@@ -367,7 +367,7 @@ sub list {
         $guard->commit;
     };
     if ($@) {
-        $self->error ("cannot retrieve ACL $self->{id}: $@");
+        $self->error ("cannot retrieve ACL $self->{name}: $@");
         return;
     } else {
         return @entries;
@@ -422,7 +422,7 @@ sub history {
         $guard->commit;
     };
     if ($@) {
-        $self->error ("cannot read history for $self->{id}: $@");
+        $self->error ("cannot read history for $self->{name}: $@");
         return;
     }
     return $output;
