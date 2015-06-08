@@ -154,8 +154,8 @@ sub create_check {
             $self->error ($acl->error);
             return;
         }
-        @entries = sort { $$a[0] cmp $$b[0] && $$a[1] cmp $$b[1] } @entries;
-        @acl     = sort { $$a[0] cmp $$b[0] && $$a[1] cmp $$b[1] } @acl;
+        @entries = sort { $$a[0] cmp $$b[0] || $$a[1] cmp $$b[1] } @entries;
+        @acl     = sort { $$a[0] cmp $$b[0] || $$a[1] cmp $$b[1] } @acl;
         my $okay = 1;
         if (@entries != @acl) {
             $okay = 0;
