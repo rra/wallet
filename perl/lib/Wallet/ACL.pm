@@ -198,6 +198,19 @@ sub rename {
         $acls->ac_name ($name);
         $acls->update;
         $self->log_acl ('rename', undef, undef, $user, $host, $time);
+
+        # Find any references to this being used as a nested verifier and
+        # update the name.  This really breaks out of the normal flow, but
+        # it's hard to do otherwise.
+        %search = (ae_scheme     => 'nested',
+                   ae_identifier => $self->{name},
+                  );
+        my @entries = $self->{schema}->resultset('AclEntry')->search(\%search);
+        for my $entry (@entries) {
+            $entry->ae_identifier ($name);
+            $entry->update;
+        }
+
         $guard->commit;
     };
     if ($@) {
@@ -267,6 +280,17 @@ sub destroy {
             $entry->delete;
         }
 
+        # Find any references to this being used as a nested verifier and
+        # remove them.  This really breaks out of the normal flow, but it's
+        # hard to do otherwise.
+        %search = (ae_scheme     => 'nested',
+                   ae_identifier => $self->{name},
+                  );
+        @entries = $self->{schema}->resultset('AclEntry')->search(\%search);
+        for my $entry (@entries) {
+            $entry->delete;
+        }
+
         # There should definitely be an ACL record to delete.
         %search = (ac_id => $self->{id});
         my $entry = $self->{schema}->resultset('Acl')->find(\%search);
@@ -302,6 +326,18 @@ sub add {
         $self->error ("unknown ACL scheme $scheme");
         return;
     }
+
+    # Check to make sure that this entry has a valid name for the scheme.
+    my $class = $self->scheme_mapping ($scheme);
+    my $object = eval {
+        $class->new ($identifier, $self->{schema});
+    };
+    unless ($object && $object->syntax_check ($identifier)) {
+        $self->error ("invalid ACL identifier $identifier for $scheme");
+        return;
+    };
+
+    # Actually create the scheme.
     eval {
         my $guard = $self->{schema}->txn_scope_guard;
         my %record = (ae_id         => $self->{id},
@@ -446,7 +482,7 @@ sub history {
                 push (@{ $self->{check_errors} }, "unknown scheme $scheme");
                 return;
             }
-            $verifier{$scheme} = $class->new;
+            $verifier{$scheme} = $class->new ($identifier, $self->{schema});
             unless (defined $verifier{$scheme}) {
                 push (@{ $self->{check_errors} }, "cannot verify $scheme");
                 return;

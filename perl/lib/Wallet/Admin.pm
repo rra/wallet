@@ -118,6 +118,7 @@ sub default_data {
                        [ 'krb5',       'Wallet::ACL::Krb5'            ],
                        [ 'krb5-regex', 'Wallet::ACL::Krb5::Regex'     ],
                        [ 'ldap-attr',  'Wallet::ACL::LDAP::Attribute' ],
+                       [ 'nested',     'Wallet::ACL::Nested'          ],
                        [ 'netdb',      'Wallet::ACL::NetDB'           ],
                        [ 'netdb-root', 'Wallet::ACL::NetDB::Root'     ],
                                                      ]);

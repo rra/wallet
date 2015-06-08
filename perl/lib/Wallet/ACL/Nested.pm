@@ -1,7 +1,7 @@
-# Wallet::ACL::Base -- Parent class for wallet ACL verifiers.
+# Wallet::ACL::Nested - ACL class for nesting ACLs
 #
-# Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2010, 2014
+# Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -10,17 +10,21 @@
 # Modules and declarations
 ##############################################################################
 
-package Wallet::ACL::Base;
+package Wallet::ACL::Nested;
 require 5.006;
 
 use strict;
 use warnings;
-use vars qw($VERSION);
+use vars qw($VERSION @ISA);
+
+use Wallet::ACL::Base;
+
+@ISA = qw(Wallet::ACL::Base);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.01';
 
 ##############################################################################
 # Interface
@@ -32,31 +36,91 @@ $VERSION = '0.03';
 # will be used by the verifier.
 sub new {
     my $type = shift;
-    my $self = {};
+    my ($name, $schema) = @_;
+    my $self = {
+        schema   => $schema,
+        expanded => {},
+    };
     bless ($self, $type);
     return $self;
 }
 
-# The default name check method allows any name.
+# Name checking requires checking that there's an existing ACL already by
+# this name.  Try to create the ACL object and use that to determine.
 sub syntax_check {
+    my ($self, $group) = @_;
+
+    my $acl;
+    eval { $acl = Wallet::ACL->new ($group, $self->{schema}) };
+    return 0 if $@;
+    return 0 unless $acl;
     return 1;
 }
 
-# The default check method denies all access.
+# For checking a nested ACL, we need to expand each entry and then check
+# that entry.  We also want to keep track of things already checked in order
+# to avoid any loops.
 sub check {
+    my ($self, $principal, $group) = @_;
+    unless ($principal) {
+        $self->error ('no principal specified');
+        return;
+    }
+    unless ($group) {
+        $self->error ('malformed nested ACL');
+        return;
+    }
+
+    # Make an ACL object just so that we can use it to drop back into the
+    # normal ACL validation after we have expanded the nesting.
+    my $acl;
+    eval { $acl = Wallet::ACL->new ($group, $self->{schema}) };
+
+    # Get the list of all nested acl entries within this entry, and use it
+    # to go through each entry and decide if the given acl has access.
+    my @members = $self->get_membership ($group);
+    for my $entry (@members) {
+        my ($type, $name) = @{ $entry };
+        my $result = $acl->check_line ($principal, $type, $name);
+        return 1 if $result;
+    }
     return 0;
 }
 
-# Set or return the error stashed in the object.
-sub error {
-    my ($self, @error) = @_;
-    if (@error) {
-        my $error = join ('', @error);
-        chomp $error;
-        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
-        $self->{error} = $error;
+# Get the membership of a group recursively.  The final result will be a list
+# of arrayrefs like that from Wallet::ACL->list, but expanded for full
+# membership.
+sub get_membership {
+    my ($self, $group) = @_;
+
+    # Get the list of members for this nested acl.  Consider any missing acls
+    # as empty.
+    my $schema = $self->{schema};
+    my @members;
+    eval {
+        my $acl  = Wallet::ACL->new ($group, $schema);
+        @members = $acl->list;
+    };
+
+    # Now go through and expand any other nested groups into their own
+    # memberships.
+    my @expanded;
+    for my $entry (@members) {
+        my ($type, $name) = @{ $entry };
+        if ($type eq 'nested') {
+
+            # Keep track of things we've already expanded and don't look them
+            # up again.
+            next if exists $self->{expanded}{$name};
+            $self->{expanded}{$name} = 1;
+            push (@expanded, $self->get_membership ($name));
+
+        } else {
+            push (@expanded, $entry);
+        }
     }
-    return $self->{error};
+
+    return @expanded;
 }
 
 1;
@@ -96,12 +160,6 @@ inherit from it.  It is not used directly.
 
 Creates a new ACL verifier.  The generic function provided here just
 creates and blesses an object.
-
-=item syntax_check(PRINCIPAL, ACL)
-
-This method should be overridden by any child classes that want to
-implement validating the name of an ACL before creation.  The default
-implementation allows any name for an ACL.
 
 =item check(PRINCIPAL, ACL)
 

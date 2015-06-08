@@ -140,7 +140,7 @@ is(
       'example.stanford.edu'),
     1,
     '...with netdb ACL line'
-);
+  );
 is(
     $server->acl_add('host/example.stanford.edu', 'krb5',
       'host/example.stanford.edu@stanford.edu'),
