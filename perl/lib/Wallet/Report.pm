@@ -359,8 +359,7 @@ sub types {
 # ACL reports
 ##############################################################################
 
-# Returns the SQL statement required to find and return all ACLs in the
-# database.
+# Returns the array of all ACLs in the database.
 sub acls_all {
     my ($self) = @_;
     my @acls;
@@ -384,7 +383,7 @@ sub acls_all {
     return (@acls);
 }
 
-# Returns the SQL statement required to find all empty ACLs in the database.
+# Returns the array of all empty ACLs in the database.
 sub acls_empty {
     my ($self) = @_;
     my @acls;
@@ -410,9 +409,36 @@ sub acls_empty {
     return (@acls);
 }
 
-# Returns the SQL statement and the field required to find ACLs containing the
-# specified entry.  The identifier is automatically surrounded by wildcards to
-# do a substring search.
+# Returns the array of ACLs that nest a given ACL.
+sub acls_nesting {
+    my ($self, $name) = @_;
+    my @acls;
+
+    my $schema = $self->{schema};
+    my %search = (ae_scheme     => 'nested',
+                  ae_identifier => $name);
+    my %options = (join     => 'acl_entries',
+                   prefetch => 'acl_entries',
+                   order_by => [ qw/ac_id/ ],
+                   select   => [ qw/ac_id ac_name/ ]);
+
+    eval {
+        my @acls_rs = $schema->resultset('Acl')->search (\%search, \%options);
+        for my $acl_rs (@acls_rs) {
+            push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
+        }
+    };
+
+    if ($@) {
+        $self->error ("cannot list ACLs: $@");
+        return;
+    }
+    return (@acls);
+}
+
+# Returns the array of all ACLs containing the specified entry.  The given
+# identifier is automatically surrounded by wildcards to do a substring
+# search.
 sub acls_entry {
     my ($self, $type, $identifier) = @_;
     my @acls;
@@ -440,7 +466,7 @@ sub acls_entry {
     return (@acls);
 }
 
-# Returns the SQL statement required to find unused ACLs.
+# Returns the array of all unused ACLs.
 sub acls_unused {
     my ($self) = @_;
     my @acls;
@@ -553,6 +579,13 @@ sub acls {
             @acls = $self->acls_empty;
         } elsif ($type eq 'unused') {
             @acls = $self->acls_unused;
+        } elsif ($type eq 'nesting') {
+            if (@args == 0) {
+                $self->error ('ACL nesting search requires an ACL to search');
+                return;
+            } else {
+                @acls = $self->acls_nesting (@args);
+            }
         } else {
             $self->error ("unknown search type: $type");
             return;

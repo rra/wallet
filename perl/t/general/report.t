@@ -11,7 +11,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 219;
+use Test::More tests => 222;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -365,6 +365,13 @@ is ($server->acl_add ('third', 'base', 'baz'), 1,
 @acls = $report->acls ('duplicate');
 is (scalar (@acls), 0, 'There are no duplicate ACLs');
 is ($report->error, undef, ' and no error');
+
+# See if the acl nesting report works correctly.
+is ($server->acl_add ('fourth', 'nested', 'second'), 1,
+    'Adding an ACL as a nested entry for another works');
+@acls = $report->acls ('nesting', 'second');
+is (scalar (@acls), 1, ' and the nested report shows one nesting');
+is ($acls[0][1], 'fourth', ' with the correct ACL nesting it');
 
 # Clean up.
 $admin->destroy;
