@@ -30,10 +30,8 @@ $VERSION = '0.01';
 # Interface
 ##############################################################################
 
-# Creates a new persistant verifier, taking a database handle.  This parent
-# class just creates an empty object and ignores the handle.  Child classes
-# should override if there are necessary initialization tasks or if the handle
-# will be used by the verifier.
+# Creates a new persistant verifier, taking a database handle to use for
+# syntax check validation.
 sub new {
     my $type = shift;
     my ($name, $schema) = @_;
