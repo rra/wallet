@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use POSIX qw(strftime);
-use Test::More tests => 113;
+use Test::More tests => 115;
 
 use Wallet::ACL;
 use Wallet::Admin;
@@ -223,10 +223,18 @@ EOO
 is ($acl->history, $history, 'History is correct');
 
 # Test destroy.
-if ($acl->destroy (@trace)) {
-    ok (1, 'Destroying the ACL works');
+$acl->destroy (@trace);
+is ($acl->error, 'cannot destroy ACL example: ACL is nested in ACL test-nesting',
+    'Destroying a nested ACL fails');
+if ($acl_nest->remove ('nested', 'example', @trace)) {
+    ok (1, ' and removing the nesting succeeds');
 } else {
-    is ($acl->error, '', 'Destroying the ACL works');
+    is ($acl_nest->error, '', 'and removing the nesting succeeds');
+}
+if ($acl->destroy (@trace)) {
+    ok (1, ' and now destroying the ACL works');
+} else {
+    is ($acl->error, '', ' and now destroying the ACL works');
 }
 $acl = eval { Wallet::ACL->new ('example', $schema) };
 ok (!defined ($acl), ' and now cannot be found');

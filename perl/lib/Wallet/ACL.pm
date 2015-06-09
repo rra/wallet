@@ -273,19 +273,20 @@ sub destroy {
             die "ACL in use by ".$entry->ob_type.":".$entry->ob_name;
         }
 
-        # Delete any entries (there may or may not be any).
-        my %search = (ae_id => $self->{id});
-        @entries = $self->{schema}->resultset('AclEntry')->search(\%search);
-        for my $entry (@entries) {
-            $entry->delete;
+        # Also make certain the ACL isn't being nested in another.
+        my %search = (ae_scheme     => 'nested',
+                      ae_identifier => $self->{name});
+        my %options = (join     => 'acls',
+                       prefetch => 'acls');
+        @entries = $self->{schema}->resultset('AclEntry')->search(\%search,
+                                                                  \%options);
+        if (@entries) {
+            my ($entry) = @entries;
+            die "ACL is nested in ACL ".$entry->acls->ac_name;
         }
 
-        # Find any references to this being used as a nested verifier and
-        # remove them.  This really breaks out of the normal flow, but it's
-        # hard to do otherwise.
-        %search = (ae_scheme     => 'nested',
-                   ae_identifier => $self->{name},
-                  );
+        # Delete any entries (there may or may not be any).
+        %search = (ae_id => $self->{id});
         @entries = $self->{schema}->resultset('AclEntry')->search(\%search);
         for my $entry (@entries) {
             $entry->delete;
