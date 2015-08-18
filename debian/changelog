@@ -2,6 +2,8 @@ wallet (1.2-1~ebp12.04+1) precise; urgency=medium
 
   * Backport to precise.
   * Drop build dependency on libnet-duo-perl, not available in precise.
+  * Drop build dependency on libwebauth-perl, which is much too old in
+    precise for the functionality wallet needs.
 
  -- Russ Allbery <rra@debian.org>  Tue, 18 Aug 2015 09:41:24 -0700
 
