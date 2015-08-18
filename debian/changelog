@@ -6,6 +6,8 @@ wallet (1.2-1~ebp12.04+1) precise; urgency=medium
     precise for the functionality wallet needs.
   * Add explicit build dependency on libjson-perl, which wasn't part of
     Perl core yet in precise.
+  * Disable the strictness test on the Perl libraries, since we don't have
+    all the dependencies to install.
 
  -- Russ Allbery <rra@debian.org>  Tue, 18 Aug 2015 09:41:24 -0700
 

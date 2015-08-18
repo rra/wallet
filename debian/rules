@@ -16,6 +16,12 @@ export AUTOMATED_TESTING = 1
 override_dh_auto_configure:
 	dh_auto_configure --parallel -- --enable-reduced-depends
 
+# Disable the strictness test, since precise doesn't have the dependencies.
+override_dh_auto_test:
+	mv perl/t/style/strict.t perl/t/style/strict.t-off
+	dh_auto_test --parallel
+	mv perl/t/style/strict.t-off perl/t/style/strict.t
+
 # Install the remctl configuration as part of the build.
 override_dh_auto_install:
 	dh_auto_install
