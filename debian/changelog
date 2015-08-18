@@ -1,6 +1,7 @@
 wallet (1.2-1~ebp12.04+1) precise; urgency=medium
 
   * Backport to precise.
+  * Drop build dependency on libnet-duo-perl, not available in precise.
 
  -- Russ Allbery <rra@debian.org>  Tue, 18 Aug 2015 09:41:24 -0700
 

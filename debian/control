@@ -6,7 +6,7 @@ Bugs: mailto:rra@debian.org
 Build-Depends: debhelper (>= 9), dh-autoreconf, libauthen-sasl-perl,
  libdatetime-perl, libdatetime-format-sqlite-perl, libdbd-sqlite3-perl,
  libdbi-perl, libdbix-class-perl, libheimdal-kadm5-perl, libkrb5-dev,
- libnet-dns-perl, libnet-duo-perl, libnet-ldap-perl, libremctl-dev,
+ libnet-dns-perl, libnet-ldap-perl, libremctl-dev,
  libsql-translator-perl, libtest-minimumversion-perl, libtest-pod-perl,
  libtest-strict-perl, libtimedate-perl, libwebauth-perl, perl, sqlite3
 Standards-Version: 3.9.6
