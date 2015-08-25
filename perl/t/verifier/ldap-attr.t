@@ -31,7 +31,7 @@ require_ok ('Wallet::ACL::LDAP::Attribute');
 my $host   = 'ldap.stanford.edu';
 my $base   = 'cn=people,dc=stanford,dc=edu';
 my $filter = 'uid';
-my $user   = 'rra@stanford.edu';
+my $user   = 'jonrober@stanford.edu';
 my $attr   = 'suPrivilegeGroup';
 my $value  = 'stanford:stanford';
 
@@ -68,7 +68,7 @@ SKIP: {
     is ($verifier->check ($user, "BOGUS=$value"), undef,
         "Checking BOGUS=$value fails with error");
     is ($verifier->error,
-        'cannot check LDAP attribute BOGUS for rra: Undefined attribute type',
+        'cannot check LDAP attribute BOGUS for jonrober: Undefined attribute type',
         '...with correct error');
     is ($verifier->check ('user-does-not-exist', "$attr=$value"), 0,
         "Checking for nonexistent user fails");
