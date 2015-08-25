@@ -29,6 +29,11 @@ BEGIN {
     use_ok('Wallet::Server');
 }
 
+# Set up our configuration for netdb, needed for the netdb verifier.
+$Wallet::Config::NETDB_REALM        = 'stanford.edu';
+$Wallet::Config::NETDB_REMCTL_CACHE = $ENV{KRB5CCNAME};
+$Wallet::Config::NETDB_REMCTL_HOST  = 'netdb-node-roles-rc.stanford.edu';
+
 # Various valid keytab names.
 my @VALID_KEYTABS = qw(host/example.stanford.edu HTTP/example.stanford.edu
     service/example example/cgi class-example01/cgi dept-01example/cgi
