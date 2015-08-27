@@ -11,7 +11,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 222;
+use Test::More tests => 223;
 
 use Wallet::Admin;
 use Wallet::Report;
@@ -57,14 +57,15 @@ is ($types[9][0], 'wa-keyring', ' and the tenth member is correct');
 
 # And that we have all schemes that we expect.
 my @schemes = $report->acl_schemes;
-is (scalar (@schemes), 7, 'There are seven acl schemes created');
+is (scalar (@schemes), 8, 'There are seven acl schemes created');
 is ($schemes[0][0], 'base', ' and the first member is correct');
 is ($schemes[1][0], 'krb5', ' and the second member is correct');
 is ($schemes[2][0], 'krb5-regex', ' and the third member is correct');
 is ($schemes[3][0], 'ldap-attr', ' and the fourth member is correct');
-is ($schemes[4][0], 'nested', ' and the fifth member is correct');
-is ($schemes[5][0], 'netdb', ' and the sixth member is correct');
-is ($schemes[6][0], 'netdb-root', ' and the seventh member is correct');
+is ($schemes[4][0], 'ldap-attr-root', ' and the fifth member is correct');
+is ($schemes[5][0], 'nested', ' and the sixth member is correct');
+is ($schemes[6][0], 'netdb', ' and the seventh member is correct');
+is ($schemes[7][0], 'netdb-root', ' and the eighth member is correct');
 
 # Create an object.
 my $server = eval { Wallet::Server->new ('admin@EXAMPLE.COM', 'localhost') };

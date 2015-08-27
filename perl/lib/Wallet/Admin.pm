@@ -115,12 +115,13 @@ sub default_data {
     # acl_schemes default rows.
     my ($r1) = $self->{schema}->resultset('AclScheme')->populate ([
                        [ qw/as_name as_class/ ],
-                       [ 'krb5',       'Wallet::ACL::Krb5'            ],
-                       [ 'krb5-regex', 'Wallet::ACL::Krb5::Regex'     ],
-                       [ 'ldap-attr',  'Wallet::ACL::LDAP::Attribute' ],
-                       [ 'nested',     'Wallet::ACL::Nested'          ],
-                       [ 'netdb',      'Wallet::ACL::NetDB'           ],
-                       [ 'netdb-root', 'Wallet::ACL::NetDB::Root'     ],
+                       [ 'krb5',           'Wallet::ACL::Krb5'            ],
+                       [ 'krb5-regex',     'Wallet::ACL::Krb5::Regex'     ],
+                       [ 'ldap-attr',      'Wallet::ACL::LDAP::Attribute' ],
+                       [ 'ldap-attr-root', 'Wallet::ACL::LDAP::Attribute::Root' ],
+                       [ 'nested',         'Wallet::ACL::Nested'          ],
+                       [ 'netdb',          'Wallet::ACL::NetDB'           ],
+                       [ 'netdb-root',     'Wallet::ACL::NetDB::Root'     ],
                                                      ]);
     warn "default AclScheme not installed" unless defined $r1;
 
