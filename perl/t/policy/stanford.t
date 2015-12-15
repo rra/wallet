@@ -130,160 +130,186 @@ for my $name (@VALID_FILES) {
     }
 }
 
-# Now we need an actual database.  Use Wallet::Admin to set it up.
-db_setup;
-my $setup = eval { Wallet::Admin->new };
-is($@, q{}, 'Database initialization did not die');
-is($setup->reinitialize($ADMIN), 1, 'Database initialization succeeded');
-my $server = eval { Wallet::Server->new(@TRACE) };
-is($@, q{}, 'Server creation did not die');
+# Now we need an actual database.  Use Wallet::Admin to set it up.  These
+# remaining tests require creating NetDB ACLs, so need a Stanford Kerberos
+# principal currently.
+my $klist = `klist 2>&1` || '';
+SKIP: {
+    skip "tests useful only with Stanford Kerberos tickets", 27
+        unless ($klist =~ /^(Default p|\s+P)rincipal: \S+\@stanford\.edu$/m);
 
-# Create a host/example.stanford.edu ACL that uses the netdb ACL type.
-is($server->acl_create('host/example.stanford.edu'), 1, 'Created netdb ACL');
-is(
-    $server->acl_add('host/example.stanford.edu', 'netdb',
-      'example.stanford.edu'),
-    1,
-    '...with netdb ACL line'
-  );
-is(
-    $server->acl_add('host/example.stanford.edu', 'krb5',
-      'host/example.stanford.edu@stanford.edu'),
-    1,
-    '...and krb5 ACL line'
-);
+    db_setup;
+    my $setup = eval { Wallet::Admin->new };
+    is($@, q{}, 'Database initialization did not die');
+    is($setup->reinitialize($ADMIN), 1, 'Database initialization succeeded');
+    my $server = eval { Wallet::Server->new(@TRACE) };
+    is($@, q{}, 'Server creation did not die');
 
-# Likewise for host/foo.example.edu with the netdb-root ACL type.
-is($server->acl_create('host/foo.stanford.edu'), 1, 'Created netdb-root ACL');
-is(
-    $server->acl_add('host/foo.stanford.edu', 'netdb-root',
-      'foo.stanford.edu'),
-    1,
-    '...with netdb-root ACL line'
-);
-is(
-    $server->acl_add('host/foo.stanford.edu', 'krb5',
-      'host/foo.stanford.edu@stanford.edu'),
-    1,
-    '...and krb5 ACL line'
-);
+    # Create a host/example.stanford.edu ACL that uses the netdb ACL type.
+    is(
+        $server->acl_create('host/example.stanford.edu'),
+        1,
+        'Created netdb ACL'
+    );
+    is($server->error, undef, ' with no error');
+    is(
+        $server->acl_add('host/example.stanford.edu', 'netdb',
+                         'example.stanford.edu'),
+        1,
+        '...with netdb ACL line'
+    );
+    is($server->error, undef, ' with no error');
+    is(
+        $server->acl_add('host/example.stanford.edu', 'krb5',
+                         'host/example.stanford.edu@stanford.edu'),
+        1,
+        '...and krb5 ACL line'
+    );
+    is($server->error, undef, ' with no error');
 
-# Create a group/its-idg ACL, which will be used for autocreation of file
-# objects.
-is($server->acl_create('group/its-idg'), 1, 'Created group/its-idg ACL');
-is($server->acl_add('group/its-idg', 'krb5', $ADMIN), 1, '...with member');
+    # Likewise for host/foo.example.edu with the netdb-root ACL type.
+    is(
+        $server->acl_create('host/foo.stanford.edu'),
+        1,
+        'Created netdb-root ACL'
+    );
+    is(
+        $server->acl_add('host/foo.stanford.edu', 'netdb-root',
+                         'foo.stanford.edu'),
+        1,
+        '...with netdb-root ACL line'
+    );
+    is(
+        $server->acl_add('host/foo.stanford.edu', 'krb5',
+                         'host/foo.stanford.edu@stanford.edu'),
+        1,
+        '...and krb5 ACL line'
+    );
 
-# Now we can test default ACLs.  First, without a root instance.
-local $ENV{REMOTE_USER} = $ADMIN;
-is_deeply(
-    [default_owner('keytab', 'host/bar.stanford.edu')],
-    [
-        'host/bar.stanford.edu',
-        ['netdb', 'bar.stanford.edu'],
-        ['krb5', 'host/bar.stanford.edu@stanford.edu']
-    ],
-    'Correct default owner for host-based keytab'
-);
-is_deeply(
-    [default_owner('keytab', 'HTTP/example.stanford.edu')],
-    [
-        'host/example.stanford.edu',
-        ['netdb', 'example.stanford.edu'],
-        ['krb5', 'host/example.stanford.edu@stanford.edu']
-    ],
-    '...and when netdb ACL already exists'
-);
-is_deeply(
-    [default_owner('keytab', 'webauth/foo.stanford.edu')],
-    [
-        'host/foo.stanford.edu',
-        ['netdb-root', 'foo.stanford.edu'],
-        ['krb5', 'host/foo.stanford.edu@stanford.edu']
-    ],
-    '...and when netdb-root ACL already exists'
-);
+    # Create a group/its-idg ACL, which will be used for autocreation of file
+    # objects.
+    is($server->acl_create('group/its-idg'), 1, 'Created group/its-idg ACL');
+    is($server->acl_add('group/its-idg', 'krb5', $ADMIN), 1, '...with member');
 
-# Now with a root instance.
-local $ENV{REMOTE_USER} = 'admin/root@stanford.edu';
-is_deeply(
-    [default_owner('keytab', 'host/bar.stanford.edu')],
-    [
-        'host/bar.stanford.edu',
-        ['netdb-root', 'bar.stanford.edu'],
-        ['krb5', 'host/bar.stanford.edu@stanford.edu']
-    ],
-    'Correct default owner for host-based keytab for /root'
-);
-is_deeply(
-    [default_owner('keytab', 'HTTP/example.stanford.edu')],
-    [
-        'host/example.stanford.edu',
-        ['netdb-root', 'example.stanford.edu'],
-        ['krb5', 'host/example.stanford.edu@stanford.edu']
-    ],
-    '...and when netdb ACL already exists'
-);
-is_deeply(
-    [default_owner('keytab', 'webauth/foo.stanford.edu')],
-    [
-        'host/foo.stanford.edu',
-        ['netdb-root', 'foo.stanford.edu'],
-        ['krb5', 'host/foo.stanford.edu@stanford.edu']
-    ],
-    '...and when netdb-root ACL already exists'
-);
-
-# Check for a type that isn't host-based.
-is(default_owner('keytab', 'service/foo'), undef,
-    'No default owner for service/foo');
-
-# Check for an unknown object type.
-is(default_owner('unknown', 'foo'), undef,
-    'No default owner for unknown type');
-
-# Check for autocreation mappings for host-based file objects.
-is_deeply(
-    [default_owner('file', 'ssl-key/example.stanford.edu')],
-    [
-        'host/example.stanford.edu',
-        ['netdb-root', 'example.stanford.edu'],
-        ['krb5', 'host/example.stanford.edu@stanford.edu']
-    ],
-    'Default owner for file ssl-key/example.stanford.edu',
-);
-is_deeply(
-    [default_owner('file', 'ssl-key/example.stanford.edu/mysql')],
-    [
-        'host/example.stanford.edu',
-        ['netdb-root', 'example.stanford.edu'],
-        ['krb5', 'host/example.stanford.edu@stanford.edu']
-    ],
-    'Default owner for file ssl-key/example.stanford.edu/mysql',
-);
-
-# Check for a file object that isn't host-based.
-is_deeply(
-    [default_owner('file', 'config/its-idg/example/foo')],
-    ['group/its-idg', ['krb5', $ADMIN]],
-    'Default owner for file config/its-idg/example/foo',
-);
-
-# Check for legacy autocreation mappings for file objects.
-for my $type (qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key)) {
-    my $name = "idg-example-$type";
+    # Now we can test default ACLs.  First, without a root instance.
+    local $ENV{REMOTE_USER} = $ADMIN;
     is_deeply(
-        [default_owner('file', $name)],
+        [default_owner('keytab', 'host/bar.stanford.edu')],
+        [
+            'host/bar.stanford.edu',
+            ['netdb', 'bar.stanford.edu'],
+            ['krb5', 'host/bar.stanford.edu@stanford.edu']
+        ],
+        'Correct default owner for host-based keytab'
+    );
+    is_deeply(
+        [default_owner('keytab', 'HTTP/example.stanford.edu')],
+        [
+            'host/example.stanford.edu',
+            ['netdb', 'example.stanford.edu'],
+            ['krb5', 'host/example.stanford.edu@stanford.edu']
+        ],
+        '...and when netdb ACL already exists'
+    );
+    is_deeply(
+        [default_owner('keytab', 'webauth/foo.stanford.edu')],
+        [
+            'host/foo.stanford.edu',
+            ['netdb-root', 'foo.stanford.edu'],
+            ['krb5', 'host/foo.stanford.edu@stanford.edu']
+        ],
+        '...and when netdb-root ACL already exists'
+    );
+
+    # Now with a root instance.
+    local $ENV{REMOTE_USER} = 'admin/root@stanford.edu';
+    is_deeply(
+        [default_owner('keytab', 'host/bar.stanford.edu')],
+        [
+            'host/bar.stanford.edu',
+            ['netdb-root', 'bar.stanford.edu'],
+            ['krb5', 'host/bar.stanford.edu@stanford.edu']
+        ],
+        'Correct default owner for host-based keytab for /root'
+    );
+    is_deeply(
+        [default_owner('keytab', 'HTTP/example.stanford.edu')],
         [
             'host/example.stanford.edu',
             ['netdb-root', 'example.stanford.edu'],
             ['krb5', 'host/example.stanford.edu@stanford.edu']
         ],
-        "Default owner for file $name",
+        '...and when netdb ACL already exists'
     );
+    is_deeply(
+        [default_owner('keytab', 'webauth/foo.stanford.edu')],
+        [
+            'host/foo.stanford.edu',
+            ['netdb-root', 'foo.stanford.edu'],
+            ['krb5', 'host/foo.stanford.edu@stanford.edu']
+        ],
+        '...and when netdb-root ACL already exists'
+    );
+
+    # Check for a type that isn't host-based.
+    is(
+        default_owner('keytab', 'service/foo'),
+        undef,
+        'No default owner for service/foo'
+    );
+
+    # Check for an unknown object type.
+    is(
+        default_owner('unknown', 'foo'),
+        undef,
+        'No default owner for unknown type'
+    );
+
+    # Check for autocreation mappings for host-based file objects.
+    is_deeply(
+        [default_owner('file', 'ssl-key/example.stanford.edu')],
+        [
+            'host/example.stanford.edu',
+            ['netdb-root', 'example.stanford.edu'],
+            ['krb5', 'host/example.stanford.edu@stanford.edu']
+        ],
+        'Default owner for file ssl-key/example.stanford.edu',
+    );
+    is_deeply(
+        [default_owner('file', 'ssl-key/example.stanford.edu/mysql')],
+        [
+            'host/example.stanford.edu',
+            ['netdb-root', 'example.stanford.edu'],
+            ['krb5', 'host/example.stanford.edu@stanford.edu']
+        ],
+        'Default owner for file ssl-key/example.stanford.edu/mysql',
+    );
+
+    # Check for a file object that isn't host-based.
+    is_deeply(
+        [default_owner('file', 'config/its-idg/example/foo')],
+        ['group/its-idg', ['krb5', $ADMIN]],
+        'Default owner for file config/its-idg/example/foo',
+    );
+
+    # Check for legacy autocreation mappings for file objects.
+    for my $type (qw(htpasswd ssh-rsa ssh-dsa ssl-key tivoli-key)) {
+        my $name = "idg-example-$type";
+        is_deeply(
+            [default_owner('file', $name)],
+            [
+                'host/example.stanford.edu',
+                ['netdb-root', 'example.stanford.edu'],
+                ['krb5', 'host/example.stanford.edu@stanford.edu']
+            ],
+            "Default owner for file $name",
+        );
+    }
+
+    # Clean up.
+    $setup->destroy;
 }
 
-# Clean up.
-$setup->destroy;
 END {
     unlink 'wallet-db';
 }
