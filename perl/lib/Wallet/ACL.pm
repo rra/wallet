@@ -333,6 +333,10 @@ sub add {
     my $object = eval {
         $class->new ($identifier, $self->{schema});
     };
+    if ($@) {
+        $self->error ("cannot create ACL verifier: $@");
+        return;
+    }
     unless ($object && $object->syntax_check ($identifier)) {
         $self->error ("invalid ACL identifier $identifier for $scheme");
         return;
