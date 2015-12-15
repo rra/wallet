@@ -133,22 +133,25 @@ ACL Allbery verifier verifiers
 
 =head1 NAME
 
-Wallet::ACL::Base - Generic parent class for wallet ACL verifiers
+Wallet::ACL::Nested - Wallet ACL verifier to check another ACL
 
 =head1 SYNOPSIS
 
-    package Wallet::ACL::Simple
-    @ISA = qw(Wallet::ACL::Base);
-    sub check {
-        my ($self, $principal, $acl) = @_;
-        return ($principal eq $acl) ? 1 : 0;
+    my $verifier = Wallet::ACL::Nested->new;
+    my $status = $verifier->check ($principal, $acl);
+    if (not defined $status) {
+        die "Something failed: ", $verifier->error, "\n";
+    } elsif ($status) {
+        print "Access granted\n";
+    } else {
+        print "Access denied\n";
     }
 
 =head1 DESCRIPTION
 
-Wallet::ACL::Base is the generic parent class for wallet ACL verifiers.
-It provides default functions and behavior and all ACL verifiers should
-inherit from it.  It is not used directly.
+Wallet::ACL::Nested checks whether the principal is permitted by another
+named ACL and, if so, returns success.  It is used to nest one ACL inside
+another.
 
 =head1 METHODS
 
@@ -156,26 +159,19 @@ inherit from it.  It is not used directly.
 
 =item new()
 
-Creates a new ACL verifier.  The generic function provided here just
-creates and blesses an object.
+Creates a new ACL verifier.
 
 =item check(PRINCIPAL, ACL)
 
-This method should always be overridden by child classes.  The default
-implementation just declines all access.
+Returns true if PRINCIPAL is granted access according to the nested ACL,
+specified by name.  Returns false if it is not, and undef on error.
 
 =item error([ERROR ...])
 
 Returns the error of the last failing operation or undef if no operations
 have failed.  Callers should call this function to get the error message
-after an undef return from any other instance method.
-
-For the convenience of child classes, this method can also be called with
-one or more error strings.  If so, those strings are concatenated
-together, trailing newlines are removed, any text of the form S<C< at \S+
-line \d+\.?>> at the end of the message is stripped off, and the result is
-stored as the error.  Only child classes should call this method with an
-error string.
+after an undef return from any other instance method.  The returned errors
+will generally come from the nested child ACL.
 
 =back
 
@@ -188,6 +184,6 @@ available from L<http://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
-Russ Allbery <eagle@eyrie.org>
+Jon Robertson <jonrober@stanford.edu>
 
 =cut
