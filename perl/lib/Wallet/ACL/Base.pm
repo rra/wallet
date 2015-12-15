@@ -20,7 +20,7 @@ use vars qw($VERSION);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 ##############################################################################
 # Interface
@@ -35,6 +35,11 @@ sub new {
     my $self = {};
     bless ($self, $type);
     return $self;
+}
+
+# The default name check method allows any name.
+sub syntax_check {
+    return 1;
 }
 
 # The default check method denies all access.
@@ -91,6 +96,12 @@ inherit from it.  It is not used directly.
 
 Creates a new ACL verifier.  The generic function provided here just
 creates and blesses an object.
+
+=item syntax_check(PRINCIPAL, ACL)
+
+This method should be overridden by any child classes that want to
+implement validating the name of an ACL before creation.  The default
+implementation allows any name for an ACL.
 
 =item check(PRINCIPAL, ACL)
 

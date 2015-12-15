@@ -16,7 +16,7 @@ use 5.008;
 use strict;
 use warnings;
 
-use Test::More tests => 101;
+use Test::More tests => 130;
 
 use lib 't/lib';
 use Util;
@@ -24,9 +24,15 @@ use Util;
 # Load the naming policy module.
 BEGIN {
     use_ok('Wallet::Admin');
-    use_ok('Wallet::Policy::Stanford', qw(default_owner verify_name));
+    use_ok('Wallet::Policy::Stanford',
+           qw(default_owner verify_name is_for_host));
     use_ok('Wallet::Server');
 }
+
+# Set up our configuration for netdb, needed for the netdb verifier.
+$Wallet::Config::NETDB_REALM        = 'stanford.edu';
+$Wallet::Config::NETDB_REMCTL_CACHE = $ENV{KRB5CCNAME};
+$Wallet::Config::NETDB_REMCTL_HOST  = 'netdb-node-roles-rc.stanford.edu';
 
 # Various valid keytab names.
 my @VALID_KEYTABS = qw(host/example.stanford.edu HTTP/example.stanford.edu
@@ -101,6 +107,29 @@ for my $name (@INVALID_FILES) {
     isnt(verify_name('file', $name), undef, "Invalid file $name");
 }
 
+# Now test a few cases for checking to see if a file is host-based.  We don't
+# test the legacy examples because they're more complicated and less obvious.
+for my $name (@VALID_KEYTABS) {
+    my $hostname = 'example.stanford.edu';
+    if ($name =~ m{\b$hostname\b}) {
+        is(is_for_host('keytab', $name, $hostname), 1,
+           "Keytab $name belongs to $hostname");
+    } else {
+        is(is_for_host('keytab', $name, $hostname), 0,
+           "Keytab $name doesn't belong to $hostname");
+    }
+}
+for my $name (@VALID_FILES) {
+    my $hostname = 'example.stanford.edu';
+    if ($name =~ m{\b$hostname\b}) {
+        is(is_for_host('file', $name, $hostname), 1,
+           "File $name belongs to $hostname");
+    } else {
+        is(is_for_host('file', $name, $hostname), 0,
+           "File $name doesn't belong to $hostname");
+    }
+}
+
 # Now we need an actual database.  Use Wallet::Admin to set it up.
 db_setup;
 my $setup = eval { Wallet::Admin->new };
@@ -116,7 +145,7 @@ is(
       'example.stanford.edu'),
     1,
     '...with netdb ACL line'
-);
+  );
 is(
     $server->acl_add('host/example.stanford.edu', 'krb5',
       'host/example.stanford.edu@stanford.edu'),

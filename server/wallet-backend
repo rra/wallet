@@ -173,6 +173,9 @@ sub command {
         } elsif ($action eq 'rename') {
             check_args (2, 2, [], @args);
             $server->acl_rename (@args) or failure ($server->error, @_);
+        } elsif ($action eq 'replace') {
+            check_args (2, 2, [], @args);
+            $server->acl_replace (@args) or failure ($server->error, @_);
         } elsif ($action eq 'show') {
             check_args (1, 1, [], @args);
             my $output = $server->acl_show (@args);
@@ -312,6 +315,14 @@ sub command {
         }
         splice (@_, 3);
         $server->store (@args) or failure ($server->error, @_);
+    } elsif ($command eq 'update') {
+        check_args (2, 2, [], @args);
+        my $output = $server->update (@args);
+        if (defined $output) {
+            print $output;
+        } else {
+            failure ($server->error, @_);
+        }
     } else {
         error "unknown command $command";
     }
@@ -448,6 +459,25 @@ entry in the special ACL C<ADMIN> cannot be removed to protect against
 accidental lockout, but administrators can remove themselves from the
 C<ADMIN> ACL and can leave only a non-functioning entry on the ACL.  Use
 caution when removing entries from the C<ADMIN> ACL.
+
+=item acl rename <id> <name>
+
+Renames the ACL identified by <id> to <name>.  This changes the
+human-readable name, not the underlying numeric ID, so the ACL's
+associations with objects will be unchanged.  The C<ADMIN> ACL may not be
+renamed.  <id> may be either the current name or the numeric ID.  <name>
+must not be all-numeric.  To rename an ACL, the current user must be
+authorized by the C<ADMIN> ACL.
+
+=item acl replace <id> <new-id>
+
+Find any objects owned by <id>, and then change their ownership to
+<new_id> instead.  <new-id> should already exist, and may already have
+some objects owned by it.  <id> is not deleted afterwards, though in
+most cases that is probably your next step.  The C<ADMIN> ACL may not be
+replaced from.  <id> and <new-id> may be either the current name or the
+numeric ID.  To replace an ACL, the current user must be authorized by
+the C<ADMIN> ACL.
 
 =item acl show <id>
 
@@ -588,6 +618,14 @@ stored, and last downloaded.
 Stores <data> for the object identified by <type> and <name> for later
 retrieval with C<get>.  Not all object types support this.  If <data> is
 not given as an argument, it will be read from standard input.
+
+=item update <type> <name>
+
+Prints to standard output the data associated with the object identified
+by <type> and <name>.  If the object is one that can have changing
+information, such as a keytab or password, then we generate new data for
+that object regardless of whether there is current data or the unchanging
+flag is set.
 
 =back
 

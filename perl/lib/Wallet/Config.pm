@@ -260,6 +260,49 @@ our $FILE_MAX_SIZE;
 
 =back
 
+=head1 PASSWORD OBJECT CONFIGURATION
+
+These configuration variables only need to be set if you intend to use the
+C<password> object type (the Wallet::Object::Password class).  You will also
+need to set the FILE_MAX_SIZE value from the file object configuration, as
+that is inherited.
+
+=over 4
+
+=item PWD_FILE_BUCKET
+
+The directory into which to store password objects.  Password objects will
+be stored in subdirectories of this directory.  See
+L<Wallet::Object::Password> for the full details of the naming scheme.  This
+directory must be writable by the wallet server and the wallet server must
+be able to create subdirectories of it.
+
+PWD_FILE_BUCKET must be set to use file objects.
+
+=cut
+
+our $PWD_FILE_BUCKET;
+
+=item PWD_LENGTH_MIN
+
+The minimum length for any auto-generated password objects created when get
+is run before data is stored.
+
+=cut
+
+our $PWD_LENGTH_MIN = 20;
+
+=item PWD_LENGTH_MAX
+
+The maximum length for any auto-generated password objects created when get
+is run before data is stored.
+
+=cut
+
+our $PWD_LENGTH_MAX = 21;
+
+=back
+
 =head1 KEYTAB OBJECT CONFIGURATION
 
 These configuration variables only need to be set if you intend to use the
@@ -748,6 +791,34 @@ keytab objects for particular principals have fully-qualified hostnames:
 
 Objects that aren't of type C<keytab> or which aren't for a host-based key
 have no naming requirements enforced by this example.
+
+=head1 OBJECT HOST-BASED NAMES
+
+The above demonstrates having a host-based naming convention, where we
+expect one part of an object name to be the name of the host that this
+object is for.  The most obvious examples are those keytab objects
+above, where we want certain keytab names to be in the form of
+<service>/<hostname>.  It's then also useful to provide a Perl function
+named is_for_host which then can be used to tell if a given object is a
+host-based keytab for a specific host.  This function is then called by
+the objects_hostname in Wallet::Report to give a list of all host-based
+objects for a given hostname.  It should return true if the given object
+is a host-based object for the hostname, otherwise false.
+
+An example that matches the same policy as the last verify_name example
+would be:
+
+    sub is_for_host {
+        my ($type, $name, $hostname) = @_;
+        my %host_based = map { $_ => 1 }
+            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
+        return 0 unless $type eq 'keytab';
+        return 0 unless $name =~ m%/%;
+        my ($service, $instance) = split ('/', $name, 2);
+        return 0 unless $host_based{$service};
+        return 1 if $hostname eq $instance;
+        return 0;
+    }
 
 =head1 ACL NAMING ENFORCEMENT
 
