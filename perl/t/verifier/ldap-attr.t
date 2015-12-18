@@ -24,16 +24,18 @@ plan skip_all => 'LDAP verifier tests only run for maintainer'
     unless $ENV{RRA_MAINTAINER_TESTS};
 
 # Declare a plan.
-plan tests => 10;
+plan tests => 22;
 
 require_ok ('Wallet::ACL::LDAP::Attribute');
+require_ok ('Wallet::ACL::LDAP::Attribute::Root');
 
-my $host   = 'ldap.stanford.edu';
-my $base   = 'cn=people,dc=stanford,dc=edu';
-my $filter = 'uid';
-my $user   = 'rra@stanford.edu';
-my $attr   = 'suPrivilegeGroup';
-my $value  = 'stanford:stanford';
+my $host     = 'ldap.stanford.edu';
+my $base     = 'cn=people,dc=stanford,dc=edu';
+my $filter   = 'uid';
+my $user     = 'jonrober@stanford.edu';
+my $rootuser = 'jonrober/root@stanford.edu';
+my $attr     = 'suPrivilegeGroup';
+my $value    = 'stanford:stanford';
 
 # Remove the realm from principal names.
 package Wallet::Config;
@@ -68,7 +70,28 @@ SKIP: {
     is ($verifier->check ($user, "BOGUS=$value"), undef,
         "Checking BOGUS=$value fails with error");
     is ($verifier->error,
-        'cannot check LDAP attribute BOGUS for rra: Undefined attribute type',
+        'cannot check LDAP attribute BOGUS for jonrober: Undefined attribute type',
+        '...with correct error');
+    is ($verifier->check ('user-does-not-exist', "$attr=$value"), 0,
+        "Checking for nonexistent user fails");
+    is ($verifier->error, undef, '...with no error');
+
+    # Then also test the root version.
+    $verifier = eval { Wallet::ACL::LDAP::Attribute::Root->new };
+    isa_ok ($verifier, 'Wallet::ACL::LDAP::Attribute::Root');
+    is ($verifier->check ($user, "$attr=$value"), 0,
+        "Checking as a non /root user fails");
+    is ($verifier->error, undef, '...with no error');
+    is ($verifier->check ($rootuser, "$attr=$value"), 1,
+        "Checking $attr=$value succeeds");
+    is ($verifier->error, undef, '...with no error');
+    is ($verifier->check ($rootuser, "$attr=BOGUS"), 0,
+        "Checking $attr=BOGUS fails");
+    is ($verifier->error, undef, '...with no error');
+    is ($verifier->check ($rootuser, "BOGUS=$value"), undef,
+        "Checking BOGUS=$value fails with error");
+    is ($verifier->error,
+        'cannot check LDAP attribute BOGUS for jonrober: Undefined attribute type',
         '...with correct error');
     is ($verifier->check ('user-does-not-exist', "$attr=$value"), 0,
         "Checking for nonexistent user fails");

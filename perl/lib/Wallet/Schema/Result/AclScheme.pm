@@ -36,6 +36,10 @@ By default it contains the following entries:
   insert into acl_schemes (as_name, as_class)
       values ('ldap-attr', 'Wallet::ACL::LDAP::Attribute');
   insert into acl_schemes (as_name, as_class)
+      values ('ldap-attr-root', 'Wallet::ACL::LDAP::Attribute::Root');
+  insert into acl_schemes (as_name, as_class)
+      values ('nested', 'Wallet::ACL::Nested');
+  insert into acl_schemes (as_name, as_class)
       values ('netdb', 'Wallet::ACL::NetDB');
   insert into acl_schemes (as_name, as_class)
       values ('netdb-root', 'Wallet::ACL::NetDB::Root');

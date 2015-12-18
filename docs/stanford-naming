@@ -90,27 +90,6 @@ Object Naming
 
         (OLD: <group>-<server>-htpasswd-<app>)
 
-    password-ipmi/<server>
-
-        Stores the password for remote IPMI/iLO/ILOM access to the
-        system.
-
-        (OLD: <group>-<server>-password-ipmi)
-
-    password-root/<server>
-
-        Stores the root password for a given server.
-
-        (OLD: <group>-<server>-password-root)
-
-    password-tivoli/<server>
-
-        Stores the Tivoli TSM backup password for a given server.  See
-        also tivoli-key/<server>, but depending on what one wants to do
-        with the password, this may be a better representation.
-
-        (OLD: <group>-<server>-password-tivoli)
-
     ssh-<type>/<server>
 
         Stores the SSH private key for <server>.  For shared private keys
@@ -197,20 +176,6 @@ Object Naming
 
         (OLD: <group>-<service>-gpg-key)
 
-    password/<group>/<service>/<name>
-
-        A password for some account, service, keystore, or something
-        similar that is not covered by one of the more specific naming
-        conventions, such as a password used to connect to a remote ssh
-        service.  <service> is the service that uses this password and
-        <name> is the thing the password is used for (such as the remote
-        account name).  This may be a file containing only the password,
-        or a configuration file of some type that includes a field name
-        and the password.  (However, use the db type described above for
-        database passwords.)
-
-        (OLD: <group>-<server>-password-<account>)
-
     properties/<group>/<service>[/<name>]
 
         The properties file for a Java application that contains some
@@ -262,6 +227,68 @@ Object Naming
     <group>-<server>-pam-<app>
     <group>-<service>-puppetconf
     <group>-<service>-shibboleth
+    <group>-<server>-password-ipmi
+    <group>-<server>-password-root
+    <group>-<server>-password-tivoli
+    <group>-<server>-password-<account>
+
+    Replaced by password objects:
+
+    password-ipmi/<server>
+    password-root/<server>
+    password-tivoli/<server>
+
+    password/<group>/<service>/<name> should be replaced by the password
+    service/<group>/<service>/<name> object if a single password, or by
+    the file object db/* or config/* format if the object contains more
+    than just the bare password.
+
+  Password
+
+    Passwords are a recent type and so most password data is actually
+    in file objects.  However, we'd like to move things there both for
+    the added features of password objects to self-set, and because it
+    helps clean up the file namespace a little more.
+
+    Host-based:
+
+    ipmi/<server>
+
+        Stores the password for remote IPMI/iLO/ILOM access to the
+        system.
+
+    tivoli/<server>
+
+        Stores the Tivoli TSM backup password for a given server.  See
+        also tivoli-key/<server> in the file section, but depending on
+        what one wants to do with the password, this may be a better
+        representation.
+
+    root/<server>
+
+        Stores the root password for a given server.
+
+    system/<server>/<account>
+
+        Stores the password for a non-root system account, such as a user
+        required for file uploads.
+
+    app/<server>/<application>
+
+        Stores an application password bound to a certain server.
+
+    Service-based:
+
+    service/<group>/<service>/<name>
+
+        A password for some account, service, keystore, or something
+        similar that is not covered by one of the more specific naming
+        conventions, such as a password used to connect to a remote ssh
+        service.  <service> is the service that uses this password and
+        <name> is the thing the password is used for (such as the remote
+        account name).  This should only be for something including the
+        password and nothing else.  See the file password/ object name
+        for something that includes more data.
 
 ACL Naming
 

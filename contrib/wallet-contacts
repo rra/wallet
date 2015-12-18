@@ -3,7 +3,7 @@
 # wallet-contacts -- Report contact addresses for matching wallet objects.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2009
+# Copyright 2009, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -12,15 +12,31 @@
 # Modules and declarations
 ##############################################################################
 
-require 5.006;
-
+use 5.010;
+use autodie;
 use strict;
+use warnings;
 
 use Getopt::Long qw(GetOptions);
-use Wallet::Admin ();
+use Perl6::Slurp;
+use Wallet::Report ();
 
 # Used to cache lookups of e-mail addresses by identifiers.
 our %EMAIL;
+
+##############################################################################
+# Mail sending
+##############################################################################
+
+# Given a message, mail it through sendmail.
+sub mail {
+    my ($message) = @_;
+
+    open (MAIL, '| /usr/sbin/sendmail -t -oi -oem')
+        or die "$0: cannot fork sendmail: $!\n";
+    print MAIL $message;
+    close (MAIL);
+}
 
 ##############################################################################
 # whois lookups
@@ -79,9 +95,12 @@ sub whois_lookup {
 ##############################################################################
 
 # Read in command-line options.
-my ($help);
+my ($help, $mail, $dryrun);
 Getopt::Long::config ('no_ignore_case', 'bundling');
-GetOptions ('help|h' => \$help) or exit 1;
+GetOptions ('help|h' => \$help,
+            'mail=s' => \$mail,
+            'dryrun' => \$dryrun,
+           ) or exit 1;
 if ($help) {
     print "Feeding myself to perldoc, please wait....\n";
     exec ('perldoc', '-t', $0);
@@ -95,10 +114,10 @@ if (@ARGV > 2 or not defined $name) {
 $0 =~ s%.*/%%;
 
 # Gather the list of ACL lines.
-my $admin = Wallet::Admin->new;
-my @lines = $admin->report_owners ($type, $name);
-if (!@lines and $admin->error) {
-    die $admin->error, "\n";
+my $report = Wallet::Report->new;
+my @lines = $report->owners ($type, $name);
+if (!@lines and $report->error) {
+    die $report->error, "\n";
 }
 
 # Now, for each line, turn it into an e-mail address.  krb5 ACLs go as-is if
@@ -127,10 +146,28 @@ for (@lines) {
 }
 
 # We now have a list of e-mail addresses.  De-duplicate and then print them
-# out.
+# out or mail to them.
 my %seen;
 @email = grep { !$seen{$_}++ } sort @email;
-print join ("\n", @email, '');
+if ($mail) {
+    if (!-e $mail) {
+        die "mail file $mail does not exist!\n";
+    }
+
+    # Load the message and set the To header.
+    my $message = slurp($mail);
+    my $mailto  = join (', ', @email);
+    $message =~ s{^To:.*$}{To: $mailto}m;
+
+    if ($dryrun) {
+        print $message;
+    } else {
+        mail ($message);
+    }
+
+} else {
+    print join ("\n", @email, '');
+}
 
 ##############################################################################
 # Documentation
@@ -180,6 +217,17 @@ e-mail address for an administrator or user, it will warn but continue.
 
 Print out this documentation (which is done simply by feeding the script
 to C<perldoc -t>).
+
+=item B<-mail>=<fname>
+
+Takes a given email message file, replaces the contents of the To: line
+with the contacts found, and sends out that mail.  This can be used for
+simple notifications that have no template requirements.
+
+=item B<-dryrun>
+
+If --mail has been set, only print to the screen rather than actually
+sending mail.  Does nothing if --mail is not set.
 
 =back
 

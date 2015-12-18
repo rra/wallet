@@ -175,6 +175,20 @@ sub objects_unused {
     return (\%search, \%options);
 }
 
+# Return the SQL statement to find all fiel objects that have been created
+# but have never had information stored (via store).
+sub objects_unstored {
+    my ($self) = @_;
+    my @objects;
+
+    my %search = (ob_stored_on => undef,
+                  ob_type      => 'file');
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    return (\%search, \%options);
+}
+
 # Returns a list of all objects stored in the wallet database in the form of
 # type and name pairs.  On error and for an empty database, the empty list
 # will be returned.  To distinguish between an empty list and an error, call
@@ -190,7 +204,7 @@ sub objects {
     if (!defined $type || $type eq '') {
         ($search_ref, $options_ref) = $self->objects_all;
     } else {
-        if ($type ne 'unused' && @args != 1) {
+        if ($type ne 'unused' && $type ne 'unstored' && @args != 1) {
             $self->error ("object searches require one argument to search");
         } elsif ($type eq 'type') {
             ($search_ref, $options_ref) = $self->objects_type (@args);
@@ -202,6 +216,8 @@ sub objects {
             ($search_ref, $options_ref) = $self->objects_acl (@args);
         } elsif ($type eq 'unused') {
             ($search_ref, $options_ref) = $self->objects_unused (@args);
+        } elsif ($type eq 'unstored') {
+            ($search_ref, $options_ref) = $self->objects_unstored (@args);
         } else {
             $self->error ("do not know search type: $type");
         }
@@ -226,12 +242,124 @@ sub objects {
     return @objects;
 }
 
+# Returns a list of all object_history records stored in the wallet database
+# including all of their fields.  On error and for an empty database, the
+# empty list will be returned.  To distinguish between an empty list and an
+# error, call error(), which will return undef if there was no error.
+# Farms out specific statement to another subroutine for specific search
+# types, but each case should return ob_type and ob_name in that order.
+sub objects_history {
+    my ($self, $search_type, @args) = @_;
+    undef $self->{error};
+
+    # All fields in the order we want to see them.
+    my @fields = ('oh_on', 'oh_by', 'oh_type', 'oh_name', 'oh_action',
+                  'oh_from');
+
+    # Get the search and options array refs from specific functions.
+    my %search  = ();
+    my %options = (order_by => \@fields,
+                   select   => \@fields);
+
+    # Perform the search and return on any errors.
+    my @objects;
+    my $schema = $self->{schema};
+    eval {
+        my @objects_rs
+            = $schema->resultset('ObjectHistory')->search (\%search,
+                                                           \%options);
+        for my $object_rs (@objects_rs) {
+            my @rec;
+            for my $field (@fields) {
+                push (@rec, $object_rs->get_column($field));
+            }
+            push (@objects, \@rec);
+        }
+    };
+    if ($@) {
+        $self->error ("cannot list objects: $@");
+        return;
+    }
+
+    return @objects;
+}
+
+# Returns a list of all objects stored in the wallet database in the form of
+# type and name pairs.  On error and for an empty database, the empty list
+# will be returned.  To distinguish between an empty list and an error, call
+# error(), which will return undef if there was no error.  Farms out specific
+# statement to another subroutine for specific search types, but each case
+# should return ob_type and ob_name in that order.
+sub objects_hostname {
+    my ($self, $type, $hostname) = @_;
+    undef $self->{error};
+
+    # Make sure we have a given hostname.
+    if (!$hostname) {
+        $self->error ("object hosts requires one argument to search");
+        return;
+    }
+
+    # If we don't have a way to get host-based object lists, quit.
+    unless (defined &Wallet::Config::is_for_host) {
+        $self->error ('no host-based policy defined');
+        return;
+    }
+
+    # Search on all objects.
+    my %search = ();
+    my %options = (order_by => [ qw/ob_type ob_name/ ],
+                   select   => [ qw/ob_type ob_name/ ]);
+
+    my @objects;
+    my $schema = $self->{schema};
+    eval {
+        my @objects_rs = $schema->resultset('Object')->search (\%search,
+                                                               \%options);
+
+        # Check to see if an object is for the given host and add to list if
+        # so.
+        for my $object_rs (@objects_rs) {
+            my $type = $object_rs->ob_type;
+            my $name = $object_rs->ob_name;
+            next unless &Wallet::Config::is_for_host($type, $name, $hostname);
+            push (@objects, [ $type, $name ]);
+        }
+    };
+    if ($@) {
+        $self->error ("cannot list objects: $@");
+        return;
+    }
+
+    return @objects;
+}
+
+##############################################################################
+# Type reports
+##############################################################################
+
+# Return an alphabetical list of all valid types set up, along with the class
+# that they belong to.
+sub types {
+    my ($self) = @_;
+
+    my (@types);
+    my @types_rs = $self->{schema}->resultset('Type')->all;
+    for my $type_rs (@types_rs) {
+        my $name  = $type_rs->ty_name;
+        my $class = $type_rs->ty_class;
+        push(@types, [ $name, $class ]);
+    }
+
+    @types = sort { $a->[0] cmp $b->[0] } @types;
+    return @types;
+}
+
 ##############################################################################
 # ACL reports
 ##############################################################################
 
-# Returns the SQL statement required to find and return all ACLs in the
-# database.
+# Returns the array of all ACLs in the database.
 sub acls_all {
     my ($self) = @_;
     my @acls;
@@ -255,7 +383,7 @@ sub acls_all {
     return (@acls);
 }
 
-# Returns the SQL statement required to find all empty ACLs in the database.
+# Returns the array of all empty ACLs in the database.
 sub acls_empty {
     my ($self) = @_;
     my @acls;
@@ -281,9 +409,36 @@ sub acls_empty {
     return (@acls);
 }
 
-# Returns the SQL statement and the field required to find ACLs containing the
-# specified entry.  The identifier is automatically surrounded by wildcards to
-# do a substring search.
+# Returns the array of ACLs that nest a given ACL.
+sub acls_nesting {
+    my ($self, $name) = @_;
+    my @acls;
+
+    my $schema = $self->{schema};
+    my %search = (ae_scheme     => 'nested',
+                  ae_identifier => $name);
+    my %options = (join     => 'acl_entries',
+                   prefetch => 'acl_entries',
+                   order_by => [ qw/ac_id/ ],
+                   select   => [ qw/ac_id ac_name/ ]);
+
+    eval {
+        my @acls_rs = $schema->resultset('Acl')->search (\%search, \%options);
+        for my $acl_rs (@acls_rs) {
+            push (@acls, [ $acl_rs->ac_id, $acl_rs->ac_name ]);
+        }
+    };
+
+    if ($@) {
+        $self->error ("cannot list ACLs: $@");
+        return;
+    }
+    return (@acls);
+}
+
+# Returns the array of all ACLs containing the specified entry.  The given
+# identifier is automatically surrounded by wildcards to do a substring
+# search.
 sub acls_entry {
     my ($self, $type, $identifier) = @_;
     my @acls;
@@ -311,7 +466,7 @@ sub acls_entry {
     return (@acls);
 }
 
-# Returns the SQL statement required to find unused ACLs.
+# Returns the array of all unused ACLs.
 sub acls_unused {
     my ($self) = @_;
     my @acls;
@@ -424,6 +579,13 @@ sub acls {
             @acls = $self->acls_empty;
         } elsif ($type eq 'unused') {
             @acls = $self->acls_unused;
+        } elsif ($type eq 'nesting') {
+            if (@args == 0) {
+                $self->error ('ACL nesting search requires an ACL to search');
+                return;
+            } else {
+                @acls = $self->acls_nesting (@args);
+            }
         } else {
             $self->error ("unknown search type: $type");
             return;
@@ -467,6 +629,23 @@ sub owners {
         return;
     }
     return @owners;
+}
+
+# Return an alphabetical list of all valid types set up, along with the class
+# that they belong to.
+sub acl_schemes {
+    my ($self) = @_;
+
+    my (@schemes);
+    my @acls_rs = $self->{schema}->resultset('AclScheme')->all;
+    for my $acl_rs (@acls_rs) {
+        my $name  = $acl_rs->as_name;
+        my $class = $acl_rs->as_class;
+        push(@schemes, [ $name, $class ]);
+    }
+
+    @schemes = sort { $a->[0] cmp $b->[0] } @schemes;
+    return @schemes;
 }
 
 ##############################################################################
@@ -633,14 +812,17 @@ Returns a list of all objects matching a search type and string in the
 database, or all objects in the database if no search information is
 given.
 
-There are five types of searches currently.  C<type>, with a given type,
-will return only those entries where the type matches the given type.
-C<owner>, with a given owner, will only return those objects owned by the
-given ACL name or ID.  C<flag>, with a given flag name, will only return
-those items with a flag set to the given value.  C<acl> operates like
-C<owner>, but will return only those objects that have the given ACL name
-or ID on any of the possible ACL settings, not just owner.  C<unused> will
-return all entries for which a get command has never been issued.
+There are several types of searches.  C<type>, with a given type, will
+return only those entries where the type matches the given type.
+C<owner>, with a given owner, will only return those objects owned by
+the given ACL name or ID.  C<flag>, with a given flag name, will only
+return those items with a flag set to the given value.  C<acl> operates
+like C<owner>, but will return only those objects that have the given
+ACL name or ID on any of the possible ACL settings, not just owner.
+C<unused> will return all entries for which a get command has never
+been issued.  C<unstored> will return all entries for which a store
+command has never been issued (limited to file type since storing isn't
+needed for other types).
 
 The return value is a list of references to pairs of type and name.  For
 example, if two objects existed in the database, both of type C<keytab>
@@ -648,6 +830,24 @@ and with values C<host/example.com> and C<foo>, objects() with no
 arguments would return:
 
     ([ 'keytab', 'host/example.com' ], [ 'keytab', 'foo' ])
+
+Returns the empty list on failure.  To distinguish between this and an
+empty search result, the caller should call error().  error() is
+guaranteed to return the error message if there was an error and undef if
+there was no error.
+
+=item objects_history(TYPE)
+
+Returns a dump of the entire object history table.  The return value is
+a list of references to each field in that table, in the following order:
+
+    oh_on, oh_by, oh_type, oh_name, oh_action, oh_from
+
+=item objects_hostname(TYPE, HOSTNAME)
+
+Returns a list of all host-based objects for a given hostname.  The
+output is identical to the general objects command, but we need to
+separate this out because the way it searches is very different.
 
 Returns the empty list on failure.  To distinguish between this and an
 empty search result, the caller should call error().  error() is

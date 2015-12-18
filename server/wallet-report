@@ -17,16 +17,22 @@ Wallet reporting help:
   acls duplicate                ACLs that duplicate another
   acls empty                    All empty ACLs
   acls entry <scheme> <id>      ACLs containing this entry (wildcarded)
+  acls nesting <acl>            ACLs containing this ACL as a nested entry
   acls unused                   ACLs that are not referenced by any object
   audit acls name               ACLs failing the naming policy
   audit objects name            Objects failing the naming policy
   objects                       All objects
   objects acl <acl>             Objects granting permissions to that ACL
   objects flag <flag>           Objects with that flag set
+  objects history               History of all objects
+  objects host <hostname>       All host-based objects for a specific host
   objects owner <owner>         Objects owned by that owner
   objects type <type>           Objects of that type
-  objects unused                Objects that have never been stored/gotten
+  objects unused                Objects that have never been gotten
+  objects unstored              Objects that have never been stored
   owners <type> <name>          All ACL entries owning matching objects
+  schemes                       All configured ACL schemes
+  types                         All configured wallet types
 EOH
 
 ##############################################################################
@@ -74,7 +80,14 @@ sub command {
         print $HELP;
     } elsif ($command eq 'objects') {
         die "too many arguments to objects\n" if @args > 2;
-        my @objects = $report->objects (@args);
+        my @objects;
+        if (@args && $args[0] eq 'history') {
+            @objects = $report->objects_history (@args);
+        } elsif (@args && $args[0] eq 'host') {
+            @objects = $report->objects_hostname (@args);
+        } else {
+            @objects = $report->objects (@args);
+        }
         if (!@objects and $report->error) {
             die $report->error, "\n";
         }
@@ -91,6 +104,20 @@ sub command {
         for my $entry (@entries) {
             print join (' ', @$entry), "\n";
         }
+    } elsif ($command eq 'schemes') {
+        die "too many arguments to schemes\n" if @args > 0;
+        my @schemes = $report->acl_schemes;
+        for my $entry (@schemes) {
+            print join (' ', @$entry), "\n";
+        }
+
+    } elsif ($command eq 'types') {
+        die "too many arguments to types\n" if @args > 0;
+        my @types = $report->types;
+        for my $entry (@types) {
+            print join (' ', @$entry), "\n";
+        }
+
     } else {
         die "unknown command $command\n";
     }
@@ -219,6 +246,8 @@ Displays a summary of all available commands.
 =item objects type <type>
 
 =item objects unused
+
+=item objects unstored
 
 Returns a list of objects in the database.  Objects will be listed in the
 form:

@@ -609,6 +609,15 @@ sub history {
 # The get methods must always be overridden by the subclass.
 sub get { die "Do not instantiate Wallet::Object::Base directly\n"; }
 
+# The update method should only work if a subclass supports it as something
+# different from get.  That makes it explicit about whether the subclass has
+# a meaningful update.
+sub update {
+    my ($self) = @_;
+    $self->error ("update is not supported for this type, use get instead");
+    return;
+}
+
 # Provide a default store implementation that returns an immutable object
 # error so that auto-generated types don't have to provide their own.
 sub store {

@@ -29,6 +29,37 @@ use Wallet::Kadmin;
 $VERSION = '0.09';
 
 ##############################################################################
+# Shared methods
+##############################################################################
+
+# Generate a keytab into a temporary file and then return that as the return
+# value.  Used by both get and update, as the only difference is how we
+# handle the unchanging flag.
+sub retrieve {
+    my ($self, $operation, $user, $host, $time) = @_;
+    $time ||= time;
+    my $id = $self->{type} . ':' . $self->{name};
+    if ($self->flag_check ('locked')) {
+        $self->error ("cannot get $id: object is locked");
+        return;
+    }
+    my $kadmin = $self->{kadmin};
+    my $result;
+    if ($operation eq 'get' && $self->flag_check ('unchanging')) {
+        $result = $kadmin->keytab ($self->{name});
+    } else {
+        my @enctypes = $self->attr ('enctypes');
+        $result = $kadmin->keytab_rekey ($self->{name}, @enctypes);
+    }
+    if (defined $result) {
+        $self->log_action ($operation, $user, $host, $time);
+    } else {
+        $self->error ($kadmin->error);
+    }
+    return $result;
+}
+
+##############################################################################
 # Enctype restriction
 ##############################################################################
 
@@ -314,25 +345,15 @@ sub destroy {
 # return that as the return value.
 sub get {
     my ($self, $user, $host, $time) = @_;
-    $time ||= time;
-    my $id = $self->{type} . ':' . $self->{name};
-    if ($self->flag_check ('locked')) {
-        $self->error ("cannot get $id: object is locked");
-        return;
-    }
-    my $kadmin = $self->{kadmin};
-    my $result;
-    if ($self->flag_check ('unchanging')) {
-        $result = $kadmin->keytab ($self->{name});
-    } else {
-        my @enctypes = $self->attr ('enctypes');
-        $result = $kadmin->keytab_rekey ($self->{name}, @enctypes);
-    }
-    if (defined $result) {
-        $self->log_action ('get', $user, $host, $time);
-    } else {
-        $self->error ($kadmin->error);
-    }
+    my $result = $self->retrieve ('get', $user, $host, $time);
+    return $result;
+}
+
+# Our update implementation.  Generate a new keytab regardless of the
+# unchanging flag.
+sub update {
+    my ($self, $user, $host, $time) = @_;
+    my $result = $self->retrieve ('update', $user, $host, $time);
     return $result;
 }
 
