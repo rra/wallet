@@ -25,6 +25,7 @@ use Wallet::Kadmin ();
 use Authen::SASL ();
 use Net::LDAP;
 use IPC::Run qw( run timeout );
+use Sys::Syslog qw( :standard :macros );
 
 @ISA = qw(Wallet::Kadmin);
 
@@ -146,7 +147,7 @@ sub msktutil {
     my @cmd  = ($Wallet::Config::AD_MSKTUTIL);
     push @cmd, @args;
     if ($Wallet::Config::AD_DEBUG) {
-        $self->ad_debug(LOG_DEBUG, join(' ', @cmd));
+        $self->ad_debug('debug', join(' ', @cmd));
     }
 
     my $in;
@@ -176,7 +177,7 @@ sub msktutil {
         }
     }
     if ($Wallet::Config::AD_DEBUG) {
-        $self->ad_debug(LOG_DEBUG, $out);
+        $self->ad_debug('debug', $out);
     }
     return $out;
 }
@@ -294,7 +295,7 @@ sub create {
     }
     if ($self->exists($principal)) {
         if ($Wallet::Config::AD_DEBUG) {
-            $self->ad_debug(LOG_DEBUG, "$principal exists");
+            $self->ad_debug('debug', "$principal exists");
         }
         return 1;
     }
