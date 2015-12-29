@@ -28,19 +28,31 @@ use IPC::Run qw( run timeout );
 
 @ISA = qw(Wallet::Kadmin);
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.01';
+# This version should be increased on any code change to this module.
+# Always use two digits for the minor version with a leading zero if
+# necessary so that it will sort properly.
+$VERSION = '0.02';
 
 ##############################################################################
 # kadmin Interaction
 ##############################################################################
 
-# Make sure that principals are well-formed and don't contain characters that
-# will cause us problems when talking to kadmin.  Takes a principal and
-# returns true if it's okay, false otherwise.  Note that we do not permit
-# realm information here.
+# Send debugging output to syslog.
+
+sub ad_debug {
+    my ($self, $l, $m) = @_;
+    if (!$self->{SYSLOG}) {
+        openlog('wallet-server', 'ndelay,nofatal', 'local3');
+        $self->{SYSLOG} = 1;
+    }
+    syslog($l, $m);
+    return;
+}
+
+# Make sure that principals are well-formed and don't contain
+# characters that will cause us problems when talking to kadmin.
+# Takes a principal and returns true if it's okay, false otherwise.
+# Note that we do not permit realm information here.
 sub valid_principal {
     my ($self, $principal) = @_;
     my $valid = 0;
@@ -69,10 +81,9 @@ sub ldap_connect {
     my $ldap;
     eval {
         local $ENV{KRB5CCNAME} = $Wallet::Config::AD_CACHE;
-        my $sasl = Authen::SASL->new (mechanism => 'GSSAPI');
-        $ldap
-          = Net::LDAP->new ($Wallet::Config::KEYTAB_HOST, onerror => 'die');
-        my $mesg = eval { $ldap->bind (undef, sasl => $sasl) };
+        my $sasl = Authen::SASL->new(mechanism => 'GSSAPI');
+        $ldap = Net::LDAP->new($Wallet::Config::KEYTAB_HOST, onerror => 'die');
+        my $mesg = eval { $ldap->bind(undef, sasl => $sasl) };
     };
     if ($@) {
         my $error = $@;
@@ -84,6 +95,8 @@ sub ldap_connect {
     return $ldap;
 }
 
+# Construct a base filter for searching Active Directory.
+
 sub ldap_base_filter {
     my ($self, $principal) = @_;
     my $base;
@@ -92,10 +105,10 @@ sub ldap_base_filter {
         my $fqdn = $1;
         my $host = $fqdn;
         $host =~ s/[.].*//xms;
-        $base    = $Wallet::Config::AD_COMPUTER_DN;
-        $filter  = "(samAccountName=${host}\$)";
+        $base   = $Wallet::Config::AD_COMPUTER_DN;
+        $filter = "(samAccountName=${host}\$)";
     } elsif ($principal =~ m,^service/(\S+),xms) {
-        my $id  = $1;
+        my $id = $1;
         $base   = $Wallet::Config::AD_USER_DN;
         $filter = "(servicePrincipalName=service/${id})";
     }
@@ -109,27 +122,32 @@ sub get_ad_keytab {
 }
 
 # Run a msktutil command and capture the output.  Returns the output,
-# either as a list of lines or, in scalar context, as one string.  
-# Depending on the exit status of msktutil or on the eval trap to know 
-# when the msktutil command fails.  The error string returned from the 
-# call to run frequently contains information about a success rather 
+# either as a list of lines or, in scalar context, as one string.
+# Depending on the exit status of msktutil or on the eval trap to know
+# when the msktutil command fails.  The error string returned from the
+# call to run frequently contains information about a success rather
 # that error output.
 sub msktutil {
     my ($self, $args_ref) = @_;
-    unless (defined ($Wallet::Config::KEYTAB_PRINCIPAL)
-            and defined ($Wallet::Config::KEYTAB_FILE)
-            and defined ($Wallet::Config::KEYTAB_REALM)) {
+    unless (defined($Wallet::Config::KEYTAB_PRINCIPAL)
+        and defined($Wallet::Config::KEYTAB_FILE)
+        and defined($Wallet::Config::KEYTAB_REALM))
+    {
         die "keytab object implementation not configured\n";
     }
-    unless (defined ($Wallet::Config::AD_SERVER)
-            and defined ($Wallet::Config::AD_COMPUTER_DN)
-            and defined ($Wallet::Config::AD_USER_DN)
-            and defined ($Wallet::Config::AD_KEYTAB_BUCKET)) {
+    unless (defined($Wallet::Config::AD_SERVER)
+        and defined($Wallet::Config::AD_COMPUTER_DN)
+        and defined($Wallet::Config::AD_USER_DN)
+        and defined($Wallet::Config::AD_KEYTAB_BUCKET))
+    {
         die "Active Directory support not configured\n";
     }
     my @args = @{$args_ref};
-    my @cmd = ($Wallet::Config::AD_MSKTUTIL);
+    my @cmd  = ($Wallet::Config::AD_MSKTUTIL);
     push @cmd, @args;
+    if ($Wallet::Config::AD_DEBUG) {
+        $self->ad_debug(LOG_DEBUG, join(' ', @cmd));
+    }
 
     my $in;
     my $out;
@@ -148,9 +166,7 @@ sub msktutil {
     }
     if ($err_no || $err_msg) {
         if ($err) {
-            $err_msg .= "ERROR: $err\n"
-        }
-        if ($Wallet::Config::AD_DEBUG) {
+            $err_msg .= "ERROR: $err\n";
             $err_msg .= 'Problem command: ' . join(' ', @cmd) . "\n";
         }
         die $err_msg;
@@ -158,6 +174,9 @@ sub msktutil {
         if ($err) {
             $out .= "\n" . $err;
         }
+    }
+    if ($Wallet::Config::AD_DEBUG) {
+        $self->ad_debug(LOG_DEBUG, $out);
     }
     return $out;
 }
@@ -171,28 +190,37 @@ sub ad_create_update {
         unlink $keytab or die "Problem deleting $keytab\n";
     }
     my @cmd = ('--' . $action);
-    push @cmd, '--server',        $Wallet::Config::AD_SERVER;
-    push @cmd, '--enctypes',      '0x4';
-    push @cmd, '--enctypes',      '0x8';
-    push @cmd, '--enctypes',      '0x10';
-    push @cmd, '--keytab',        $keytab;
-    push @cmd, '--realm',         $Wallet::Config::KEYTAB_REALM;
+    push @cmd, '--server',   $Wallet::Config::AD_SERVER;
+    push @cmd, '--enctypes', '0x4';
+    push @cmd, '--enctypes', '0x8';
+    push @cmd, '--enctypes', '0x10';
+    push @cmd, '--keytab',   $keytab;
+    push @cmd, '--realm',    $Wallet::Config::KEYTAB_REALM;
+
     if ($principal =~ m,^host/(\S+),xms) {
         my $fqdn = $1;
         my $host = $fqdn;
         $host =~ s/[.].*//xms;
         push @cmd, '--dont-expire-password';
         push @cmd, '--computer-name', $host;
-        push @cmd, '--upn',           "host/$fqdn";
-        push @cmd, '--hostname',      $fqdn;
+        push @cmd, '--upn', "host/$fqdn";
+        push @cmd, '--hostname', $fqdn;
     } elsif ($principal =~ m,^service/(\S+),xms) {
         my $service_id = $1;
         push @cmd, '--use-service-account';
-        push @cmd, '--service',      "service/$service_id";
+        push @cmd, '--service', "service/$service_id";
         push @cmd, '--account-name', "srv-${service_id}";
         push @cmd, '--no-pac';
     }
-    $self->msktutil(\@cmd);
+    my $out = $self->msktutil(\@cmd);
+    if ($out =~ /Error:\s+\S+\s+failed/xms) {
+        $self->ad_delete($principal);
+        my $m = "ERROR: problem creating keytab:\n" . $out;
+        $m .= 'INFO: the keytab used to by wallet probably has'
+          . " insufficient access to AD\n";
+        die $m;
+    }
+
     return $keytab;
 }
 
@@ -211,7 +239,7 @@ sub fork_callback {
 # ldap query.
 sub exists {
     my ($self, $principal) = @_;
-    return unless $self->valid_principal ($principal);
+    return unless $self->valid_principal($principal);
 
     my $ldap = $self->ldap_connect();
     my ($base, $filter) = $self->ldap_base_filter($principal);
@@ -226,17 +254,16 @@ sub exists {
             attrs  => \@attrs
         );
     };
+
     if ($@) {
         my $error = $@;
         die "LDAP search error: $error\n";
     }
     if ($result->code) {
         my $m;
-        if ($Wallet::Config::AD_DEBUG) {
-            $m .= "INFO base:$base filter:$filter scope:subtree\n";
-        }
+        $m .= "INFO base:$base filter:$filter scope:subtree\n";
         $m .= 'ERROR:' . $result->error . "\n";
-        die $m
+        die $m;
     }
     if ($result->count > 1) {
         my $m = "ERROR: too many AD entries for this keytab\n";
@@ -256,16 +283,21 @@ sub exists {
 }
 
 # Call msktutil to Create a principal in Kerberos.  Sets the error and
-# returns undef on failure, and returns 1 on either success or the
-# principal already existing.  Note, this creates a keytab that is
-# never used because it is not returned to the user.
+# returns undef on failure, and returns 1 on either success or if the
+# principal already exists.  Note, this creates a keytab that is never
+# used because it is not returned to the user.
 sub create {
     my ($self, $principal) = @_;
-    unless ($self->valid_principal ($principal)) {
+    unless ($self->valid_principal($principal)) {
         die "ERROR: invalid principal name $principal\n";
         return;
     }
-    return 1 if $self->exists($principal);
+    if ($self->exists($principal)) {
+        if ($Wallet::Config::AD_DEBUG) {
+            $self->ad_debug(LOG_DEBUG, "$principal exists");
+        }
+        return 1;
+    }
     my $file = $self->ad_create_update($principal, 'create');
     if (-e $file) {
         unlink $file or die "Problem deleting $file\n";
@@ -277,7 +309,7 @@ sub create {
 # a keytab is marked unchanging and return that.
 sub keytab {
     my ($self, $principal) = @_;
-    unless ($self->valid_principal ($principal)) {
+    unless ($self->valid_principal($principal)) {
         die "ERROR: invalid principal name $principal\n";
         return;
     }
@@ -285,7 +317,7 @@ sub keytab {
     if (!-e $file) {
         die "ERROR: keytab file $file does not exist.\n";
     }
-    return $self->read_keytab ($file);
+    return $self->read_keytab($file);
 }
 
 # Update a keytab for a principal.  This action changes the AD
@@ -293,7 +325,7 @@ sub keytab {
 # passed in are ignored.
 sub keytab_rekey {
     my ($self, $principal, @enctypes) = @_;
-    unless ($self->valid_principal ($principal)) {
+    unless ($self->valid_principal($principal)) {
         die "ERROR: invalid principal name: $principal\n";
         return;
     }
@@ -305,7 +337,7 @@ sub keytab_rekey {
         return;
     }
     my $file = $self->ad_create_update($principal, 'update');
-    return $self->read_keytab ($file);
+    return $self->read_keytab($file);
 }
 
 # Delete a principal from Kerberos.  Return true if successful, false
@@ -315,15 +347,23 @@ sub keytab_rekey {
 # LDAP.
 sub destroy {
     my ($self, $principal) = @_;
-    unless ($self->valid_principal ($principal)) {
-        $self->error ("invalid principal name: $principal");
+    unless ($self->valid_principal($principal)) {
+        $self->error("invalid principal name: $principal");
     }
-    my $exists = $self->exists ($principal);
+    my $exists = $self->exists($principal);
     if (!defined $exists) {
         return;
     } elsif (not $exists) {
         return 1;
     }
+
+    return $self->ad_delete($principal);
+}
+
+# Delete an entry from AD using LDAP.
+
+sub ad_delete {
+    my ($self, $principal) = @_;
 
     my $k_type;
     my $k_id;
@@ -340,13 +380,11 @@ sub destroy {
         }
     }
 
-    my $ldap = $self->ldap_connect();
+    my $ldap  = $self->ldap_connect();
     my $msgid = $ldap->delete($dn);
     if ($msgid->code) {
         my $m;
-        if ($Wallet::Config::AD_DEBUG) {
-            $m .= "ERROR: Problem deleting $dn\n";
-        }
+        $m .= "ERROR: Problem deleting $dn\n";
         $m .= $msgid->error;
         die $m;
     }
@@ -358,11 +396,12 @@ sub destroy {
 # kadmin directly.
 sub new {
     my ($class) = @_;
-    unless (defined ($Wallet::Config::KEYTAB_TMP)) {
+    unless (defined($Wallet::Config::KEYTAB_TMP)) {
         die "KEYTAB_TMP configuration variable not set\n";
     }
     my $self = {};
-    bless ($self, $class);
+    $self->{SYSLOG} = undef;
+    bless($self, $class);
     return $self;
 }
 
