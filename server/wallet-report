@@ -207,6 +207,10 @@ Returns all ACLs containing an entry with given scheme and identifier.
 The scheme must be an exact match, but the <identifier> string will match
 any identifier containing that string.
 
+=item acls nested <acl>
+
+Returns all ACLs that contain this ACL as a nested entry.
+
 =item acls unused
 
 Returns all ACLs that are not referenced by any of the objects in the
@@ -310,7 +314,9 @@ Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2008, 2009, 2010, 2013 The Board of Trustees of the Leland
+Copyright 2016 Russ Allbery <eagle@eyrie.org>
+
+Copyright 2008, 2009, 2010, 2013, 2015 The Board of Trustees of the Leland
 Stanford Junior University
 
 Permission is hereby granted, free of charge, to any person obtaining a
