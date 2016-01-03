@@ -312,6 +312,14 @@ The output will be one line per ACL line in the form:
 
 with duplicates suppressed.
 
+=item schemes
+
+Returns a list of all registered ACL schemes.
+
+=item types
+
+Returns a list of all registered object types.
+
 =back
 
 =head1 AUTHOR
