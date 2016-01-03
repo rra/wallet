@@ -13,7 +13,7 @@ Introduction
 Syntax
 
     An ACL entry in the wallet consists of two pieces of data, a <scheme>
-    and an <instance>. <scheme> is one or more characters in the set
+    and an <identifier>. <scheme> is one or more characters in the set
     [a-z0-9-] that identifies the ACL backend to use when interpreting
     this ACL.  <identifier> is zero or more characters including all
     printable ASCII characters except whitespace.  Only the implementation
@@ -55,6 +55,24 @@ ACL Schemes
     The <identifier> is a fully-qualified Kerberos principal.  Access is
     granted if the principal of the client matches <identifier>.
 
+  ldap-attr
+
+    <identifier> is an an attribute followed by an equal sign and a value.
+    If the LDAP entry corresponding to the given principal contains the
+    attribute and value specified by <identifier>, access is granted.
+
+  ldap-attr-root
+
+    This is almost identical to netdb except that the user must be in the
+    form of a root instance (<user>/root) and the "/root" portion is
+    stripped before checking the NetDB roles.
+
+  nested
+
+    <identifier> is the name of another ACL, and access is granted if it
+    is granted by that ACL.  This can be used to organize multiple ACLs
+    into a group and apply their union to an object.
+
   netdb
 
     <identifier> is the name of a system.  Access is granted if the user
@@ -67,13 +85,6 @@ ACL Schemes
     form of a root instance (<user>/root) and the "/root" portion is
     stripped before checking the NetDB roles.
 
-  ldap-entitlement
-
-    (Not yet implemented.)  <identifier> is an entitlement.  If the
-    entitlement attribute of the LDAP entry corresponding to the given
-    principal contains the entitlement specified in <identifier>, access
-    is granted.
-
   pts
 
     (Not yet implemented.)  <identifier> is the name of an AFS PTS group.
@@ -82,6 +93,7 @@ ACL Schemes
 
 License
 
+    Copyright 2016 Russ Allbery <eagle@eyrie.org>
     Copyright 2006, 2007, 2008, 2013
         The Board of Trustees of the Leland Stanford Junior University
 
