@@ -35,10 +35,11 @@ Server Interface:
  * Provide a way to get history for deleted objects and ACLs.
 
  * Provide an interface to mass-change all instances of one ACL to
-   another.
+   another.  (Owner changes are currently supported, but not the other
+   ACLs.)
 
- * Add help functions to wallet-backend, wallet-report, and wallet-admin
-   listing the commands.
+ * Add help functions to wallet-backend and wallet-admin listing the
+   commands.
 
  * Catch exceptions on object creation in wallet-backend so that we can
    log those as well.
@@ -70,16 +71,12 @@ Server Interface:
    (maybe).  Or, alternately, maybe we allow get of any keytab?  Requires
    more thought.
 
- * Add command to list available types and schemes.
-
  * Add a mechanism to automate owner updates based on default_owner.
 
  * Partially merge create and autocreate.  create and autocreate should do
    the same thing provided there is an autocreation configuration
    available. If not, autocreate should fail and create should fall back
    on checking for ADMIN privileges.
-
- * Support file object renaming.
 
  * Rewrite server backends to use Net::Remctl::Backend.
 
@@ -109,8 +106,6 @@ ACLs:
  * Pass a reference to the object for which the ACL is interpreted to the
    ACL API so that ACL APIs can make more complex decisions.
 
- * A group-in-groups ACL schema.
-
  * Provide an API for verifiers to syntax-check the values before an ACL
    is set and implement syntax checking for the krb5 and ldap-attr
    verifiers.
@@ -122,10 +117,7 @@ ACLs:
    for whether a particular user is authorized to create host-based
    objects for a particular host.
 
- * Add ldap-group ACL scheme.
-
- * Provide a root-instance version of the ldap-attr (and possibly the
-   ldap-group) ACL schemes.
+ * Add ldap-group ACL scheme (and possibly a root-only version).
 
  * Add a comment field to ACLs.
 
@@ -170,14 +162,6 @@ Objects:
  * Support returning the checksum of a file object stored in wallet so
    that one can determine whether the version stored on disk is identical.
 
- * Implement new password wallet object, which is like file except that it
-   generates a random, strong password when retrieved the first time
-   without being stored.
-
- * Support interrogating objects to find all host-based objects for a
-   particular host, allowing cleanup of all of those host's objects after
-   retiring the host.
-
  * Support setting the disallow-svr flag on created principals.  In
    general, support setting arbitrary principal flags.
 
@@ -186,8 +170,6 @@ Reports:
  * Add audit for references to unknown ACLs, possibly introduced by
    previous versions before ACL deletion was checked with database
    backends that don't do referential integrity.
-
- * Add report for all objects that have never been stored.
 
  * For objects tied to hostnames, report on objects referring to hosts
    which do not exist.  For the initial pass, this is probably only keytab
