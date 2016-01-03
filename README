@@ -111,6 +111,9 @@ REQUIREMENTS
   The Duo integration object support in the wallet server requires the
   Net::Duo Perl module.
 
+  The password object support in the wallet server requires the
+  Crypt::GeneratePassword Perl module.
+
   To support the LDAP attribute ACL verifier, the Authen::SASL and
   Net::LDAP Perl modules must be installed on the server.  This verifier
   only works with LDAP servers that support GSS-API binds.
