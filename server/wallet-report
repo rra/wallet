@@ -278,6 +278,12 @@ those where that ACL has any other, more limited permissions.
 
 Returns all objects which have the given flag set.
 
+=item objects host <hostname>
+
+Returns all objects that belong to the given host.  This requires adding
+local configuration to identify objects that belong to a given host.  See
+L<Wallet::Config/"OBJECT HOST-BASED NAMES"> for more information.
+
 =item objects owner <acl>
 
 Returns all objects owned by the given ACL name or ID.
