@@ -89,7 +89,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-ACL Allbery verifier
+ACL Allbery verifier remctl
 
 =head1 NAME
 
