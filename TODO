@@ -121,6 +121,10 @@ ACLs:
 
  * Add a comment field to ACLs.
 
+ * Support external ACLs under a backend other than remctl.  This will
+   require some way of re-exporting the authenticated user identity
+   instead of relying on the existence of the remctl variables.
+
 Database:
 
  * Fix case-insensitivity bug in unique keys with MySQL for objects.  When

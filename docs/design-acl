@@ -50,6 +50,12 @@ Semantics
 
 ACL Schemes
 
+  external
+
+    The <identifier> is arguments to an external command.  Access is
+    granted if the external command returns success.  The standard remctl
+    environment variables are exposed to the external command.
+
   krb5
 
     The <identifier> is a fully-qualified Kerberos principal.  Access is
