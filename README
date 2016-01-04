@@ -109,7 +109,7 @@ REQUIREMENTS
   WebAuth Perl module from WebAuth 4.4.0 or later.
 
   The Duo integration object support in the wallet server requires the
-  Net::Duo Perl module.
+  Net::Duo, JSON, and Perl6::Slurp Perl modules.
 
   The password object support in the wallet server requires the
   Crypt::GeneratePassword Perl module.
