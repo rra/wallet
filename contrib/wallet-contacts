@@ -174,7 +174,7 @@ if ($mail) {
 ##############################################################################
 
 =for stopwords
-ACL NetDB SQL hostname lookup swhois whois Allbery
+ACL NetDB SQL hostname lookup swhois whois Allbery -dryrun
 
 =head1 NAME
 

@@ -135,7 +135,7 @@ wallet-report - Wallet server reporting interface
 
 =for stopwords
 metadata ACL hostname backend acl acls wildcard SQL Allbery remctl
-MERCHANTABILITY NONINFRINGEMENT sublicense
+MERCHANTABILITY NONINFRINGEMENT sublicense unstored
 
 =head1 SYNOPSIS
 
