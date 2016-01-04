@@ -16,6 +16,7 @@ use strict;
 use warnings;
 use vars qw(@ISA $VERSION);
 
+use POSIX qw(_exit);
 use Wallet::ACL::Base;
 use Wallet::Config;
 
@@ -59,11 +60,11 @@ sub check {
     } elsif ($pid == 0) {
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
-            exit 1;
+            _exit(1);
         }
         unless (exec ($Wallet::Config::EXTERNAL_COMMAND, @args)) {
             warn "wallet: cannot run $Wallet::Config::EXTERNAL_COMMAND: $!\n";
-            exit 1;
+            _exit(1);
         }
     }
     local $_;
