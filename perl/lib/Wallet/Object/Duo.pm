@@ -1,7 +1,8 @@
 # Wallet::Object::Duo -- Base Duo object implementation for the wallet
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2014
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -18,8 +19,6 @@ use warnings;
 use vars qw(@ISA $VERSION);
 
 use JSON;
-use Net::Duo::Admin;
-use Net::Duo::Admin::Integration;
 use Perl6::Slurp qw(slurp);
 use Wallet::Config ();
 use Wallet::Object::Base;
@@ -159,8 +158,20 @@ sub new {
     my $key_file = $Wallet::Config::DUO_KEY_FILE;
     my $agent    = $Wallet::Config::DUO_AGENT;
 
+    # Check that we can load all of the required modules.
+    eval {
+        require Net::Duo;
+        require Net::Duo::Admin;
+        require Net::Duo::Admin::Integration;
+    };
+    if ($@) {
+        my $error = $@;
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        die "Duo object support not available: $error\n";
+    }
+
     # Construct the Net::Duo::Admin object.
-    require Net::Duo::Admin;
     my $duo = Net::Duo::Admin->new (
         {
             key_file   => $key_file,
@@ -194,8 +205,20 @@ sub create {
         die "$type is not a valid duo integration\n";
     }
 
+    # Check that we can load all of the required modules.
+    eval {
+        require Net::Duo;
+        require Net::Duo::Admin;
+        require Net::Duo::Admin::Integration;
+    };
+    if ($@) {
+        my $error = $@;
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        die "Duo object support not available: $error\n";
+    }
+
     # Construct the Net::Duo::Admin object.
-    require Net::Duo::Admin;
     my $duo = Net::Duo::Admin->new (
         {
             key_file   => $key_file,
@@ -204,7 +227,6 @@ sub create {
     );
 
     # Create the object in Duo.
-    require Net::Duo::Admin::Integration;
     my $duo_type = $DUO_TYPES{$type}{integration};
     my %data = (
         name  => "$name ($duo_type)",

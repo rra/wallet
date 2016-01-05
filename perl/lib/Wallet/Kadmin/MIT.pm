@@ -18,6 +18,7 @@ use strict;
 use warnings;
 use vars qw(@ISA $VERSION);
 
+use POSIX qw(_exit);
 use Wallet::Config ();
 use Wallet::Kadmin ();
 
@@ -65,11 +66,11 @@ sub kadmin {
         $self->{fork_callback} () if $self->{fork_callback};
         unless (open (STDERR, '>&STDOUT')) {
             warn "wallet: cannot dup stdout: $!\n";
-            exit 1;
+            _exit(1);
         }
         unless (exec ($Wallet::Config::KEYTAB_KADMIN, @args)) {
             warn "wallet: cannot run $Wallet::Config::KEYTAB_KADMIN: $!\n";
-            exit 1;
+            _exit(1);
         }
     }
     local $_;

@@ -12,7 +12,7 @@
 # Modules and declarations
 ##############################################################################
 
-use 5.010;
+use 5.008;
 use autodie;
 use strict;
 use warnings;
@@ -174,7 +174,7 @@ if ($mail) {
 ##############################################################################
 
 =for stopwords
-ACL NetDB SQL hostname lookup swhois whois Allbery
+ACL NetDB SQL hostname lookup swhois whois Allbery -dryrun
 
 =head1 NAME
 

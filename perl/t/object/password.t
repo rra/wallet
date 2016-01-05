@@ -120,5 +120,6 @@ like ($pwd, qr{^.{$Wallet::Config::PWD_LENGTH_MIN}$},
 # Clean up.
 $admin->destroy;
 END {
+    system ('rm -r test-files') == 0 or die "cannot remove test-files\n";
     unlink ('wallet-db');
 }

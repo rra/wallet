@@ -1,7 +1,8 @@
 # Wallet::Config -- Configuration handling for the wallet server.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2013, 2014
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2007, 2008, 2010, 2013, 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -16,7 +17,7 @@ use vars qw($PATH $VERSION);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 # Path to the config file to load.
 $PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
@@ -537,6 +538,36 @@ The default value is 60 * 60 * 24 * 90 (90 days).
 =cut
 
 our $WAKEYRING_PURGE_INTERVAL = 60 * 60 * 24 * 90;
+
+=back
+
+=head1 EXTERNAL ACL CONFIGURATION
+
+This configuration variable is only needed if you intend to use the
+C<external> ACL type (the Wallet::ACL::External class).  This ACL type
+runs an external command to determine if access is granted.
+
+=over 4
+
+=item EXTERNAL_COMMAND
+
+Path to the command to run to determine whether access is granted.  The
+first argument to the command will be the principal requesting access.
+The identifier of the ACL will be split on whitespace and passed in as the
+remaining arguments to this command.
+
+No other arguments are passed to the command, but the command will have
+access to all of the remctl environment variables seen by the wallet
+server (such as REMOTE_USER).  For a full list of environment variables,
+see L<remctld(8)/ENVIRONMENT>.
+
+The external command should exit with a non-zero status but no output to
+indicate a normal failure to satisfy the ACL.  Any output will be treated
+as an error.
+
+=cut
+
+our $EXTERNAL_COMMAND;
 
 =back
 
