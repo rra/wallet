@@ -59,7 +59,7 @@ sub syntax_check {
 # that entry.  We also want to keep track of things already checked in order
 # to avoid any loops.
 sub check {
-    my ($self, $principal, $group) = @_;
+    my ($self, $principal, $group, $type, $name) = @_;
     unless ($principal) {
         $self->error ('no principal specified');
         return;
@@ -78,8 +78,9 @@ sub check {
     # to go through each entry and decide if the given acl has access.
     my @members = $self->get_membership ($group);
     for my $entry (@members) {
-        my ($type, $name) = @{ $entry };
-        my $result = $acl->check_line ($principal, $type, $name);
+        my ($scheme, $identifier) = @{ $entry };
+        my $result = $acl->check_line ($principal, $scheme, $identifier,
+                                       $type, $name);
         return 1 if $result;
     }
     return 0;

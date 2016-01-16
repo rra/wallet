@@ -551,10 +551,10 @@ runs an external command to determine if access is granted.
 
 =item EXTERNAL_COMMAND
 
-Path to the command to run to determine whether access is granted.  The
-first argument to the command will be the principal requesting access.
-The identifier of the ACL will be split on whitespace and passed in as the
-remaining arguments to this command.
+Path to the command to run to determine whether access is granted.  The first
+argument to the command will be the principal requesting access.  The second
+and third arguments will be the type and name of the object that principal is
+requesting access to.  The final argument will be the identifier of the ACL.
 
 No other arguments are passed to the command, but the command will have
 access to all of the remctl environment variables seen by the wallet

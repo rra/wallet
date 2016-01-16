@@ -18,26 +18,30 @@ if [ "$1" != 'eagle@eyrie.org' ]; then
     exit 1
 fi
 
-# Check that the second argument is test.
-if [ "$2" != 'test' ]; then
+# Check that the second and third arguments are file test (the test object).
+if [ "$2" != 'file' ]; then
     echo 'incorrect second argument' >&2
     exit 1
 fi
+if [ "$3" != 'test' ]; then
+    echo 'incorrect third argument' >&2
+    exit 1
+fi
 
-# Process the third argument.
-case $3 in
-    success)
+# Process the fourth argument.
+case $4 in
+    'test success')
         exit 0
         ;;
-    failure)
+    'test failure')
         exit 1
         ;;
-    error)
+    'test error')
         echo 'some error' >&2
         exit 1
         ;;
     *)
-        echo 'unknown third argument' >&2
+        echo 'unknown fourth argument' >&2
         exit 1
         ;;
 esac

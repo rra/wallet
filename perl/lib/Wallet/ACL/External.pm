@@ -46,13 +46,12 @@ sub new {
 # The most trivial ACL verifier.  Returns true if the provided principal
 # matches the ACL.
 sub check {
-    my ($self, $principal, $acl) = @_;
+    my ($self, $principal, $acl, $type, $name) = @_;
     unless ($principal) {
         $self->error ('no principal specified');
         return;
     }
-    my @args = split (' ', $acl);
-    unshift @args, $principal;
+    my @args = ($principal, $type, $name, $acl);
     my $pid = open (EXTERNAL, '-|');
     if (not defined $pid) {
         $self->error ("cannot fork: $!");
@@ -134,14 +133,15 @@ an error.
 Creates a new ACL verifier.  For this verifier, this just confirms that
 the wallet configuration sets an external command.
 
-=item check(PRINCIPAL, ACL)
+=item check(PRINCIPAL, ACL, TYPE, NAME)
 
 Returns true if the external command returns success when run with that
-PRINCIPAL and ACL.  ACL will be split on whitespace and passed as multiple
-arguments.  So, for example, the ACL C<external mdbset shell> will, when
-triggered by a request from rra@EXAMPLE.COM, result in the command:
+PRINCIPAL, object TYPE and NAME, and ACL.  So, for example, the ACL C<external
+mdbset shell> will, when triggered by a request from rra@EXAMPLE.COM for the
+object C<file password>, result in the command:
 
-    $Wallet::Config::EXTERNAL_COMMAND rra@EXAMPLE.COM mdbset shell
+    $Wallet::Config::EXTERNAL_COMMAND rra@EXAMPLE.COM file password \
+        'mdbset shell'
 
 =item error()
 

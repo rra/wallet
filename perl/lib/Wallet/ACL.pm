@@ -480,7 +480,7 @@ sub history {
 {
     my %verifier;
     sub check_line {
-        my ($self, $principal, $scheme, $identifier) = @_;
+        my ($self, $principal, $scheme, $identifier, $type, $name) = @_;
         unless ($verifier{$scheme}) {
             my $class = $self->scheme_mapping ($scheme);
             unless ($class) {
@@ -493,7 +493,8 @@ sub history {
                 return;
             }
         }
-        my $result = ($verifier{$scheme})->check ($principal, $identifier);
+        my $result = ($verifier{$scheme})->check ($principal, $identifier,
+                                                  $type, $name);
         if (not defined $result) {
             push (@{ $self->{check_errors} }, ($verifier{$scheme})->error);
             return;
@@ -503,13 +504,13 @@ sub history {
     }
 }
 
-# Given a principal, check whether it should be granted access according to
-# this ACL.  Returns 1 if access was granted, 0 if access was denied, and
-# undef on some error.  Errors from ACL verifiers do not cause an error
-# return, but are instead accumulated in the check_errors variable returned by
-# the check_errors() method.
+# Given a principal, object type, and object name, check whether that
+# principal should be granted access according to this ACL.  Returns 1 if
+# access was granted, 0 if access was denied, and undef on some error.  Errors
+# from ACL verifiers do not cause an error return, but are instead accumulated
+# in the check_errors variable returned by the check_errors() method.
 sub check {
-    my ($self, $principal) = @_;
+    my ($self, $principal, $type, $name) = @_;
     unless ($principal) {
         $self->error ('no principal specified');
         return;
@@ -520,7 +521,8 @@ sub check {
     $self->{check_errors} = [];
     for my $entry (@entries) {
         my ($scheme, $identifier) = @$entry;
-        my $result = $self->check_line ($principal, $scheme, $identifier);
+        my $result = $self->check_line ($principal, $scheme, $identifier,
+                                        $type, $name);
         return 1 if $result;
     }
     return 0;

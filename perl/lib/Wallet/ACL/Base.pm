@@ -103,10 +103,12 @@ This method should be overridden by any child classes that want to
 implement validating the name of an ACL before creation.  The default
 implementation allows any name for an ACL.
 
-=item check(PRINCIPAL, ACL)
+=item check(PRINCIPAL, ACL, TYPE, NAME)
 
 This method should always be overridden by child classes.  The default
-implementation just declines all access.
+implementation just declines all access.  TYPE and NAME are the type and
+name of the object being accessed, which may be used by some ACL schemes
+or may be ignored.
 
 =item error([ERROR ...])
 

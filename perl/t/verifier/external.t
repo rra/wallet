@@ -22,11 +22,14 @@ $Wallet::Config::EXTERNAL_COMMAND = 't/data/acl-command';
 my $verifier = Wallet::ACL::External->new;
 ok (defined $verifier, 'Wallet::ACL::External creation');
 ok ($verifier->isa ('Wallet::ACL::External'), ' and class verification');
-is ($verifier->check ('eagle@eyrie.org', 'test success'), 1, 'Success');
-is ($verifier->check ('eagle@eyrie.org', 'test failure'), 0, 'Failure');
+is ($verifier->check ('eagle@eyrie.org', 'test success', 'file', 'test'),
+    1, 'Success');
+is ($verifier->check ('eagle@eyrie.org', 'test failure', 'file', 'test'),
+    0, 'Failure');
 is ($verifier->error, undef, 'No error set');
-is ($verifier->check ('eagle@eyrie.org', 'test error'), undef, 'Error');
+is ($verifier->check ('eagle@eyrie.org', 'test error', 'file', 'test'),
+    undef, 'Error');
 is ($verifier->error, 'some error', ' and right error');
-is ($verifier->check (undef, 'eagle@eyrie.org'), undef,
+is ($verifier->check (undef, 'eagle@eyrie.org', 'file', 'test'), undef,
     'Undefined principal');
 is ($verifier->error, 'no principal specified', ' and right error');

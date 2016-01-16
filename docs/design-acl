@@ -31,9 +31,10 @@ Semantics
     used:  Iterate through each ACL entry in the ACL in question.  If the
     ACL entry is malformatted or the scheme is not recognized, skip it.
     Otherwise, dispatch the question to the check function of the ACL
-    implementation, passing it the principal identifying the client and
-    the <identifier> portion of the ACL entry.  This function returns
-    either authorized or unauthorized.  If authorized, end the search; if
+    implementation, passing it the principal identifying the client, the
+    <identifier> portion of the ACL entry, and the type and name of the
+    object the user is attempting to access.  This function returns either
+    authorized or unauthorized.  If authorized, end the search; if
     unauthorized, continue to the next ACL entry.
 
     There is no support in this scheme for negative ACLs.
