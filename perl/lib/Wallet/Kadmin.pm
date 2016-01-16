@@ -69,6 +69,9 @@ sub new {
     } elsif (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'heimdal') {
         require Wallet::Kadmin::Heimdal;
         $kadmin = Wallet::Kadmin::Heimdal->new;
+    } elsif (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'ad') {
+        require Wallet::Kadmin::AD;
+        $kadmin = Wallet::Kadmin::AD->new;
     } else {
         my $type = $Wallet::Config::KEYTAB_KRBTYPE;
         die "unknown KEYTAB_KRBTYPE setting: $type\n";
