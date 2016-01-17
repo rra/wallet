@@ -265,8 +265,7 @@ distclean-local:
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/portable/asprintf-t	\
 	tests/portable/mkstemp-t tests/portable/setenv-t	\
-	tests/portable/snprintf-t tests/portable/strlcat-t	\
-	tests/portable/strlcpy-t tests/util/messages-krb5-t	\
+	tests/portable/snprintf-t tests/util/messages-krb5-t	\
 	tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
