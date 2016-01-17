@@ -1,6 +1,7 @@
-# Wallet::Report -- Wallet system reporting interface.
+# Wallet::Report -- Wallet system reporting interface
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2009, 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,19 +12,15 @@
 ##############################################################################
 
 package Wallet::Report;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION);
 
 use Wallet::ACL;
 use Wallet::Schema;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.04';
+our $VERSION = '1.03';
 
 ##############################################################################
 # Constructor, destructor, and accessors

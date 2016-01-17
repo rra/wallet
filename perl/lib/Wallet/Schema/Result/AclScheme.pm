@@ -12,6 +12,9 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+
+our $VERSION = '1.03';
+
 __PACKAGE__->load_components (qw//);
 
 =for stopwords

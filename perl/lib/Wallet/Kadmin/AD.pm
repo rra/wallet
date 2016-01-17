@@ -1,10 +1,10 @@
-# Wallet::Kadmin::AD -- Wallet Kerberos administration API for AD.
+# Wallet::Kadmin::AD -- Wallet Kerberos administration API for AD
 #
 # Written by Bill MacAllister <bill@ca-zephyr.org>
-# Based on work by Russ Allbery <eagle@eyrie.org> and
-#     Jon Robertson <jonrober@stanford.edu>
-# Copyright 2015
-#     Dropbox
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2015 Dropbox, Inc.
+# Copyright 2007, 2008, 2009, 2010, 2014
+#     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
@@ -13,26 +13,20 @@
 ##############################################################################
 
 package Wallet::Kadmin::AD;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw(@ISA $VERSION);
 
-use Wallet::Config ();
-use Wallet::Kadmin ();
-
-use Authen::SASL ();
+use Authen::SASL;
 use Net::LDAP;
-use IPC::Run qw( run timeout );
-use Sys::Syslog qw( :standard :macros );
+use IPC::Run qw(run timeout);
+use Sys::Syslog qw(:standard :macros);
+use Wallet::Config;
+use Wallet::Kadmin;
 
-@ISA = qw(Wallet::Kadmin);
-
-# This version should be increased on any code change to this module.
-# Always use two digits for the minor version with a leading zero if
-# necessary so that it will sort properly.
-$VERSION = '0.02';
+our @ISA     = qw(Wallet::Kadmin);
+our $VERSION = '1.03';
 
 ##############################################################################
 # kadmin Interaction

@@ -1,6 +1,7 @@
-# Wallet::Object::Base -- Parent class for any object stored in the wallet.
+# Wallet::Object::Base -- Parent class for any object stored in the wallet
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2008, 2010, 2011, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,22 +12,17 @@
 ##############################################################################
 
 package Wallet::Object::Base;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION);
 
 use DateTime;
 use Date::Parse qw(str2time);
-use DBI;
 use Text::Wrap qw(wrap);
 use Wallet::ACL;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.08';
+our $VERSION = '1.03';
 
 ##############################################################################
 # Constructors

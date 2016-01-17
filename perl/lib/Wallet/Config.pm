@@ -1,4 +1,4 @@
-# Wallet::Config -- Configuration handling for the wallet server.
+# Wallet::Config -- Configuration handling for the wallet server
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
@@ -8,19 +8,15 @@
 # See LICENSE for licensing terms.
 
 package Wallet::Config;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($PATH $VERSION);
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.06';
+our $VERSION = '1.03';
 
 # Path to the config file to load.
-$PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
+our $PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
 
 =head1 NAME
 

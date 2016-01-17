@@ -9,31 +9,6 @@
 #
 # All the functions here assume that BUILD and SOURCE are set in the
 # environment.  This is normally done via the C TAP Harness runtests wrapper.
-#
-# The canonical version of this file is maintained in the rra-c-util package,
-# which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
-#
-# Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2013
-#     The Board of Trustees of the Leland Stanford Junior University
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
 
 package Test::RRA::Automake;
 
@@ -87,7 +62,7 @@ BEGIN {
     # This version should match the corresponding rra-c-util release, but with
     # two digits for the minor version, including a leading zero if necessary,
     # so that it will sort properly.
-    $VERSION = '5.05';
+    $VERSION = '5.10';
 }
 
 # Perl directories to skip globally for perl_dirs.  We ignore the perl
@@ -126,7 +101,15 @@ sub automake_setup {
     my ($vol, $dirs) = File::Spec->splitpath($start, 1);
     my @dirs = File::Spec->splitdir($dirs);
     pop(@dirs);
-    if ($dirs[-1] eq File::Spec->updir) {
+
+    # Simplify relative paths at the end of the directory.
+    my $ups = 0;
+    my $i   = $#dirs;
+    while ($i > 2 && $dirs[$i] eq File::Spec->updir) {
+        $ups++;
+        $i--;
+    }
+    for (1 .. $ups) {
         pop(@dirs);
         pop(@dirs);
     }
@@ -196,7 +179,7 @@ sub perl_dirs {
 
     # Build the list of top-level directories to test.
     opendir(my $rootdir, q{.}) or BAIL_OUT("cannot open .: $!");
-    my @dirs = grep { -d $_ && !$skip{$_} } readdir($rootdir);
+    my @dirs = grep { -d && !$skip{$_} } readdir($rootdir);
     closedir($rootdir);
     @dirs = File::Spec->no_upwards(@dirs);
 
@@ -288,8 +271,8 @@ END {
 __END__
 
 =for stopwords
-Allbery Automake Automake-aware Automake-based rra-c-util ARGS
-subdirectories sublicense MERCHANTABILITY NONINFRINGEMENT umask
+Allbery Automake Automake-aware Automake-based rra-c-util ARGS subdirectories
+sublicense MERCHANTABILITY NONINFRINGEMENT umask
 
 =head1 NAME
 
@@ -309,75 +292,71 @@ Test::RRA::Automake - Automake-aware support functions for Perl tests
 =head1 DESCRIPTION
 
 This module collects utility functions that are useful for test scripts
-written in Perl and included in a C Automake-based package.  They assume
-the layout of a package that uses rra-c-util and C TAP Harness for the
-test structure.
+written in Perl and included in a C Automake-based package.  They assume the
+layout of a package that uses rra-c-util and C TAP Harness for the test
+structure.
 
 Loading this module will also add the directories C<perl/blib/arch> and
-C<perl/blib/lib> to the Perl library search path, relative to BUILD if
-that environment variable is set.  This is harmless for C Automake
-projects that don't contain an embedded Perl module, and for those
-projects that do, this will allow subsequent C<use> calls to find modules
-that are built as part of the package build process.
+C<perl/blib/lib> to the Perl library search path, relative to BUILD if that
+environment variable is set.  This is harmless for C Automake projects that
+don't contain an embedded Perl module, and for those projects that do, this
+will allow subsequent C<use> calls to find modules that are built as part of
+the package build process.
 
 The automake_setup() function should be called before calling any other
 functions provided by this module.
 
 =head1 FUNCTIONS
 
-None of these functions are imported by default.  The ones used by a
-script should be explicitly imported.  On failure, all of these functions
-call BAIL_OUT (from Test::More).
+None of these functions are imported by default.  The ones used by a script
+should be explicitly imported.  On failure, all of these functions call
+BAIL_OUT (from Test::More).
 
 =over 4
 
 =item automake_setup([ARGS])
 
-Verifies that the BUILD and SOURCE environment variables are set and
-then changes directory to the top of the source tree (which is one
-directory up from the SOURCE path, since SOURCE points to the top of
-the tests directory).
+Verifies that the BUILD and SOURCE environment variables are set and then
+changes directory to the top of the source tree (which is one directory up
+from the SOURCE path, since SOURCE points to the top of the tests directory).
 
-If ARGS is given, it should be a reference to a hash of configuration
-options.  Only one option is supported: C<chdir_build>.  If it is set
-to a true value, automake_setup() changes directories to the top of
-the build tree instead.
+If ARGS is given, it should be a reference to a hash of configuration options.
+Only one option is supported: C<chdir_build>.  If it is set to a true value,
+automake_setup() changes directories to the top of the build tree instead.
 
 =item perl_dirs([ARGS])
 
 Returns a list of directories that may contain Perl scripts that should be
-tested by test scripts that test all Perl in the source tree (such as
-syntax or coding style checks).  The paths will be simple directory names
-relative to the current directory or two-part directory names under the
-F<tests> directory.  (Directories under F<tests> are broken out separately
-since it's common to want to apply different policies to different
-subdirectories of F<tests>.)
+tested by test scripts that test all Perl in the source tree (such as syntax
+or coding style checks).  The paths will be simple directory names relative to
+the current directory or two-part directory names under the F<tests>
+directory.  (Directories under F<tests> are broken out separately since it's
+common to want to apply different policies to different subdirectories of
+F<tests>.)
 
-If ARGS is given, it should be a reference to a hash of configuration
-options.  Only one option is supported: C<skip>, whose value should be a
-reference to an array of additional top-level directories or directories
-starting with C<tests/> that should be skipped.
+If ARGS is given, it should be a reference to a hash of configuration options.
+Only one option is supported: C<skip>, whose value should be a reference to an
+array of additional top-level directories or directories starting with
+C<tests/> that should be skipped.
 
 =item test_file_path(FILE)
 
-Given FILE, which should be a relative path, locates that file relative to
-the test directory in either the source or build tree.  FILE will be
-checked for relative to the environment variable BUILD first, and then
-relative to SOURCE.  test_file_path() returns the full path to FILE or
-calls BAIL_OUT if FILE could not be found.
+Given FILE, which should be a relative path, locates that file relative to the
+test directory in either the source or build tree.  FILE will be checked for
+relative to the environment variable BUILD first, and then relative to SOURCE.
+test_file_path() returns the full path to FILE or calls BAIL_OUT if FILE could
+not be found.
 
 =item test_tmpdir()
 
-Create a temporary directory for tests to use for transient files and
-return the path to that directory.  The directory is created relative to
-the BUILD environment variable, which must be set.  Permissions on the
-directory are set using the current umask.  test_tmpdir() returns the full
-path to the temporary directory or calls BAIL_OUT if it could not be
-created.
+Create a temporary directory for tests to use for transient files and return
+the path to that directory.  The directory is created relative to the BUILD
+environment variable, which must be set.  Permissions on the directory are set
+using the current umask.  test_tmpdir() returns the full path to the temporary
+directory or calls BAIL_OUT if it could not be created.
 
-The directory is automatically removed if possible on program exit.
-Failure to remove the directory on exit is reported with diag() and
-otherwise ignored.
+The directory is automatically removed if possible on program exit.  Failure
+to remove the directory on exit is reported with diag() and otherwise ignored.
 
 =back
 
@@ -387,35 +366,36 @@ Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2013 The Board of Trustees of the Leland Stanford Junior
-University
+Copyright 2014, 2015 Russ Allbery <eagle@eyrie.org>
 
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
+Copyright 2013 The Board of Trustees of the Leland Stanford Junior University
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 =head1 SEE ALSO
 
 Test::More(3), Test::RRA(3), Test::RRA::Config(3)
 
+This module is maintained in the rra-c-util package.  The current version is
+available from L<http://www.eyrie.org/~eagle/software/rra-c-util/>.
+
 The C TAP Harness test driver and libraries for TAP-based C testing are
 available from L<http://www.eyrie.org/~eagle/software/c-tap-harness/>.
-
-This module is maintained in the rra-c-util package.  The current version
-is available from L<http://www.eyrie.org/~eagle/software/rra-c-util/>.
 
 =cut

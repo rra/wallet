@@ -1,7 +1,8 @@
-# Wallet::ACL::LDAP::Attribute::Root -- Wallet LDAP ACL verifier (root instances).
+# Wallet::ACL::LDAP::Attribute::Root -- Wallet root instance LDAP ACL verifier
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# From Wallet::ACL::NetDB::Root by Russ Allbery <eagle@eyrie.org>
+# Based on Wallet::ACL::NetDB::Root by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -12,21 +13,15 @@
 ##############################################################################
 
 package Wallet::ACL::LDAP::Attribute::Root;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw(@ISA $VERSION);
 
 use Wallet::ACL::LDAP::Attribute;
-use Wallet::Config;
 
-@ISA = qw(Wallet::ACL::LDAP::Attribute);
-
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.01';
+our @ISA     = qw(Wallet::ACL::LDAP::Attribute);
+our $VERSION = '1.03';
 
 ##############################################################################
 # Interface

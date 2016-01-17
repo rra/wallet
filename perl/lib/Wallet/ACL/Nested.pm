@@ -1,6 +1,7 @@
 # Wallet::ACL::Nested - ACL class for nesting ACLs
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,20 +12,15 @@
 ##############################################################################
 
 package Wallet::ACL::Nested;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION @ISA);
 
 use Wallet::ACL::Base;
 
-@ISA = qw(Wallet::ACL::Base);
-
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.01';
+our @ISA     = qw(Wallet::ACL::Base);
+our $VERSION = '1.03';
 
 ##############################################################################
 # Interface

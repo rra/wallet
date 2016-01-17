@@ -1,6 +1,7 @@
-# Wallet::Admin -- Wallet system administrative interface.
+# Wallet::Admin -- Wallet system administrative interface
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2009, 2010, 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,19 +12,15 @@
 ##############################################################################
 
 package Wallet::Admin;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION);
 
 use Wallet::ACL;
 use Wallet::Schema;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.08';
+our $VERSION = '1.03';
 
 # The last non-DBIx::Class version of Wallet::Schema.  If a database has no
 # DBIx::Class versioning, we artificially install this version number before

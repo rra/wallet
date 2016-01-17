@@ -1,7 +1,8 @@
-# Wallet::Policy::Stanford -- Stanford's wallet naming and ownership policy.
+# Wallet::Policy::Stanford -- Stanford's wallet naming and ownership policy
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2013
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2013, 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -25,7 +26,7 @@ our (@EXPORT_OK, $VERSION);
 # against circular module loading (not that we load any modules, but
 # consistency is good).
 BEGIN {
-    $VERSION   = '1.01';
+    $VERSION   = '1.03';
     @EXPORT_OK = qw(default_owner verify_name is_for_host);
 }
 

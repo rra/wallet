@@ -1,6 +1,5 @@
 # Wallet::ACL::External -- Wallet external ACL verifier
 #
-# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
 #
 # See LICENSE for licensing terms.
@@ -10,22 +9,17 @@
 ##############################################################################
 
 package Wallet::ACL::External;
-require 5.008;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw(@ISA $VERSION);
 
 use POSIX qw(_exit);
 use Wallet::ACL::Base;
 use Wallet::Config;
 
-@ISA = qw(Wallet::ACL::Base);
-
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.01';
+our @ISA     = qw(Wallet::ACL::Base);
+our $VERSION = '1.03';
 
 ##############################################################################
 # Interface
