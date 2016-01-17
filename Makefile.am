@@ -254,8 +254,10 @@ clean-local:
 	    cd perl && ./Build realclean ;		\
 	fi
 
-# Remove the files that we copy over if and only if builddir != srcdir.
+# Remove the Autoconf cache.  Remove the files that we copy over if and only
+# if builddir != srcdir.
 distclean-local:
+	rm -rf autom4te.cache
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then	\
 	    for f in $(PERL_FILES) ; do				\
 		rm -f "$(builddir)/$$f" ;			\
