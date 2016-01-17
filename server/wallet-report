@@ -1,12 +1,11 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Wallet server reporting interface.
 
-##############################################################################
-# Declarations and globals
-##############################################################################
-
+use 5.008;
 use strict;
+use warnings;
+
 use Wallet::Report;
 
 # The help output, sent in reply to the help command.  Lists each supported

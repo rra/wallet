@@ -2,10 +2,7 @@
 #
 # Wallet server for storing and retrieving secure data.
 
-##############################################################################
-# Declarations and site configuration
-##############################################################################
-
+use 5.008;
 use strict;
 use warnings;
 
