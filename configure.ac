@@ -15,10 +15,14 @@ AM_INIT_AUTOMAKE([1.11 check-news dist-xz foreign silent-rules subdir-objects
     -Wall -Wno-override -Werror])
 AM_MAINTAINER_MODE
 
+dnl Detect unexpanded macros.
+m4_pattern_forbid([^_?RRA_])
+
 dnl AM_PROG_AR is required for Automake 1.12 by Libtool but not defined at all
 dnl (or needed) in Automake 1.11.  Work around this bug.
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
+RRA_PROG_CC_CLANG
 AC_SYS_LARGEFILE
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -56,8 +60,8 @@ RRA_LIB_KRB5_RESTORE
 
 dnl Probe for properties of the C library.
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/bitypes.h sys/uio.h syslog.h])
-AC_CHECK_DECLS([snprintf, vsnprintf])
+AC_CHECK_HEADERS([sys/bitypes.h sys/uio.h sys/time.h syslog.h])
+AC_CHECK_DECLS([snprintf, strlcat, strlcpy, vsnprintf])
 RRA_C_C99_VAMACROS
 RRA_C_GNU_VAMACROS
 AC_TYPE_LONG_LONG_INT

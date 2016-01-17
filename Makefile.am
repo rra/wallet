@@ -1,6 +1,7 @@
 # Automake makefile for wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2006, 2007, 2008, 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -173,22 +174,28 @@ dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
 	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql		\
 	perl/sql/Wallet-Schema-0.09-SQLite.sql
 
-# A set of flags for warnings.	Add -O because gcc won't find some warnings
+# A set of flags for warnings.  Add -O because gcc won't find some warnings
 # without optimization turned on.  Desirable warnings that can't be turned
 # on due to other problems:
 #
-#     -Wconversion	http://bugs.debian.org/488884 (htons warnings)
+#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
 #
-# Last checked against gcc 4.8.2 (2014-04-12).	-D_FORTIFY_SOURCE=2 enables
+# Last checked against gcc 4.8.2 (2014-04-12).  -D_FORTIFY_SOURCE=2 enables
 # warn_unused_result attribute markings on glibc functions on Linux, which
 # catches a few more issues.
-WARNINGS = -g -O -fstrict-overflow -fstrict-aliasing -D_FORTIFY_SOURCE=2    \
-	-Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self -Wswitch-enum   \
-	-Wstrict-overflow=5 -Wfloat-equal -Wdeclaration-after-statement	    \
-	-Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align	    \
-	-Wwrite-strings -Wjump-misses-init -Wlogical-op -Wstrict-prototypes \
-	-Wold-style-definition -Wmissing-prototypes -Wnormalized=nfc	    \
-	-Wpacked -Wredundant-decls -Wnested-externs -Winline -Wvla -Werror
+if WARNINGS_GCC
+    WARNINGS = -g -O -fstrict-overflow -fstrict-aliasing -D_FORTIFY_SOURCE=2 \
+        -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self -Wswitch-enum    \
+        -Wstrict-overflow=5 -Wmissing-format-attribute -Wfloat-equal         \
+        -Wdeclaration-after-statement -Wshadow -Wpointer-arith               \
+        -Wbad-function-cast -Wcast-align -Wwrite-strings -Wjump-misses-init  \
+        -Wlogical-op -Wstrict-prototypes -Wold-style-definition              \
+        -Wmissing-prototypes -Wnormalized=nfc -Wpacked -Wredundant-decls     \
+        -Wnested-externs -Winline -Wvla -Werror
+endif
+if WARNINGS_CLANG
+    WARNINGS = -Weverything -Wno-padded
+endif
 
 warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)'

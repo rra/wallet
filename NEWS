@@ -79,6 +79,20 @@ wallet 1.3 (unreleased)
     package version except for Wallet::Schema, which is used to version
     the database schema.
 
+    Update to rra-c-util 5.10:
+
+    * Add missing va_end to xasprintf implementation.
+    * Fix Perl test suite framework for new Automake relative paths.
+    * Improve portability to Kerberos included in Solaris 10.
+    * Use appropriate warning flags with Clang (currently not warning clean).
+
+    Update to C TAP Harness 3.4:
+
+    * Fix segfault in runtests with an empty test list.
+    * Display verbose test results with -v or C_TAP_VERBOSE.
+    * Test infrastructure builds cleanly with Clang warnings.
+    * Support comments and blank lines in test lists.
+
 wallet 1.2 (2014-12-08)
 
     The duo object type has been split into several sub-types, each for a
