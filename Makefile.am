@@ -97,7 +97,7 @@ PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	    \
 	perl/t/policy perl/t/style perl/t/util perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore LICENSE autogen client/wallet.pod		   \
+EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	   \
 	client/wallet-rekey.pod config/allow-extract config/keytab	   \
 	config/keytab.acl config/wallet config/wallet-report.acl	   \
 	docs/design contrib/README contrib/convert-srvtab-db		   \
