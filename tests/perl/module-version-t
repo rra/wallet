@@ -37,8 +37,15 @@ use Test::RRA::ModuleVersion qw(test_module_versions update_module_versions);
 #          List: The version number and the package name
 # Throws: Text exception if NEWS is not found or doesn't contain a version
 sub news_version {
-    my ($package, $version);
-    open(my $news, q{<}, 'NEWS') or die "$0: cannot open NEWS: $!\n";
+    my ($package, $version, $news);
+    for my $path ('NEWS', '../NEWS') {
+        if (-f $path) {
+            open($news, q{<}, $path) or die "$0: cannot open $path: $!\n";
+        }
+    }
+    if (!$news) {
+        die "$0: cannot find NEWS file\n";
+    }
   SCAN:
     while (defined(my $line = <$news>)) {
         ## no critic (RegularExpressions::ProhibitEscapedMetacharacters)
