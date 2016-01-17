@@ -11,8 +11,6 @@ portable/asprintf
 portable/mkstemp
 portable/setenv
 portable/snprintf
-portable/strlcat
-portable/strlcpy
 server/admin
 server/backend
 server/keytab
