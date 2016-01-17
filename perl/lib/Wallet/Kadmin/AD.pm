@@ -413,7 +413,7 @@ __END__
 
 =for stopwords
 rekeying rekeys remctl backend keytabs keytab kadmin KDC API Allbery
-unlinked
+unlinked MacAllister msktutil
 
 =head1 NAME
 
@@ -435,7 +435,7 @@ Directory Kerberos, providing an interface to create and delete
 principals and create keytabs.  It provides the API documented in
 L<Wallet::Kadmin> for an Active Directory Kerberos KDC.
 
-AD erberos does not provide any method via msktuil to retrieve a
+AD Kerberos does not provide any method via msktutil to retrieve a
 keytab for a principal without rekeying it, so the keytab() method (as
 opposed to keytab_rekey(), which rekeys the principal) is implemented
 using a local keytab cache.
