@@ -2,6 +2,18 @@
 
 wallet 1.3 (unreleased)
 
+    This release adds initial, experimental support for using Active
+    Directory as the KDC for keytab creation.  The interface to Active
+    Directory uses a combination of direct LDAP queries and the msktutil
+    utility.  This version does not support the wallet unchanging flag.
+    Unchanging requires that a keytab be retrieved without changing the
+    password/kvno which is not supported by msktutil.  Active Directory
+    can be selected by setting KEYTAB_KRBTYPE to AD in the wallet
+    configuration.  Multiple other configuration options must also be set;
+    see Wallet::Config for more information and README for the additional
+    Perl modules required.  Thanks to Bill MacAllister for the
+    implementation.
+
     A new ACL type, nested (Wallet::ACL::Nested), is now supported.  The
     identifier of this ACL names another ACL, and access is granted if
     that ACL would grant access.  This lets one combine multiple other
@@ -62,13 +74,6 @@ wallet 1.3 (unreleased)
     operations to the contrib directory.
 
     Displays of ACLs and ACL entries are now sorted correctly.
-
-    Initial support for using Active Directory as the KDC for keytab
-    creation.  The interface to Active Directory uses a combination of
-    direct LDAP queries and the msktutil utility.  This version does
-    not support the wallet unchanging flag.  Unchanging requires that
-    a keytab be retrieved without changing the password/kvno which is
-    not supported by msktutil.
 
 wallet 1.2 (2014-12-08)
 

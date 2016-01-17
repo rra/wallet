@@ -319,7 +319,8 @@ modify, inspect, and delete any principals that should be managed by the
 wallet.  (In MIT Kerberos F<kadm5.acl> parlance, this is C<admci>
 privileges.)
 
-KEYTAB_FILE must be set to use keytab objects.
+KEYTAB_FILE must be set to use keytab objects with any backend other than
+Active Directory.
 
 =cut
 
@@ -336,16 +337,18 @@ is generally pointless and may interact poorly with the way C<addprinc
 -randkey> works when third-party add-ons for password strength checking
 are used.)
 
+This option is ignored when using Active Directory.
+
 =cut
 
 our $KEYTAB_FLAGS = '-clearpolicy';
 
 =item KEYTAB_HOST
 
-Specifies the host on which the kadmin service is running.  This setting
-overrides the C<admin_server> setting in the [realms] section of
-F<krb5.conf> and any DNS SRV records and allows the wallet to run on a
-system that doesn't have a Kerberos configuration for the wallet's realm.
+Specifies the host on which the kadmin or Active Directory service is running.
+This setting overrides the C<admin_server> setting in the [realms] section of
+F<krb5.conf> and any DNS SRV records and allows the wallet to run on a system
+that doesn't have a Kerberos configuration for the wallet's realm.
 
 =cut
 
@@ -357,13 +360,15 @@ The path to the B<kadmin> command-line client.  The default value is
 C<kadmin>, which will cause the wallet to search for B<kadmin> on its
 default PATH.
 
+This option is ignored when using Active Directory.
+
 =cut
 
 our $KEYTAB_KADMIN = 'kadmin';
 
 =item KEYTAB_KRBTYPE
 
-The Kerberos KDC implementation type, either C<Heimdal> or C<MIT>
+The Kerberos KDC implementation type, chosen from C<AD>, C<Heimdal>, or C<MIT>
 (case-insensitive).  KEYTAB_KRBTYPE must be set to use keytab objects.
 
 =cut
@@ -375,9 +380,9 @@ our $KEYTAB_KRBTYPE;
 The principal whose key is stored in KEYTAB_FILE.  The wallet will
 authenticate as this principal to the kadmin service.
 
-KEYTAB_PRINCIPAL must be set to use keytab objects, at least until
-B<kadmin> is smart enough to use the first principal found in the keytab
-it's using for authentication.
+KEYTAB_PRINCIPAL must be set to use keytab objects unless Active Directory is
+the backend, at least until B<kadmin> is smart enough to use the first
+principal found in the keytab it's using for authentication.
 
 =cut
 
@@ -391,7 +396,7 @@ installation and the keytab object names are stored without realm.
 KEYTAB_REALM is added when talking to the KDC via B<kadmin>.
 
 KEYTAB_REALM must be set to use keytab objects.  C<ktadd> doesn't always
-default to the local realm.
+default to the local realm and the Active Directory integration requires it.
 
 =cut
 
@@ -411,6 +416,69 @@ KEYTAB_TMP must be set to use keytab objects.
 =cut
 
 our $KEYTAB_TMP;
+
+=back
+
+The following parameters are specific to generating keytabs from Active
+Directory (KEYTAB_KRBTYPE is set to C<AD>).
+
+=over 4
+
+=item AD_CACHE
+
+Specifies the ticket cache to use when manipulating Active Directory objects.
+The ticket cache must be for a principal able to bind to Active Directory and
+run B<msktutil>.
+
+AD_CACHE must be set to use Active Directory support.
+
+=cut
+
+our $AD_CACHE;
+
+=item AD_COMPUTER_DN
+
+The LDAP base DN for computer objects inside Active Directory.  All keytabs of
+the form host/<hostname> will be mapped to objects with a C<samAccountName> of
+the <hostname> portion under this DN.
+
+AD_COMPUTER_DN must be set if using Active Directory as the keytab backend.
+
+=cut
+
+our $AD_COMPUTER_DN;
+
+=item AD_DEBUG
+
+If set to true, asks for some additional debugging information, such as the
+B<msktutil> command, to be logged to syslog.  These debugging messages will be
+logged to the C<local3> facility.
+
+=cut
+
+our $AD_DEBUG = 0;
+
+=item AD_MSKTUTIL
+
+The path to the B<msktutil> command-line client.  The default value is
+C<msktutil>, which will cause the wallet to search for B<msktutil> on its
+default PATH.
+
+=cut
+
+our $AD_MSKTUTIL = 'msktutil';
+
+=item AD_USER_DN
+
+The LDAP base DN for user objects inside Active Directory.  All keytabs of the
+form service/<user> will be mapped to objects with a C<servicePrincipalName>
+matching the wallet object name under this DN.
+
+AD_USER_DN must be set if using Active Directory as the keytab backend.
+
+=cut
+
+our $AD_USER_DN;
 
 =back
 

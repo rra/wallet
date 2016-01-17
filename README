@@ -91,12 +91,15 @@ REQUIREMENTS
   on CPAN for older versions.
 
   The keytab support in the wallet server supports either Heimdal or MIT
-  Kerberos KDCs.  The Heimdal support requires the Heimdal::Kadm5 Perl
-  module.  The MIT Kerberos support requires the MIT Kerberos kadmin
-  client program be installed.  In either case, wallet also requires that
-  the wallet server have a keytab for a principal with appropriate access
-  to create, modify, and delete principals from the KDC (as configured in
-  kadm5.acl on an MIT Kerberos KDC).
+  Kerberos KDCs and has exeprimental support for Active Directory.  The
+  Heimdal support requires the Heimdal::Kadm5 Perl module.  The MIT
+  Kerberos support requires the MIT Kerberos kadmin client program be
+  installed.  The Active Directory support requires the Net::LDAP,
+  Authen::SASL, and IPC::Run Perl modules and the msktutil client program.
+  In all cases, wallet also requires that the wallet server have a keytab
+  for a principal with appropriate access to create, modify, and delete
+  principals from the KDC (as configured in kadm5.acl on an MIT Kerberos
+  KDC).
 
   To support the unchanging flag on keytab objects with an MIT Kerberos
   KDC, the Net::Remctl Perl module (shipped with remctl) must be installed
@@ -339,8 +342,12 @@ THANKS
   security models.
 
   To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
-  many of the wallet server-side reports, and the initial wallet-rekey
-  implementation.
+  many of the wallet server-side reports, the initial wallet-rekey
+  implementation, and lots of work on object and ACL types including
+  nested ACLs.
+
+  To Bill MacAllister for Wallet::Kadmin::AD and the implementation of
+  keytab object types backed by Active Directory.
 
 LICENSE
 

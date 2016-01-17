@@ -130,16 +130,14 @@ sub get_ad_keytab {
 # that error output.
 sub msktutil {
     my ($self, $args_ref) = @_;
-    unless (defined($Wallet::Config::KEYTAB_PRINCIPAL)
-        and defined($Wallet::Config::KEYTAB_FILE)
+    unless (defined($Wallet::Config::KEYTAB_HOST)
         and defined($Wallet::Config::KEYTAB_REALM))
     {
         die "keytab object implementation not configured\n";
     }
-    unless (defined($Wallet::Config::AD_SERVER)
+    unless (defined($Wallet::Config::AD_CACHE)
         and defined($Wallet::Config::AD_COMPUTER_DN)
-        and defined($Wallet::Config::AD_USER_DN)
-        and defined($Wallet::Config::AD_KEYTAB_BUCKET))
+        and defined($Wallet::Config::AD_USER_DN))
     {
         die "Active Directory support not configured\n";
     }
