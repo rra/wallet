@@ -114,11 +114,13 @@ EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	   \
 	tests/data/fake-keytab-unknown tests/data/fake-srvtab		   \
 	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf   \
 	tests/docs/pod-spelling-t tests/docs/pod-t			   \
-	tests/perl/minimum-version-t tests/perl/strict-t		   \
-	tests/server/admin-t tests/server/backend-t tests/server/keytab-t  \
-	tests/server/report-t tests/tap/kerberos.sh tests/tap/libtap.sh	   \
-	tests/tap/perl/Test/RRA.pm tests/tap/perl/Test/RRA/Automake.pm	   \
-	tests/tap/perl/Test/RRA/Config.pm tests/tap/remctl.sh		   \
+	tests/perl/minimum-version-t tests/perl/module-version-t	   \
+	tests/perl/strict-t tests/server/admin-t tests/server/backend-t	   \
+	tests/server/keytab-t tests/server/report-t tests/tap/kerberos.sh  \
+	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			   \
+	tests/tap/perl/Test/RRA/Automake.pm				   \
+	tests/tap/perl/Test/RRA/Config.pm				   \
+	tests/tap/perl/Test/RRA/ModuleVersion.pm tests/tap/remctl.sh	   \
 	tests/util/xmalloc-t $(PERL_FILES)
 
 # Supporting convenience libraries used by other targets.
