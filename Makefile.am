@@ -28,9 +28,6 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/Heimdal.pm	    \
 	perl/lib/Wallet/Kadmin/MIT.pm perl/lib/Wallet/Object/Base.pm	    \
 	perl/lib/Wallet/Object/Duo.pm					    \
-	perl/lib/Wallet/Object/Duo/LDAPProxy.pm				    \
-	perl/lib/Wallet/Object/Duo/PAM.pm perl/lib/Wallet/Object/Duo/RDP.pm \
-	perl/lib/Wallet/Object/Duo/RadiusProxy.pm			    \
 	perl/lib/Wallet/Object/File.pm perl/lib/Wallet/Object/Keytab.pm	    \
 	perl/lib/Wallet/Object/WAKeyring.pm				    \
 	perl/lib/Wallet/Policy/Stanford.pm perl/lib/Wallet/Report.pm	    \
@@ -87,14 +84,14 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 
 # Directories that have to be created in builddir != srcdir builds before
 # copying PERL_FILES over.
-PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	    \
-	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		    \
-	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		    \
-	perl/lib/Wallet/Object perl/lib/Wallet/Object/Duo		    \
-	perl/lib/Wallet/Policy perl/lib/Wallet/Schema			    \
-	perl/lib/Wallet/Schema/Result perl/sql perl/t perl/t/data	    \
-	perl/t/data/duo perl/t/docs perl/t/general perl/t/lib perl/t/object \
-	perl/t/policy perl/t/style perl/t/util perl/t/verifier
+PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	\
+	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		\
+	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		\
+	perl/lib/Wallet/Object perl/lib/Wallet/Policy			\
+	perl/lib/Wallet/Schema perl/lib/Wallet/Schema/Result perl/sql	\
+	perl/t perl/t/data perl/t/data/duo perl/t/docs perl/t/general	\
+	perl/t/lib perl/t/object perl/t/policy perl/t/style perl/t/util	\
+	perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	   \
