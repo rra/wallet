@@ -1,6 +1,7 @@
-# Wallet::Admin -- Wallet system administrative interface.
+# Wallet::Admin -- Wallet system administrative interface
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2009, 2010, 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,19 +12,15 @@
 ##############################################################################
 
 package Wallet::Admin;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION);
 
 use Wallet::ACL;
 use Wallet::Schema;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.08';
+our $VERSION = '1.03';
 
 # The last non-DBIx::Class version of Wallet::Schema.  If a database has no
 # DBIx::Class versioning, we artificially install this version number before
@@ -115,22 +112,25 @@ sub default_data {
     # acl_schemes default rows.
     my ($r1) = $self->{schema}->resultset('AclScheme')->populate ([
                        [ qw/as_name as_class/ ],
-                       [ 'krb5',       'Wallet::ACL::Krb5'            ],
-                       [ 'krb5-regex', 'Wallet::ACL::Krb5::Regex'     ],
-                       [ 'ldap-attr',  'Wallet::ACL::LDAP::Attribute' ],
-                       [ 'netdb',      'Wallet::ACL::NetDB'           ],
-                       [ 'netdb-root', 'Wallet::ACL::NetDB::Root'     ],
+                       [ 'krb5',           'Wallet::ACL::Krb5'            ],
+                       [ 'krb5-regex',     'Wallet::ACL::Krb5::Regex'     ],
+                       [ 'ldap-attr',      'Wallet::ACL::LDAP::Attribute' ],
+                       [ 'ldap-attr-root', 'Wallet::ACL::LDAP::Attribute::Root' ],
+                       [ 'nested',         'Wallet::ACL::Nested'          ],
+                       [ 'netdb',          'Wallet::ACL::NetDB'           ],
+                       [ 'netdb-root',     'Wallet::ACL::NetDB::Root'     ],
                                                      ]);
     warn "default AclScheme not installed" unless defined $r1;
 
     # types default rows.
     my @record = ([ qw/ty_name ty_class/ ],
                [ 'duo',        'Wallet::Object::Duo' ],
-               [ 'duo-ldap',   'Wallet::Object::Duo::LDAPProxy' ],
-               [ 'duo-pam',    'Wallet::Object::Duo::PAM' ],
-               [ 'duo-radius', 'Wallet::Object::Duo::RadiusProxy' ],
-               [ 'duo-rdp',    'Wallet::Object::Duo::RDP' ],
+               [ 'duo-ldap',   'Wallet::Object::Duo' ],
+               [ 'duo-pam',    'Wallet::Object::Duo' ],
+               [ 'duo-radius', 'Wallet::Object::Duo' ],
+               [ 'duo-rdp',    'Wallet::Object::Duo' ],
                [ 'file',       'Wallet::Object::File' ],
+               [ 'password',   'Wallet::Object::Password' ],
                [ 'keytab',     'Wallet::Object::Keytab' ],
                [ 'wa-keyring', 'Wallet::Object::WAKeyring' ]);
     ($r1) = $self->{schema}->resultset('Type')->populate (\@record);

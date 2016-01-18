@@ -1,7 +1,8 @@
 # Wallet::Object::Duo -- Base Duo object implementation for the wallet
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2014
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -11,25 +12,111 @@
 ##############################################################################
 
 package Wallet::Object::Duo;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw(@ISA $VERSION);
 
 use JSON;
-use Net::Duo::Admin;
-use Net::Duo::Admin::Integration;
 use Perl6::Slurp qw(slurp);
-use Wallet::Config ();
+use Wallet::Config;
 use Wallet::Object::Base;
 
-@ISA = qw(Wallet::Object::Base);
+our @ISA     = qw(Wallet::Object::Base);
+our $VERSION = '1.03';
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.02';
+# Mappings from our types into what Duo calls the integration types.
+our %DUO_TYPES = (
+                  'duo'        => {
+                      integration => 'unix',
+                      output      => \&_output_generic,
+                  },
+                  'duo-ldap'   => {
+                      integration => 'ldapproxy',
+                      output      => \&_output_ldap,
+                  },
+                  'duo-pam'    => {
+                      integration => 'unix',
+                      output      => \&_output_pam,
+                  },
+                  'duo-radius' => {
+                      integration => 'radius',
+                      output      => \&_output_radius,
+                  },
+                 );
+
+# Extra types to add.  These are all just named as the Duo integration name
+# with duo- before it and go to the generic output.  Put them here to prevent
+# pages of settings.  These are also not all actually set as types in the
+# types table to prevent overpopulation.  You should manually create the
+# entries in that table for any Duo integrations you want to add.
+our @EXTRA_TYPES = ('accountsapi', 'adfs', 'adminapi', 'array', 'barracuda',
+                    'cisco', 'citrixcag', 'citrixns', 'confluence', 'drupal',
+                    'f5bigip', 'f5firepass', 'fortinet', 'jira', 'juniper',
+                    'juniperuac', 'lastpass', 'okta', 'onelogin', 'openvpn',
+                    'openvpnas', 'owa', 'paloalto', 'rdgateway', 'rdp',
+                    'rdweb', 'rest', 'rras', 'shibboleth', 'sonicwallsra',
+                    'splunk', 'tmg', 'uag', 'verify', 'vmwareview', 'websdk',
+                    'wordpress');
+for my $type (@EXTRA_TYPES) {
+    my $wallet_type = 'duo-'.$type;
+    $DUO_TYPES{$wallet_type}{integration} = $type;
+    $DUO_TYPES{$wallet_type}{output}      = \&_output_generic;
+};
+
+##############################################################################
+# Get output methods
+##############################################################################
+
+# Output for any miscellaneous Duo integration, usually those that use a GUI
+# to set information and so don't need a custom configuration file.
+sub _output_generic {
+    my ($key, $secret, $hostname) = @_;
+
+    my $output;
+    $output .= "Integration key: $key\n";
+    $output .= "Secret key:      $secret\n";
+    $output .= "Host:            $hostname\n";
+
+    return $output;
+}
+
+# Output for the Duo unix integration, which hooks into the PAM stack.
+sub _output_pam {
+    my ($key, $secret, $hostname) = @_;
+
+    my $output = "[duo]\n";
+    $output .= "ikey = $key\n";
+    $output .= "skey = $secret\n";
+    $output .= "host = $hostname\n";
+
+    return $output;
+}
+
+# Output for the radius proxy, which can be plugged into the proxy config.
+sub _output_radius {
+    my ($key, $secret, $hostname) = @_;
+
+    my $output = "[radius_server_challenge]\n";
+    $output .= "ikey     = $key\n";
+    $output .= "skey     = $secret\n";
+    $output .= "api_host = $hostname\n";
+    $output .= "client   = radius_client\n";
+
+    return $output;
+}
+
+# Output for the LDAP proxy, which can be plugged into the proxy config.
+sub _output_ldap {
+    my ($key, $secret, $hostname) = @_;
+
+    my $output = "[ldap_server_challenge]\n";
+    $output .= "ikey     = $key\n";
+    $output .= "skey     = $secret\n";
+    $output .= "api_host = $hostname\n";
+
+    return $output;
+}
 
 ##############################################################################
 # Core methods
@@ -66,8 +153,20 @@ sub new {
     my $key_file = $Wallet::Config::DUO_KEY_FILE;
     my $agent    = $Wallet::Config::DUO_AGENT;
 
+    # Check that we can load all of the required modules.
+    eval {
+        require Net::Duo;
+        require Net::Duo::Admin;
+        require Net::Duo::Admin::Integration;
+    };
+    if ($@) {
+        my $error = $@;
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        die "Duo object support not available: $error\n";
+    }
+
     # Construct the Net::Duo::Admin object.
-    require Net::Duo::Admin;
     my $duo = Net::Duo::Admin->new (
         {
             key_file   => $key_file,
@@ -86,7 +185,7 @@ sub new {
 # great here since we don't have a way to communicate the error back to the
 # caller.
 sub create {
-    my ($class, $type, $name, $schema, $creator, $host, $time, $duo_type) = @_;
+    my ($class, $type, $name, $schema, $creator, $host, $time) = @_;
 
     # We have to have a Duo integration key file set.
     if (not $Wallet::Config::DUO_KEY_FILE) {
@@ -95,8 +194,26 @@ sub create {
     my $key_file = $Wallet::Config::DUO_KEY_FILE;
     my $agent    = $Wallet::Config::DUO_AGENT;
 
+    # Make sure this is actually a type we know about, since this handler
+    # can handle many types.
+    if (!exists $DUO_TYPES{$type}) {
+        die "$type is not a valid duo integration\n";
+    }
+
+    # Check that we can load all of the required modules.
+    eval {
+        require Net::Duo;
+        require Net::Duo::Admin;
+        require Net::Duo::Admin::Integration;
+    };
+    if ($@) {
+        my $error = $@;
+        chomp $error;
+        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+        die "Duo object support not available: $error\n";
+    }
+
     # Construct the Net::Duo::Admin object.
-    require Net::Duo::Admin;
     my $duo = Net::Duo::Admin->new (
         {
             key_file   => $key_file,
@@ -105,8 +222,7 @@ sub create {
     );
 
     # Create the object in Duo.
-    require Net::Duo::Admin::Integration;
-    $duo_type ||= $Wallet::Config::DUO_TYPE;
+    my $duo_type = $DUO_TYPES{$type}{integration};
     my %data = (
         name  => "$name ($duo_type)",
         notes => 'Managed by wallet',
@@ -201,11 +317,17 @@ sub get {
     my $json = JSON->new->utf8 (1)->relaxed (1);
     my $config = $json->decode (scalar slurp $Wallet::Config::DUO_KEY_FILE);
 
-    # Construct the returned file.
-    my $output;
-    $output .= "Integration key: $key\n";
-    $output .= 'Secret key:      ' . $integration->secret_key . "\n";
-    $output .= "Host:            $config->{api_hostname}\n";
+    # Construct the returned file.  Assume the generic handler in case there
+    # is no valid handler, though that shouldn't happen.
+    my $output_sub;
+    my $type = $self->{type};
+    if (exists $DUO_TYPES{$type}{output}) {
+        $output_sub = $DUO_TYPES{$type}{output};
+    } else {
+        $output_sub = \&_output_generic;
+    }
+    my $output = $output_sub->($key, $integration->secret_key,
+                               $config->{api_hostname});
 
     # Log the action and return.
     $self->log_action ('get', $user, $host, $time);

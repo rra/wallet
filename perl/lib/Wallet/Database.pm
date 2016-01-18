@@ -1,4 +1,4 @@
-# Wallet::Database -- Wallet system database connection management.
+# Wallet::Database -- Wallet system database connection management
 #
 # This module is a thin wrapper around DBIx::Class to handle determination
 # of the database configuration settings automatically on connect.  The
@@ -6,6 +6,7 @@
 # like DBIx::Class objects in the rest of the code.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2009, 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -16,21 +17,16 @@
 ##############################################################################
 
 package Wallet::Database;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw(@ISA $VERSION);
 
-use Wallet::Schema;
 use Wallet::Config;
+use Wallet::Schema;
 
-@ISA = qw(Wallet::Schema);
-
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.04';
+our @ISA     = qw(Wallet::Schema);
+our $VERSION = '1.03';
 
 ##############################################################################
 # Core overrides

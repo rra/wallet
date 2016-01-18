@@ -1,6 +1,7 @@
-# Wallet::ACL::Base -- Parent class for wallet ACL verifiers.
+# Wallet::ACL::Base -- Parent class for wallet ACL verifiers
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,16 +12,12 @@
 ##############################################################################
 
 package Wallet::ACL::Base;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION);
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.02';
+our $VERSION = '1.03';
 
 ##############################################################################
 # Interface
@@ -35,6 +32,11 @@ sub new {
     my $self = {};
     bless ($self, $type);
     return $self;
+}
+
+# The default name check method allows any name.
+sub syntax_check {
+    return 1;
 }
 
 # The default check method denies all access.
@@ -92,10 +94,18 @@ inherit from it.  It is not used directly.
 Creates a new ACL verifier.  The generic function provided here just
 creates and blesses an object.
 
-=item check(PRINCIPAL, ACL)
+=item syntax_check(PRINCIPAL, ACL)
+
+This method should be overridden by any child classes that want to
+implement validating the name of an ACL before creation.  The default
+implementation allows any name for an ACL.
+
+=item check(PRINCIPAL, ACL, TYPE, NAME)
 
 This method should always be overridden by child classes.  The default
-implementation just declines all access.
+implementation just declines all access.  TYPE and NAME are the type and
+name of the object being accessed, which may be used by some ACL schemes
+or may be ignored.
 
 =item error([ERROR ...])
 

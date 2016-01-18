@@ -146,7 +146,7 @@ if ($mail) {
 }
 
 # Run the report.
-my @principals = read_dump ();
+my @principals = list_keytabs ();
 report_principals (@principals);
 
 # If -m was given, take the saved report and mail it as well.

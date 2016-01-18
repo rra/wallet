@@ -1,6 +1,7 @@
-# Wallet::Object::File -- File object implementation for the wallet.
+# Wallet::Object::File -- File object implementation for the wallet
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,23 +12,18 @@
 ##############################################################################
 
 package Wallet::Object::File;
-require 5.006;
 
+use 5.006;
 use strict;
 use warnings;
-use vars qw(@ISA $VERSION);
 
 use Digest::MD5 qw(md5_hex);
 use File::Copy qw(move);
-use Wallet::Config ();
+use Wallet::Config;
 use Wallet::Object::Base;
 
-@ISA = qw(Wallet::Object::Base);
-
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.03';
+our @ISA     = qw(Wallet::Object::Base);
+our $VERSION = '1.03';
 
 ##############################################################################
 # File naming

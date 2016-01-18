@@ -1,6 +1,7 @@
-# Wallet::Object::Keytab -- Keytab object implementation for the wallet.
+# Wallet::Object::Keytab -- Keytab object implementation for the wallet
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2008, 2009, 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,22 +12,48 @@
 ##############################################################################
 
 package Wallet::Object::Keytab;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw(@ISA $VERSION);
 
-use Wallet::Config ();
-use Wallet::Object::Base;
+use Wallet::Config;
 use Wallet::Kadmin;
+use Wallet::Object::Base;
 
-@ISA = qw(Wallet::Object::Base);
+our @ISA     = qw(Wallet::Object::Base);
+our $VERSION = '1.03';
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.09';
+##############################################################################
+# Shared methods
+##############################################################################
+
+# Generate a keytab into a temporary file and then return that as the return
+# value.  Used by both get and update, as the only difference is how we
+# handle the unchanging flag.
+sub retrieve {
+    my ($self, $operation, $user, $host, $time) = @_;
+    $time ||= time;
+    my $id = $self->{type} . ':' . $self->{name};
+    if ($self->flag_check ('locked')) {
+        $self->error ("cannot get $id: object is locked");
+        return;
+    }
+    my $kadmin = $self->{kadmin};
+    my $result;
+    if ($operation eq 'get' && $self->flag_check ('unchanging')) {
+        $result = $kadmin->keytab ($self->{name});
+    } else {
+        my @enctypes = $self->attr ('enctypes');
+        $result = $kadmin->keytab_rekey ($self->{name}, @enctypes);
+    }
+    if (defined $result) {
+        $self->log_action ($operation, $user, $host, $time);
+    } else {
+        $self->error ($kadmin->error);
+    }
+    return $result;
+}
 
 ##############################################################################
 # Enctype restriction
@@ -314,25 +341,15 @@ sub destroy {
 # return that as the return value.
 sub get {
     my ($self, $user, $host, $time) = @_;
-    $time ||= time;
-    my $id = $self->{type} . ':' . $self->{name};
-    if ($self->flag_check ('locked')) {
-        $self->error ("cannot get $id: object is locked");
-        return;
-    }
-    my $kadmin = $self->{kadmin};
-    my $result;
-    if ($self->flag_check ('unchanging')) {
-        $result = $kadmin->keytab ($self->{name});
-    } else {
-        my @enctypes = $self->attr ('enctypes');
-        $result = $kadmin->keytab_rekey ($self->{name}, @enctypes);
-    }
-    if (defined $result) {
-        $self->log_action ('get', $user, $host, $time);
-    } else {
-        $self->error ($kadmin->error);
-    }
+    my $result = $self->retrieve ('get', $user, $host, $time);
+    return $result;
+}
+
+# Our update implementation.  Generate a new keytab regardless of the
+# unchanging flag.
+sub update {
+    my ($self, $user, $host, $time) = @_;
+    my $result = $self->retrieve ('update', $user, $host, $time);
     return $result;
 }
 
