@@ -14,6 +14,7 @@ Build-Depends:
  libdbi-perl,
  libdbix-class-perl,
  libheimdal-kadm5-perl,
+ libipc-run-perl,
  libjson-perl,
  libkrb5-dev,
  libmodule-build-perl,
