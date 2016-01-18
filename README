@@ -65,7 +65,7 @@ REQUIREMENTS
 
   The wallet client will build with either MIT Kerberos or Heimdal.
 
-  The wallet server is written in Perl and requires Perl 5.6.0 or later
+  The wallet server is written in Perl and requires Perl 5.8.0 or later
   plus Module::Build to build.  It uses DBIx::Class and DBI to talk to a
   database, and therefore the DBIx::Class and DBI modules (and their
   dependencies) and a DBD module for the database it will use must be
