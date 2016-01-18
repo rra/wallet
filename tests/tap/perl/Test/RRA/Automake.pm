@@ -68,7 +68,7 @@ BEGIN {
 # Perl directories to skip globally for perl_dirs.  We ignore the perl
 # directory if it exists since, in my packages, it is treated as a Perl module
 # distribution and has its own standalone test suite.
-my @GLOBAL_SKIP = qw(.git perl);
+my @GLOBAL_SKIP = qw(.git _build perl);
 
 # The temporary directory created by test_tmpdir, if any.  If this is set,
 # attempt to remove the directory stored here on program exit (but ignore
