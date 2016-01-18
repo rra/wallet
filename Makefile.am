@@ -21,14 +21,18 @@ WALLET_PERL_FLAGS ?=
 # builddir != srcdir builds.
 PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/lib/Wallet/ACL.pm perl/lib/Wallet/ACL/Base.pm		    \
-	perl/lib/Wallet/ACL/Krb5.pm perl/lib/Wallet/ACL/Krb5/Regex.pm	    \
-	perl/lib/Wallet/ACL/LDAP/Attribute.pm perl/lib/Wallet/ACL/NetDB.pm  \
+	perl/lib/Wallet/ACL/External.pm perl/lib/Wallet/ACL/Krb5.pm	    \
+	perl/lib/Wallet/ACL/Krb5/Regex.pm				    \
+	perl/lib/Wallet/ACL/LDAP/Attribute.pm				    \
+	perl/lib/Wallet/ACL/LDAP/Attribute/Root.pm			    \
+	perl/lib/Wallet/ACL/NetDB.pm perl/lib/Wallet/ACL/Nested.pm	    \
 	perl/lib/Wallet/ACL/NetDB/Root.pm perl/lib/Wallet/Admin.pm	    \
 	perl/lib/Wallet/Config.pm perl/lib/Wallet/Database.pm		    \
-	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/Heimdal.pm	    \
-	perl/lib/Wallet/Kadmin/MIT.pm perl/lib/Wallet/Object/Base.pm	    \
-	perl/lib/Wallet/Object/Duo.pm					    \
+	perl/lib/Wallet/Kadmin.pm perl/lib/Wallet/Kadmin/AD.pm		    \
+	perl/lib/Wallet/Kadmin/Heimdal.pm perl/lib/Wallet/Kadmin/MIT.pm	    \
+	perl/lib/Wallet/Object/Base.pm perl/lib/Wallet/Object/Duo.pm	    \
 	perl/lib/Wallet/Object/File.pm perl/lib/Wallet/Object/Keytab.pm	    \
+	perl/lib/Wallet/Object/Password.pm				    \
 	perl/lib/Wallet/Object/WAKeyring.pm				    \
 	perl/lib/Wallet/Policy/Stanford.pm perl/lib/Wallet/Report.pm	    \
 	perl/lib/Wallet/Schema.pm perl/lib/Wallet/Server.pm		    \
@@ -63,8 +67,9 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/sql/Wallet-Schema-0.09-0.10-SQLite.sql			    \
 	perl/sql/Wallet-Schema-0.10-MySQL.sql				    \
 	perl/sql/Wallet-Schema-0.10-PostgreSQL.sql			    \
-	perl/sql/Wallet-Schema-0.10-SQLite.sql perl/t/data/README	    \
-	perl/t/data/duo/integration.json				    \
+	perl/sql/Wallet-Schema-0.10-SQLite.sql				    \
+	perl/sql/wallet-1.3-update-duo.sql perl/t/data/README		    \
+	perl/t/data/acl-command perl/t/data/duo/integration.json	    \
 	perl/t/data/duo/integration-ldap.json				    \
 	perl/t/data/duo/integration-radius.json				    \
 	perl/t/data/duo/integration-rdp.json perl/t/data/duo/keys.json	    \
@@ -77,50 +82,52 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP perl/create-ddl \
 	perl/t/object/duo.t perl/t/object/duo-ldap.t			    \
 	perl/t/object/duo-pam.t perl/t/object/duo-radius.t		    \
 	perl/t/object/duo-rdp.t perl/t/object/file.t perl/t/object/keytab.t \
-	perl/t/object/wa-keyring.t perl/t/policy/stanford.t		    \
-	perl/t/style/minimum-version.t perl/t/style/strict.t		    \
-	perl/t/util/kadmin.t perl/t/verifier/basic.t			    \
-	perl/t/verifier/ldap-attr.t perl/t/verifier/netdb.t
+	perl/t/object/password.t perl/t/object/wa-keyring.t		    \
+	perl/t/policy/stanford.t perl/t/style/minimum-version.t		    \
+	perl/t/style/strict.t perl/t/util/kadmin.t perl/t/verifier/basic.t  \
+	perl/t/verifier/external.t perl/t/verifier/ldap-attr.t		    \
+	perl/t/verifier/nested.t perl/t/verifier/netdb.t
 
 # Directories that have to be created in builddir != srcdir builds before
 # copying PERL_FILES over.
-PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	\
-	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		\
-	perl/lib/Wallet/ACL/NetDB perl/lib/Wallet/Kadmin		\
-	perl/lib/Wallet/Object perl/lib/Wallet/Policy			\
-	perl/lib/Wallet/Schema perl/lib/Wallet/Schema/Result perl/sql	\
-	perl/t perl/t/data perl/t/data/duo perl/t/docs perl/t/general	\
-	perl/t/lib perl/t/object perl/t/policy perl/t/style perl/t/util	\
-	perl/t/verifier
+PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	    \
+	perl/lib/Wallet/ACL/Krb5 perl/lib/Wallet/ACL/LDAP		    \
+	perl/lib/Wallet/ACL/LDAP/Attribute perl/lib/Wallet/ACL/NetDB	    \
+	perl/lib/Wallet/Kadmin perl/lib/Wallet/Object			    \
+	perl/lib/Wallet/Policy perl/lib/Wallet/Schema			    \
+	perl/lib/Wallet/Schema/Result perl/sql perl/t perl/t/data	    \
+	perl/t/data/duo perl/t/docs perl/t/general perl/t/lib perl/t/object \
+	perl/t/policy perl/t/style perl/t/util perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	   \
-	client/wallet-rekey.pod config/allow-extract config/keytab	   \
-	config/keytab.acl config/wallet config/wallet-report.acl	   \
-	docs/design contrib/README contrib/convert-srvtab-db		   \
-	contrib/used-principals contrib/wallet-contacts			   \
-	contrib/wallet-rekey-periodic contrib/wallet-rekey-periodic.8	   \
-	contrib/wallet-summary contrib/wallet-summary.8			   \
-	contrib/wallet-unknown-hosts contrib/wallet-unknown-hosts.8	   \
-	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	   \
-	docs/objects-and-schemes docs/setup docs/stanford-naming	   \
-	examples/stanford.conf tests/HOWTO tests/TESTS tests/config/README \
-	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake \
-	tests/data/cmd-wrapper tests/data/fake-data tests/data/fake-kadmin \
-	tests/data/fake-keytab tests/data/fake-keytab-2			   \
-	tests/data/fake-keytab-foreign tests/data/fake-keytab-merge	   \
-	tests/data/fake-keytab-old tests/data/fake-keytab-partial	   \
-	tests/data/fake-keytab-partial-result tests/data/fake-keytab-rekey \
-	tests/data/fake-keytab-unknown tests/data/fake-srvtab		   \
-	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf   \
-	tests/docs/pod-spelling-t tests/docs/pod-t			   \
-	tests/perl/minimum-version-t tests/perl/module-version-t	   \
-	tests/perl/strict-t tests/server/admin-t tests/server/backend-t	   \
-	tests/server/keytab-t tests/server/report-t tests/tap/kerberos.sh  \
-	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			   \
-	tests/tap/perl/Test/RRA/Automake.pm				   \
-	tests/tap/perl/Test/RRA/Config.pm				   \
-	tests/tap/perl/Test/RRA/ModuleVersion.pm tests/tap/remctl.sh	   \
+EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	    \
+	client/wallet-rekey.pod config/allow-extract config/keytab	    \
+	config/keytab.acl config/wallet config/wallet-report.acl	    \
+	docs/design contrib/README contrib/commerzbank/wallet-history	    \
+	contrib/convert-srvtab-db contrib/used-principals		    \
+	contrib/wallet-contacts contrib/wallet-rekey-periodic		    \
+	contrib/wallet-rekey-periodic.8 contrib/wallet-summary		    \
+	contrib/wallet-summary.8 contrib/wallet-unknown-hosts		    \
+	contrib/wallet-unknown-hosts.8 docs/design-acl docs/design-api	    \
+	docs/netdb-role-api docs/notes docs/objects-and-schemes docs/setup  \
+	docs/stanford-naming examples/stanford.conf tests/HOWTO tests/TESTS \
+	tests/config/README tests/data/allow-extract tests/data/basic.conf  \
+	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	    \
+	tests/data/fake-kadmin tests/data/fake-keytab			    \
+	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		    \
+	tests/data/fake-keytab-merge tests/data/fake-keytab-old		    \
+	tests/data/fake-keytab-partial					    \
+	tests/data/fake-keytab-partial-result tests/data/fake-keytab-rekey  \
+	tests/data/fake-keytab-unknown tests/data/fake-srvtab		    \
+	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf    \
+	tests/docs/pod-spelling-t tests/docs/pod-t			    \
+	tests/perl/minimum-version-t tests/perl/module-version-t	    \
+	tests/perl/strict-t tests/server/admin-t tests/server/backend-t	    \
+	tests/server/keytab-t tests/server/report-t tests/tap/kerberos.sh   \
+	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			    \
+	tests/tap/perl/Test/RRA/Automake.pm				    \
+	tests/tap/perl/Test/RRA/Config.pm				    \
+	tests/tap/perl/Test/RRA/ModuleVersion.pm tests/tap/remctl.sh	    \
 	tests/util/xmalloc-t $(PERL_FILES)
 
 # Supporting convenience libraries used by other targets.
