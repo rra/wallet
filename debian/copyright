@@ -1,28 +1,31 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Contact: Russ Allbery <eagle@eyrie.org>
 Source: http://www.eyrie.org/~eagle/software/wallet/
-Copyright: 2006-2010, 2012-2014
+Copyright: 2014, 2016 Russ Allbery <eagle@eyrie.org>
+  2006-2010, 2012-2015
     The Board of Trustees of the Leland Stanford Junior University
 License: Expat
 
 Files: *
-Copyright: 2000-2002, 2004-2014 Russ Allbery <eagle@eyrie.org>
-  2001-2014 The Board of Trustees of the Leland Stanford Junior University
+Copyright: 2000-2002, 2004-2016 Russ Allbery <eagle@eyrie.org>
+  2001-2015 The Board of Trustees of the Leland Stanford Junior University
+  2015 Dropbox, Inc.
 License: Expat
 
 Files: Makefile.in
-Copyright: 1994-2013 Free Software Foundation, Inc.
+Copyright: 1994-2014 Free Software Foundation, Inc.
   2006-2008, 2010, 2013-2014
     The Board of Trustees of the Leland Stanford Junior University
+  2016 Russ Allbery <eagle@eyrie.org>
 License: FSF-unlimited and Expat
 
 Files: aclocal.m4
-Copyright: 1996-2013 Free Software Foundation, Inc.
+Copyright: 1996-2015 Free Software Foundation, Inc.
 License: FSF-unlimited
 
 Files: build-aux/ar-lib build-aux/compile build-aux/depcomp
  build-aux/missing
-Copyright: 1996-2013 Free Software Foundation, Inc.
+Copyright: 1996-2014 Free Software Foundation, Inc.
 License: GPL-2+ with Autoconf exception or Expat
 
 Files: build-aux/install-sh
@@ -58,7 +61,7 @@ Files: client/wallet-rekey.1 client/wallet-rekey.pod client/wallet.1
  docs/stanford-naming perl/t/data/README tests/HOWTO tests/config/README
 Copyright: 2006-2014
     The Board of Trustees of the Leland Stanford Junior University
-  2010 Russ Allbery <eagle@eyrie.org>
+  2010, 2016 Russ Allbery <eagle@eyrie.org>
 License: all-permissive
  Copying and distribution of this file, with or without modification, are
  permitted in any medium without royalty provided the copyright notice and
@@ -71,10 +74,12 @@ License: FSF-configure
  This script is free software; the Free Software Foundation gives unlimited
  permission to copy, distribute and modify it.
 
-Files: m4/gssapi.m4 m4/krb5-config.m4 m4/krb5.m4 m4/lib-depends.m4
- m4/lib-pathname.m4 m4/remctl.m4 m4/snprintf.m4 m4/vamacros.m4
+Files: m4/clang.m4 m4/gssapi.m4 m4/krb5-config.m4 m4/krb5.m4
+ m4/lib-depends.m4 m4/lib-pathname.m4 m4/remctl.m4 m4/snprintf.m4
+ m4/vamacros.m4
 Copyright: 2005-2014
     The Board of Trustees of the Leland Stanford Junior University
+  2015 Russ Allbery <eagle@eyrie.org>
 License: unlimited
  This file is free software; the authors give unlimited permission to copy
  and/or distribute it, with or without modifications, as long as this
@@ -83,10 +88,8 @@ License: unlimited
 Files: portable/asprintf.c portable/dummy.c portable/krb5-extra.c
  portable/krb5.h portable/macros.h portable/mkstemp.c
  portable/reallocarray.c portable/setenv.c portable/stdbool.h
- portable/strlcat.c portable/strlcpy.c portable/system.h portable/uio.h
- tests/portable/asprintf-t.c tests/portable/mkstemp-t.c
- tests/portable/setenv-t.c tests/portable/strlcat-t.c
- tests/portable/strlcpy-t.c util/macros.h
+ portable/system.h portable/uio.h tests/portable/asprintf-t.c
+ tests/portable/mkstemp-t.c tests/portable/setenv-t.c util/macros.h
 Copyright: no copyright notice, see License
 License: rra-public-domain
  The authors hereby relinquish any claim to any copyright that they may
@@ -112,6 +115,7 @@ Copyright: 1991, 1994-2003 The Internet Software Consortium and Rich Salz
   2004-2006 Internet Systems Consortium, Inc.
   2008-2010, 2012-2014
     The Board of Trustees of the Leland Stanford Junior University
+  2015 Russ Allbery <eagle@eyrie.org>
 License: ISC
  Permission to use, copy, modify, and distribute this software for any
  purpose with or without fee is hereby granted, provided that the above
