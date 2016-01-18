@@ -1,13 +1,14 @@
 dnl Autoconf configuration for wallet.
 dnl
 dnl Written by Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2014, 2016 Russ Allbery <eagle@eyrie.org>
 dnl Copyright 2006, 2007, 2008, 2010, 2013, 2014
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([wallet], [1.2], [eagle@eyrie.org])
+AC_INIT([wallet], [1.3], [eagle@eyrie.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])

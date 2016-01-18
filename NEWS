@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 1.3 (unreleased)
+wallet 1.3 (2016-01-17)
 
     This release adds initial, experimental support for using Active
     Directory as the KDC for keytab creation.  The interface to Active
