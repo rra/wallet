@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use POSIX qw(strftime);
-use Test::More tests => 137;
+use Test::More tests => 139;
 
 use Wallet::ACL;
 use Wallet::Admin;
@@ -208,6 +208,9 @@ is ($object->flag_clear ('locked', @trace), 1, 'Clearing locked succeeds');
 eval { $object->get (@trace) };
 is ($@, "Do not instantiate Wallet::Object::Base directly\n",
     'Get fails with the right error');
+ok (!$object->update (@trace), 'Update fails');
+is ($object->error, 'update is not supported for this type, use get instead',
+    ' with the right error');
 ok (! $object->store ("Some data", @trace), 'Store fails');
 is ($object->error, "cannot store keytab:$princ: object type is immutable",
     ' with the right error');

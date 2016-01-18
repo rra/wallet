@@ -2,290 +2,265 @@
 
 Client:
 
- * KERB-94: Handle duplicate kvnos in a newly returned keytab and an
-   existing keytab (such as when downloading an unchanging keytab and
-   merging it into an existing one) in some reasonable fashion.
+ * Handle duplicate kvnos in a newly returned keytab and an existing
+   keytab (such as when downloading an unchanging keytab and merging it
+   into an existing one) in some reasonable fashion.
 
- * KERB-90: Support removing old kvnos from a merged keytab (similar to
-   kadmin ktremove old).
+ * Support removing old kvnos from a merged keytab (similar to kadmin
+   ktremove old).
 
- * KERB-88: When reading configuration from krb5.conf, we should first try
-   to determine our principal from any existing Kerberos ticket cache
-   (after obtaining tickets if -u was given) and extract the realm from
-   that principal, using it as the default realm when reading
-   configuration information.
+ * When reading configuration from krb5.conf, we should first try to
+   determine our principal from any existing Kerberos ticket cache (after
+   obtaining tickets if -u was given) and extract the realm from that
+   principal, using it as the default realm when reading configuration
+   information.
 
- * KERB-89: Add readline support to the wallet client to make it easier to
-   issue multiple commands.
+ * Add readline support to the wallet client to make it easier to issue
+   multiple commands.
 
- * KERB-115: Support authenticating with a keytab.
+ * Support authenticating with a keytab.
 
- * KERB-97: When obtaining tickets in the wallet client with -u, directly
-   obtain the service ticket we're going to use for remctl.
+ * When obtaining tickets in the wallet client with -u, directly obtain
+   the service ticket we're going to use for remctl.
 
- * KERB-95: Provide a way to refresh a file object if and only if what's
-   stored on the server is different than what's on disk.  This will
-   require server support as well for returning the checksum of a file.
+ * Provide a way to refresh a file object if and only if what's stored on
+   the server is different than what's on disk.  This will require server
+   support as well for returning the checksum of a file.
 
- * KERB-104: Incorporate the wallet-rekey-periodic script (currently in
-   contrib) into the package and teach it how to ignore foreign
-   credentials.
+ * Incorporate the wallet-rekey-periodic script (currently in contrib)
+   into the package and teach it how to ignore foreign credentials.
 
 Server Interface:
 
- * KERB-126: Provide a way to get history for deleted objects and ACLs.
+ * Provide a way to get history for deleted objects and ACLs.
 
- * KERB-66: Provide an interface to mass-change all instances of one ACL
-   to another.
+ * Provide an interface to mass-change all instances of one ACL to
+   another.  (Owner changes are currently supported, but not the other
+   ACLs.)
 
- * KERB-96: Add help functions to wallet-backend, wallet-report, and
-   wallet-admin listing the commands.
+ * Add help functions to wallet-backend and wallet-admin listing the
+   commands.
 
- * KERB-52: Catch exceptions on object creation in wallet-backend so that
-   we can log those as well.
+ * Catch exceptions on object creation in wallet-backend so that we can
+   log those as well.
 
- * KERB-114: Provide a way to list all objects for which the connecting
-   user has ACLs.
+ * Provide a way to list all objects for which the connecting user has
+   ACLs.
 
- * KERB-101: Support limiting returned history information by timestamp.
+ * Support limiting returned history information by timestamp.
 
- * KERB-128: Provide a REST implementation of the wallet server.
+ * Provide a REST implementation of the wallet server.
 
- * KERB-79: Provide a CGI implementation of the wallet server.
+ * Provide a CGI implementation of the wallet server.
 
- * KERB-111: Support setting flags and attributes on autocreate.  In
-   general, work out a Wallet::Object::Template Perl object that I can
-   return that specifies things other than just the ACL.
+ * Support setting flags and attributes on autocreate.  In general, work
+   out a Wallet::Object::Template Perl object that I can return that
+   specifies things other than just the ACL.
 
- * KERB-93: Remove the hard-coded ADMIN ACL in the server with something
-   more configurable, perhaps a global ACL table or something.
+ * Remove the hard-coded ADMIN ACL in the server with something more
+   configurable, perhaps a global ACL table or something.
 
- * KERB-68: Support leap-of-faith keying of systems by registering an
-   object for one-time download (ideally from a specific IP address) and
-   then allowing that object to be downloaded anonymously from that IP.
-   Relies on support for Kerberos anonymous authentication.
+ * Support leap-of-faith keying of systems by registering an object for
+   one-time download (ideally from a specific IP address) and then
+   allowing that object to be downloaded anonymously from that IP.  Relies
+   on support for Kerberos anonymous authentication.
 
- * KERB-84: Split "get" and "update" in semantics, and only do keytab
-   rekeying on update.  "get" would not be permitted unless the keytab was
-   flagged as unchanging, and update would still change even an unchanging
-   keytab (maybe).  Or, alternately, maybe we allow get of any keytab?
-   Requires more thought.
+ * Split "get" and "update" in semantics, and only do keytab rekeying on
+   update.  "get" would not be permitted unless the keytab was flagged as
+   unchanging, and update would still change even an unchanging keytab
+   (maybe).  Or, alternately, maybe we allow get of any keytab?  Requires
+   more thought.
 
- * KERB-118: Add command to list available types and schemes.
+ * Add a mechanism to automate owner updates based on default_owner.
 
- * KERB-75: Add a mechanism to automate owner updates based on
-   default_owner.
+ * Partially merge create and autocreate.  create and autocreate should do
+   the same thing provided there is an autocreation configuration
+   available. If not, autocreate should fail and create should fall back
+   on checking for ADMIN privileges.
 
- * KERB-64: Partially merge create and autocreate.  create and autocreate
-   should do the same thing provided there is an autocreation
-   configuration available. If not, autocreate should fail and create
-   should fall back on checking for ADMIN privileges.
+ * Rewrite server backends to use Net::Remctl::Backend.
 
- * KERB-116: Support file object renaming.
+ * Merge the Wallet::Logger support written by Commerzbank AG: create a
+   new class that handles logging, probably based on Log::Log4perl, and
+   add logging points to all of the core classes.
 
- * KERB-131: Rewrite server backends to use Net::Remctl::Backend.
-
- * KERB-132: Merge the Wallet::Logger support written by Commerzbank AG:
-   create a new class that handles logging, probably based on
-   Log::Log4perl, and add logging points to all of the core classes.
-
- * KERB-133: Support an authorization hook to determine whether or not to
-   permit autocreate.  One requested example feature is to limit
-   autocreate of keytab objects to certain hosts involved in deployment.
-   It should be possible to write a hook that takes the information about
-   what object is being autocreated and can accept or decline.
+ * Support an authorization hook to determine whether or not to permit
+   autocreate.  One requested example feature is to limit autocreate of
+   keytab objects to certain hosts involved in deployment.  It should be
+   possible to write a hook that takes the information about what object
+   is being autocreated and can accept or decline.
 
 ACLs:
 
- * KERB-119: Error messages from ACL operations should refer to the ACLs
-   by name instead of by ID.
+ * Error messages from ACL operations should refer to the ACLs by name
+   instead of by ID.
 
- * KERB-121: Write the PTS ACL verifier.
+ * Write the PTS ACL verifier.
 
- * KERB-123: Rename Wallet::ACL::* to Wallet::Verifier::*.  Add
-   Wallet::ACL as a generic interface with Wallet::ACL::Database and
-   Wallet::ACL::List implementations (or some similar name) so that we can
-   create and check an ACL without having to write it into the database.
-   Redo default ACL creation using that functionality.
+ * Rename Wallet::ACL::* to Wallet::Verifier::*.  Add Wallet::ACL as a
+   generic interface with Wallet::ACL::Database and Wallet::ACL::List
+   implementations (or some similar name) so that we can create and check
+   an ACL without having to write it into the database.  Redo default ACL
+   creation using that functionality.
 
- * KERB-67: Pass a reference to the object for which the ACL is
-   interpreted to the ACL API so that ACL APIs can make more complex
-   decisions.
+ * Pass a reference to the object for which the ACL is interpreted to the
+   ACL API so that ACL APIs can make more complex decisions.
 
- * KERB-109: A group-in-groups ACL schema.
+ * Provide an API for verifiers to syntax-check the values before an ACL
+   is set and implement syntax checking for the krb5 and ldap-attr
+   verifiers.
 
- * KERB-113: Provide an API for verifiers to syntax-check the values
-   before an ACL is set and implement syntax checking for the krb5 and
-   ldap-attr verifiers.
+ * Investigate how best to support client authentication using anonymous
+   PKINIT for things like initial system keying.
 
- * KERB-60: Investigate how best to support client authentication using
-   anonymous PKINIT for things like initial system keying.
+ * Generalize the current NetDB ACL type to allow a generic remctl query
+   for whether a particular user is authorized to create host-based
+   objects for a particular host.
 
- * KERB-72: Generalize the current NetDB ACL type to allow a generic
-   remctl query for whether a particular user is authorized to create
-   host-based objects for a particular host.
+ * Add ldap-group ACL scheme (and possibly a root-only version).
 
- * KERB-78: Add ldap-group ACL scheme.
+ * Add a comment field to ACLs.
 
- * KERB-63: Provide a root-instance version of the ldap-attr (and possibly
-   the ldap-group) ACL schemes.
-
- * KERB-86: Add a comment field to ACLs.
+ * Support external ACLs under a backend other than remctl.  This will
+   require some way of re-exporting the authenticated user identity
+   instead of relying on the existence of the remctl variables.
 
 Database:
 
- * KERB-55: Fix case-insensitivity bug in unique keys with MySQL for
-   objects.  When creating an http/<host> principal when an HTTP/<host>
-   principal already existed, MySQL rejected the row entry as a duplicate.
-   The name should be case-sensitive.
+ * Fix case-insensitivity bug in unique keys with MySQL for objects.  When
+   creating an http/<host> principal when an HTTP/<host> principal already
+   existed, MySQL rejected the row entry as a duplicate.  The name should
+   be case-sensitive.
 
- * KERB-103: On upgrades, support adding new object types and ACL
-   verifiers to the class tables.
+ * On upgrades, support adding new object types and ACL verifiers to the
+   class tables.
 
 Objects:
 
- * KERB-120: Check whether we can just drop the realm restriction on
-   keytabs and allow the name to contain the realm if the Kerberos type is
-   Heimdal.
+ * Check whether we can just drop the realm restriction on keytabs and
+   allow the name to contain the realm if the Kerberos type is Heimdal.
 
- * KERB-59: Use the Perl Authen::Krb5::Admin module instead of rolling our
-   own kadmin code with Expect now that MIT Kerberos has made the kadmin
-   API public.
+ * Use the Perl Authen::Krb5::Admin module instead of rolling our own
+   kadmin code with Expect now that MIT Kerberos has made the kadmin API
+   public.
 
- * KERB-85: Implement an ssh keypair wallet object.  The server can run
-   ssh-keygen to generate a public/private key pair and return both to the
-   client, which would split them apart.  Used primarily for host keys.
-   May need a side table to store key types, or a naming convention.
+ * Implement an ssh keypair wallet object.  The server can run ssh-keygen
+   to generate a public/private key pair and return both to the client,
+   which would split them apart.  Used primarily for host keys.  May need
+   a side table to store key types, or a naming convention.
 
- * KERB-124: Implement an X.509 certificate object.  I expect this would
-   store the public and private key as a single file in the same format
-   that Apache can read for combined public and private keys.  There were
-   requests for storing the CSR, but I don't see why you'd want to do
-   that.  Start with store support.  The file code is mostly sufficient
-   here, but it would be nice to automatically support object expiration
-   based on the expiration time for the certificate.
+ * Implement an X.509 certificate object.  I expect this would store the
+   public and private key as a single file in the same format that Apache
+   can read for combined public and private keys.  There were requests for
+   storing the CSR, but I don't see why you'd want to do that.  Start with
+   store support.  The file code is mostly sufficient here, but it would
+   be nice to automatically support object expiration based on the
+   expiration time for the certificate.
 
- * KERB-106: Implement an X.509 CA so that you can get certificate objects
-   without storing them first.  Need to resolve naming conventions if you
-   want to run multiple CAs on the same wallet server (but why?).  Should
-   this be a different type than stored certificates?  Consider using
-   hxtool as the underlying CA mechanism.
+ * Implement an X.509 CA so that you can get certificate objects without
+   storing them first.  Need to resolve naming conventions if you want to
+   run multiple CAs on the same wallet server (but why?).  Should this be
+   a different type than stored certificates?  Consider using hxtool as
+   the underlying CA mechanism.
 
- * KERB-77: Support returning the checksum of a file object stored in
-   wallet so that one can determine whether the version stored on disk is
-   identical.
+ * Support returning the checksum of a file object stored in wallet so
+   that one can determine whether the version stored on disk is identical.
 
- * KERB-108: Implement new password wallet object, which is like file
-   except that it generates a random, strong password when retrieved the
-   first time without being stored.
-
- * KERB-71: Support interrogating objects to find all host-based objects
-   for a particular host, allowing cleanup of all of those host's objects
-   after retiring the host.
-
- * KERB-127: Support setting the disallow-svr flag on created principals.
-   In general, support setting arbitrary principal flags.
+ * Support setting the disallow-svr flag on created principals.  In
+   general, support setting arbitrary principal flags.
 
 Reports:
 
- * KERB-117: Add audit for references to unknown ACLs, possibly introduced
-   by previous versions before ACL deletion was checked with database
+ * Add audit for references to unknown ACLs, possibly introduced by
+   previous versions before ACL deletion was checked with database
    backends that don't do referential integrity.
 
- * KERB-105: Add report for all objects that have never been stored.
+ * For objects tied to hostnames, report on objects referring to hosts
+   which do not exist.  For the initial pass, this is probably only keytab
+   objects with names containing a slash where the part after the slash
+   looks like a hostname.  This may need some configuration help.
 
- * KERB-122: For objects tied to hostnames, report on objects referring to
-   hosts which do not exist.  For the initial pass, this is probably only
-   keytab objects with names containing a slash where the part after the
-   slash looks like a hostname.  This may need some configuration help.
+ * Make contrib/wallet-summary generic and include it in wallet-report,
+   with additional configuration in Wallet::Config.  Enhance it to report
+   on any sort of object, not just on keytabs, and to give numbers on
+   downloaded versus not downloaded objects.
 
- * KERB-102: Make contrib/wallet-summary generic and include it in
-   wallet-report, with additional configuration in Wallet::Config.
-   Enhance it to report on any sort of object, not just on keytabs, and to
-   give numbers on downloaded versus not downloaded objects.
+ * Write a tool to mail the owners of wallet objects, taking the list of
+   objects and the mail message to send as inputs.  This could possibly
+   use the notification service, although a version that sends mail
+   directly would be useful external to Stanford.
 
- * KERB-69: Write a tool to mail the owners of wallet objects, taking the
-   list of objects and the mail message to send as inputs.  This could
-   possibly use the notification service, although a version that sends
-   mail directly would be useful external to Stanford.
-
- * KERB-134: Merge the Commerzbank AG work to dump all the object history,
-   applying various search criteria to it, or clear parts of the object
-   history.
+ * Merge the Commerzbank AG work to dump all the object history, applying
+   various search criteria to it, or clear parts of the object history.
 
 Administrative Interface:
 
- * KERB-80: Add a function to wallet-admin to purge expired entries.
-   Possibly also check expiration before allowing anyone to get or store
-   objects.
+ * Add a function to wallet-admin to purge expired entries.  Possibly also
+   check expiration before allowing anyone to get or store objects.
 
- * KERB-58: Add a function or separate script to automate removal of
-   DNS-based objects for which the hosts no longer exist.  Will need to
-   support a site-specific callout to determine whether the host exists.
+ * Add a function or separate script to automate removal of DNS-based
+   objects for which the hosts no longer exist.  Will need to support a
+   site-specific callout to determine whether the host exists.
 
- * KERB-54: Database creation appears not to work without the SQL files,
-   but it's supposed to work directly from the classes.  Double-check
-   this.
+ * Database creation appears not to work without the SQL files, but it's
+   supposed to work directly from the classes.  Double-check this.
 
 Documentation:
 
- * KERB-82: Write a conventions document for ACL naming, object naming,
-   and similar issues.
+ * Write a conventions document for ACL naming, object naming, and similar
+   issues.
 
- * KERB-125: Write a future design and roadmap document to collect notes
-   about how unimplemented features should be handled.
+ * Write a future design and roadmap document to collect notes about how
+   unimplemented features should be handled.
 
- * KERB-65: Document using the wallet system over something other than
-   remctl.
+ * Document using the wallet system over something other than remctl.
 
- * KERB-112: Document all diagnostics for all wallet APIs.
+ * Document all diagnostics for all wallet APIs.
 
- * KERB-135: Document configuration with an Oracle database.
+ * Document configuration with an Oracle database.
 
 Code Style and Cleanup:
 
- * KERB-98: There is a lot of duplicate code in wallet-backend.  Convert
-   that to use some sort of data-driven model with argument count and
-   flags so that the method calls can be written only once.  Convert
-   wallet-admin to use the same code.
+ * There is a lot of duplicate code in wallet-backend.  Convert that to
+   use some sort of data-driven model with argument count and flags so
+   that the method calls can be written only once.  Convert wallet-admin
+   to use the same code.
 
- * KERB-100: There's a lot of code duplication in the dispatch functions
-   in the Wallet::Server class.  Find a way to rewrite that so that the
-   dispatch doesn't duplicate the same code patterns.
+ * There's a lot of code duplication in the dispatch functions in the
+   Wallet::Server class.  Find a way to rewrite that so that the dispatch
+   doesn't duplicate the same code patterns.
 
- * KERB-73: The wallet-backend and wallet documentation share the COMMANDS
-   section.  Work out some means to assemble the documentation without
-   duplicating content.
+ * The wallet-backend and wallet documentation share the COMMANDS section.
+   Work out some means to assemble the documentation without duplicating
+   content.
 
- * KERB-110: The Wallet::Config class is very ugly and could use some
-   better internal API to reference the variables in it.
+ * The Wallet::Config class is very ugly and could use some better
+   internal API to reference the variables in it.
 
- * KERB-76: Consider using Class::Accessor to get rid of the scaffolding
-   code to access object data.  Alternately, consider using Moose.
+ * Consider using Class::Accessor to get rid of the scaffolding code to
+   access object data.  Alternately, consider using Moose.
 
- * KERB-130: Rewrite the error handling to use exceptions instead of the
-   C-style return value and separate error call.
+ * Rewrite the error handling to use exceptions instead of the C-style
+   return value and separate error call.
 
 Test Suite:
 
- * KERB-92: The ldap-attr verifier test case is awful and completely
-   specific to people with admin access to the Stanford LDAP tree.  Write
-   a real test.
+ * The ldap-attr verifier test case is awful and completely specific to
+   people with admin access to the Stanford LDAP tree.  Write a real test.
 
- * KERB-87: Rename the tests to use a subdirectory organization.
+ * Rename the tests to use a subdirectory organization.
 
- * KERB-61: Add POD coverage testing using Test::POD::Coverage for the
-   server modules.
+ * Add POD coverage testing using Test::POD::Coverage for the server
+   modules.
 
- * KERB-91: Rewrite the client test suite to use Perl and to make better
-   use of shared code so that it can be broken into function components.
+ * Rewrite the client test suite to use Perl and to make better use of
+   shared code so that it can be broken into function components.
 
- * KERB-74: Refactor the test suite for the wallet backend to try to
-   reduce the duplicated code.  Using a real mock infrastructure should
-   make this test suite much easier to write.
+ * Refactor the test suite for the wallet backend to try to reduce the
+   duplicated code.  Using a real mock infrastructure should make this
+   test suite much easier to write.
 
- * KERB-81: Pull common test suite code into a Perl library that can be
-   reused.
+ * Pull common test suite code into a Perl library that can be reused.
 
- * KERB-99: Write a test suite to scan all wallet code looking for
-   diagnostics that aren't in the documentation and warn about them.
+ * Write a test suite to scan all wallet code looking for diagnostics that
+   aren't in the documentation and warn about them.

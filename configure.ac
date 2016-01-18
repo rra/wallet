@@ -1,13 +1,14 @@
 dnl Autoconf configuration for wallet.
 dnl
 dnl Written by Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2014, 2016 Russ Allbery <eagle@eyrie.org>
 dnl Copyright 2006, 2007, 2008, 2010, 2013, 2014
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([wallet], [1.2], [eagle@eyrie.org])
+AC_INIT([wallet], [1.3], [eagle@eyrie.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -15,10 +16,14 @@ AM_INIT_AUTOMAKE([1.11 check-news dist-xz foreign silent-rules subdir-objects
     -Wall -Wno-override -Werror])
 AM_MAINTAINER_MODE
 
+dnl Detect unexpanded macros.
+m4_pattern_forbid([^_?RRA_])
+
 dnl AM_PROG_AR is required for Automake 1.12 by Libtool but not defined at all
 dnl (or needed) in Automake 1.11.  Work around this bug.
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
+RRA_PROG_CC_CLANG
 AC_SYS_LARGEFILE
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -56,7 +61,7 @@ RRA_LIB_KRB5_RESTORE
 
 dnl Probe for properties of the C library.
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/bitypes.h sys/uio.h syslog.h])
+AC_CHECK_HEADERS([sys/bitypes.h sys/uio.h sys/time.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 RRA_C_C99_VAMACROS
 RRA_C_GNU_VAMACROS
@@ -65,7 +70,7 @@ AC_CHECK_TYPES([ssize_t], [], [],
     [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
 AC_CHECK_FUNCS([setrlimit])
-AC_REPLACE_FUNCS([asprintf mkstemp reallocarray setenv strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp reallocarray setenv])
 
 dnl Find a remctld binary for the test suite.
 AC_ARG_VAR([REMCTLD], [Path to the remctld binary])
@@ -73,6 +78,10 @@ AC_PATH_PROG([REMCTLD], [remctld], [], [$PATH:/usr/sbin:/usr/local/sbin])
 AS_IF([test x"$REMCTLD" != x],
     [AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
         [Define to the full path to remctld to run remctl tests.])])
+
+dnl Enable appropriate warnings.
+AM_CONDITIONAL([WARNINGS_GCC], [test x"$GCC" = xyes && test x"$CLANG" != xyes])
+AM_CONDITIONAL([WARNINGS_CLANG], [test x"$CLANG" = xyes])
 
 dnl Output section.
 AC_CONFIG_HEADER([config.h])

@@ -1,12 +1,11 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Wallet server administrative commands.
 
-##############################################################################
-# Declarations and site configuration
-##############################################################################
-
+use 5.008;
 use strict;
+use warnings;
+
 use Wallet::Admin;
 
 ##############################################################################

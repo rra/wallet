@@ -13,6 +13,8 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
+our $VERSION = '1.03';
+
 __PACKAGE__->load_components("InflateColumn::DateTime");
 
 =head1 NAME

@@ -12,6 +12,9 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+
+our $VERSION = '1.03';
+
 __PACKAGE__->load_components (qw//);
 
 =for stopwords
@@ -35,6 +38,10 @@ By default it contains the following entries:
       values ('krb5-regex', 'Wallet::ACL::Krb5::Regex');
   insert into acl_schemes (as_name, as_class)
       values ('ldap-attr', 'Wallet::ACL::LDAP::Attribute');
+  insert into acl_schemes (as_name, as_class)
+      values ('ldap-attr-root', 'Wallet::ACL::LDAP::Attribute::Root');
+  insert into acl_schemes (as_name, as_class)
+      values ('nested', 'Wallet::ACL::Nested');
   insert into acl_schemes (as_name, as_class)
       values ('netdb', 'Wallet::ACL::NetDB');
   insert into acl_schemes (as_name, as_class)

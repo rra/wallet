@@ -1,7 +1,8 @@
-# Wallet::Policy::Stanford -- Stanford's wallet naming and ownership policy.
+# Wallet::Policy::Stanford -- Stanford's wallet naming and ownership policy
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2013
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2013, 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -25,8 +26,8 @@ our (@EXPORT_OK, $VERSION);
 # against circular module loading (not that we load any modules, but
 # consistency is good).
 BEGIN {
-    $VERSION   = '1.00';
-    @EXPORT_OK = qw(default_owner verify_name);
+    $VERSION   = '1.03';
+    @EXPORT_OK = qw(default_owner verify_name is_for_host);
 }
 
 ##############################################################################
@@ -66,13 +67,37 @@ our %FILE_TYPE = (
     'password-root'   => { host => 1 },
     'password-tivoli' => { host => 1 },
     properties        => {            extra => 1 },
-    'ssh-dsa'         => { host => 1 },
-    'ssh-rsa'         => { host => 1 },
+    'ssh-dsa'         => { host => 1, extra => 1 },
+    'ssh-rsa'         => { host => 1, extra => 1 },
+    'ssl-chain'       => { host => 1, extra => 1 },
     'ssl-key'         => { host => 1, extra => 1 },
     'ssl-keypair'     => { host => 1, extra => 1 },
     'ssl-keystore'    => {            extra => 1 },
     'ssl-pkcs12'      => {            extra => 1 },
     'tivoli-key'      => { host => 1 },
+);
+
+# Password object types.  Most of these mimic file object types (which should
+# be gradually phased out).
+our %PASSWORD_TYPE = (
+    'ipmi'            => { host => 1 },
+    'root'            => { host => 1 },
+    'tivoli'          => { host => 1 },
+    'system'          => { host => 1, extra => 1, need_extra => 1 },
+    'app'             => { host => 1, extra => 1, need_extra => 1 },
+    'service'         => {            extra => 1, need_extra => 1 },
+);
+
+# Mappings that let us determine the host for a host-based object, if any.
+our %HOST_FOR = (
+    'keytab'     => \&_host_for_keytab,
+    'file'       => \&_host_for_file,
+    'password'   => \&_host_for_password,
+    'duo'        => \&_host_for_duo,
+    'duo-pam'    => \&_host_for_duo,
+    'duo-radius' => \&_host_for_duo,
+    'duo-ldap'   => \&_host_for_duo,
+    'duo-rdp'    => \&_host_for_duo,
 );
 
 # Host-based file object types for the legacy file object naming scheme.
@@ -144,6 +169,17 @@ sub _host_for_file_legacy {
     return $host;
 }
 
+# Map a password object name to a hostname.  Returns undef if this password
+# object name doesn't map to a hostname.
+sub _host_for_password {
+    my ($name) = @_;
+
+    # Parse the name and check whether this is a host-based object.
+    my ($type, $host) = split('/', $name);
+    return if !$PASSWORD_TYPE{$type}{host};
+    return $host;
+}
+
 # Map a file object name to a hostname.  Returns undef if this file object
 # name doesn't map to a hostname.
 sub _host_for_file {
@@ -181,6 +217,23 @@ sub _host_for_duo {
     return $name;
 }
 
+# Take a object type and name, along with a host name, and use these to
+# decide if the given object is host-based and matches the given host.
+sub is_for_host {
+    my ($type, $name, $host) = @_;
+
+    # If we have a possible host mapping, get the host and see if it matches.
+    if (defined($HOST_FOR{$type})) {
+        my $object_host = $HOST_FOR{$type}->($name);
+        return 0 unless $object_host;
+        if ($host eq $object_host) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 # The default owner of host-based objects should be the host keytab and the
 # NetDB ACL for that host, with one twist.  If the creator of a new node is
 # using a root instance, we want to require everyone managing that node be
@@ -188,20 +241,9 @@ sub _host_for_duo {
 sub default_owner {
     my ($type, $name) = @_;
 
-    # How to determine the host for host-based objects.
-    my %host_for = (
-        'keytab'     => \&_host_for_keytab,
-        'file'       => \&_host_for_file,
-        'duo'        => \&_host_for_duo,
-        'duo-pam'    => \&_host_for_duo,
-        'duo-radius' => \&_host_for_duo,
-        'duo-ldap'   => \&_host_for_duo,
-        'duo-rdp'    => \&_host_for_duo,
-    );
-
     # If we have a possible host mapping, see if we can use that.
-    if (defined($host_for{$type})) {
-        my $host = $host_for{$type}->($name);
+    if (defined($HOST_FOR{$type})) {
+        my $host = $HOST_FOR{$type}->($name);
         if ($host) {
             my $acl_name = "host/$host";
             my @acl;
@@ -242,7 +284,7 @@ sub default_owner {
 # hostnames, limit the acceptable characters for service/* keytabs, and
 # enforce our naming constraints on */cgi principals.
 #
-# Also use this function to require that IDG staff always do implicit object
+# Also use this function to require that ACS staff always do implicit object
 # creation using a */root instance.
 sub verify_name {
     my ($type, $name, $user) = @_;
@@ -363,6 +405,8 @@ sub verify_name {
                 return "missing component in $name";
             }
             return;
+
+
         } else {
             # Legacy naming scheme.
             my %groups = map { $_ => 1 } @GROUPS_LEGACY;
@@ -377,6 +421,71 @@ sub verify_name {
             } elsif ($name !~ /^$group_regex-.*-$type_regex(-.*)?$/) {
                 return "invalid file object name $name";
             }
+        }
+    }
+
+    # Check password object naming conventions.
+    if ($type eq 'password') {
+        if ($name =~ m{ / }xms) {
+            my @name = split('/', $name);
+
+            # Names have between two and four components and all must be
+            # non-empty.
+            if (@name > 4) {
+                return "too many components in $name";
+            }
+            if (@name < 2) {
+                return "too few components in $name";
+            }
+            if (grep { $_ eq q{} } @name) {
+                return "empty component in $name";
+            }
+
+            # All objects start with the type.  First check if this is a
+            # host-based type.
+            my $type = shift @name;
+            if ($PASSWORD_TYPE{$type} && $PASSWORD_TYPE{$type}{host}) {
+                my ($host, $extra) = @name;
+                if ($host !~ m{ [.] }xms) {
+                    return "host name $host is not fully qualified";
+                }
+                if (defined($extra) && !$PASSWORD_TYPE{$type}{extra}) {
+                    return "extraneous component at end of $name";
+                }
+                if (!defined($extra) && $PASSWORD_TYPE{$type}{need_extra}) {
+                    return "missing component in $name";
+                }
+                return;
+            }
+
+            # Otherwise, the name is group-based.  There be at least two
+            # remaining components.
+            if (@name < 2) {
+                return "too few components in $name";
+            }
+            my ($group, $service, $extra) = @name;
+
+            # Check the group.
+            if (!$ACL_FOR_GROUP{$group}) {
+                return "unknown group $group";
+            }
+
+            # Check the type.  Be sure it's not host-based.
+            if (!$PASSWORD_TYPE{$type}) {
+                return "unknown type $type";
+            }
+            if ($PASSWORD_TYPE{$type}{host}) {
+                return "bad name for host-based file type $type";
+            }
+
+            # Check the extra data.
+            if (defined($extra) && !$PASSWORD_TYPE{$type}{extra}) {
+                return "extraneous component at end of $name";
+            }
+            if (!defined($extra) && $PASSWORD_TYPE{$type}{need_extra}) {
+                return "missing component in $name";
+            }
+            return;
         }
     }
 

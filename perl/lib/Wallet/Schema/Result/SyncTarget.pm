@@ -13,6 +13,8 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
+our $VERSION = '1.03';
+
 =head1 NAME
 
 Wallet::Schema::Result::SyncTarget - Wallet schema for synchronization targets

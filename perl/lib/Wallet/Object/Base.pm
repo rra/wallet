@@ -1,6 +1,7 @@
-# Wallet::Object::Base -- Parent class for any object stored in the wallet.
+# Wallet::Object::Base -- Parent class for any object stored in the wallet
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2008, 2010, 2011, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,22 +12,17 @@
 ##############################################################################
 
 package Wallet::Object::Base;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION);
 
 use DateTime;
 use Date::Parse qw(str2time);
-use DBI;
 use Text::Wrap qw(wrap);
 use Wallet::ACL;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.08';
+our $VERSION = '1.03';
 
 ##############################################################################
 # Constructors
@@ -608,6 +604,15 @@ sub history {
 
 # The get methods must always be overridden by the subclass.
 sub get { die "Do not instantiate Wallet::Object::Base directly\n"; }
+
+# The update method should only work if a subclass supports it as something
+# different from get.  That makes it explicit about whether the subclass has
+# a meaningful update.
+sub update {
+    my ($self) = @_;
+    $self->error ("update is not supported for this type, use get instead");
+    return;
+}
 
 # Provide a default store implementation that returns an immutable object
 # error so that auto-generated types don't have to provide their own.

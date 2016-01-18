@@ -227,6 +227,16 @@ renamed.  <id> may be either the current name or the numeric ID.  <name>
 must not be all-numeric.  To rename an ACL, the current user must be
 authorized by the C<ADMIN> ACL.
 
+=item acl replace <id> <new-id>
+
+Find any objects owned by <id>, and then change their ownership to
+<new_id> instead.  <new-id> should already exist, and may already have
+some objects owned by it.  <id> is not deleted afterwards, though in
+most cases that is probably your next step.  The C<ADMIN> ACL may not be
+replaced from.  <id> and <new-id> may be either the current name or the
+numeric ID.  To replace an ACL, the current user must be authorized by
+the C<ADMIN> ACL.
+
 =item acl show <id>
 
 Display the name, numeric ID, and entries of the ACL <id>.
@@ -370,6 +380,19 @@ Stores <data> for the object identified by <type> and <name> for later
 retrieval with C<get>.  Not all object types support this.  If <data> is
 not specified on the command line, it will be read from the file specified
 with B<-f> (if given) or from standard input.
+
+If an object with type <type> and name <name> does not already exist when
+this command is issued (as checked with the check interface), B<wallet>
+will attempt to automatically create it (using autocreate).
+
+=item update <type> <name>
+
+Prints to standard output the data associated with the object identified
+by <type> and <name>, or stores it in a file if the B<-f> option was
+given.  This will generate new data in the object, and only works for 
+objects that support generating new data automatically, such as keytabs or
+passwords.  Types that do not support generating new data will fail and
+direct you to use get instead.
 
 If an object with type <type> and name <name> does not already exist when
 this command is issued (as checked with the check interface), B<wallet>

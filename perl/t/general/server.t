@@ -89,7 +89,7 @@ is ($server->acl_rename ('empty', 'test'), undef,
 is ($server->error, 'ACL empty not found', ' and returns the right error');
 is ($server->acl_rename ('test', 'test2'), undef,
     ' and cannot rename to an existing name');
-like ($server->error, qr/^cannot rename ACL 6 to test2: /,
+like ($server->error, qr/^cannot rename ACL test to test2: /,
       ' and returns the right error');
 is ($server->acl_rename ('test', 'empty'), 1, 'Renaming does work');
 is ($server->acl_rename ('test', 'empty'), undef, ' but not twice');
@@ -138,7 +138,7 @@ is ($server->error, 'ACL test not found', ' and returns the right error');
 is ($server->acl_remove ('empty', 'krb5', $user2), undef,
     ' and removing an entry not there fails');
 is ($server->error,
-    "cannot remove krb5:$user2 from 6: entry not found in ACL",
+    "cannot remove krb5:$user2 from empty: entry not found in ACL",
     ' and returns the right error');
 is ($server->acl_show ('empty'),
     "Members of ACL empty (id: 6) are:\n  krb5 $user1\n",
@@ -148,7 +148,7 @@ is ($server->acl_remove ('empty', 'krb5', $user1), 1,
 is ($server->acl_remove ('empty', 'krb5', $user1), undef,
     ' but does not work twice');
 is ($server->error,
-    "cannot remove krb5:$user1 from 6: entry not found in ACL",
+    "cannot remove krb5:$user1 from empty: entry not found in ACL",
     ' and returns the right error');
 is ($server->acl_show ('empty'), "Members of ACL empty (id: 6) are:\n",
     ' and show returns the correct status');
@@ -168,7 +168,7 @@ is ($server->acl_remove ('ADMIN', 'krb5', $user1), 1, ' and then remove it');
 is ($server->acl_remove ('ADMIN', 'krb5', $user1), undef,
     ' and remove a user not on it');
 is ($server->error,
-    "cannot remove krb5:$user1 from 1: entry not found in ACL",
+    "cannot remove krb5:$user1 from ADMIN: entry not found in ACL",
     ' and get the right error');
 
 # Now, create a few objects to use for testing and test the object API while
@@ -994,7 +994,7 @@ is ($server->owner ('base', 'service/acl-user', 'test-destroy'), 1,
 is ($server->acl_destroy ('test-destroy'), undef,
     ' and now we cannot destroy that ACL');
 is ($server->error,
-    'cannot destroy ACL 9: ACL in use by base:service/acl-user',
+    'cannot destroy ACL test-destroy: ACL in use by base:service/acl-user',
     ' with the right error');
 is ($server->owner ('base', 'service/acl-user', ''), 1,
     ' but after we clear the owner');
