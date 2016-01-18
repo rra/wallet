@@ -69,6 +69,17 @@ sub news_version {
     return wantarray ? ($version, $package) : $version;
 }
 
+# Parse command-line arguments.
+my $update;
+Getopt::Long::config('bundling', 'no_ignore_case');
+GetOptions('update|u' => \$update) or exit 1;
+
+# If we're not updating, set up for Automake testing.  Otherwise, we assume
+# we're running from the top of the source tree.
+if (!$update) {
+    automake_setup();
+}
+
 # Get the package name and version.
 my ($version, $package) = news_version();
 
@@ -79,14 +90,10 @@ my $root = ($package eq 'rra-c-util') ? 'tests/tap/perl' : 'perl/lib';
 # Main routine.  We run as either a test suite or as a script to update all of
 # the module versions, selecting based on whether we got the -u / --update
 # command-line option.
-my $update;
-Getopt::Long::config('bundling', 'no_ignore_case');
-GetOptions('update|u' => \$update) or exit 1;
 if ($update) {
     update_module_versions($root, $version);
 } else {
     skip_unless_automated('Module version tests');
-    automake_setup();
     test_module_versions($root, $version);
 }
 exit 0;
