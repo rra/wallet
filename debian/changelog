@@ -1,5 +1,28 @@
-wallet (1.2-2) UNRELEASED; urgency=medium
+wallet (1.3-1) UNRELEASED; urgency=medium
 
+  * New upstream release.
+    - Initial experimental support for Active Directory as the KDC by
+      setting KEYTAB_KRBTYPE to AD.
+    - New nested ACL scheme to group other ACLs.
+    - New external ACL scheme that runs an external command.
+    - New variation on the ldap-attr ACL scheme, ldap-attr-root, that
+      requires the principal end in /root and removes that part of the
+      principal name when checking LDAP.
+    - New password object type that generates a new, random password if no
+      password was previously stored.
+    - New update wallet command that always updates the contents of an
+      object before returning it, even if it is marked unchanging.  In the
+      long term, the unchanging flag will be replaced by this distinction
+      between get and update.
+    - New acl replace wallet command that changes all objects owned by one
+      ACL to be owned by a different ACL.  This currently only handles
+      owner, not the more specific ACLs.
+    - All ACL operations now refer to the ACL by name instead of ID.
+    - New report for unstored objects.
+    - New report to list all object types and ACL schemes.
+    - New report to list all ACLs that nest another ACL.
+    - New report that dumps all object history.
+    - Displays of ACLs and ACL entries are now sorted correctly.
   * Change the branch layout to follow DEP-14.
 
  -- Russ Allbery <rra@debian.org>  Sun, 17 Jan 2016 19:40:54 -0800
