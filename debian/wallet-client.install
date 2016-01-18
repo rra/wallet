@@ -1,4 +1,4 @@
 debian/tmp/usr/bin/wallet
 debian/tmp/usr/bin/wallet-rekey
-debian/tmp/usr/share/man/man1/wallet.1
 debian/tmp/usr/share/man/man1/wallet-rekey.1
+debian/tmp/usr/share/man/man1/wallet.1
