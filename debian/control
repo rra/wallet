@@ -16,6 +16,7 @@ Build-Depends:
  libheimdal-kadm5-perl,
  libjson-perl,
  libkrb5-dev,
+ libmodule-build-perl,
  libnet-dns-perl,
  libnet-duo-perl,
  libnet-ldap-perl,

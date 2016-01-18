@@ -23,6 +23,8 @@ wallet (1.3-1) UNRELEASED; urgency=medium
     - New report to list all ACLs that nest another ACL.
     - New report that dumps all object history.
     - Displays of ACLs and ACL entries are now sorted correctly.
+  * Add explicit build dependency on libmodule-build-perl, since it is no
+    no longer provided by the perl package.
   * Change the branch layout to follow DEP-14.
   * Run wrap-and-sort -ast on the package.
   * Remove explicit setting of xz as the Debian source package compression
