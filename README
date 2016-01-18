@@ -92,7 +92,7 @@ REQUIREMENTS
   on CPAN for older versions.
 
   The keytab support in the wallet server supports either Heimdal or MIT
-  Kerberos KDCs and has exeprimental support for Active Directory.  The
+  Kerberos KDCs and has experimental support for Active Directory.  The
   Heimdal support requires the Heimdal::Kadm5 Perl module.  The MIT
   Kerberos support requires the MIT Kerberos kadmin client program be
   installed.  The Active Directory support requires the Net::LDAP,
