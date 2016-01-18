@@ -3,6 +3,7 @@
 # Build script for the wallet distribution.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -19,7 +20,7 @@ my $build = Module::Build->new(
     dist_abstract        => 'Secure credential management system',
     dist_author          => 'Russ Allbery <eagle@eyrie.org>',
     dist_name            => 'Wallet',
-    dist_version         => '1.03',
+    dist_version_from    => 'lib/Wallet/Server.pm',
     license              => 'mit',
     module_name          => 'Wallet::Server',
     recursive_test_files => 1,
@@ -36,12 +37,16 @@ my $build = Module::Build->new(
         perl              => '5.008',
     },
     recommends => {
-        'Authen::SASL'   => 0,
-        'Heimdal::Kadm5' => 0,
-        'Net::Duo'       => 0,
-        'Net::LDAP'      => 0,
-        'Net::Remctl'    => 0,
-        WebAuth          => 0,
+        'Authen::SASL'             => 0,
+        'Crypt::GeneratePassword'  => 0,
+        'DateTime::Format::SQLite' => 0,
+        'DBD::SQLite'              => 0,
+        'Heimdal::Kadm5'           => 0,
+        'IPC::Run'                 => 0,
+        'Net::Duo'                 => 0,
+        'Net::LDAP'                => 0,
+        'Net::Remctl'              => 0,
+        WebAuth                    => 0,
     },
 );
 
