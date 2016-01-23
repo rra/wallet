@@ -48,6 +48,10 @@ my $build = Module::Build->new(
         'Net::Remctl'              => 0,
         WebAuth                    => 0,
     },
+    test_requires => {
+        'Crypt::GeneratePassword'  => 0,
+        'DateTime::Format::SQLite' => 0,
+    },
 );
 
 # Generate the build script.
