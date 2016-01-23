@@ -236,7 +236,7 @@ perl/blib/lib/Wallet/Config.pm: $(srcdir)/perl/lib/Wallet/Config.pm
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA.pm perl/t/lib/Test/
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA/Config.pm \
 	    perl/t/lib/Test/RRA/
-	cd perl && perl Build.PL $(WALLET_PERL_FLAGS)
+	cd perl && $(PERL) Build.PL $(WALLET_PERL_FLAGS)
 	cd perl && ./Build
 
 # This is a really ugly hack to only honor prefix when running make install

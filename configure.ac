@@ -79,6 +79,15 @@ AS_IF([test x"$REMCTLD" != x],
     [AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
         [Define to the full path to remctld to run remctl tests.])])
 
+AC_ARG_VAR(PERL, [Path to the Perl binary])
+AC_PATH_PROG(PERL, perl)
+if test -z "$PERL"; then
+    AC_MSG_ERROR([Could not find Perl.])
+fi
+$PERL -e 'require 5.008;' || {
+    AC_MSG_ERROR([Perl 5.8 or better is required.])
+}
+
 dnl Enable appropriate warnings.
 AM_CONDITIONAL([WARNINGS_GCC], [test x"$GCC" = xyes && test x"$CLANG" != xyes])
 AM_CONDITIONAL([WARNINGS_CLANG], [test x"$CLANG" = xyes])
