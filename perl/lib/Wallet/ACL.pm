@@ -20,7 +20,7 @@ use warnings;
 use DateTime;
 use Wallet::Object::Base;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Constructors

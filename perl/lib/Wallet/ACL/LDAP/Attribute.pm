@@ -23,7 +23,7 @@ use Wallet::ACL::Base;
 use Wallet::Config;
 
 our @ISA     = qw(Wallet::ACL::Base);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Interface

@@ -26,7 +26,7 @@ use Wallet::Config;
 use Wallet::Kadmin;
 
 our @ISA     = qw(Wallet::Kadmin);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # kadmin Interaction

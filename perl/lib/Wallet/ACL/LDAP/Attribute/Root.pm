@@ -21,7 +21,7 @@ use warnings;
 use Wallet::ACL::LDAP::Attribute;
 
 our @ISA     = qw(Wallet::ACL::LDAP::Attribute);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Interface
