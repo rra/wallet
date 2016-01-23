@@ -1,4 +1,5 @@
-#!WALLET_PERL_PATH
+#!@PERL@
+# -*- perl -*-
 #
 # Wallet server administrative commands.
 

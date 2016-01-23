@@ -22,6 +22,10 @@
 /perl/t/data/test.krbtype
 /perl/t/lib/Test/RRA.pm
 /perl/t/lib/Test/RRA/
+/server/keytab-backend
+/server/wallet-admin
+/server/wallet-backend
+/server/wallet-report
 /tests/client/basic-t
 /tests/client/full-t
 /tests/client/prompt-t
