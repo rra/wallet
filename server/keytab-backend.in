@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!WALLET_PERL_PATH
 #
 # Extract keytabs from the KDC without changing the key.
 #

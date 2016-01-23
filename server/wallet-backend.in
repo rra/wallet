@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!WALLET_PERL_PATH
 #
 # Wallet server for storing and retrieving secure data.
 

@@ -210,12 +210,18 @@ warnings:
 
 # Remove some additional files.
 CLEANFILES = perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm \
-	perl/t/lib/Test/RRA/Config.pm
+	perl/t/lib/Test/RRA/Config.pm $(dist_sbin_SCRIPTS)
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 	build-aux/depcomp build-aux/install-sh build-aux/missing	     \
 	client/wallet.1 config.h.in config.h.in~ configure		     \
 	contrib/wallet-report.8 server/keytab-backend.8			     \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
+
+# For each of the perl scripts in server/, we need to fill in the path to the
+# Perl binary that was located during configuration.
+$(dist_sbin_SCRIPTS):
+	sed 's|WALLET_PERL_PATH|$(PERL)|' < $(srcdir)/$@.in > $(srcdir)/$@
+	chmod a+x $(srcdir)/$@
 
 # Take appropriate actions in the Perl directory as well.  We don't want to
 # always build the Perl directory in all-local, since otherwise Automake does
