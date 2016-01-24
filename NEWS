@@ -6,6 +6,11 @@ wallet 1.4 (unreleased)
     platforms where those functions are part of libc.  Thanks to Karl
     Kornel for the report.
 
+    Detect the path to Perl during configure, allowing an override by
+    setting the PERL environment or configure variable, and use that path
+    for all Perl scripts.  This allows wallet to use a version of Perl at
+    a non-standard path.  Patches from Karl Kornel.
+
 wallet 1.3 (2016-01-17)
 
     This release adds initial, experimental support for using Active
