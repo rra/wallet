@@ -57,6 +57,9 @@ exit(0);
 # Documentation
 ##############################################################################
 
+=for stopwords
+DDL create-ddl
+
 =head1 NAME
 
 create-ddl - Create DDL files for Wallet

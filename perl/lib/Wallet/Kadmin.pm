@@ -1,6 +1,7 @@
-# Wallet::Kadmin -- Kerberos administration API for wallet keytab backend.
+# Wallet::Kadmin -- Kerberos administration API for wallet keytab backend
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2009, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -11,18 +12,14 @@
 ##############################################################################
 
 package Wallet::Kadmin;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($VERSION);
 
-use Wallet::Config ();
+use Wallet::Config;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.03';
+our $VERSION = '1.03';
 
 ##############################################################################
 # Utility functions for child classes
@@ -69,6 +66,9 @@ sub new {
     } elsif (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'heimdal') {
         require Wallet::Kadmin::Heimdal;
         $kadmin = Wallet::Kadmin::Heimdal->new;
+    } elsif (lc ($Wallet::Config::KEYTAB_KRBTYPE) eq 'ad') {
+        require Wallet::Kadmin::AD;
+        $kadmin = Wallet::Kadmin::AD->new;
     } else {
         my $type = $Wallet::Config::KEYTAB_KRBTYPE;
         die "unknown KEYTAB_KRBTYPE setting: $type\n";

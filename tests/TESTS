@@ -5,13 +5,12 @@ client/rekey
 docs/pod
 docs/pod-spelling
 perl/minimum-version
+perl/module-version
 perl/strict
 portable/asprintf
 portable/mkstemp
 portable/setenv
 portable/snprintf
-portable/strlcat
-portable/strlcpy
 server/admin
 server/backend
 server/keytab

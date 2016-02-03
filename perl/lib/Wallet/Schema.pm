@@ -1,6 +1,7 @@
-# Database schema and connector for the wallet system.
+# Wallet::Schema -- Database schema and connector for the wallet system
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -8,6 +9,7 @@
 
 package Wallet::Schema;
 
+use 5.008;
 use strict;
 use warnings;
 
@@ -15,9 +17,9 @@ use Wallet::Config;
 
 use base 'DBIx::Class::Schema';
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
+# Unlike all of the other wallet modules, this module's version is tied to the
+# version of the schema in the database.  It should only be changed on schema
+# changes, at least until better handling of upgrades is available.
 our $VERSION = '0.10';
 
 __PACKAGE__->load_namespaces;
@@ -113,6 +115,10 @@ Holds the supported ACL schemes and their corresponding Perl classes:
       values ('krb5-regex', 'Wallet::ACL::Krb5::Regex');
   insert into acl_schemes (as_name, as_class)
       values ('ldap-attr', 'Wallet::ACL::LDAP::Attribute');
+  insert into acl_schemes (as_name, as_class)
+      values ('ldap-attr-root', 'Wallet::ACL::LDAP::Attribute::Root');
+  insert into acl_schemes (as_name, as_class)
+      values ('nested', 'Wallet::ACL::Nested');
   insert into acl_schemes (as_name, as_class)
       values ('netdb', 'Wallet::ACL::NetDB');
   insert into acl_schemes (as_name, as_class)

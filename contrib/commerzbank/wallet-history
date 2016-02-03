@@ -1,0 +1,475 @@
+#!/usr/bin/perl -w
+#
+#                                                               -*- perl -*-
+#
+#--------------------------------------------------------------------------------------------------------------
+# Program       : wallet-history
+# Function      : Tool for listing and/or modifying Wallet's object history
+# Author        : Commerzbank AG
+# History       : 20.01.2014 - V0.1 - First version - maxcrc
+#               : 21.01.2014 - V0.2 - Fixed some minor bugs and code formatting - Gerhard Stahl
+#				      Added some remarks for nessesary fixes
+#               : 29.01.2014 - V0.2 - Fixed issue related to variable comparision of undef values - maxcrc
+#				      Reformatted code to use functions like debug, usage - maxcrc
+#               : 06.02.2014 - V0.3 - Added support for ACL history in addition to object history - maxcrc
+#               : 07.02.2014 - V0.4 - A lot of improvements, run with --help to see - maxcrc
+#				      --acl and --obj argument names removed, please use --acls and --objs
+#				      --from and --to argument names replaced with --start and --end
+#				      Added new filtering args --from, --action, --acl, --by, --type and --name
+#				      Added new --version action type
+#				      Added new --columns action type
+#               : 08.02.2014 - V0.5 - Added support for ACL names via new ah_name column - maxcrc
+#
+#--------------------------------------------------------------------------------------------------------------
+#
+# Usage:
+#
+#  type ./wallet-history with no arguments to get the full help text (or with --help).
+#
+# In general, use a command of the form:
+#
+# perl wallet-history.pl ... (t.b.d.)...
+#
+#--------------------------------------------------------------------------------------------------------------
+# Version.
+
+my $VERSION = "0.5";
+
+=head1 Needed Modules
+
+Here is the list of modules we need:
+
+=cut
+
+use strict;
+use Getopt::Long;
+use Wallet::Schema;
+use DateTime;
+use DateTime::Format::Strptime;
+#use DBIx::ResultSet;
+use DBI;
+#use DateTime ();
+#use Scalar::Util;
+
+my $debug_on = 0;
+
+=head1 Subroutines
+
+=head2 Utility subroutines
+
+=head3 usage - display a usage message
+
+=cut
+
+sub usage() {
+	print "wallet-history is tool for listing and/or modifying Wallet's history\n";
+	print "usage:\n";
+	print "wallet-history [mandatory action] [optional query type] [optional filtering arguments]\n";
+	print "    where mandatory action is one of:\n";
+	print "        --help              - display this help information\n";
+	print "        --version           - display app version\n";
+	print "        --columns           - display column names (use with --objs or --acls)\n";
+	print "        --list              - list ACL or object history with/without from/to date filters\n";
+	print "        --clear             - clear ACL or object history with/without from/to date filters\n";
+	print "    optional query type is one of:\n";
+	print "        --acls              - query is for ACL history (default is --objs)\n";
+	print "        --objs              - query is for object history (this is default)\n";
+	print "    optional filtering data entries by (any [name] can be regular expression):\n";
+	print "        --start [date/time] - starting date\n";
+	print "        --end   [date/time] - ending date\n";
+	print "        --from [name]       - computer name\n";
+	print "        --action [name]     - action\n";
+	print "        --acl [name]        - acl        (with --acls only)\n";
+	print "        --by [name]         - by address (with --acls only)\n";
+	print "        --type [name]       - type       (with --objs only)\n";
+	print "        --name [name]       - host name with --objs, acl name with --acls\n";
+}
+
+
+=head3 usage - prints debug messages
+
+=cut
+
+sub debug {
+	my $msg = @_;
+	return unless ( $debug_on == 1);
+	print $msg . "\n";
+}
+
+
+my $parser = DateTime::Format::Strptime->new(
+	pattern		=> '%Y-%m-%dT%H:%M:%S',
+	on_error	=> 'croak',
+	);
+
+my $opt_result        = undef;
+my $an_action_help    = undef;
+my $an_action_version = undef;
+my $an_action_columns = undef;
+my $an_action_list    = undef;
+my $an_action_clear   = undef;
+my $is_action_acls    = 0;
+my $is_action_objs    = 1;
+my $str_date_from     = undef;
+my $str_date_to       = undef;
+my $str_filter_computer_name = undef;
+my $str_filter_action = undef;
+my $str_filter_acl    = undef;
+my $str_filter_by     = undef;
+my $str_filter_type   = undef;
+my $str_filter_name   = undef;
+	$opt_result = GetOptions (
+		  "help"	=> \$an_action_help
+		, "version"	=> \$an_action_version
+		, "columns"	=> \$an_action_columns
+		, "list"	=> \$an_action_list
+		, "clear"	=> \$an_action_clear
+		, "acls"	=> \$is_action_acls
+		, "objs"	=> \$is_action_objs
+		, "start=s"	=> \$str_date_from
+		, "end=s"	=> \$str_date_to
+		, "from=s"	=> \$str_filter_computer_name
+		, "action=s"	=> \$str_filter_action
+		, "acl=s"	=> \$str_filter_acl
+		, "by=s"	=> \$str_filter_by
+		, "type=s"	=> \$str_filter_type
+		, "name=s"	=> \$str_filter_name
+		);
+
+	if( ( defined $an_action_help ) or ( defined $an_action_version ) ) {
+		if( defined $an_action_version ) {
+			print "wallet-history version is $VERSION\n";
+		}
+		if( defined $an_action_help ) {
+			usage;
+		}
+		exit 0; # FIN #
+	}
+
+my $str_resultset_name = undef;
+	if( $is_action_acls ) {
+		$is_action_objs = 0;
+		$str_resultset_name = 'AclHistory';
+	} else {
+		$is_action_objs = 1;
+		$str_resultset_name = 'ObjectHistory';
+	}
+
+	if( defined $an_action_columns ) {
+		if( $is_action_acls ) {
+			print "\"ah_on\" \"ah_acl\" \"ah_by\" \"ah_action\" \"ah_from\"\n";
+		} else { if( $is_action_objs ) {
+			print "\"oh_on\" \"oh_by\" \"oh_type\" \"oh_name\" \"oh_action\" \"oh_from\"\n";
+		} else {
+			die "Critical internal error - unknown dataset type\n";
+		} }
+		exit 0; # FIN #
+	}
+
+
+my $date_from = undef;
+	if ( defined $str_date_from ) {
+		$date_from = $parser->parse_datetime( $str_date_from );
+		debug "Using minimal(from) date $date_from\n";
+	}
+my $date_to   = undef;
+	if ( defined $str_date_to ) {
+		$date_to = $parser->parse_datetime( $str_date_to );
+		debug "Using maximal(to) date $date_to\n";
+	}
+
+	if ( $an_action_list || $an_action_clear ) {
+		my $schema = Wallet::Schema->connect;
+		my @data_entries;
+		eval {
+			my @data_entries_rs = $schema->resultset( $str_resultset_name )->search(); # ( $search_ref, $options_ref );
+			for my $entry_rs (@data_entries_rs) {
+				if( $is_action_acls ) {
+					# begin - working with ACLs history
+					my $is_filter_passed = 1;
+					my $str_date_on = "" . $entry_rs->ah_on;
+					my $date_on = $parser->parse_datetime( $str_date_on );
+					debug "date on as string ", $str_date_on, "\n";
+					debug "date on as date   ", $date_on, "\n";
+					if ( ( defined $date_from ) || ( defined $date_to ) ) {
+						if ( ( defined $date_from ) && ( $date_from > $date_on ) ) {
+							$is_filter_passed = 0;
+						}
+						if ( ( defined $date_to ) && ( $date_to < $date_on ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if ( ( defined $date_from ) || ( defined $date_to ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_computer_name ) ) {
+						my $str_text_to_test = "" . $entry_rs->ah_from;
+						if( not ( $str_text_to_test =~ /$str_filter_computer_name/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_computer_name ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_action ) ) {
+						my $str_text_to_test = "" . $entry_rs->ah_action;
+						if( not ( $str_text_to_test =~ /$str_filter_action/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_action ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_acl ) ) {
+						my $str_text_to_test = "" . $entry_rs->ah_acl;
+						if( not ( $str_text_to_test =~ /$str_filter_acl/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_acl ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_by ) ) {
+						my $str_text_to_test = "" . $entry_rs->ah_by;
+						if( not ( $str_text_to_test =~ /$str_filter_by/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_by ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_name ) ) {
+						my $str_text_to_test = "" . $entry_rs->ah_name;
+						if( not ( $str_text_to_test =~ /$str_filter_name/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_name ) )
+					if( $is_filter_passed != 0 ) {
+						push (@data_entries, [$entry_rs->ah_on, $entry_rs->ah_acl, $entry_rs->ah_by, $entry_rs->ah_action, $entry_rs->ah_from, $entry_rs->ah_name ]);
+						debug "Found: \"", $entry_rs->ah_on, "\" \"", $entry_rs->ah_acl, "\" \"", $entry_rs->ah_by, "\" \"", $entry_rs->ah_action, "\" \"", $entry_rs->ah_from, "\" \"", $entry_rs->ah_name, "\n";
+					} # if( $is_filter_passed != 0 )
+					debug "walked throgh dates \"", ref($date_from), "-", $date_from, "\" \"", ref($date_on), "-", $date_on, "\" \"", ref($date_to), "-", $date_to, "\" result is ", $is_filter_passed, "\n";
+					#  end  - working with ACLs history
+				} else { if( $is_action_objs ) {
+					# begin - working with objects history
+					my $is_filter_passed = 1;
+					my $str_date_on = "" . $entry_rs->oh_on;
+					my $date_on = $parser->parse_datetime( $str_date_on );
+					debug "date on as string ", $str_date_on, "\n";
+					debug "date on as date   ", $date_on, "\n";
+					if ( ( defined $date_from ) || ( defined $date_to ) ) {
+						if ( ( defined $date_from ) && ( $date_from > $date_on ) ) {
+							$is_filter_passed = 0;
+						}
+						if ( ( defined $date_to ) && ( $date_to < $date_on ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if ( ( defined $date_from ) || ( defined $date_to ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_computer_name ) ) {
+						my $str_text_to_test = "" . $entry_rs->oh_from;
+						if( not ( $str_text_to_test =~ /$str_filter_computer_name/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_computer_name ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_action ) ) {
+						my $str_text_to_test = "" . $entry_rs->oh_action;
+						if( not ( $str_text_to_test =~ /$str_filter_action/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_action ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_type ) ) {
+						my $str_text_to_test = "" . $entry_rs->oh_type;
+						if( not ( $str_text_to_test =~ /$str_filter_type/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_type ) )
+					if( $is_filter_passed != 0 && ( defined $str_filter_name ) ) {
+						my $str_text_to_test = "" . $entry_rs->oh_name;
+						if( not ( $str_text_to_test =~ /$str_filter_name/ ) ) {
+							$is_filter_passed = 0;
+						}
+					} # if( $is_filter_passed != 0 && ( defined $str_filter_name ) )
+					if( $is_filter_passed != 0 ) {
+						push (@data_entries, [$entry_rs->oh_on, $entry_rs->oh_by, $entry_rs->oh_type, $entry_rs->oh_name, $entry_rs->oh_action, $entry_rs->oh_from ]);
+						debug "Found: \"", $entry_rs->oh_on, "\" \"", $entry_rs->oh_by, "\" \"", $entry_rs->oh_type, "\" \"", $entry_rs->oh_name, "\" \"", $entry_rs->oh_action, "\" \"", $entry_rs->oh_from, "\"", "\n";
+					} # if( $is_filter_passed != 0 )
+					debug "walked throgh dates \"", ref($date_from), "-", $date_from, "\" \"", ref($date_on), "-", $date_on, "\" \"", ref($date_to), "-", $date_to, "\" result is ", $is_filter_passed, "\n";
+					#  end  - working with objects history
+				} else {
+					die "Critical internal error - unknown dataset type\n";
+				} }
+			} # for my $entry_rs (@data_entries_rs)
+		}; # eval
+		if ($@) {
+			print "cannot list data entries: $@";
+			exit -1;
+		}
+
+		if( $is_action_acls ) {
+			# begin - working with ACLs history
+		 	for my $group (@data_entries) {
+				if ( $an_action_clear ) {
+					my $is_deleted_ok = 0;
+					print "\"", join ("\" \"", @$group), "\" ... ";
+					my $sql_delete_error = undef;
+					eval {
+						my $str_ah_on     = "" . $group->[0];
+						my $str_ah_acl    = "" . $group->[1];
+						my $str_ah_by     = "" . $group->[2];
+						my $str_ah_action = "" . $group->[3];
+						my $str_ah_from   = "" . $group->[4];
+						my $str_ah_name   = "" . $group->[5];
+
+						my $string  = $str_ah_on; # '01234567890';
+						my $find    = 'T';        # '0';
+						my $replace = ' ';        # 'a';
+						my $pos = index($string, $find);
+						while ( $pos > -1 ) {
+							substr( $string, $pos, length( $find ), $replace );
+							$pos = index( $string, $find, $pos + length( $replace ));
+						}
+						$str_ah_on = $string;
+
+						debug "Searching \"$str_ah_on\" \"$str_ah_acl\" \"$str_ah_by\" \"$str_ah_action\" \"$str_ah_from\" \"$str_ah_name\" ... \n";
+
+						#my @data_entries_rs =
+						#	$schema->resultset('AclHistory')->search( [
+						#		  { ah_on     => $str_ah_on     }
+						#		, { ah_acl    => $str_ah_acl    }
+						#		, { ah_by     => $str_ah_by     }
+						#		, { ah_action => $str_ah_action }
+						#		, { ah_from   => $str_ah_from   }
+						#		, { ah_name   => $str_ah_name   }
+						#		] ); # -> delete;
+
+						#my @data_entries_rs =
+						#	$schema->resultset('AclHistory')->search( [
+						#		  { ah_on     => { '=' , $str_ah_on     } }
+						#		, { ah_acl    => { '=' , $str_ah_acl    } }
+						#		, { ah_by     => { '=' , $str_ah_by     } }
+						#		, { ah_action => { '=' , $str_ah_action } }
+						#		, { ah_from   => { '=' , $str_ah_from   } }
+						#		, { ah_name   => { '=' , $str_ah_name   } }
+						#		] ); # -> delete;
+
+						my $str_sql_del = "DELETE FROM acl_history WHERE ah_on = TO_DATE(\'" . $str_ah_on . "\', 'YYYY-MM-DD HH24:MI:SS') AND ah_acl = \'" . $str_ah_acl . "\' AND ah_by = \'" . $str_ah_by . "\' AND ah_action = \'" . $str_ah_action . "\' AND ah_from = \'" . $str_ah_from . "\' AND ah_name = \'" . $str_ah_name . "\'";
+
+						#$schema->storage->debug(1);
+						my @ret = $schema->storage->dbh_do(
+							sub {
+								my ($storage, $dbh, @args) = @_;
+								debug "Attempting to ", $str_sql_del, "\n";
+								debug "dbh is ", $dbh, "\n";
+								my $sth = $dbh->prepare( $str_sql_del );
+								#$sth->{PrintError} = 1;
+								#$sth->{RaiseError} = 1;
+								debug "sth is ", $sth, "\n";
+								my $ret = $sth->execute(); # or die "Can't execute SQL statement: $DBI::errstr\n";
+								debug "ret is ", $ret, "\n";
+								debug "error string is", $sth->errstr(), "\n";
+								if ( $ret == 0 ) {
+									$sql_delete_error = "Internal error";
+								} else {
+									$is_deleted_ok = 1;
+								}
+							},
+							$str_sql_del
+							);
+
+						#$is_deleted_ok = 1;
+
+						#for my $entry_rs (@data_entries_rs) {
+						#	print "Will delete: \"", $entry_rs->ah_on, "\" \"", $entry_rs->ah_acl, "\" \"", $entry_rs->ah_by, "\" \"", $entry_rs->ah_action, "\" \"", $entry_rs->ah_from, "\"", "\n";
+						#} # for my $entry_rs (@data_entries_rs)
+
+					}; # eval
+					if ( $is_deleted_ok ) {
+						print "Deleted\n";
+					} else {
+						print "Error ", $sql_delete_error, "\n";
+					}
+				} else { # else from if ( $an_action_clear )
+					print "\"", join ("\" \"", @$group), "\"\n";
+				} # else from if ( $an_action_clear )
+			} # for my $group (@data_entries)
+			#  end  - working with ACLs history
+		} else { if( $is_action_objs ) {
+			# begin - working with objects history
+		 	for my $group (@data_entries) {
+				if ( $an_action_clear ) {
+					my $is_deleted_ok = 0;
+					print "\"", join ("\" \"", @$group), "\" ... ";
+					my $sql_delete_error = undef;
+					eval {
+						my $str_oh_on     = "" . $group->[0];
+                                                my $str_oh_by     = "" . $group->[1];
+						my $str_oh_type   = "" . $group->[2];
+						my $str_oh_name   = "" . $group->[3];
+						my $str_oh_action = "" . $group->[4];
+						my $str_oh_from   = "" . $group->[5];
+
+						my $string  = $str_oh_on; # '01234567890';
+						my $find    = 'T';        # '0';
+						my $replace = ' ';        # 'a';
+						my $pos = index($string, $find);
+						while ( $pos > -1 ) {
+							substr( $string, $pos, length( $find ), $replace );
+							$pos = index( $string, $find, $pos + length( $replace ));
+						}
+						$str_oh_on = $string;
+
+						debug "Searching \"$str_oh_on\" \"$str_oh_by\" \"$str_oh_type\" \"$str_oh_name\" \"$str_oh_action\" \"$str_oh_from\" ... \n";
+
+						#my @data_entries_rs =
+						#	$schema->resultset('ObjectHistory')->search( [
+						#		  { oh_on     => $str_oh_on     }
+						#		, { oh_type   => $str_oh_type   }
+						#		, { oh_name   => $str_oh_name   }
+						#		, { oh_action => $str_oh_action }
+						#		, { oh_from   => $str_oh_from   }
+						#		] ); # -> delete;
+
+						#my @data_entries_rs =
+						#	$schema->resultset('ObjectHistory')->search( [
+						#		  { oh_on     => { '=' , $str_oh_on     } }
+						#		, { oh_type   => { '=' , $str_oh_type   } }
+						#		, { oh_name   => { '=' , $str_oh_name   } }
+						#		, { oh_action => { '=' , $str_oh_action } }
+						#		, { oh_from   => { '=' , $str_oh_from   } }
+						#		] ); # -> delete;
+
+						my $str_sql_del = "DELETE FROM object_history WHERE oh_on = TO_DATE(\'" . $str_oh_on . "\', 'YYYY-MM-DD HH24:MI:SS') AND oh_type = \'" . $str_oh_type . "\' AND oh_name = \'" . $str_oh_name . "\' AND oh_action = \'" . $str_oh_action . "\' AND oh_from = \'" . $str_oh_from . "\'";
+
+						#$schema->storage->debug(1);
+						my @ret = $schema->storage->dbh_do(
+							sub {
+								my ($storage, $dbh, @args) = @_;
+								debug "Attempting to ", $str_sql_del, "\n";
+								debug "dbh is ", $dbh, "\n";
+								my $sth = $dbh->prepare( $str_sql_del );
+								#$sth->{PrintError} = 1;
+								#$sth->{RaiseError} = 1;
+								debug "sth is ", $sth, "\n";
+								my $ret = $sth->execute(); # or die "Can't execute SQL statement: $DBI::errstr\n";
+								debug "ret is ", $ret, "\n";
+								debug "error string is", $sth->errstr(), "\n";
+								if ( $ret == 0 ) {
+									$sql_delete_error = "Internal error";
+								} else {
+									$is_deleted_ok = 1;
+								}
+							},
+							$str_sql_del
+							);
+
+						#$is_deleted_ok = 1;
+
+						#for my $entry_rs (@data_entries_rs) {
+						#	print "Will delete: \"", $entry_rs->oh_on, "\" \"", $entry_rs->oh_type, "\" \"", $entry_rs->oh_name, "\" \"", $entry_rs->oh_action, "\" \"", $entry_rs->oh_from, "\"", "\n";
+						#} # for my $entry_rs (@data_entries_rs)
+
+					}; # eval
+					if ( $is_deleted_ok ) {
+						print "Deleted\n";
+					} else {
+						print "Error ", $sql_delete_error, "\n";
+					}
+				} else { # else from if ( $an_action_clear )
+					print "\"", join ("\" \"", @$group), "\"\n";
+				} # else from if ( $an_action_clear )
+			} # for my $group (@data_entries)
+			#  end  - working with objects history
+		} else {
+			die "Critical internal error - unknown dataset type\n";
+		} }
+
+		exit 0; # FIN #
+	} # if ( $an_action_list || $an_action_clear )
+
+	usage;
+	exit 0; # FIN #

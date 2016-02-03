@@ -3,22 +3,47 @@ Section: net
 Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
 Bugs: mailto:rra@debian.org
-Build-Depends: debhelper (>= 9), dh-autoreconf, libauthen-sasl-perl,
- libdatetime-perl, libdatetime-format-sqlite-perl, libdbd-sqlite3-perl,
- libdbi-perl, libdbix-class-perl, libheimdal-kadm5-perl, libjson-perl,
- libkrb5-dev, libnet-dns-perl, libnet-ldap-perl, libremctl-dev,
- libsql-translator-perl, libtest-minimumversion-perl, libtest-pod-perl,
- libtest-strict-perl, libtimedate-perl, perl, sqlite3
+Build-Depends:
+ debhelper (>= 9),
+ dh-autoreconf,
+ libauthen-sasl-perl,
+ libcrypt-generatepassword-perl,
+ libdatetime-format-sqlite-perl,
+ libdatetime-perl,
+ libdbd-sqlite3-perl,
+ libdbi-perl,
+ libdbix-class-perl,
+ libheimdal-kadm5-perl,
+ libipc-run-perl,
+ libjson-perl,
+ libkrb5-dev,
+ libmodule-build-perl,
+ libnet-dns-perl,
+ libnet-ldap-perl,
+ libnet-remctl-perl,
+ libperl6-slurp-perl,
+ libremctl-dev,
+ libsql-translator-perl,
+ libtest-minimumversion-perl,
+ libtest-pod-perl,
+ libtest-strict-perl,
+ libtimedate-perl,
+ perl,
+ sqlite3,
 Standards-Version: 3.9.6
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
-Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian
+Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian/master
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/wallet.git
 
 Package: keytab-backend
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${perl:Depends}, krb5-admin-server, perl,
- remctl-server
+Depends:
+ krb5-admin-server,
+ perl,
+ remctl-server,
+ ${misc:Depends},
+ ${perl:Depends},
 Description: Provide existing MIT Kerberos keytabs via remctl
  keytab-backend is a service that runs under remctld and allows
  authenticated clients to download Kerberos keytabs from an MIT Kerberos
@@ -30,7 +55,9 @@ Description: Provide existing MIT Kerberos keytabs via remctl
 Package: wallet-client
 Architecture: any
 Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
 Description: Kerberos-authenticated secure data management client
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions
@@ -47,15 +74,30 @@ Description: Kerberos-authenticated secure data management client
 Package: wallet-server
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${perl:Depends},
- libdatetime-format-sqlite-perl | libdatetime-format-mysql-perl |
- libdatetime-format-pg-perl,
+Depends:
+ libdatetime-format-sqlite-perl | libdatetime-format-mysql-perl | libdatetime-format-pg-perl,
+ libdatetime-perl,
  libdbd-sqlite3-perl | libdbd-mysql-perl | libdbd-pg-perl,
- libdbix-class-perl, libdatetime-perl, libsql-translator-perl,
- libtimedate-perl, remctl-server
-Recommends: krb5-user | libheimdal-kadm5-perl, remctl-server (>= 2.14)
-Suggests: libauthen-sasl-perl, libnet-duo-perl, libnet-ldap-perl,
- libnet-remctl-perl, libwebauth-perl (>= 4.4.0)
+ libdbi-perl,
+ libdbix-class-perl,
+ libsql-translator-perl,
+ libtimedate-perl,
+ remctl-server,
+ ${misc:Depends},
+ ${perl:Depends},
+Recommends:
+ krb5-user | libheimdal-kadm5-perl,
+ remctl-server (>= 2.14),
+Suggests:
+ libauthen-sasl-perl,
+ libcrypt-generatepassword-perl,
+ libipc-run-perl,
+ libjson-perl,
+ libnet-duo-perl,
+ libnet-ldap-perl,
+ libnet-remctl-perl,
+ libperl6-slurp-perl,
+ libwebauth-perl (>= 4.4.0),
 Description: Kerberos-authenticated secure data management server
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions

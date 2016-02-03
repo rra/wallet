@@ -1,25 +1,22 @@
-# Wallet::Config -- Configuration handling for the wallet server.
+# Wallet::Config -- Configuration handling for the wallet server
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2013, 2014
+# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2007, 2008, 2010, 2013, 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 package Wallet::Config;
-require 5.006;
 
+use 5.008;
 use strict;
 use warnings;
-use vars qw($PATH $VERSION);
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-$VERSION = '0.05';
+our $VERSION = '1.03';
 
 # Path to the config file to load.
-$PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
+our $PATH = $ENV{WALLET_CONFIG} || '/etc/wallet/wallet.conf';
 
 =head1 NAME
 
@@ -29,7 +26,7 @@ Wallet::Config - Configuration handling for the wallet server
 DBI DSN SQLite subdirectories KEYTAB keytab kadmind KDC add-ons kadmin DNS
 SRV kadmin keytabs remctl backend lowercased NETDB ACL NetDB unscoped
 usernames rekey hostnames Allbery wallet-backend keytab-backend Heimdal
-rekeys WebAuth WEBAUTH keyring LDAP DN GSS-API integrations
+rekeys WebAuth WEBAUTH keyring LDAP DN GSS-API integrations msktutil
 
 =head1 SYNOPSIS
 
@@ -260,6 +257,49 @@ our $FILE_MAX_SIZE;
 
 =back
 
+=head1 PASSWORD OBJECT CONFIGURATION
+
+These configuration variables only need to be set if you intend to use the
+C<password> object type (the Wallet::Object::Password class).  You will also
+need to set the FILE_MAX_SIZE value from the file object configuration, as
+that is inherited.
+
+=over 4
+
+=item PWD_FILE_BUCKET
+
+The directory into which to store password objects.  Password objects will
+be stored in subdirectories of this directory.  See
+L<Wallet::Object::Password> for the full details of the naming scheme.  This
+directory must be writable by the wallet server and the wallet server must
+be able to create subdirectories of it.
+
+PWD_FILE_BUCKET must be set to use file objects.
+
+=cut
+
+our $PWD_FILE_BUCKET;
+
+=item PWD_LENGTH_MIN
+
+The minimum length for any auto-generated password objects created when get
+is run before data is stored.
+
+=cut
+
+our $PWD_LENGTH_MIN = 20;
+
+=item PWD_LENGTH_MAX
+
+The maximum length for any auto-generated password objects created when get
+is run before data is stored.
+
+=cut
+
+our $PWD_LENGTH_MAX = 21;
+
+=back
+
 =head1 KEYTAB OBJECT CONFIGURATION
 
 These configuration variables only need to be set if you intend to use the
@@ -275,7 +315,8 @@ modify, inspect, and delete any principals that should be managed by the
 wallet.  (In MIT Kerberos F<kadm5.acl> parlance, this is C<admci>
 privileges.)
 
-KEYTAB_FILE must be set to use keytab objects.
+KEYTAB_FILE must be set to use keytab objects with any backend other than
+Active Directory.
 
 =cut
 
@@ -292,16 +333,18 @@ is generally pointless and may interact poorly with the way C<addprinc
 -randkey> works when third-party add-ons for password strength checking
 are used.)
 
+This option is ignored when using Active Directory.
+
 =cut
 
 our $KEYTAB_FLAGS = '-clearpolicy';
 
 =item KEYTAB_HOST
 
-Specifies the host on which the kadmin service is running.  This setting
-overrides the C<admin_server> setting in the [realms] section of
-F<krb5.conf> and any DNS SRV records and allows the wallet to run on a
-system that doesn't have a Kerberos configuration for the wallet's realm.
+Specifies the host on which the kadmin or Active Directory service is running.
+This setting overrides the C<admin_server> setting in the [realms] section of
+F<krb5.conf> and any DNS SRV records and allows the wallet to run on a system
+that doesn't have a Kerberos configuration for the wallet's realm.
 
 =cut
 
@@ -313,13 +356,15 @@ The path to the B<kadmin> command-line client.  The default value is
 C<kadmin>, which will cause the wallet to search for B<kadmin> on its
 default PATH.
 
+This option is ignored when using Active Directory.
+
 =cut
 
 our $KEYTAB_KADMIN = 'kadmin';
 
 =item KEYTAB_KRBTYPE
 
-The Kerberos KDC implementation type, either C<Heimdal> or C<MIT>
+The Kerberos KDC implementation type, chosen from C<AD>, C<Heimdal>, or C<MIT>
 (case-insensitive).  KEYTAB_KRBTYPE must be set to use keytab objects.
 
 =cut
@@ -331,9 +376,9 @@ our $KEYTAB_KRBTYPE;
 The principal whose key is stored in KEYTAB_FILE.  The wallet will
 authenticate as this principal to the kadmin service.
 
-KEYTAB_PRINCIPAL must be set to use keytab objects, at least until
-B<kadmin> is smart enough to use the first principal found in the keytab
-it's using for authentication.
+KEYTAB_PRINCIPAL must be set to use keytab objects unless Active Directory is
+the backend, at least until B<kadmin> is smart enough to use the first
+principal found in the keytab it's using for authentication.
 
 =cut
 
@@ -347,7 +392,7 @@ installation and the keytab object names are stored without realm.
 KEYTAB_REALM is added when talking to the KDC via B<kadmin>.
 
 KEYTAB_REALM must be set to use keytab objects.  C<ktadd> doesn't always
-default to the local realm.
+default to the local realm and the Active Directory integration requires it.
 
 =cut
 
@@ -367,6 +412,69 @@ KEYTAB_TMP must be set to use keytab objects.
 =cut
 
 our $KEYTAB_TMP;
+
+=back
+
+The following parameters are specific to generating keytabs from Active
+Directory (KEYTAB_KRBTYPE is set to C<AD>).
+
+=over 4
+
+=item AD_CACHE
+
+Specifies the ticket cache to use when manipulating Active Directory objects.
+The ticket cache must be for a principal able to bind to Active Directory and
+run B<msktutil>.
+
+AD_CACHE must be set to use Active Directory support.
+
+=cut
+
+our $AD_CACHE;
+
+=item AD_COMPUTER_DN
+
+The LDAP base DN for computer objects inside Active Directory.  All keytabs of
+the form host/<hostname> will be mapped to objects with a C<samAccountName> of
+the <hostname> portion under this DN.
+
+AD_COMPUTER_DN must be set if using Active Directory as the keytab backend.
+
+=cut
+
+our $AD_COMPUTER_DN;
+
+=item AD_DEBUG
+
+If set to true, asks for some additional debugging information, such as the
+B<msktutil> command, to be logged to syslog.  These debugging messages will be
+logged to the C<local3> facility.
+
+=cut
+
+our $AD_DEBUG = 0;
+
+=item AD_MSKTUTIL
+
+The path to the B<msktutil> command-line client.  The default value is
+C<msktutil>, which will cause the wallet to search for B<msktutil> on its
+default PATH.
+
+=cut
+
+our $AD_MSKTUTIL = 'msktutil';
+
+=item AD_USER_DN
+
+The LDAP base DN for user objects inside Active Directory.  All keytabs of the
+form service/<user> will be mapped to objects with a C<servicePrincipalName>
+matching the wallet object name under this DN.
+
+AD_USER_DN must be set if using Active Directory as the keytab backend.
+
+=cut
+
+our $AD_USER_DN;
 
 =back
 
@@ -494,6 +602,36 @@ The default value is 60 * 60 * 24 * 90 (90 days).
 =cut
 
 our $WAKEYRING_PURGE_INTERVAL = 60 * 60 * 24 * 90;
+
+=back
+
+=head1 EXTERNAL ACL CONFIGURATION
+
+This configuration variable is only needed if you intend to use the
+C<external> ACL type (the Wallet::ACL::External class).  This ACL type
+runs an external command to determine if access is granted.
+
+=over 4
+
+=item EXTERNAL_COMMAND
+
+Path to the command to run to determine whether access is granted.  The first
+argument to the command will be the principal requesting access.  The second
+and third arguments will be the type and name of the object that principal is
+requesting access to.  The final argument will be the identifier of the ACL.
+
+No other arguments are passed to the command, but the command will have
+access to all of the remctl environment variables seen by the wallet
+server (such as REMOTE_USER).  For a full list of environment variables,
+see L<remctld(8)/ENVIRONMENT>.
+
+The external command should exit with a non-zero status but no output to
+indicate a normal failure to satisfy the ACL.  Any output will be treated
+as an error.
+
+=cut
+
+our $EXTERNAL_COMMAND;
 
 =back
 
@@ -748,6 +886,34 @@ keytab objects for particular principals have fully-qualified hostnames:
 
 Objects that aren't of type C<keytab> or which aren't for a host-based key
 have no naming requirements enforced by this example.
+
+=head1 OBJECT HOST-BASED NAMES
+
+The above demonstrates having a host-based naming convention, where we
+expect one part of an object name to be the name of the host that this
+object is for.  The most obvious examples are those keytab objects
+above, where we want certain keytab names to be in the form of
+<service>/<hostname>.  It's then also useful to provide a Perl function
+named is_for_host which then can be used to tell if a given object is a
+host-based keytab for a specific host.  This function is then called by
+the objects_hostname in Wallet::Report to give a list of all host-based
+objects for a given hostname.  It should return true if the given object
+is a host-based object for the hostname, otherwise false.
+
+An example that matches the same policy as the last verify_name example
+would be:
+
+    sub is_for_host {
+        my ($type, $name, $hostname) = @_;
+        my %host_based = map { $_ => 1 }
+            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
+        return 0 unless $type eq 'keytab';
+        return 0 unless $name =~ m%/%;
+        my ($service, $instance) = split ('/', $name, 2);
+        return 0 unless $host_based{$service};
+        return 1 if $hostname eq $instance;
+        return 0;
+    }
 
 =head1 ACL NAMING ENFORCEMENT
 

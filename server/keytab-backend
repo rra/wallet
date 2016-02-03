@@ -16,10 +16,7 @@
 #
 # The keytab for the extracted principal will be printed to standard output.
 
-##############################################################################
-# Declarations and site configuration
-##############################################################################
-
+use 5.008;
 use strict;
 use warnings;
 

@@ -1,5 +1,98 @@
                        User-Visible wallet Changes
 
+wallet 1.3 (2016-01-17)
+
+    This release adds initial, experimental support for using Active
+    Directory as the KDC for keytab creation.  The interface to Active
+    Directory uses a combination of direct LDAP queries and the msktutil
+    utility.  This version does not support the wallet unchanging flag.
+    Unchanging requires that a keytab be retrieved without changing the
+    password/kvno which is not supported by msktutil.  Active Directory
+    can be selected by setting KEYTAB_KRBTYPE to AD in the wallet
+    configuration.  Multiple other configuration options must also be set;
+    see Wallet::Config for more information and README for the additional
+    Perl modules required.  Thanks to Bill MacAllister for the
+    implementation.
+
+    A new ACL type, nested (Wallet::ACL::Nested), is now supported.  The
+    identifier of this ACL names another ACL, and access is granted if
+    that ACL would grant access.  This lets one combine multiple other
+    ACLs and apply the union to an object.  To enable this ACL type for an
+    existing wallet database, use wallet-admin to register the new
+    verifier.
+
+    A new ACL type, external (Wallet::ACL::External), is now supported.
+    This ACL runs an external command to check if access is allowed, and
+    passes the principal, type and name of the object, and the ACL
+    identifier to that command.  To enable this ACL type for an existing
+    wallet database, use wallet-admin to register the new verifier.
+
+    A new variation on the ldap-attr ACL type, ldap-attr-root
+    (Wallet::ACL::LDAP::Attribute::Root), is now supported.  This is
+    similar to netdb-root (compared to netdb): the authenticated principal
+    must end in /root, and the LDAP entry checked will be for the same
+    principal without the /root component.  This is useful for limiting
+    access to certain privileged objects to Kerberos root instances.  To
+    enable this ACL type for an existing wallet database, use wallet-admin
+    to register the new verifier.
+
+    A new object type, password (Wallet::Object::Password), is now
+    supported.  This is a subclass of the file object that will randomly
+    generate content for the object if you do a get before storing any
+    content inside it.  To enable this object type for an existing
+    database, use wallet-admin to register the new object.
+
+    Add a new command to wallet-backend, update.  This will update the
+    contents of an object before running a get on it, and is only valid
+    for objects that can automatically get new content, such as keytab and
+    password objects.  A keytab will get a new kvno regardless of the
+    unchanging flag if called with update.  In a future release get will
+    be changed to never update a keytab, and the unchanging flag will be
+    ignored.  Please start moving to use get or update as the situation
+    warrants.
+
+    Add an acl replace command, to change all objects owned by one ACL to
+    be owned by another.  This currently only handles owner, not any of
+    the more specific ACLs.
+
+    All ACL operations now refer to the ACL by name rather than ID.
+
+    Add a report for unstored objects to wallet-report, and cleaned up the
+    help for the existing unused report that implied it showed unstored as
+    well as unused.
+
+    Add reports that list all object types (types) and all ACL schemes
+    (schemes) currently registered in the wallet database.
+
+    Add a report of all ACLs that nest a given ACL.  This requires some
+    additional local configuration (and probably some code).  See
+    Wallet::Config for more information.
+
+    Took contributions from Commerzbank AG to improve wallet history.  Add
+    a command to dump all object history for searching on to
+    wallet-report, and add a new script for more detailed object history
+    operations to the contrib directory.
+
+    Displays of ACLs and ACL entries are now sorted correctly.
+
+    The versions of all of the wallet Perl modules now match the overall
+    package version except for Wallet::Schema, which is used to version
+    the database schema.
+
+    Update to rra-c-util 5.10:
+
+    * Add missing va_end to xasprintf implementation.
+    * Fix Perl test suite framework for new Automake relative paths.
+    * Improve portability to Kerberos included in Solaris 10.
+    * Use appropriate warning flags with Clang (currently not warning clean).
+
+    Update to C TAP Harness 3.4:
+
+    * Fix segfault in runtests with an empty test list.
+    * Display verbose test results with -v or C_TAP_VERBOSE.
+    * Test infrastructure builds cleanly with Clang warnings.
+    * Support comments and blank lines in test lists.
+
 wallet 1.2 (2014-12-08)
 
     The duo object type has been split into several sub-types, each for a

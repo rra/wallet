@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use POSIX qw(strftime);
-use Test::More tests => 141;
+use Test::More tests => 142;
 
 BEGIN { $Wallet::Config::KEYTAB_TMP = '.' }
 
@@ -25,15 +25,28 @@ use Wallet::Object::Keytab;
 use lib 't/lib';
 use Util;
 
-# Mapping of klist -ke encryption type names to the strings that Kerberos uses
-# internally.  It's very annoying to have to maintain this, and it probably
-# breaks with Heimdal.
+# Mapping of klist -ke output from old MIT Kerberos implementations to to the
+# strings that Kerberos uses internally.  It's very annoying to have to
+# maintain this, and it probably breaks with Heimdal.
+#
+# Newer versions of MIT Kerberos just print out the canonical enctype names
+# and don't need this logic, but the current test requires that they still
+# have entries.  That's why the second set where the key and value are the
+# same.
 my %enctype =
     ('triple des cbc mode with hmac/sha1'      => 'des3-cbc-sha1',
      'des cbc mode with crc-32'                => 'des-cbc-crc',
      'des cbc mode with rsa-md5'               => 'des-cbc-md5',
+     'aes-128 cts mode with 96-bit sha-1 hmac' => 'aes128-cts-hmac-sha1-96',
      'aes-256 cts mode with 96-bit sha-1 hmac' => 'aes256-cts-hmac-sha1-96',
-     'arcfour with hmac/md5'                   => 'rc4-hmac');
+     'arcfour with hmac/md5'                   => 'rc4-hmac',
+
+     'des3-cbc-sha1'                           => 'des3-cbc-sha1',
+     'des-cbc-crc'                             => 'des-cbc-crc',
+     'des-cbc-md5'                             => 'des-cbc-md5',
+     'aes128-cts-hmac-sha1-96'                 => 'aes128-cts-hmac-sha1-96',
+     'aes256-cts-hmac-sha1-96'                 => 'aes256-cts-hmac-sha1-96',
+     'rc4-hmac'                                => 'rc4-hmac');
 
 # Some global defaults to use.
 my $user = 'admin@EXAMPLE.COM';
@@ -159,7 +172,7 @@ my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
 
 # Basic keytab creation and manipulation tests.
 SKIP: {
-    skip 'no keytab configuration', 52 unless -f 't/data/test.keytab';
+    skip 'no keytab configuration', 53 unless -f 't/data/test.keytab';
 
     # Set up our configuration.
     $Wallet::Config::KEYTAB_FILE      = 't/data/test.keytab';
@@ -296,6 +309,7 @@ EOO
                                         @trace)
       };
     ok (defined ($object), 'Creating good principal succeeds');
+    is ($@, '', ' with no error');
     ok (created ('wallet/one'), ' and the principal was created');
   SKIP: {
         skip 'no kadmin program test for Heimdal', 2
