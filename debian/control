@@ -32,7 +32,7 @@ Build-Depends:
  sqlite3,
 Standards-Version: 3.9.6
 Homepage: http://www.eyrie.org/~eagle/software/wallet/
-Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian/master
+Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b ubuntu/precise
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/wallet.git
 
 Package: keytab-backend
