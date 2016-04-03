@@ -1,8 +1,8 @@
 # Wallet::Kadmin::AD -- Wallet Kerberos administration API for AD
 #
-# Written by Bill MacAllister <bill@ca-zephyr.org>
+# Written by Bill MacAllister <whm@dropbox.com>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2015 Dropbox, Inc.
+# Copyright 2015,2016 Dropbox, Inc.
 # Copyright 2007, 2008, 2009, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -100,17 +100,19 @@ sub ldap_base_filter {
         my $fqdn = $1;
         my $host = $fqdn;
         $host =~ s/[.].*//xms;
-        $base   = $Wallet::Config::AD_COMPUTER_DN;
         $filter = "(samAccountName=${host}\$)";
+        $base   = $Wallet::Config::AD_COMPUTER_RDN . ','
+          . $Wallet::Config::AD_BASE_DN;
     } elsif ($principal =~ m,^service/(\S+),xms) {
         my $id = $1;
-        $base   = $Wallet::Config::AD_USER_DN;
         $filter = "(servicePrincipalName=service/${id})";
+        $base
+          = $Wallet::Config::AD_USER_RDN . ',' . $Wallet::Config::AD_BASE_DN;
     }
     return ($base, $filter);
 }
 
-# TODO: Get a keytab from the keytab cache.
+# TODO: Get a keytab from the keytab bucket.
 sub get_ad_keytab {
     my ($self, $principal) = @_;
     return;
@@ -125,13 +127,16 @@ sub get_ad_keytab {
 sub msktutil {
     my ($self, $args_ref) = @_;
     unless (defined($Wallet::Config::KEYTAB_HOST)
+        and defined($Wallet::Config::KEYTAB_PRINCIPAL)
+        and defined($Wallet::Config::KEYTAB_FILE)
         and defined($Wallet::Config::KEYTAB_REALM))
     {
         die "keytab object implementation not configured\n";
     }
-    unless (defined($Wallet::Config::AD_CACHE)
-        and defined($Wallet::Config::AD_COMPUTER_DN)
-        and defined($Wallet::Config::AD_USER_DN))
+    unless (-e $Wallet::Config::AD_MSKTUTIL
+        and defined($Wallet::Config::AD_BASE_DN)
+        and defined($Wallet::Config::AD_COMPUTER_RDN)
+        and defined($Wallet::Config::AD_USER_RDN))
     {
         die "Active Directory support not configured\n";
     }
@@ -194,14 +199,16 @@ sub ad_create_update {
         my $fqdn = $1;
         my $host = $fqdn;
         $host =~ s/[.].*//xms;
+        push @cmd, '--base',          $Wallet::Config::COMPUTER_RDN;
         push @cmd, '--dont-expire-password';
         push @cmd, '--computer-name', $host;
-        push @cmd, '--upn', "host/$fqdn";
-        push @cmd, '--hostname', $fqdn;
+        push @cmd, '--upn',           "host/$fqdn";
+        push @cmd, '--hostname',      $fqdn;
     } elsif ($principal =~ m,^service/(\S+),xms) {
         my $service_id = $1;
+        push @cmd, '--base',         $Wallet::Config::USER_RDN;
         push @cmd, '--use-service-account';
-        push @cmd, '--service', "service/$service_id";
+        push @cmd, '--service',      "service/$service_id";
         push @cmd, '--account-name', "srv-${service_id}";
         push @cmd, '--no-pac';
     }
@@ -367,9 +374,15 @@ sub ad_delete {
         if ($k_type eq 'host') {
             my $host = $k_id;
             $host =~ s/[.].*//;
-            $dn = "cn=${host}," . $Wallet::Config::AD_COMPUTER_DN;
+            $dn
+              = "cn=${host},"
+              . $Wallet::Config::AD_COMPUTER_RDN . ','
+              . $Wallet::Config::AD_BASE_DN;
         } elsif ($k_type eq 'service') {
-            $dn = "cn=srv-${k_id}," . $Wallet::Config::AD_USER_DN;
+            $dn
+              = "cn=srv-${k_id},"
+              . $Wallet::Config::AD_USER_RDN . ','
+              . $Wallet::Config::AD_BASE_DN;
         }
     }
 
@@ -436,18 +449,6 @@ using a local keytab cache.
 
 To use this class, several configuration parameters must be set.  See
 L<Wallet::Config/"KEYTAB OBJECT CONFIGURATION"> for details.
-
-=head1 FILES
-
-=over 4
-
-=item KEYTAB_TMP/keytab.<pid>
-
-The keytab is created in this file and then read into memory.  KEYTAB_TMP
-is set in the wallet configuration, and <pid> is the process ID of the
-current process.  The file is unlinked after being read.
-
-=back
 
 =head1 LIMITATIONS
 
