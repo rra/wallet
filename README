@@ -65,7 +65,7 @@ REQUIREMENTS
 
   The wallet client will build with either MIT Kerberos or Heimdal.
 
-  The wallet server is written in Perl and requires Perl 5.6.0 or later
+  The wallet server is written in Perl and requires Perl 5.8.0 or later
   plus Module::Build to build.  It uses DBIx::Class and DBI to talk to a
   database, and therefore the DBIx::Class and DBI modules (and their
   dependencies) and a DBD module for the database it will use must be
@@ -92,7 +92,7 @@ REQUIREMENTS
   on CPAN for older versions.
 
   The keytab support in the wallet server supports either Heimdal or MIT
-  Kerberos KDCs and has exeprimental support for Active Directory.  The
+  Kerberos KDCs and has experimental support for Active Directory.  The
   Heimdal support requires the Heimdal::Kadm5 Perl module.  The MIT
   Kerberos support requires the MIT Kerberos kadmin client program be
   installed.  The Active Directory support requires the Net::LDAP,
@@ -183,14 +183,21 @@ BUILD AND INSTALLATION
   must be specified either in krb5.conf configuration or on the wallet
   command line or the client will exit with an error.
 
+  By default, wallet uses whatever Perl executable exists in the current
+  PATH.  That Perl's path is what the server scripts will use, and that
+  Perl's configuration will be used to determine where the server Perl
+  modules will be installed.
+
+  To specify a particular Perl executable to use, either set the PERL
+  environment variable or pass it to configure like:
+
+      ./configure PERL=/path/to/my/perl
+
   By default, wallet installs itself under /usr/local except for the
   server Perl modules, which are installed into whatever default site
   module path is used by your Perl installation.  To change the
   installation location of the files other than the Perl modules, pass the
-  --prefix=DIR argument to configure.  To change the Perl module
-  installation location, you will need to run perl on Makefile.PL in the
-  perl subdirectory of the build tree with appropriate options and rebuild
-  the module after running make and before running make install.
+  --prefix=DIR argument to configure.
 
   If remctl was installed in a path not normally searched by your
   compiler, you must specify its installation prefix to configure with the

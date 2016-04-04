@@ -20,7 +20,7 @@ use warnings;
 use Wallet::ACL::NetDB;
 
 our @ISA     = qw(Wallet::ACL::NetDB);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Interface

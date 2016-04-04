@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!@PERL@
+# -*- perl -*-
 #
 # Wallet server for storing and retrieving secure data.
 

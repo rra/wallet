@@ -26,7 +26,7 @@ our (@EXPORT_OK, $VERSION);
 # against circular module loading (not that we load any modules, but
 # consistency is good).
 BEGIN {
-    $VERSION   = '1.03';
+    $VERSION   = '1.04';
     @EXPORT_OK = qw(default_owner verify_name is_for_host);
 }
 

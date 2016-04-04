@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!@PERL@
+# -*- perl -*-
 #
 # Extract keytabs from the KDC without changing the key.
 #

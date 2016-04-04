@@ -21,7 +21,7 @@ use Wallet::ACL;
 use Wallet::Config;
 use Wallet::Schema;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Utility methods

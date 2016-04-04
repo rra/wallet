@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!@PERL@
+# -*- perl -*-
 #
 # Password prompting tests for the wallet client.
 #

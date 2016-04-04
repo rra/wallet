@@ -1,5 +1,11 @@
                        User-Visible wallet Changes
 
+wallet 1.4 (unreleased)
+
+    Remove stray references to strlcpy and strlcat that broke builds on
+    platforms where those functions are part of libc.  Thanks to Karl
+    Kornel for the report.
+
 wallet 1.3 (2016-01-17)
 
     This release adds initial, experimental support for using Active
