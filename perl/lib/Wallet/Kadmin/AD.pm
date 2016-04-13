@@ -44,6 +44,27 @@ sub ad_debug {
     return;
 }
 
+# Return a string given an array whose elements are command line arguments
+# passws to IPC::Run.  Quote any strings that have embedded spaces.  Replace
+# null elements with the string #NULL#.
+
+sub ad_cmd_string {
+    my ($self, $cmd_ref) = @_;
+    my $z  = '';
+    my $ws = ' ';
+    for my $e (@{ $cmd_ref }) {
+        if (!$e) {
+            $z .= $ws . '#NULL#';
+        } elsif ($e =~ /\s/xms) {
+            $z .= $ws . '"' . $e . '"';
+        } else {
+            $z .= $ws . $e;
+        }
+        $ws = ' ';
+    }
+    return $z;
+}
+
 # Make sure that principals are well-formed and don't contain
 # characters that will cause us problems when talking to kadmin.
 # Takes a principal and returns true if it's okay, false otherwise.
@@ -144,7 +165,7 @@ sub msktutil {
     my @cmd  = ($Wallet::Config::AD_MSKTUTIL);
     push @cmd, @args;
     if ($Wallet::Config::AD_DEBUG) {
-        $self->ad_debug('debug', join(' ', @cmd));
+        $self->ad_debug('debug', $self->ad_cmd_string(\@cmd));
     }
 
     my $in;
@@ -197,14 +218,14 @@ sub ad_create_update {
         my $fqdn = $1;
         my $host = $fqdn;
         $host =~ s/[.].*//xms;
-        push @cmd, '--base',          $Wallet::Config::COMPUTER_RDN;
+        push @cmd, '--base',          $Wallet::Config::AD_COMPUTER_RDN;
         push @cmd, '--dont-expire-password';
         push @cmd, '--computer-name', $host;
         push @cmd, '--upn',           "host/$fqdn";
         push @cmd, '--hostname',      $fqdn;
     } elsif ($principal =~ m,^service/(\S+),xms) {
         my $service_id = $1;
-        push @cmd, '--base',         $Wallet::Config::USER_RDN;
+        push @cmd, '--base',         $Wallet::Config::AD_USER_RDN;
         push @cmd, '--use-service-account';
         push @cmd, '--service',      "service/$service_id";
         push @cmd, '--account-name', "srv-${service_id}";
