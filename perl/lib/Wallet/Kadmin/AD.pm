@@ -28,6 +28,8 @@ use Wallet::Kadmin;
 our @ISA     = qw(Wallet::Kadmin);
 our $VERSION = '1.04';
 
+my $LDAP;
+
 ##############################################################################
 # kadmin Interaction
 ##############################################################################
@@ -71,17 +73,7 @@ sub ad_cmd_string {
 # Note that we do not permit realm information here.
 sub valid_principal {
     my ($self, $principal) = @_;
-    my $valid = 0;
-    if ($principal =~ m,^(host|service)(/[\w_.-]+)?\z,) {
-        my $k_type = $1;
-        my $k_id   = $2;
-        if ($k_type eq 'host') {
-            $valid = 1 if $k_id =~ m/[.]/xms;
-        } elsif ($k_type eq 'service') {
-            $valid = 1 if length($k_id) < 19;
-        }
-    }
-    return $valid;
+    return scalar ($principal =~ m,^[\w-]+(/[\w_.-]+)?\z,);
 }
 
 # Connect to the Active Directory server using LDAP. The connection is
@@ -90,47 +82,108 @@ sub valid_principal {
 sub ldap_connect {
     my ($self) = @_;
 
-    if (!-e $Wallet::Config::AD_CACHE) {
-        die 'Missing kerberos ticket cache ' . $Wallet::Config::AD_CACHE;
+    if (!$LDAP) {
+        eval {
+            local $ENV{KRB5CCNAME} = $Wallet::Config::AD_CACHE;
+            my $sasl = Authen::SASL->new(mechanism => 'GSSAPI');
+            $LDAP = Net::LDAP->new($Wallet::Config::KEYTAB_HOST,
+                                   onerror => 'die');
+            my $mesg = eval { $LDAP->bind(undef, sasl => $sasl) };
+        };
+        if ($@) {
+            my $error = $@;
+            chomp $error;
+            1 while ($error =~ s/ at \S+ line \d+\.?\z//);
+            die "LDAP bind to AD failed: $error\n";
+        }
     }
-
-    my $ldap;
-    eval {
-        local $ENV{KRB5CCNAME} = $Wallet::Config::AD_CACHE;
-        my $sasl = Authen::SASL->new(mechanism => 'GSSAPI');
-        $ldap = Net::LDAP->new($Wallet::Config::KEYTAB_HOST, onerror => 'die');
-        my $mesg = eval { $ldap->bind(undef, sasl => $sasl) };
-    };
-    if ($@) {
-        my $error = $@;
-        chomp $error;
-        1 while ($error =~ s/ at \S+ line \d+\.?\z//);
-        die "LDAP bind to AD failed: $error\n";
-    }
-
-    return $ldap;
+    return $LDAP;
 }
 
 # Construct a base filter for searching Active Directory.
 
 sub ldap_base_filter {
     my ($self, $principal) = @_;
+
     my $base;
     my $filter;
-    if ($principal =~ m,^host/(\S+),xms) {
-        my $fqdn = $1;
-        my $host = $fqdn;
-        $host =~ s/[.].*//xms;
-        $filter = "(samAccountName=${host}\$)";
-        $base   = $Wallet::Config::AD_COMPUTER_RDN . ','
-          . $Wallet::Config::AD_BASE_DN;
-    } elsif ($principal =~ m,^service/(\S+),xms) {
-        my $id = $1;
-        $filter = "(servicePrincipalName=service/${id})";
-        $base
-          = $Wallet::Config::AD_USER_RDN . ',' . $Wallet::Config::AD_BASE_DN;
+    my $this_type;
+    my $this_id;
+
+    if ($principal =~ m,^(.*?)/(\S+),xms) {
+        $this_type = $1;
+        $this_id   = $2;
+    } else {
+        $this_id = $principal;
     }
+
+    # Create a filter to find the objects we create
+    if ($this_id =~ s/@(.*)//xms) {
+        $filter = "(userPrincipalName=${principal})";
+    } elsif ($Wallet::Config::KEYTAB_REALM) {
+        $filter = '(userPrincipalName=' . $principal
+        . '@' . $Wallet::Config::KEYTAB_REALM . ')';
+    } else {
+        $filter = "(userPrincipalName=${principal}\@*)";
+    }
+
+    # Set the base distinguished name
+    if ($this_type && $this_type eq 'host') {
+        $base = $Wallet::Config::AD_COMPUTER_RDN;
+    } else {
+        $base = $Wallet::Config::AD_USER_RDN;
+    }
+    $base .= ',' . $Wallet::Config::AD_BASE_DN;
+
     return ($base, $filter);
+}
+
+# Take in a base and a filter and return the assoicated DN or return
+# null if there is no matching entry.
+sub ldap_get_dn {
+    my ($self, $base, $filter) = @_;
+    my $dn;
+
+    if ($Wallet::Config::AD_DEBUG) {
+        $self->ad_debug('debug', "base:$base filter:$filter scope:subtree\n");
+    }
+
+    $self->ldap_connect();
+    my @attrs = ('objectclass');
+    my $result;
+    eval {
+        $result = $LDAP->search(
+            base   => $base,
+            scope  => 'subtree',
+            filter => $filter,
+            attrs  => \@attrs
+            );
+    };
+    if ($@) {
+        my $error = $@;
+        die "LDAP search error: $error\n";
+    }
+    if ($result->code) {
+        msg("INFO base:$base filter:$filter scope:subtree\n");
+        die $result->error;
+    }
+    if ($Wallet::Config::AD_DEBUG) {
+        $self->ad_debug('debug', 'returned: ' . $result->count);
+    }
+
+    if ($result->count == 1) {
+        for my $entry ($result->entries) {
+            $dn = $entry->dn;
+        }
+    } elsif ($result->count > 1) {
+        msg('ERROR: too many AD entries for this keytab');
+        for my $entry ($result->entries) {
+            msg('INFO: dn found ' . $entry->dn . "\n");
+        }
+        die("INFO: use show to examine the problem\n");
+    }
+
+    return $dn;
 }
 
 # TODO: Get a keytab from the keytab bucket.
@@ -200,10 +253,53 @@ sub msktutil {
     return $out;
 }
 
+# The unique identifier that Active Directory used to store keytabs
+# has a maximum length of 20 characters.  This routine takes a
+# principal name an generates a unique ID based on the principal name.
+sub get_service_id {
+    my ($self, $this_princ) = @_;
+
+    my $this_id;
+    my ($this_base, $this_filter) = $self->ldap_base_filter($this_princ);
+    my $real_dn = $self->ldap_get_dn($this_base, $this_filter);
+    if ($real_dn) {
+        $this_id = $real_dn;
+        $this_id =~ s/,.*//xms;
+        $this_id =~ s/.*?=//xms;
+    } else {
+        my $this_cn = $this_princ;
+        $this_cn =~ s{.*?/}{}xms;
+        if ($Wallet::Config::AD_SERVICE_PREFIX) {
+            $this_cn = $Wallet::Config::AD_SERVICE_PREFIX . $this_cn;
+        }
+        my $loop_limit = $Wallet::Config::AD_SERVICE_LIMIT;
+        if (length($this_cn)>20) {
+            my $cnt = 0;
+            my $this_dn;
+            my $suffix_size = length("$loop_limit");
+            my $this_prefix = substr($this_cn, 0, 20-$suffix_size);
+            my $this_format = "%0${suffix_size}i";
+            while ($cnt<$loop_limit) {
+                my $this_cn = $this_prefix . sprintf($this_format, $cnt);
+                $this_dn = ldap_get_dn($this_base, "cn=$this_cn");
+                if (!$this_dn) {
+                    $this_id = $this_cn;
+                    last;
+                }
+                $cnt++;
+            }
+        } else {
+            $this_id = $this_cn;
+        }
+    }
+    return $this_id;
+}
+
 # Either create or update a keytab for the principal.  Return the
 # name of the keytab file created.
 sub ad_create_update {
     my ($self, $principal, $action) = @_;
+    return unless $self->valid_principal($principal);
     my $keytab = $Wallet::Config::KEYTAB_TMP . "/keytab.$$";
     if (-e $keytab) {
         unlink $keytab or die "Problem deleting $keytab\n";
@@ -213,31 +309,41 @@ sub ad_create_update {
     push @cmd, '--enctypes', '0x1C';
     push @cmd, '--keytab',   $keytab;
     push @cmd, '--realm',    $Wallet::Config::KEYTAB_REALM;
+    push @cmd, '--upn',      $principal;
 
-    if ($principal =~ m,^host/(\S+),xms) {
-        my $fqdn = $1;
-        my $host = $fqdn;
-        $host =~ s/[.].*//xms;
-        push @cmd, '--base',          $Wallet::Config::AD_COMPUTER_RDN;
-        push @cmd, '--dont-expire-password';
-        push @cmd, '--computer-name', $host;
-        push @cmd, '--upn',           "host/$fqdn";
-        push @cmd, '--hostname',      $fqdn;
-    } elsif ($principal =~ m,^service/(\S+),xms) {
-        my $service_id = $1;
-        push @cmd, '--base',         $Wallet::Config::AD_USER_RDN;
-        push @cmd, '--use-service-account';
-        push @cmd, '--service',      "service/$service_id";
-        push @cmd, '--account-name', "srv-${service_id}";
-        push @cmd, '--no-pac';
-    }
-    my $out = $self->msktutil(\@cmd);
-    if ($out =~ /Error:\s+\S+\s+failed/xms) {
-        $self->ad_delete($principal);
-        my $m = "ERROR: problem creating keytab:\n" . $out;
-        $m .= 'INFO: the keytab used to by wallet probably has'
-          . " insufficient access to AD\n";
-        die $m;
+    my $this_type;
+    my $this_id;
+    if ($principal =~ m,^(.*?)/(\S+),xms) {
+        $this_type = $1;
+        $this_id   = $2;
+        if ($this_type eq 'host') {
+            my $host = $this_id;
+            $host =~ s/[.].*//xms;
+            push @cmd, '--base',          $Wallet::Config::AD_COMPUTER_RDN;
+            push @cmd, '--dont-expire-password';
+            push @cmd, '--computer-name', $host;
+            push @cmd, '--hostname',      $this_id;
+        } else {
+            my $service_id = $self->get_service_id($this_id);
+            push @cmd, '--base',         $Wallet::Config::AD_USER_RDN;
+            push @cmd, '--use-service-account';
+            push @cmd, '--service',      $principal;
+            push @cmd, '--account-name', $service_id;
+            push @cmd, '--no-pac';
+        }
+        my $out = $self->msktutil(\@cmd);
+        if ($out =~ /Error:\s+\S+\s+failed/xms
+            || !$self->exists($principal))
+        {
+            $self->ad_delete($principal);
+            my $m = "ERROR: problem creating keytab for $principal";
+            $self->ad_debug('error', $m);
+            $self->ad_debug('error',
+                            'Problem command:' . ad_cmd_string(\@cmd));
+            die "$m\n";
+        }
+    } else {
+        die "ERROR: Invalid principal format ($principal)\n";
     }
 
     return $keytab;
@@ -260,45 +366,9 @@ sub exists {
     my ($self, $principal) = @_;
     return unless $self->valid_principal($principal);
 
-    my $ldap = $self->ldap_connect();
     my ($base, $filter) = $self->ldap_base_filter($principal);
-    my @attrs = ('objectClass', 'msds-KeyVersionNumber');
 
-    my $result;
-    eval {
-        $result = $ldap->search(
-            base   => $base,
-            scope  => 'subtree',
-            filter => $filter,
-            attrs  => \@attrs
-        );
-    };
-
-    if ($@) {
-        my $error = $@;
-        die "LDAP search error: $error\n";
-    }
-    if ($result->code) {
-        my $m;
-        $m .= "INFO base:$base filter:$filter scope:subtree\n";
-        $m .= 'ERROR:' . $result->error . "\n";
-        die $m;
-    }
-    if ($result->count > 1) {
-        my $m = "ERROR: too many AD entries for this keytab\n";
-        for my $entry ($result->entries) {
-            $m .= 'INFO: dn found ' . $entry->dn . "\n";
-        }
-        die $m;
-    }
-    if ($result->count) {
-        for my $entry ($result->entries) {
-            return $entry->get_value('msds-KeyVersionNumber');
-        }
-    } else {
-        return 0;
-    }
-    return;
+    return $self->ldap_get_dn($base, $filter);
 }
 
 # Call msktutil to Create a principal in Kerberos.  Sets the error and
@@ -371,7 +441,7 @@ sub destroy {
     }
     my $exists = $self->exists($principal);
     if (!defined $exists) {
-        return;
+        return 1;
     } elsif (not $exists) {
         return 1;
     }
@@ -384,29 +454,11 @@ sub destroy {
 sub ad_delete {
     my ($self, $principal) = @_;
 
-    my $k_type;
-    my $k_id;
-    my $dn;
-    if ($principal =~ m,^(host|service)/(\S+),xms) {
-        $k_type = $1;
-        $k_id   = $2;
-        if ($k_type eq 'host') {
-            my $host = $k_id;
-            $host =~ s/[.].*//;
-            $dn
-              = "cn=${host},"
-              . $Wallet::Config::AD_COMPUTER_RDN . ','
-              . $Wallet::Config::AD_BASE_DN;
-        } elsif ($k_type eq 'service') {
-            $dn
-              = "cn=srv-${k_id},"
-              . $Wallet::Config::AD_USER_RDN . ','
-              . $Wallet::Config::AD_BASE_DN;
-        }
-    }
+    my ($base, $filter) = $self->ldap_base_filter($principal);
+    my $dn = $self->ldap_get_dn($base, $filter);
 
-    my $ldap  = $self->ldap_connect();
-    my $msgid = $ldap->delete($dn);
+    $self->ldap_connect();
+    my $msgid = $LDAP->delete($dn);
     if ($msgid->code) {
         my $m;
         $m .= "ERROR: Problem deleting $dn\n";

@@ -463,6 +463,33 @@ default PATH.
 
 our $AD_MSKTUTIL = 'msktutil';
 
+=item AD_SERVICE_LIMIT
+
+Used to limit the number of iterations used in attempting to find a
+unique account name for service principals.  Defaults to 999.
+
+=cut
+
+our $AD_SERVICE_LIMIT = '999';
+
+=item AD_SERVICE_PREFIX
+
+For service principals the AD_SERVICE_PREFIX will be combined with the
+principal identifier to form the account name, i.e. the CN, used to
+store the keytab entry in the Active Directory.  Active Directory
+limits these CN's to a maximum of 20 characters.  If the resulting CN
+is greater than 20 characters the CN will be truncated and an integer
+will be appended to it.  The integer will be incremented until a
+unique CN is found.
+
+The AD_SERVICE_PREFIX is generally useful only prevent name collisions
+when the service keytabs are store in branch of the DIT that also
+contains other similar objects.
+
+=cut
+
+our $AD_SERVICE_PREFIX;
+
 =item AD_SERVER
 
 The hostname of the Active Directory Domain Controller.
