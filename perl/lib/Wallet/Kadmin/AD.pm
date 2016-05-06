@@ -36,11 +36,14 @@ my $LDAP;
 
 # Send debugging output to syslog.
 
-sub ad_debug {
+sub ad_syslog {
     my ($self, $l, $m) = @_;
     if (!$self->{SYSLOG}) {
         openlog('wallet-server', 'ndelay,nofatal', 'local3');
         $self->{SYSLOG} = 1;
+    }
+    if ($l !~ /debug|info|err|warning/xms) {
+        $l = 'err';
     }
     syslog($l, $m);
     return;
@@ -145,7 +148,7 @@ sub ldap_get_dn {
     my $dn;
 
     if ($Wallet::Config::AD_DEBUG) {
-        $self->ad_debug('debug', "base:$base filter:$filter scope:subtree\n");
+        $self->ad_syslog('debug', "base:$base filter:$filter scope:subtree\n");
     }
 
     $self->ldap_connect();
@@ -164,11 +167,11 @@ sub ldap_get_dn {
         die "LDAP search error: $error\n";
     }
     if ($result->code) {
-        msg("INFO base:$base filter:$filter scope:subtree\n");
+        $self->ad_syslog('info', "base:$base filter:$filter scope:subtree\n");
         die $result->error;
     }
     if ($Wallet::Config::AD_DEBUG) {
-        $self->ad_debug('debug', 'returned: ' . $result->count);
+        $self->ad_syslog('debug', 'returned: ' . $result->count);
     }
 
     if ($result->count == 1) {
@@ -176,9 +179,9 @@ sub ldap_get_dn {
             $dn = $entry->dn;
         }
     } elsif ($result->count > 1) {
-        msg('ERROR: too many AD entries for this keytab');
+        $self->ad_syslog('err', 'too many AD entries for this keytab');
         for my $entry ($result->entries) {
-            msg('INFO: dn found ' . $entry->dn . "\n");
+            $self->ad_syslog('info', 'dn found: ' . $entry->dn . "\n");
         }
         die("INFO: use show to examine the problem\n");
     }
@@ -218,7 +221,7 @@ sub msktutil {
     my @cmd  = ($Wallet::Config::AD_MSKTUTIL);
     push @cmd, @args;
     if ($Wallet::Config::AD_DEBUG) {
-        $self->ad_debug('debug', $self->ad_cmd_string(\@cmd));
+        $self->ad_syslog('debug', $self->ad_cmd_string(\@cmd));
     }
 
     my $in;
@@ -241,6 +244,7 @@ sub msktutil {
             $err_msg .= "ERROR: $err\n";
             $err_msg .= 'Problem command: ' . join(' ', @cmd) . "\n";
         }
+        $self->ad_syslog('err', $err_msg);
         die $err_msg;
     } else {
         if ($err) {
@@ -248,7 +252,7 @@ sub msktutil {
         }
     }
     if ($Wallet::Config::AD_DEBUG) {
-        $self->ad_debug('debug', $out);
+        $self->ad_syslog('debug', $out);
     }
     return $out;
 }
@@ -267,8 +271,7 @@ sub get_service_id {
         $this_id =~ s/,.*//xms;
         $this_id =~ s/.*?=//xms;
     } else {
-        my $this_cn = $this_princ;
-        $this_cn =~ s{.*?/}{}xms;
+        my ($this_type, $this_cn) = split '/', $this_princ, 2;
         if ($Wallet::Config::AD_SERVICE_PREFIX) {
             $this_cn = $Wallet::Config::AD_SERVICE_PREFIX . $this_cn;
         }
@@ -324,7 +327,7 @@ sub ad_create_update {
             push @cmd, '--computer-name', $host;
             push @cmd, '--hostname',      $this_id;
         } else {
-            my $service_id = $self->get_service_id($this_id);
+            my $service_id = $self->get_service_id($principal);
             push @cmd, '--base',         $Wallet::Config::AD_USER_RDN;
             push @cmd, '--use-service-account';
             push @cmd, '--service',      $principal;
@@ -337,9 +340,9 @@ sub ad_create_update {
         {
             $self->ad_delete($principal);
             my $m = "ERROR: problem creating keytab for $principal";
-            $self->ad_debug('error', $m);
-            $self->ad_debug('error',
-                            'Problem command:' . ad_cmd_string(\@cmd));
+            $self->ad_syslog('error', $m);
+            $self->ad_syslog('error',
+                             'Problem command:' . ad_cmd_string(\@cmd));
             die "$m\n";
         }
     } else {
@@ -383,7 +386,7 @@ sub create {
     }
     if ($self->exists($principal)) {
         if ($Wallet::Config::AD_DEBUG) {
-            $self->ad_debug('debug', "$principal exists");
+            $self->ad_syslog('debug', "$principal exists");
         }
         return 1;
     }
@@ -463,6 +466,7 @@ sub ad_delete {
         my $m;
         $m .= "ERROR: Problem deleting $dn\n";
         $m .= $msgid->error;
+        $self->ad_syslog('err', $m);
         die $m;
     }
     return 1;
