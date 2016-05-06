@@ -280,8 +280,8 @@ sub get_service_id {
             my $this_prefix = substr($this_cn, 0, 20-$suffix_size);
             my $this_format = "%0${suffix_size}i";
             while ($cnt<$loop_limit) {
-                my $this_cn = $this_prefix . sprintf($this_format, $cnt);
-                $this_dn = ldap_get_dn($this_base, "cn=$this_cn");
+                $this_cn = $this_prefix . sprintf($this_format, $cnt);
+                $this_dn = $self->ldap_get_dn($this_base, "cn=$this_cn");
                 if (!$this_dn) {
                     $this_id = $this_cn;
                     last;
