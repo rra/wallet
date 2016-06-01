@@ -272,15 +272,21 @@ sub get_account_id {
         $this_id =~ s/.*?=//xms;
     } else {
         my ($this_type, $this_cn) = split '/', $this_princ, 2;
-        if ($Wallet::Config::AD_SERVICE_PREFIX && $this_type = 'service') {
-            $this_cn = $Wallet::Config::AD_SERVICE_PREFIX . $this_cn;
+        my $max_len;
+        if ($this_type eq 'host') {
+            $max_len = $Wallet::Config::AD_SERVICE_LENGTH - 1;
+        } else {
+            $max_len = $Wallet::Config::AD_SERVICE_LENGTH;
+            if ($Wallet::Config::AD_SERVICE_PREFIX) {
+                $this_cn = $Wallet::Config::AD_SERVICE_PREFIX . $this_cn;
+            }
         }
         my $loop_limit = $Wallet::Config::AD_SERVICE_LIMIT;
-        if (length($this_cn)>20) {
+        if (length($this_cn)>$max_len) {
             my $cnt = 0;
             my $this_dn;
             my $suffix_size = length("$loop_limit");
-            my $this_prefix = substr($this_cn, 0, 20-$suffix_size);
+            my $this_prefix = substr($this_cn, 0, $max_len - $suffix_size);
             my $this_format = "%0${suffix_size}i";
             while ($cnt<$loop_limit) {
                 $this_cn = $this_prefix . sprintf($this_format, $cnt);

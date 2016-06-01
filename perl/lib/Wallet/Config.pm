@@ -463,10 +463,22 @@ default PATH.
 
 our $AD_MSKTUTIL = 'msktutil';
 
+=item AD_SERVICE_LENGTH
+
+The maximum length of a unique identifier, samAccountName, for Active
+Directory keytab objects.  If the indentifier exceeds this length then
+it will be trunciated and an integer will be appended to the end of
+the identifier.  This parameter is here in hopes that at some point
+in the future Microsoft will remove the limitation.
+
+=cut
+
+our $AD_SERVICE_LENGTH = '20';
+
 =item AD_SERVICE_LIMIT
 
 Used to limit the number of iterations used in attempting to find a
-unique account name for service principals.  Defaults to 999.
+unique account name for principals.  Defaults to 999.
 
 =cut
 
