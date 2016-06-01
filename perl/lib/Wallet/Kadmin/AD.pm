@@ -260,7 +260,7 @@ sub msktutil {
 # The unique identifier that Active Directory used to store keytabs
 # has a maximum length of 20 characters.  This routine takes a
 # principal name an generates a unique ID based on the principal name.
-sub get_service_id {
+sub get_account_id {
     my ($self, $this_princ) = @_;
 
     my $this_id;
@@ -272,7 +272,7 @@ sub get_service_id {
         $this_id =~ s/.*?=//xms;
     } else {
         my ($this_type, $this_cn) = split '/', $this_princ, 2;
-        if ($Wallet::Config::AD_SERVICE_PREFIX) {
+        if ($Wallet::Config::AD_SERVICE_PREFIX && $this_type = 'service') {
             $this_cn = $Wallet::Config::AD_SERVICE_PREFIX . $this_cn;
         }
         my $loop_limit = $Wallet::Config::AD_SERVICE_LIMIT;
@@ -319,19 +319,19 @@ sub ad_create_update {
     if ($principal =~ m,^(.*?)/(\S+),xms) {
         $this_type = $1;
         $this_id   = $2;
+        my $account_id = $self->get_account_id($principal);
         if ($this_type eq 'host') {
             my $host = $this_id;
             $host =~ s/[.].*//xms;
             push @cmd, '--base',          $Wallet::Config::AD_COMPUTER_RDN;
             push @cmd, '--dont-expire-password';
-            push @cmd, '--computer-name', $host;
+            push @cmd, '--computer-name', $account_id;
             push @cmd, '--hostname',      $this_id;
         } else {
-            my $service_id = $self->get_service_id($principal);
             push @cmd, '--base',         $Wallet::Config::AD_USER_RDN;
             push @cmd, '--use-service-account';
             push @cmd, '--service',      $principal;
-            push @cmd, '--account-name', $service_id;
+            push @cmd, '--account-name', $account_id;
             push @cmd, '--no-pac';
         }
         my $out = $self->msktutil(\@cmd);
