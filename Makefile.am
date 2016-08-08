@@ -223,16 +223,16 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 # For each of the Perl scripts, we need to fill in the path to the Perl
 # binary that was located during configuration.
 server/keytab-backend: $(srcdir)/server/keytab-backend.in Makefile
-	sed 's|@PERL@|$(PERL)|' <$(srcdir)/server/keytab-backend.in >$@
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/keytab-backend.in >$@
 	chmod a+x $@
 server/wallet-admin: $(srcdir)/server/wallet-admin.in Makefile
-	sed 's|@PERL@|$(PERL)|' <$(srcdir)/server/wallet-admin.in >$@
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/wallet-admin.in >$@
 	chmod a+x $@
 server/wallet-backend: $(srcdir)/server/wallet-backend.in Makefile
-	sed 's|@PERL@|$(PERL)|' <$(srcdir)/server/wallet-backend.in >$@
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/wallet-backend.in >$@
 	chmod a+x $@
 server/wallet-report: $(srcdir)/server/wallet-report.in Makefile
-	sed 's|@PERL@|$(PERL)|' <$(srcdir)/server/wallet-report.in >$@
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/wallet-report.in >$@
 	chmod a+x $@
 
 # Take appropriate actions in the Perl directory as well.  We don't want to
