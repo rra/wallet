@@ -184,9 +184,7 @@ sub ad_create_update {
     }
     my @cmd = ('--' . $action);
     push @cmd, '--server',   $Wallet::Config::AD_SERVER;
-    push @cmd, '--enctypes', '0x4';
-    push @cmd, '--enctypes', '0x8';
-    push @cmd, '--enctypes', '0x10';
+    push @cmd, '--enctypes', '0x1C';
     push @cmd, '--keytab',   $keytab;
     push @cmd, '--realm',    $Wallet::Config::KEYTAB_REALM;
 
