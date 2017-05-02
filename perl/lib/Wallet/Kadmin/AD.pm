@@ -42,7 +42,7 @@ sub ad_syslog {
         openlog('wallet-server', 'ndelay,nofatal', 'local3');
         $self->{SYSLOG} = 1;
     }
-    if ($l !~ /debug|info|err|warning/xms) {
+    if ($l !~ /^(debug|info|err|warning/xms)$) {
         $l = 'err';
     }
     syslog($l, $m);
@@ -346,8 +346,8 @@ sub ad_create_update {
         {
             $self->ad_delete($principal);
             my $m = "ERROR: problem creating keytab for $principal";
-            $self->ad_syslog('error', $m);
-            $self->ad_syslog('error',
+            $self->ad_syslog('err', $m);
+            $self->ad_syslog('err',
                              'Problem command:' . ad_cmd_string(\@cmd));
             die "$m\n";
         }
