@@ -432,17 +432,17 @@ AD_CACHE must be set to use Active Directory support.
 
 our $AD_CACHE;
 
-=item AD_COMPUTER_DN
+=item AD_COMPUTER_RDN
 
 The LDAP base DN for computer objects inside Active Directory.  All keytabs of
 the form host/<hostname> will be mapped to objects with a C<samAccountName> of
 the <hostname> portion under this DN.
 
-AD_COMPUTER_DN must be set if using Active Directory as the keytab backend.
+AD_COMPUTER_RDN must be set if using Active Directory as the keytab backend.
 
 =cut
 
-our $AD_COMPUTER_DN;
+our $AD_COMPUTER_RDN;
 
 =item AD_DEBUG
 
@@ -464,17 +464,17 @@ default PATH.
 
 our $AD_MSKTUTIL = 'msktutil';
 
-=item AD_USER_DN
+=item AD_USER_RDN
 
 The LDAP base DN for user objects inside Active Directory.  All keytabs of the
 form service/<user> will be mapped to objects with a C<servicePrincipalName>
 matching the wallet object name under this DN.
 
-AD_USER_DN must be set if using Active Directory as the keytab backend.
+AD_USER_RDN must be set if using Active Directory as the keytab backend.
 
 =cut
 
-our $AD_USER_DN;
+our $AD_USER_RDN;
 
 =back
 
@@ -482,14 +482,20 @@ our $AD_USER_DN;
 
 Heimdal provides the choice, over the network protocol, of either
 downloading the existing keys for a principal or generating new random
-keys.  MIT Kerberos does not; downloading a keytab over the kadmin
-protocol always rekeys the principal.
+keys.  Neither MIT Kerberos or ActiveDirectory support retrieving an
+existing keytab; downloading a keytab over the kadmin protocol or
+using msktutil always rekeys the principal.
 
 For MIT Kerberos, the keytab object backend therefore optionally supports
 retrieving existing keys, and hence keytabs, for Kerberos principals by
 contacting the KDC via remctl and talking to B<keytab-backend>.  This is
 enabled by setting the C<unchanging> flag on keytab objects.  To configure
 that support, set the following variables.
+
+For ActiveDirectory Kerberos, the keytab object backend supports
+storing the keytabs on the wallet server.  This functionality is
+enabled by setting the configuration variable AD_KEYTAB_BUCKET.  (This
+had not been implemented yet.)
 
 This is not required for Heimdal; for Heimdal, setting the C<unchanging>
 flag is all that's needed.
@@ -541,6 +547,68 @@ will be used.
 =cut
 
 our $KEYTAB_REMCTL_PORT;
+
+=item AD_CACHE
+
+The ticket cache that hold credentials used to access the
+ActiveDirectory KDC.  This must be created and maintained externally.
+
+=cut
+
+our $AD_CACHE;
+
+=item AD_BASE_DN
+
+The base distinguished name of the ActiveDirectory instance.
+
+=cut
+
+our $AD_BASE_DN;
+
+=item AD_COMPUTER_RDN
+
+The relative distinguished name where host/ keytabs are stored in
+ActiveDirectory.
+
+=cut
+
+our $AD_COMPUTER_RDN;
+
+=item AD_USER_RDN
+
+The relative distinguished name where service/ keytabs are stored in
+ActiveDirectory.
+
+=cut
+
+our $AD_USER_RDN;
+
+=item AD_MSKTUTIL
+
+The path to mskutil.  msktutil is used to create or update keytabs
+stored in ActiveDirectory.
+
+=cut
+
+our $AD_MSKTUTIL = '/usr/sbin/msktutil';
+
+=item AD_DEBUG
+
+Turn on debugging displays for the ActiveDirectory KDC.
+
+=cut
+
+our $AD_DEBUG;
+
+=item AD_KEYTAB_BUCKET
+
+The path to store a copy of keytabs created.  This is required for the
+support of unchanging keytabs with an ActiveDirectory KDC.  (This has
+not been implemented yet.)
+
+=cut
+
+our $AD_KEYTAB_BUCKET = '/var/lib/wallet/keytabs';
 
 =back
 
