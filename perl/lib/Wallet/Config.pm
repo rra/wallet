@@ -415,40 +415,39 @@ our $KEYTAB_TMP;
 
 =back
 
-The following parameters are specific to generating keytabs from Active
-Directory (KEYTAB_KRBTYPE is set to C<AD>).
+The following parameters are specific to generating keytabs from
+Active Directory (KEYTAB_KRBTYPE is set to C<AD>).
 
 =over 4
 
-=item AD_CACHE
+=item AD_BASE_DN
 
-Specifies the ticket cache to use when manipulating Active Directory objects.
-The ticket cache must be for a principal able to bind to Active Directory and
-run B<msktutil>.
-
-AD_CACHE must be set to use Active Directory support.
+The base distinguished name of the ActiveDirectory instance.  This is
+use when Wallet uses LDAP directly to examine objects in Active
+Directory.
 
 =cut
 
-our $AD_CACHE;
+our $AD_BASE_DN;
 
-=item AD_COMPUTER_DN
+=item AD_COMPUTER_RDN
 
-The LDAP base DN for computer objects inside Active Directory.  All keytabs of
-the form host/<hostname> will be mapped to objects with a C<samAccountName> of
-the <hostname> portion under this DN.
+The LDAP base DN for computer objects inside Active Directory.  All
+keytabs of the form host/<hostname> will be mapped to objects with a
+C<samAccountName> of the <hostname> portion under this DN.
 
-AD_COMPUTER_DN must be set if using Active Directory as the keytab backend.
+AD_COMPUTER_RDN must be set if using Active Directory as the keytab
+backend.
 
 =cut
 
-our $AD_COMPUTER_DN;
+our $AD_COMPUTER_RDN;
 
 =item AD_DEBUG
 
-If set to true, asks for some additional debugging information, such as the
-B<msktutil> command, to be logged to syslog.  These debugging messages will be
-logged to the C<local3> facility.
+If set to true, asks for some additional debugging information, such
+as the B<msktutil> command, to be logged to syslog.  These debugging
+messages will be logged to the C<local3> facility.
 
 =cut
 
@@ -464,17 +463,64 @@ default PATH.
 
 our $AD_MSKTUTIL = 'msktutil';
 
-=item AD_USER_DN
+=item AD_SERVICE_LENGTH
+
+The maximum length of a unique identifier, samAccountName, for Active
+Directory keytab objects.  If the indentifier exceeds this length then
+it will be trunciated and an integer will be appended to the end of
+the identifier.  This parameter is here in hopes that at some point
+in the future Microsoft will remove the limitation.
+
+=cut
+
+our $AD_SERVICE_LENGTH = '20';
+
+=item AD_SERVICE_LIMIT
+
+Used to limit the number of iterations used in attempting to find a
+unique account name for principals.  Defaults to 999.
+
+=cut
+
+our $AD_SERVICE_LIMIT = '999';
+
+=item AD_SERVICE_PREFIX
+
+For service principals the AD_SERVICE_PREFIX will be combined with the
+principal identifier to form the account name, i.e. the CN, used to
+store the keytab entry in the Active Directory.  Active Directory
+limits these CN's to a maximum of 20 characters.  If the resulting CN
+is greater than 20 characters the CN will be truncated and an integer
+will be appended to it.  The integer will be incremented until a
+unique CN is found.
+
+The AD_SERVICE_PREFIX is generally useful only prevent name collisions
+when the service keytabs are store in branch of the DIT that also
+contains other similar objects.
+
+=cut
+
+our $AD_SERVICE_PREFIX;
+
+=item AD_SERVER
+
+The hostname of the Active Directory Domain Controller.
+
+=cut
+
+our $AD_SERVER;
+
+=item AD_USER_RDN
 
 The LDAP base DN for user objects inside Active Directory.  All keytabs of the
 form service/<user> will be mapped to objects with a C<servicePrincipalName>
 matching the wallet object name under this DN.
 
-AD_USER_DN must be set if using Active Directory as the keytab backend.
+AD_USER_RDN must be set if using Active Directory as the keytab backend.
 
 =cut
 
-our $AD_USER_DN;
+our $AD_USER_RDN;
 
 =back
 
@@ -482,14 +528,20 @@ our $AD_USER_DN;
 
 Heimdal provides the choice, over the network protocol, of either
 downloading the existing keys for a principal or generating new random
-keys.  MIT Kerberos does not; downloading a keytab over the kadmin
-protocol always rekeys the principal.
+keys.  Neither MIT Kerberos or ActiveDirectory support retrieving an
+existing keytab; downloading a keytab over the kadmin protocol or
+using msktutil always rekeys the principal.
 
 For MIT Kerberos, the keytab object backend therefore optionally supports
 retrieving existing keys, and hence keytabs, for Kerberos principals by
 contacting the KDC via remctl and talking to B<keytab-backend>.  This is
 enabled by setting the C<unchanging> flag on keytab objects.  To configure
 that support, set the following variables.
+
+For ActiveDirectory Kerberos, the keytab object backend supports
+storing the keytabs on the wallet server.  This functionality is
+enabled by setting the configuration variable AD_KEYTAB_BUCKET.  (This
+had not been implemented yet.)
 
 This is not required for Heimdal; for Heimdal, setting the C<unchanging>
 flag is all that's needed.
@@ -541,6 +593,25 @@ will be used.
 =cut
 
 our $KEYTAB_REMCTL_PORT;
+
+=item AD_CACHE
+
+The ticket cache that hold credentials used to access the
+ActiveDirectory KDC.  This must be created and maintained externally.
+
+=cut
+
+our $AD_CACHE;
+
+=item AD_KEYTAB_BUCKET
+
+The path to store a copy of keytabs created.  This is required for the
+support of unchanging keytabs with an ActiveDirectory KDC.  (This has
+not been implemented yet.)
+
+=cut
+
+our $AD_KEYTAB_BUCKET = '/var/lib/wallet/keytabs';
 
 =back
 

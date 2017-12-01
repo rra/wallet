@@ -1,0 +1,660 @@
+#!/usr/bin/perl -w
+#
+# Create, update, delete, and display keytabs stored in Active Directory.
+#
+# Written by Bill MacAllister <whm@dropbox.com>
+# Copyright 2016 Dropbox, Inc.
+#
+# See LICENSE for licensing terms.
+
+##############################################################################
+# Declarations
+##############################################################################
+
+use Authen::SASL;
+use Carp;
+use Getopt::Long;
+use IPC::Run qw( run timeout );
+use Net::LDAP;
+use Pod::Usage;
+use strict;
+
+my $opt_ad_server;
+my $opt_base_dn;
+my $opt_computer_rdn;
+my $opt_config;
+my $opt_debug;
+my $opt_dump;
+my $opt_help;
+my $opt_manual;
+my $opt_prefix;
+my $opt_user_rdn;
+
+# LDAP conneciton
+my $LDAP;
+
+# Configuration variables
+our $AD_BASE_DN;
+our $AD_COMPUTER_RDN;
+our $AD_DEBUG;
+our $AD_SERVER;
+our $AD_SERVICE_PREFIX;
+our $AD_USER_RDN;
+our $KEYTAB_REALM;
+
+##############################################################################
+# Subroutines
+##############################################################################
+
+# Write messages to standard output and check the return status
+sub msg {
+    my @msgs = @_;
+    for my $m (@msgs) {
+        print STDOUT $m . "\n" or croak("Problem printing to STDOUT");
+    }
+    return;
+}
+
+# Write debugging messages
+sub dbg {
+    my ($m) = @_;
+    msg("DEBUG:$m");
+    return;
+}
+
+# Decode Active Directory's userAccountControl attribute
+# Flags are powers of two starting at zero.
+sub list_userAccountControl {
+    my ($uac) = @_;
+    my @flags = (
+        'SCRIPT',
+        'ACCOUNTDISABLE',
+        'HOMEDIR_REQUIRED',
+        'LOCKOUT',
+        'PASSWD_NOTREQD',
+        'PASSWD_CANT_CHANGE',
+        'ENCRYPTED_TEXT_PWD_ALLOWED',
+        'TEMP_DUPLICATE_ACCOUNT',
+        'NORMAL_ACCOUNT',
+        'INTERDOMAIN_TRUST_ACCOUNT',
+        'WORKSTATION_TRUST_ACCOUNT',
+        'SERVER_TRUST_ACCOUNT',
+        'DONT_EXPIRE_PASSWORD',
+        'MNS_LOGON_ACCOUNT',
+        'SMARTCARD_REQUIRED',
+        'TRUSTED_FOR_DELEGATION',
+        'NOT_DELEGATED',
+        'USE_DES_KEY_ONLY',
+        'DONT_REQ_PREAUTH',
+        'PASSWORD_EXPIRED',
+        'TRUSTED_TO_AUTH_FOR_DELEGATION',
+        'PARTIAL_SECRETS_ACCOUNT'
+    );
+
+    my $flag_list;
+    my $comma = '';
+    for (my $i=0; $i<scalar(@flags); $i++) {
+        if ($uac & (2**$i)) {
+            $flag_list .= $comma . $flags[$i];
+            $comma = ', ';
+        }
+    }
+    return $flag_list;
+}
+
+# GSS-API bind to the active directory server
+sub ldap_connect {
+    if ($AD_DEBUG) {
+        dbg('binding to ' . $AD_SERVER);
+    }
+
+    if ($LDAP) {
+        if ($AD_DEBUG) {
+            dbg('Already bound to ' . $AD_SERVER);
+        }
+        return $LDAP;
+    }
+
+    if (!$AD_SERVER) {
+        croak("Missing ldap host name, specify ad_server=\n");
+    }
+    eval {
+        my $sasl = Authen::SASL->new(mechanism => 'GSSAPI');
+        $LDAP = Net::LDAP->new($AD_SERVER, onerror => 'die');
+        my $mesg = eval { $LDAP->bind(undef, sasl => $sasl) };
+    };
+    if ($@) {
+        my $error = $@;
+        die "ldap bind to AD failed: $error\n";
+    }
+    return $LDAP;
+}
+
+# Take in a base and a filter and return the assoicated DN.
+sub get_dn {
+    my ($base, $filter) = @_;
+    my $dn;
+
+    if ($AD_DEBUG) {
+        dbg("base:$base filter:$filter scope:subtree\n");
+    }
+
+    ldap_connect();
+    my @attrs = ('objectclass');
+    my $result;
+    eval {
+        $result = $LDAP->search(
+            base   => $base,
+            scope  => 'subtree',
+            filter => $filter,
+            attrs  => \@attrs
+            );
+    };
+    if ($@) {
+        my $error = $@;
+        die "LDAP search error: $error\n";
+    }
+    if ($result->code) {
+        msg("INFO base:$base filter:$filter scope:subtree\n");
+        die $result->error;
+    }
+    if ($AD_DEBUG) {
+        dbg('returned: ' . $result->count);
+    }
+
+    if ($result->count == 1) {
+        for my $entry ($result->entries) {
+            $dn = $entry->dn;
+        }
+    } elsif ($result->count > 1) {
+        msg('ERROR: too many AD entries for this keytab');
+        for my $entry ($result->entries) {
+            msg('INFO: dn found ' . $entry->dn . "\n");
+        }
+        die("INFO: use show to examine the problem\n");
+    }
+
+    return $dn;
+}
+
+# Take a principal and split into parts.  The parts are keytab type,
+# keytab identifier, the base dn, the cn, and an LDAP filter.
+sub kerberos_attrs {
+    my ($principal) = @_;
+
+    my %attr;
+    $attr{principal} = $principal;
+
+    my $dn;
+    my $host;
+    my $k_type;
+    my $k_id;
+    if ($principal =~ m,^(.*?)/(\S+),xms) {
+        $attr{type} = $1;
+        $attr{id}   = $2;
+        # Create a filter to find the objects we create
+        if ($attr{id} =~ s/@(.*)//xms) {
+            $attr{realm}  = $1;
+            $attr{filter} = "(userPrincipalName=${principal})";
+        } elsif ($KEYTAB_REALM) {
+            $attr{realm} = $KEYTAB_REALM;
+            $attr{filter}
+              = "(userPrincipalName=${principal}\@${KEYTAB_REALM})";
+        } else {
+            $attr{filter} = "(userPrincipalName=${principal}\@*)";
+        }
+        if ($attr{type} eq 'host') {
+            # Host keytab attributes
+            $attr{base} = $AD_COMPUTER_RDN . ',' . $AD_BASE_DN;
+            $attr{cn}   = $attr{id};
+            $attr{cn}   =~ s/[.].*//;
+            $attr{dn}   = "cn=$attr{cn},$attr{base}";
+        } else {
+            # Service keytab attributes
+            $attr{base} = $AD_USER_RDN  . ',' . $AD_BASE_DN;
+            $attr{cn}   = "${AD_SERVICE_PREFIX}$attr{id}";
+            $attr{dn}   = "cn=$attr{cn},$attr{base}";
+            my $real_dn = get_dn($attr{base}, $attr{filter});
+            if ($real_dn) {
+                if (lc($real_dn) ne lc($attr{dn})) {
+                    $attr{dn} = $real_dn;
+                    $attr{cn} = $real_dn;
+                    $attr{cn} =~ s/,.*//xms;
+                    $attr{cn} =~ s/.*?=//xms;
+                }
+            } else {
+                if (length($attr{cn})>20) {
+                    my $cnt = 0;
+                    my $this_dn;
+                    my $this_prefix = substr($attr{cn}, 0, 18);
+                    $attr{dn} = '';
+                    while ($cnt<100) {
+                        my $this_cn = $this_prefix . sprintf('%02i', $cnt);
+                        $this_dn = get_dn($attr{base}, "cn=$this_cn");
+                        if (!$this_dn) {
+                            $attr{dn} = $this_cn . ',' . $attr{base};
+                            $attr{cn} = $attr{dn};
+                            $attr{cn} =~ s/,.*//xms;
+                            $attr{cn} =~ s/.*?=//xms;
+                            last;
+                        }
+                        $cnt++;
+                    }
+                    if (!$attr{dn}) {
+                        die "ERROR: Cannot file unique dn for keytab\n";
+                    }
+                }
+            }
+        }
+    }
+    if ($AD_DEBUG) {
+        for my $a (sort keys %attr) {
+            dbg("$a = $attr{$a}");
+        }
+    }
+    return %attr;
+}
+
+# Perform an LDAP search against AD and return information about
+# service and host accounts.
+sub ad_show {
+    my ($principal, $kattr_ref) = @_;
+
+    ldap_connect();
+    my %kattr = %{$kattr_ref};
+    my $base   = $kattr{base};
+    my $filter = $kattr{filter};
+    my @attrs = ();
+    if (!$opt_dump) {
+        @attrs = (
+            'distinguishedName',             'objectclass',
+            'dnsHostname',                   'msds-KeyVersionNumber',
+            'msds-SupportedEncryptionTypes', 'name',
+            'servicePrincipalName',          'samAccountName',
+            'userAccountControl',            'userPrincipalName',
+            'whenChanged',                   'whenCreated',
+            );
+    }
+
+    if ($AD_DEBUG) {
+        dbg("base:$base filter:$filter scope:subtree\n");
+    }
+
+    my $result;
+    eval {
+        $result = $LDAP->search(
+            base   => $base,
+            scope  => 'subtree',
+            filter => $filter,
+            attrs  => \@attrs
+            );
+    };
+    if ($@) {
+        my $error = $@;
+        die "LDAP search error: $error\n";
+    }
+    if ($result->code) {
+        msg("INFO base:$base filter:$filter scope:subtree\n");
+        die $result->error;
+    }
+    if ($AD_DEBUG) {
+        dbg('returned: ' . $result->count);
+    }
+    if ($result->count > 0) {
+        for my $entry ($result->entries) {
+            for my $attr ( sort $entry->attributes ) {
+                my $out = '';
+                if ($attr =~ /userAccountControl/xmsi) {
+                    my $val = $entry->get_value($attr);
+                    $out = "$attr: $val";
+                    $out .= ' (' . list_userAccountControl($val) . ')';
+                    msg($out);
+                } else {
+                    my $val_ref = $entry->get_value($attr, asref => 1);
+                    my @vals = @{$val_ref};
+                    for my $val (@vals) {
+                        msg("$attr: $val");
+                    }
+                }
+            }
+        }
+    } else {
+        msg("$kattr{type}/$kattr{id} not found");
+    }
+    msg(' ');
+    return;
+}
+
+# Run a shell command.  In this case the command will always be msktutil.
+sub run_cmd {
+    my @cmd = @_;
+
+    if ($AD_DEBUG) {
+        dbg('running command:' . join(q{ }, @cmd));
+    }
+
+    my $in;
+    my $out;
+    my $err;
+    my $err_flag;
+    eval {
+        run(\@cmd, \$in, \$out, \$err, timeout(60));
+        if ($?) {
+            my $this_err = $?;
+            $err_flag = 1;
+            if ($this_err) {
+                msg('ERROR:' . $?);
+            }
+            if ($err) {
+                msg('ERROR (err):' . $err);
+            }
+        }
+    };
+    if ($@) {
+        msg('ERROR (status):' . $@);
+        $err_flag = 1;
+    }
+    if ($err_flag) {
+        msg('ERROR: Problem executing:' . join(q{ }, @cmd));
+        die "FATAL: Execution failed\n";
+    }
+
+    msg($out);
+    return;
+}
+
+# Either create or update a keytab for the principal.  Return the name
+# of the keytab file created.
+sub ad_create_update {
+    my ($file, $action, $kattr_ref) = @_;
+    my %kattr = %{$kattr_ref};
+
+    my @cmd = ('/usr/sbin/msktutil');
+    push @cmd, '--' . $action;
+    push @cmd, '--server',   $AD_SERVER;
+    push @cmd, '--enctypes', '0x4';
+    push @cmd, '--enctypes', '0x8';
+    push @cmd, '--enctypes', '0x10';
+    push @cmd, '--keytab',   $file;
+    push @cmd, '--upn',           $kattr{principal};
+    if ($kattr{realm}) {
+        push @cmd, '--realm', $kattr{realm};
+    }
+    if ($kattr{type} eq 'host') {
+        push @cmd, '--base', $AD_COMPUTER_RDN;
+        push @cmd, '--dont-expire-password';
+        push @cmd, '--computer-name', $kattr{cn};
+        push @cmd, '--hostname',      $kattr{id};
+    } else {
+        my $service_id = $1;
+        push @cmd, '--base', $AD_USER_RDN;
+        push @cmd, '--use-service-account';
+        push @cmd, '--service',      $kattr{principal};
+        push @cmd, '--account-name', $kattr{cn};
+        push @cmd, '--no-pac';
+    }
+    run_cmd(@cmd);
+    return;
+}
+
+# Delete a principal from Kerberos.  For AD this means just delete the
+# object using LDAP.
+sub ad_delete {
+    my ($kattr_ref) = @_;
+    my %kattr = %{$kattr_ref};
+
+    my $del_dn = get_dn($kattr{base}, $kattr{filter});
+
+    if (!$del_dn) {
+        msg("WARN: the keytab for $kattr{principal} does not exist.");
+        return 1;
+    } else {
+        ldap_connect();
+        my $msgid = $LDAP->delete($del_dn);
+        if ($msgid->code) {
+            my $m;
+            $m .= "ERROR: Problem deleting $kattr{dn}\n";
+            $m .= $msgid->error;
+            die $m;
+        }
+    }
+    return;
+}
+
+##############################################################################
+# Main Routine
+##############################################################################
+
+# Get options
+GetOptions(
+    'ad_server=s'    => \$opt_ad_server,
+    'base_dn=s'      => \$opt_base_dn,
+    'computer_rdn=s' => \$opt_computer_rdn,
+    'config=s'       => \$opt_config,
+    'debug'          => \$opt_debug,
+    'dump'           => \$opt_dump,
+    'help'           => \$opt_help,
+    'prefix'         => \$opt_prefix,
+    'manual'         => \$opt_manual,
+    'user_rdn=s'     => \$opt_user_rdn
+);
+
+# Help the user
+if ($opt_manual) {
+    pod2usage(-verbose => 2);
+}
+if ($opt_help || !$ARGV[0]) {
+    pod2usage(-verbose => 0);
+}
+
+# Make sure that we have kerberos credentials and that KRB5CCNAME
+# points to them.
+if (!$ENV{'KRB5CCNAME'}) {
+    msg('INFO: environment variable KRB5CCNAME not found.');
+    msg('ERROR: Kerberos credentials are required.');
+    pod2usage(-verbose => 0);
+}
+
+# Read the configuration file or croak
+my $conf_file;
+if ($opt_config) {
+    if (-e $opt_config) {
+        $conf_file = $opt_config;
+    } else {
+        msg("ERROR: Config file ($opt_config) not found");
+        pod2usage(-verbose => 0);
+    }
+} elsif ($ENV{'ADKEYTAB'}) {
+    $conf_file = $ENV{'ADKEYTAB'};
+} elsif (-e '.ad-keytab.conf') {
+    $conf_file = '.ad-keytab.conf';
+} else {
+    $conf_file = '/etc/wallet/wallet.conf';
+}
+do $conf_file or die (($@ || $!) . "\n");
+
+# Process command line options
+if ($opt_ad_server) {
+    $AD_SERVER = $opt_ad_server;
+}
+if ($opt_base_dn) {
+    $AD_BASE_DN = $opt_base_dn;
+}
+if ($opt_prefix) {
+    $AD_SERVICE_PREFIX = $opt_prefix;
+}
+if ($opt_computer_rdn) {
+    $AD_COMPUTER_RDN = $opt_computer_rdn;
+}
+if ($opt_user_rdn) {
+    $AD_USER_RDN = $opt_user_rdn;
+}
+if ($opt_debug) {
+    $AD_DEBUG = 1;
+}
+
+# -- Get command line arguments
+my $action = shift;
+my $id     = shift;
+my $keytab;
+if ($ARGV[0]) {
+    $keytab = shift;
+} else {
+    $keytab = '/etc/krb5.keytab';
+}
+
+my %kattr = kerberos_attrs($id);
+# Validate that the keytab id makes sense for the keytab type
+if ($kattr{type} eq 'host') {
+    if ($kattr{id} !~ /[.]/xms) {
+        msg('ERROR: FQDN is required');
+        pod2usage(-verbose => 0);
+    }
+} else {
+    if ($kattr{id} =~ /[.]/xms) {
+        msg('ERROR: service principal names may not contain periods');
+        pod2usage(-verbose => 0);
+    }
+}
+
+if ($action =~ /^(create|update)/xms) {
+    ad_create_update($keytab, $action, \%kattr);
+} elsif ($action =~ /^del/xms) {
+    ad_delete(\%kattr);
+} elsif ($action =~ /^sh/xms) {
+    ad_show($id, \%kattr);
+} else {
+    msg("ERROR: unknown action $action");
+    pod2usage(-verbose => 0);
+}
+
+exit;
+
+__END__
+
+=head1 NAME
+
+ad-keytab
+
+=head1 SYNOPSIS
+
+ad-keytab create|update|delete|show keytab-id [keytab-file]
+[--ad_server=hostname] [--computer_rdn=dn] [--user_rdn] [--dump]
+[--help] [--manual] [--debug]
+
+=head1 DESCRIPTION
+
+This script is a wrapper around msktutil and ldapsearch to simplify
+the creation of host and service keytabs.  The script is useful for
+boot strapping the kerberos credentials required to use Active
+Directory as a backend keytab store for wallet.  The script shares
+the wallet configuration file.
+
+Generally, two keytabs will need to be created to setup wallet.  One
+host keytab for the wallet server host and one service keytab for
+wallet to use when connecting to an Active Directory Domain
+Controller.
+
+Note, this script does not update the Wallet database which means
+any keytabs created by it will be invisible from wallet.
+
+=head1 ACTIONS
+
+=over 4
+
+=item create
+
+Add a keytab to AD and update the keytab file.  Fails if the keytab
+already exists.
+
+=item update
+
+Update an existing keytab in AD and update the keytab file.  Fails if
+the keytab does not exist.
+
+=item delete
+
+Delete a keytab from AD and remove it from the keytab file.
+
+=item show
+
+Show AD's view of the account corresponding to the keytab.  This action
+does not use msktutil and queries AD directly using LDAP.
+
+=back
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 4
+
+=item keytab-id
+
+This is either host principal name of the form host/<fqdn> or a
+service principal name of the form service/<id>.  Service keytab
+identifiers cannot be longer than 18 characters because of an
+ActiveDirectory restriction.
+
+=item keytab-filename
+
+The name of the keytab file.  Defaults to /etc/krb5.keytab.
+
+=item --conf=filename
+
+The configuration file to read.  The script searches for a configuration
+file in the following order.
+
+      * The command line switch --conf
+      * The environment variable ADKEYTAB
+      * The file .ad-keytab.conf
+      * The file /etc/ad-keytab.conf
+
+=item --ad_server=hostname
+
+The name of the Active Directory host to connect to.  It is important
+what the script contact only _one_ server due to the fact that
+propagation within an Active Directory domain can be quite slow.
+
+=item --base_dn=ou=org,dc=domain,dc=tld
+
+The base distinguished name holding both computer and user accounts.
+
+=item --computer_rdn=dn
+
+The relative distinguished name to use as the base DN for both the
+creation of host keytabs and searches of Active Directory.  The
+distinguished name formed will be computer_rdn,base_dn.
+
+=item --user_rdn=dn
+
+The relative distinguished name to use as the base DN for ldap
+searches of Active Directory for service keytabs.  The distinguished
+name formed will be user_rdn_rdn,base_dn.
+
+=item --dump
+
+When displaying keytab attributes show all of the attributes.
+
+=item --help
+
+Displays help text.
+
+=item --manual
+
+Displays more complete help text.
+
+=item --debug
+
+Turns on debugging displays.
+
+=back
+
+=head1 SEE ALSO
+
+Set the documentation for Wallet::Config for configuration information, i.e.
+perldoc Wallet::Config.
+
+=head1 AUTHOR
+
+Bill MacAllister <whm@dropbox.com>
+
+=cut
