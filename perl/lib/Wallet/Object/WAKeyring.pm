@@ -358,7 +358,7 @@ underscores, and dashes replaced by "%" and the hex code of the character.
 Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8), WebAuth(3)
 
 This module is part of the wallet system. The current version is available
-from <http://www.eyrie.org/~eagle/software/wallet/>.
+from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

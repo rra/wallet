@@ -166,9 +166,9 @@ warranty.
 kadmin(8), kinit(1), krb5.conf(5), remctl(1), remctld(8), wallet(1)
 
 This program is part of the wallet system.  The current version is available
-from L<http://www.eyrie.org/~eagle/software/wallet/>.
+from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 B<wallet-rekey> uses the remctl protocol.  For more information about
-remctl, see L<http://www.eyrie.org/~eagle/software/remctl/>.
+remctl, see L<https://www.eyrie.org/~eagle/software/remctl/>.
 
 =cut

@@ -232,7 +232,7 @@ as binary data.  On failure, returns undef and sets the object error.
 kadmin(8), Wallet::Config(3), Wallet::Object::Keytab(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 

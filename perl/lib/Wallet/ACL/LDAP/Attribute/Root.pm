@@ -113,7 +113,7 @@ Net::Remctl(3), Wallet::ACL(3), Wallet::ACL::Base(3),
 Wallet::ACL::LDAP::Attribute(3), Wallet::Config(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 

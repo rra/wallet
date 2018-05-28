@@ -6,7 +6,8 @@
 # access to the LDAP server and will be skipped in all other environments.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2012, 2013, 2014
+# Copyright 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2012-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -17,11 +18,12 @@ use warnings;
 use Test::More;
 
 use lib 't/lib';
+use Test::RRA qw(skip_unless_author);
 use Util;
 
-# Skip all spelling tests unless the maintainer environment variable is set.
-plan skip_all => 'LDAP verifier tests only run for maintainer'
-    unless $ENV{RRA_MAINTAINER_TESTS};
+# This test requires a specific environment setup, so only run it for package
+# maintainers.
+skip_unless_author('LDAP verifier tests');
 
 # Declare a plan.
 plan tests => 22;
@@ -49,7 +51,7 @@ package main;
 # Determine the local principal.
 my $klist = `klist 2>&1` || '';
 SKIP: {
-    skip "tests useful only with Stanford Kerberos tickets", 9
+    skip "tests useful only with Stanford Kerberos tickets", 20
         unless ($klist =~ /[Pp]rincipal: \S+\@stanford\.edu$/m);
 
     # Set up our configuration.

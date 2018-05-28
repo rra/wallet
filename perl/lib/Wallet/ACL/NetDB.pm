@@ -252,10 +252,10 @@ wallet-backend(8)
 
 NetDB is a free software system for managing DNS, DHCP, and related
 machine information for large organizations.  For more information on
-NetDB, see L<http://www.stanford.edu/group/networking/netdb/>.
+NetDB, see L<https://web.stanford.edu/group/networking/netdb/>.
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

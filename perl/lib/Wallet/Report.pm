@@ -869,7 +869,7 @@ the error message if there was an error and undef if there was no error.
 Wallet::Config(3), Wallet::Server(3)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

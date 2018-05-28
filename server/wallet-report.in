@@ -356,6 +356,6 @@ DEALINGS IN THE SOFTWARE.
 Wallet::Config(3), Wallet::Report(3), wallet-backend(8)
 
 This program is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =cut

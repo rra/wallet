@@ -284,7 +284,7 @@ impose a length limitation on the file object name.
 remctld(8), Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

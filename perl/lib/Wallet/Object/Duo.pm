@@ -449,7 +449,7 @@ Only one Duo account is supported for a given wallet implementation.
 Net::Duo(3), Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

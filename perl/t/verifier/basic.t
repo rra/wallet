@@ -46,9 +46,9 @@ is ($verifier->error, 'malformed krb5 ACL', ' and right error');
 
 $verifier = Wallet::ACL::Krb5::Regex->new;
 isa_ok ($verifier, 'Wallet::ACL::Krb5::Regex', 'krb5-regex verifier');
-is ($verifier->check ('rra@stanford.edu', '.*@stanford\.edu\z'), 1,
+is ($verifier->check ('thoron@stanford.edu', '.*@stanford\.edu\z'), 1,
     'Simple check');
-is ($verifier->check ('rra@stanford.edu', '^a.*@stanford\.edu'), 0,
+is ($verifier->check ('thoron@stanford.edu', '^a.*@stanford\.edu'), 0,
     'Simple failure');
 is ($verifier->error, undef, 'No error set');
 is ($verifier->check (undef, '^rra@stanford\.edu\z'), undef,

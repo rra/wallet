@@ -538,11 +538,11 @@ configuration file from this module or wrapped to apply additional rules.
 
 Wallet::Config(3)
 
-The L<Stanford policy|http://www.eyrie.org/~eagle/software/wallet/naming.html>
+The L<Stanford policy|https://www.eyrie.org/~eagle/software/wallet/naming.html>
 implemented by this module.
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

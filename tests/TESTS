@@ -14,6 +14,7 @@ portable/snprintf
 server/admin
 server/backend
 server/keytab
+style/obsolete-strings
 util/messages
 util/messages-krb5
 util/xmalloc

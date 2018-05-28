@@ -241,6 +241,6 @@ DEALINGS IN THE SOFTWARE.
 kadmin.local(8), remctld(8)
 
 This program is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =cut

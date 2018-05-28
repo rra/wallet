@@ -43,7 +43,7 @@ Assumptions
     the client, and that data passed between the server and the client is
     encrypted.  For more information about the remctl protocol, see:
 
-        <http://www.eyrie.org/~eagle/software/remctl/protocol.html>
+        <https://www.eyrie.org/~eagle/software/remctl/protocol.html>
 
     remctl requires Kerberos v5 authentication, and therefore all clients
     using the wallet to retrieve data will use Kerberos v5 authentication.
