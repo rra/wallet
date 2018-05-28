@@ -11,13 +11,17 @@
 # Declarations
 ##############################################################################
 
+require 5.005;
+
+use strict;
+use warnings;
+
 use Authen::SASL;
 use Carp;
 use Getopt::Long;
 use IPC::Run qw( run timeout );
 use Net::LDAP;
 use Pod::Usage;
-use strict;
 
 my $opt_ad_server;
 my $opt_base_dn;
