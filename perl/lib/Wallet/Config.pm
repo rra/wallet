@@ -1,7 +1,7 @@
 # Wallet::Config -- Configuration handling for the wallet server
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2016, 2018 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007, 2008, 2010, 2013, 2014, 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -422,13 +422,22 @@ Active Directory (KEYTAB_KRBTYPE is set to C<AD>).
 
 =item AD_BASE_DN
 
-The base distinguished name of the ActiveDirectory instance.  This is
-use when Wallet uses LDAP directly to examine objects in Active
-Directory.
+The base distinguished name of the ActiveDirectory instance.  This is use
+when Wallet uses LDAP directly to examine objects in Active Directory.
 
 =cut
 
 our $AD_BASE_DN;
+
+=item AD_CACHE
+
+Specifies the ticket cache to use when manipulating Active Directory objects.
+The ticket cache must be for a principal able to bind to Active Directory and
+run B<msktutil>.
+
+=cut
+
+our $AD_CACHE;
 
 =item AD_COMPUTER_RDN
 
@@ -593,15 +602,6 @@ will be used.
 =cut
 
 our $KEYTAB_REMCTL_PORT;
-
-=item AD_CACHE
-
-The ticket cache that hold credentials used to access the
-ActiveDirectory KDC.  This must be created and maintained externally.
-
-=cut
-
-our $AD_CACHE;
 
 =item AD_KEYTAB_BUCKET
 
