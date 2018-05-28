@@ -2,6 +2,15 @@
 
 wallet 1.4 (unreleased)
 
+    Substantial improvements to Active Directory support: Add a
+    contrib/ad-keytab script that assists with initial setup and examining
+    the Active Directory objects, rename some configuration variables to
+    reflect that they are relative distinguished names, add a
+    configuration variable for the base DN, make sure userPrincipalName is
+    created for all keytabs and use it to search, allow creation of a
+    service principal, and truncate and make unique long names in AD if
+    necessary.  This support should still be considered experimental.
+
     Remove stray references to strlcpy and strlcat that broke builds on
     platforms where those functions are part of libc.  Thanks to Karl
     Kornel for the report.
