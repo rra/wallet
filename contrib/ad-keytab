@@ -532,6 +532,9 @@ exit;
 
 __END__
 
+=for stopwords
+KDC LDAP MacAllister keytab keytabs msktutil ldapsearch
+
 =head1 NAME
 
 ad-keytab
@@ -546,7 +549,7 @@ ad-keytab create|update|delete|show keytab-id [keytab-file]
 
 This script is a wrapper around msktutil and ldapsearch to simplify
 the creation of host and service keytabs.  The script is useful for
-boot strapping the kerberos credentials required to use Active
+boot strapping the Kerberos credentials required to use Active
 Directory as a backend keytab store for wallet.  The script shares
 the wallet configuration file.
 
@@ -592,7 +595,7 @@ does not use msktutil and queries AD directly using LDAP.
 This is either host principal name of the form host/<fqdn> or a
 service principal name of the form service/<id>.  Service keytab
 identifiers cannot be longer than 18 characters because of an
-ActiveDirectory restriction.
+Active Directory restriction.
 
 =item keytab-filename
 
@@ -626,7 +629,7 @@ distinguished name formed will be computer_rdn,base_dn.
 
 =item --user_rdn=dn
 
-The relative distinguished name to use as the base DN for ldap
+The relative distinguished name to use as the base DN for LDAP
 searches of Active Directory for service keytabs.  The distinguished
 name formed will be user_rdn_rdn,base_dn.
 
