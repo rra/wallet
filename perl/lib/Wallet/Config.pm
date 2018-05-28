@@ -26,7 +26,7 @@ Wallet::Config - Configuration handling for the wallet server
 DBI DSN SQLite subdirectories KEYTAB keytab kadmind KDC add-ons kadmin DNS
 SRV kadmin keytabs remctl backend lowercased NETDB ACL NetDB unscoped
 usernames rekey hostnames Allbery wallet-backend keytab-backend Heimdal
-rekeys WebAuth WEBAUTH keyring LDAP DN GSS-API integrations msktutil
+rekeys WebAuth WEBAUTH keyring LDAP DN GSS-API integrations msktutil CN DIT
 
 =head1 SYNOPSIS
 
@@ -422,7 +422,7 @@ Active Directory (KEYTAB_KRBTYPE is set to C<AD>).
 
 =item AD_BASE_DN
 
-The base distinguished name of the ActiveDirectory instance.  This is use
+The base distinguished name of the Active Directory instance.  This is used
 when Wallet uses LDAP directly to examine objects in Active Directory.
 
 =cut
@@ -474,11 +474,11 @@ our $AD_MSKTUTIL = 'msktutil';
 
 =item AD_SERVICE_LENGTH
 
-The maximum length of a unique identifier, samAccountName, for Active
-Directory keytab objects.  If the indentifier exceeds this length then
-it will be trunciated and an integer will be appended to the end of
-the identifier.  This parameter is here in hopes that at some point
-in the future Microsoft will remove the limitation.
+The maximum length of a unique identifier, C<samAccountName>, for Active
+Directory keytab objects.  If the identifier exceeds this length then it will
+be truncated and an integer will be appended to the end of the identifier.
+This parameter is here in hopes that at some point in the future Microsoft
+will remove the limitation.
 
 =cut
 
@@ -606,7 +606,7 @@ our $KEYTAB_REMCTL_PORT;
 =item AD_KEYTAB_BUCKET
 
 The path to store a copy of keytabs created.  This is required for the
-support of unchanging keytabs with an ActiveDirectory KDC.  (This has
+support of unchanging keytabs with an Active Directory KDC.  (This has
 not been implemented yet.)
 
 =cut
