@@ -50,13 +50,8 @@ AC_ARG_WITH([wallet-port],
         [AC_DEFINE_UNQUOTED([WALLET_PORT], [$withval],
             [Define to the default server port.])])])
 
-dnl Determine the path to the Perl binary.
-AC_ARG_VAR([PERL], [Path to the Perl binary])
-AC_PATH_PROG([PERL], [perl])
-AS_IF([test -z "$PERL"],
-    [AC_MSG_ERROR([Could not find Perl binary (set PERL to the full path)])])
-AS_IF(["$PERL" -e 'require 5.008'], [:],
-    [AC_MSG_ERROR([Perl 5.8 or better is required])])
+dnl Determine the path to the Perl binary and require 5.008 or later.
+RRA_PROG_PERL([5.008])
 
 dnl Probe for required libraries.
 RRA_LIB_REMCTL
