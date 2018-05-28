@@ -11,6 +11,11 @@ wallet 1.4 (unreleased)
     service principal, and truncate and make unique long names in AD if
     necessary.  This support should still be considered experimental.
 
+    When getting configuration values from krb5.conf, pass the default
+    local realm into the Kerberos appdefault functions.  This will produce
+    more correct results with krb5.conf files that specify wallet
+    configuration for multiple realms.
+
     Remove stray references to strlcpy and strlcat that broke builds on
     platforms where those functions are part of libc.  Thanks to Karl
     Kornel for the report.

@@ -57,7 +57,9 @@ dnl Probe for required libraries.
 RRA_LIB_REMCTL
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
-AC_CHECK_FUNCS([krb5_get_init_creds_opt_alloc \
+AC_CHECK_TYPES([krb5_realm], [], [], [RRA_INCLUDES_KRB5])
+AC_CHECK_FUNCS([krb5_free_default_realm \
+    krb5_get_init_creds_opt_alloc \
     krb5_get_init_creds_opt_set_default_flags \
     krb5_principal_get_realm])
 AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],

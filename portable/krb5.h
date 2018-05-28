@@ -71,6 +71,15 @@ void krb5_appdefault_string(krb5_context, const char *, const krb5_data *,
 #endif
 
 /*
+ * MIT-specific.  The Heimdal documentation says to use free(), but that
+ * doesn't actually make sense since the memory is allocated inside the
+ * Kerberos library.  Use krb5_xfree instead.
+ */
+#ifndef HAVE_KRB5_FREE_DEFAULT_REALM
+# define krb5_free_default_realm(c, r) krb5_xfree(r)
+#endif
+
+/*
  * krb5_{get,free}_error_message are the preferred APIs for both current MIT
  * and current Heimdal, but there are tons of older APIs we may have to fall
  * back on for earlier versions.

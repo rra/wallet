@@ -69,6 +69,7 @@ main(int argc, char *argv[])
     message_program_name = "wallet";
 
     /* Initialize default configuration. */
+    memset(&options, 0, sizeof(options));
     retval = krb5_init_context(&ctx);
     if (retval != 0)
         die_krb5(ctx, retval, "cannot initialize Kerberos");
