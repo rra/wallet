@@ -42,7 +42,7 @@ sub ad_syslog {
         openlog('wallet-server', 'ndelay,nofatal', 'local3');
         $self->{SYSLOG} = 1;
     }
-    if ($l !~ /^(debug|info|err|warning/xms)$) {
+    if ($l !~ /^(debug|info|err|warning)$/xms) {
         $l = 'err';
     }
     syslog($l, $m);
