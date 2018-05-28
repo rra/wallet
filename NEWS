@@ -20,6 +20,9 @@ wallet 1.4 (unreleased)
     for all Perl scripts.  This allows wallet to use a version of Perl at
     a non-standard path.  Patches from Karl Kornel.
 
+    Rename the script to bootstrap from a Git checkout to bootstrap,
+    matching the emerging consensus in the Autoconf world.
+
     Update to rra-c-util 7.2:
 
     * Improve configure output for krb5-config testing.
