@@ -307,6 +307,12 @@ check-local: $(check_PROGRAMS)
 	@echo ''
 	cd perl && ./Build test
 
+# Used by maintainers to check the source code with cppcheck.
+check-cppcheck:
+	cd $(abs_top_srcdir) && cppcheck -q --error-exitcode=2	\
+	    --suppressions-list=tests/data/cppcheck.supp	\
+	    --enable=warning,performance,portability,style .
+
 # Alas, we have to disable this check because there's no way to do an
 # uninstall from Perl.
 distuninstallcheck:
