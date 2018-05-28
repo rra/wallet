@@ -12,5 +12,8 @@ env: AUTHOR_TESTING=1
 script: ./autogen && ./configure && make warnings && make check
 
 branches:
-  only:
-    - master
+  except:
+    - /^debian\/.*/
+    - pristine-tar
+    - /^ubuntu\/.*/
+    - /^upstream\/.*/
