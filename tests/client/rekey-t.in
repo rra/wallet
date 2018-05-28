@@ -3,16 +3,17 @@
 # Test suite for the wallet-rekey command-line client.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2006, 2007, 2008, 2010
+# Copyright 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2006-2008, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 # Load the test library.
-. "$SOURCE/tap/libtap.sh"
-. "$SOURCE/tap/kerberos.sh"
-. "$SOURCE/tap/remctl.sh"
-cd "$SOURCE"
+. "$C_TAP_SOURCE/tap/libtap.sh"
+. "$C_TAP_SOURCE/tap/kerberos.sh"
+. "$C_TAP_SOURCE/tap/remctl.sh"
+cd "$C_TAP_SOURCE"
 
 # We need a modified krb5.conf file to test wallet configuration settings in
 # krb5.conf.  Despite the hard-coding of test-k5.stanford.edu, this test isn't
@@ -47,8 +48,8 @@ elif [ -z '@REMCTLD@' ] ; then
 else
     plan 8
 fi
-remctld_start '@REMCTLD@' "$SOURCE/data/basic.conf"
-wallet="$BUILD/../client/wallet-rekey"
+remctld_start '@REMCTLD@' "$C_TAP_SOURCE/data/basic.conf"
+wallet="$C_TAP_BUILD/../client/wallet-rekey"
 
 # Rekeying should result in a merged keytab with both the old and new keys.
 cp data/fake-keytab-old keytab

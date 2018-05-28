@@ -5,7 +5,8 @@
  * file for both wallet and wallet-rekey.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2006, 2007, 2008, 2010
+ * Copyright 2018 Russ Allbery <eagle@eyrie.org>
+ * Copyright 2006-2008, 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -63,9 +64,15 @@ default_number(krb5_context ctx, const char *opt, int defval, int *result)
 void
 default_options(krb5_context ctx, struct options *options)
 {
+    int port;
+
     default_string(ctx, "wallet_type", "wallet", &options->type);
     default_string(ctx, "wallet_server", WALLET_SERVER, &options->server);
     default_string(ctx, "wallet_principal", NULL, &options->principal);
-    default_number(ctx, "wallet_port", WALLET_PORT, &options->port);
+    default_number(ctx, "wallet_port", WALLET_PORT, &port);
+    if (port <= 0 || port > 65535)
+        options->port = WALLET_PORT;
+    else
+        options->port = (unsigned short) port;
     options->user = NULL;
 }

@@ -20,6 +20,28 @@ wallet 1.4 (unreleased)
     for all Perl scripts.  This allows wallet to use a version of Perl at
     a non-standard path.  Patches from Karl Kornel.
 
+    Update to rra-c-util 7.2:
+
+    * Improve configure output for krb5-config testing.
+    * Define UINT32_MAX for systems that don't have it.
+    * Add SPDX-License-Identifier headers to all substantial source files.
+    * Fix new warnings from GCC 7 and Clang warnings.
+    * Require Test::Strict 0.25 or later to run those tests.
+    * Fix off-by-one error in return-value checks for snprintf.
+    * Use Autoconf to probe for supported warning flags.
+    * Fix running module-version-t -u with current versions of Perl.
+    * Use C_TAP_SOURCE and C_TAP_BUILD instead of SOURCE and BUILD.
+
+    Update to C TAP Harness 4.3:
+
+    * Add support for valgrind and libtool in test lists.
+    * Report test failures as left and right, not wanted and expected.
+    * Fix string comparisons with NULL pointers and the string "(null)".
+    * Add SPDX-License-Identifier headers to all substantial source files.
+    * Avoid zero-length realloc allocations in breallocarray.
+    * Fix new warnings from GCC 7 and Clang warnings.
+    * Use C_TAP_SOURCE and C_TAP_BUILD instead of SOURCE and BUILD.
+
 wallet 1.3 (2016-01-17)
 
     This release adds initial, experimental support for using Active

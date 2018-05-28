@@ -2,7 +2,8 @@
  * Internal support functions for the wallet client.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2007, 2008, 2010
+ * Copyright 2018 Russ Allbery <eagle@eyrie.org>
+ * Copyright 2007-2008, 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -41,7 +42,7 @@ struct options {
     char *server;
     char *principal;
     char *user;
-    int port;
+    unsigned short port;
 };
 
 BEGIN_DECLS

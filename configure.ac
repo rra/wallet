@@ -1,11 +1,15 @@
 dnl Autoconf configuration for wallet.
 dnl
 dnl Written by Russ Allbery <eagle@eyrie.org>
-dnl Copyright 2014, 2016 Russ Allbery <eagle@eyrie.org>
-dnl Copyright 2006, 2007, 2008, 2010, 2013, 2014
+dnl Copyright 2014, 2016, 2018 Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2006-2008, 2010, 2013-2014
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
-dnl See LICENSE for licensing terms.
+dnl This file is free software; the authors give unlimited permission to copy
+dnl and/or distribute it, with or without modifications, as long as this
+dnl notice is preserved.
+dnl
+dnl SPDX-License-Identifier: FSFULLR
 
 AC_PREREQ([2.64])
 AC_INIT([wallet], [1.3], [eagle@eyrie.org])
@@ -17,13 +21,14 @@ AM_INIT_AUTOMAKE([1.11 check-news dist-xz foreign silent-rules subdir-objects
 AM_MAINTAINER_MODE
 
 dnl Detect unexpanded macros.
+m4_pattern_forbid([^PKG_])
 m4_pattern_forbid([^_?RRA_])
 
 dnl AM_PROG_AR is required for Automake 1.12 by Libtool but not defined at all
 dnl (or needed) in Automake 1.11.  Work around this bug.
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
-RRA_PROG_CC_CLANG
+RRA_PROG_CC_WARNINGS_FLAGS
 AC_SYS_LARGEFILE
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -65,11 +70,16 @@ AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],
 AC_CHECK_DECLS([krb5_kt_free_entry], [], [], [RRA_INCLUDES_KRB5])
 AC_CHECK_DECLS([krb5_kt_free_entry])
 AC_CHECK_MEMBERS([krb5_keytab_entry.keyblock], [], [], [RRA_INCLUDES_KRB5])
+AC_CHECK_FUNCS([krb5_appdefault_string], [],
+    [AC_CHECK_FUNCS([krb5_get_profile])
+     AC_CHECK_HEADERS([k5profile.h profile.h])
+     AC_LIBOBJ([krb5-profile])])
+AC_LIBOBJ([krb5-extra])
 RRA_LIB_KRB5_RESTORE
 
 dnl Probe for properties of the C library.
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([sys/bitypes.h sys/uio.h sys/time.h syslog.h])
+AC_CHECK_HEADERS([strings.h sys/bitypes.h sys/uio.h sys/time.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 RRA_C_C99_VAMACROS
 RRA_C_GNU_VAMACROS
@@ -86,10 +96,6 @@ AC_PATH_PROG([REMCTLD], [remctld], [], [$PATH:/usr/sbin:/usr/local/sbin])
 AS_IF([test x"$REMCTLD" != x],
     [AC_DEFINE_UNQUOTED([PATH_REMCTLD], ["$REMCTLD"],
         [Define to the full path to remctld to run remctl tests.])])
-
-dnl Enable appropriate warnings.
-AM_CONDITIONAL([WARNINGS_GCC], [test x"$GCC" = xyes && test x"$CLANG" != xyes])
-AM_CONDITIONAL([WARNINGS_CLANG], [test x"$CLANG" = xyes])
 
 dnl Output section.
 AC_CONFIG_HEADER([config.h])

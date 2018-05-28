@@ -1,8 +1,8 @@
 # Automake makefile for wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2006, 2007, 2008, 2010, 2013, 2014
+# Copyright 2016, 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2006-2008, 2010, 2013-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -134,9 +134,9 @@ EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	   \
 
 # Supporting convenience libraries used by other targets.
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
-portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
-	portable/krb5.h portable/macros.h portable/stdbool.h		\
-	portable/system.h portable/uio.h
+portable_libportable_a_SOURCES = portable/dummy.c portable/krb5.h	\
+	portable/macros.h portable/stdbool.h portable/system.h		\
+	portable/uio.h
 portable_libportable_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 portable_libportable_a_LIBADD = $(LIBOBJS)
 util_libutil_a_SOURCES = util/macros.h util/messages-krb5.c		    \
@@ -182,32 +182,12 @@ dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
 	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql		\
 	perl/sql/Wallet-Schema-0.09-SQLite.sql
 
-# A set of flags for warnings.  Add -O because gcc won't find some warnings
-# without optimization turned on.  Desirable warnings that can't be turned
-# on due to other problems:
-#
-#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
-#
-# Last checked against gcc 4.8.2 (2014-04-12).  -D_FORTIFY_SOURCE=2 enables
-# warn_unused_result attribute markings on glibc functions on Linux, which
-# catches a few more issues.
-if WARNINGS_GCC
-    WARNINGS = -g -O -fstrict-overflow -fstrict-aliasing -D_FORTIFY_SOURCE=2 \
-        -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self -Wswitch-enum    \
-        -Wstrict-overflow=5 -Wmissing-format-attribute -Wfloat-equal         \
-        -Wdeclaration-after-statement -Wshadow -Wpointer-arith               \
-        -Wbad-function-cast -Wcast-align -Wwrite-strings -Wjump-misses-init  \
-        -Wlogical-op -Wstrict-prototypes -Wold-style-definition              \
-        -Wmissing-prototypes -Wnormalized=nfc -Wpacked -Wredundant-decls     \
-        -Wnested-externs -Winline -Wvla -Werror
-endif
-if WARNINGS_CLANG
-    WARNINGS = -Weverything -Wno-padded
-endif
-
+# Separate target for a human to request building everything with as many
+# compiler warnings enabled as possible.
 warnings:
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)' KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)'
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)' \
+	$(MAKE) V=0 CFLAGS='$(WARNINGS_CFLAGS) $(AM_CFLAGS)' \
+	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)'
+	$(MAKE) V=0 CFLAGS='$(WARNINGS_CFLAGS) $(AM_CFLAGS)' \
 	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)' $(check_PROGRAMS)
 
 # Remove some additional files.
@@ -272,7 +252,6 @@ install-data-local:
 	esac ;								\
 	cd perl && ./Build install $$flags --destdir '$(DESTDIR)'
 
-# ExtUtils::MakeMaker really likes moving the Makefile aside.
 clean-local:
 	set -e; if [ -f "perl/Build" ] ; then		\
 	    cd perl && ./Build realclean ;		\
@@ -293,8 +272,8 @@ check_PROGRAMS = tests/runtests tests/portable/asprintf-t	\
 	tests/portable/mkstemp-t tests/portable/setenv-t	\
 	tests/portable/snprintf-t tests/util/messages-krb5-t	\
 	tests/util/messages-t tests/util/xmalloc
-tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
-	-DBUILD='"$(abs_top_builddir)/tests"'
+tests_runtests_CPPFLAGS = -DC_TAP_SOURCE='"$(abs_top_srcdir)/tests"' \
+	-DC_TAP_BUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\

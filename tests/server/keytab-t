@@ -3,7 +3,8 @@
 # Tests for the keytab-backend dispatch code.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2006, 2007, 2010
+# Copyright 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2006-2007, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -16,9 +17,9 @@ use Test::More tests => 63;
 # Load the keytab-backend code and override various settings.
 my $OUTPUT;
 $SYSLOG = \$OUTPUT;
-eval { do "$ENV{SOURCE}/../server/keytab-backend" };
-$CONFIG = "$ENV{SOURCE}/data/allow-extract";
-$KADMIN = "$ENV{SOURCE}/data/fake-kadmin";
+eval { do "$ENV{C_TAP_SOURCE}/../server/keytab-backend" };
+$CONFIG = "$ENV{C_TAP_SOURCE}/data/allow-extract";
+$KADMIN = "$ENV{C_TAP_SOURCE}/data/fake-kadmin";
 $TMP = '.';
 
 # Run the keytab backend.

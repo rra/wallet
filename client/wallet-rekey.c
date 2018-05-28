@@ -3,6 +3,7 @@
  *
  * Written by Russ Allbery <eagle@eyrie.org>
  *        and Jon Robertson <jonrober@stanford.edu>
+ * Copyright 2018 Russ Allbery <eagle@eyrie.org>
  * Copyright 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -40,7 +41,7 @@ Options:\n\
 /*
  * Display the usage message for wallet-rekey.
  */
-static void
+static void __attribute__((__noreturn__))
 usage(int status)
 {
     fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT,
@@ -83,13 +84,12 @@ main(int argc, char *argv[])
             break;
         case 'h':
             usage(0);
-            break;
         case 'p':
             errno = 0;
             tmp = strtol(optarg, &end, 10);
             if (tmp <= 0 || tmp > 65535 || *end != '\0')
                 die("invalid port number %s", optarg);
-            options.port = tmp;
+            options.port = (unsigned short) tmp;
             break;
         case 's':
             options.server = optarg;
@@ -100,10 +100,8 @@ main(int argc, char *argv[])
         case 'v':
             printf("%s\n", PACKAGE_STRING);
             exit(0);
-            break;
         default:
             usage(1);
-            break;
         }
     }
     argc -= optind;

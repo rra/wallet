@@ -4,6 +4,7 @@
 # End-to-end tests for the wallet client.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2018 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -14,14 +15,14 @@ use warnings;
 
 # Point to our server configuration.  This must be done before Wallet::Config
 # is loaded, and it's pulled in as a prerequisite for Wallet::Admin.
-BEGIN { $ENV{WALLET_CONFIG} = "$ENV{SOURCE}/data/wallet.conf" }
+BEGIN { $ENV{WALLET_CONFIG} = "$ENV{C_TAP_SOURCE}/data/wallet.conf" }
 
 use Test::More tests => 59;
 
-use lib "$ENV{SOURCE}/../perl/lib";
+use lib "$ENV{C_TAP_SOURCE}/../perl/lib";
 use Wallet::Admin;
 
-use lib "$ENV{SOURCE}/../perl/t/lib";
+use lib "$ENV{C_TAP_SOURCE}/../perl/t/lib";
 use Util;
 
 # Make a call to the wallet client.  Takes the principal used by the server
@@ -37,9 +38,9 @@ sub wallet {
             or die "cannot create wallet.out: $!\n";
         open (STDERR, '>', 'wallet.err')
             or die "cannot create wallet.err: $!\n";
-        exec ("$ENV{BUILD}/../client/wallet", '-k', $principal, '-p',
+        exec ("$ENV{C_TAP_BUILD}/../client/wallet", '-k', $principal, '-p',
               '14373', '-s', 'localhost', @command)
-            or die "cannot run $ENV{BUILD}/client/wallet: $!\n";
+            or die "cannot run $ENV{C_TAP_BUILD}/client/wallet: $!\n";
     } else {
         waitpid ($pid, 0);
     }
@@ -56,23 +57,23 @@ sub wallet {
 }
 
 # cd to the correct directory.
-chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
+chdir "$ENV{C_TAP_SOURCE}" or die "Cannot chdir to $ENV{C_TAP_SOURCE}: $!\n";
 
 SKIP: {
     skip 'no keytab configuration', 59
-        unless -f "$ENV{BUILD}/config/keytab";
+        unless -f "$ENV{C_TAP_BUILD}/config/keytab";
     my $remctld = '@REMCTLD@';
     skip 'remctld not found', 59 unless $remctld;
 
     # Spawn remctld and get local tickets.  Don't destroy the user's Kerberos
     # ticket cache.
     unlink ('krb5cc_test', 'test-pid');
-    my $principal = contents ("$ENV{BUILD}/config/principal");
+    my $principal = contents ("$ENV{C_TAP_BUILD}/config/principal");
     remctld_spawn ($remctld, $principal,
-                   "$ENV{BUILD}/config/keytab",
-                   "$ENV{SOURCE}/data/full.conf");
+                   "$ENV{C_TAP_BUILD}/config/keytab",
+                   "$ENV{C_TAP_SOURCE}/data/full.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
-    getcreds ("$ENV{BUILD}/config/keytab", $principal);
+    getcreds ("$ENV{C_TAP_BUILD}/config/keytab", $principal);
 
     # Use Wallet::Admin to set up the database.
     db_setup;

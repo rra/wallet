@@ -3,7 +3,8 @@
 # Tests for the wallet-report dispatch code.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2009, 2010
+# Copyright 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2008-2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -72,7 +73,7 @@ sub owners {
 # Wallet::Report package has already been loaded.
 package main;
 $INC{'Wallet/Report.pm'} = 'FAKE';
-eval { do "$ENV{SOURCE}/../server/wallet-report" };
+eval { do "$ENV{C_TAP_SOURCE}/../server/wallet-report" };
 
 # Run the wallet report client.  This fun hack takes advantage of the fact
 # that the wallet report client is written in Perl so that we can substitute
