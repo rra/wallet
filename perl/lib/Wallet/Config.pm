@@ -537,7 +537,7 @@ our $AD_USER_RDN;
 
 Heimdal provides the choice, over the network protocol, of either
 downloading the existing keys for a principal or generating new random
-keys.  Neither MIT Kerberos or ActiveDirectory support retrieving an
+keys.  Neither MIT Kerberos or Active Directory support retrieving an
 existing keytab; downloading a keytab over the kadmin protocol or
 using msktutil always rekeys the principal.
 
@@ -547,7 +547,7 @@ contacting the KDC via remctl and talking to B<keytab-backend>.  This is
 enabled by setting the C<unchanging> flag on keytab objects.  To configure
 that support, set the following variables.
 
-For ActiveDirectory Kerberos, the keytab object backend supports
+For Active Directory Kerberos, the keytab object backend supports
 storing the keytabs on the wallet server.  This functionality is
 enabled by setting the configuration variable AD_KEYTAB_BUCKET.  (This
 had not been implemented yet.)
