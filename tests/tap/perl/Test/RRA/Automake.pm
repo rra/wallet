@@ -73,7 +73,9 @@ BEGIN {
 
 # Directories to skip globally when looking for all files, or for directories
 # that could contain Perl files.
-my @GLOBAL_SKIP = qw(.git autom4te.cache build-aux perl/_build perl/blib);
+my @GLOBAL_SKIP = qw(
+  .git _build autom4te.cache build-aux perl/_build perl/blib
+);
 
 # Additional paths to skip when building a list of all files in the
 # distribution.  This primarily skips build artifacts that aren't interesting
