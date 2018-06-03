@@ -1,6 +1,6 @@
                        User-Visible wallet Changes
 
-wallet 1.4 (unreleased)
+wallet 1.4 (2018-06-03)
 
     Substantial improvements to Active Directory support: Add a
     contrib/ad-keytab script that assists with initial setup and examining
