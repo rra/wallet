@@ -17,7 +17,7 @@ use Test::More tests => 63;
 # Load the keytab-backend code and override various settings.
 my $OUTPUT;
 $SYSLOG = \$OUTPUT;
-eval { do "$ENV{C_TAP_SOURCE}/../server/keytab-backend" };
+do "$ENV{C_TAP_BUILD}/../server/keytab-backend";
 $CONFIG = "$ENV{C_TAP_SOURCE}/data/allow-extract";
 $KADMIN = "$ENV{C_TAP_SOURCE}/data/fake-kadmin";
 $TMP = '.';

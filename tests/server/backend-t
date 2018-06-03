@@ -190,7 +190,7 @@ $INC{'Wallet/Server.pm'} = 'FAKE';
 my $OUTPUT;
 our $SYSLOG = \$OUTPUT;
 my $INPUT = '';
-eval { do "$ENV{C_TAP_SOURCE}/../server/wallet-backend" };
+do "$ENV{C_TAP_BUILD}/../server/wallet-backend";
 
 # Run the wallet backend.  This fun hack takes advantage of the fact that the
 # wallet backend is written in Perl so that we can substitute our own

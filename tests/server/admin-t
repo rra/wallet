@@ -69,7 +69,7 @@ sub upgrade {
 # Wallet::Admin package has already been loaded.
 package main;
 $INC{'Wallet/Admin.pm'} = 'FAKE';
-eval { do "$ENV{C_TAP_SOURCE}/../server/wallet-admin" };
+do "$ENV{C_TAP_BUILD}/../server/wallet-admin";
 
 # Run the wallet admin client.  This fun hack takes advantage of the fact that
 # the wallet admin client is written in Perl so that we can substitute our own
