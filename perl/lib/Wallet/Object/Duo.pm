@@ -2,10 +2,10 @@
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2014, 2015
+# Copyright 2014-2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations

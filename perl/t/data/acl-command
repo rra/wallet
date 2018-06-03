@@ -5,10 +5,9 @@
 # failure, or reports an error based on whether the second argument is
 # success, failure, or error.
 #
-# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 set -e
 

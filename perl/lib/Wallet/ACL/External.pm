@@ -2,7 +2,7 @@
 #
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations

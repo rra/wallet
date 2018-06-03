@@ -347,8 +347,8 @@ __END__
 
 =for stopwords
 wallet-backend backend backend-specific remctld ACL acl timestamp getacl
-setacl metadata keytab keytabs enctypes enctype ktadd KDC Allbery
-autocreate MERCHANTABILITY NONINFRINGEMENT sublicense
+setacl metadata keytab keytabs enctypes enctype ktadd KDC Allbery autocreate
+MERCHANTABILITY NONINFRINGEMENT sublicense SPDX-License-Identifier MIT
 
 =head1 NAME
 
@@ -665,8 +665,8 @@ Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2007, 2008, 2010, 2011, 2012, 2013 The Board of Trustees of the
-Leland Stanford Junior University
+Copyright 2007-2008, 2010-2013 The Board of Trustees of the Leland Stanford
+Junior University
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the "Software"),
@@ -686,6 +686,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
+SPDX-License-Identifier: MIT
+
 =head1 SEE ALSO
 
 Wallet::Server(3), remctld(8)
@@ -694,3 +696,7 @@ This program is part of the wallet system.  The current version is
 available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =cut
+
+# Local Variables:
+# copyright-at-end-flag: t
+# End:

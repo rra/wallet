@@ -1,12 +1,11 @@
 # Wallet::ACL::LDAP::Attribute::Root -- Wallet root instance LDAP ACL verifier
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Based on Wallet::ACL::NetDB::Root by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
 # Copyright 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations

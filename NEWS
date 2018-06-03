@@ -28,6 +28,8 @@ wallet 1.4 (unreleased)
     Rename the script to bootstrap from a Git checkout to bootstrap,
     matching the emerging consensus in the Autoconf world.
 
+    Add SPDX-License-Identifier headers to all substantial source files.
+
     Update to rra-c-util 7.2:
 
     * Improve configure output for krb5-config testing.

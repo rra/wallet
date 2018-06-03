@@ -6,7 +6,7 @@
  * Copyright 2007-2008, 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *
- * See LICENSE for licensing terms.
+ * SPDX-License-Identifier: MIT
  */
 
 #ifndef CLIENT_INTERNAL_H

@@ -2,11 +2,11 @@
 #
 # Written by Bill MacAllister <whm@dropbox.com>
 # Copyright 2016, 2018 Russ Allbery <eagle@eyrie.org>
-# Copyright 2015, 2016 Dropbox, Inc.
-# Copyright 2007, 2008, 2009, 2010, 2014
+# Copyright 2015-2016 Dropbox, Inc.
+# Copyright 2007-2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations

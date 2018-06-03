@@ -104,7 +104,7 @@ sub all_files {
         my $file = $_;
         my $path = $File::Find::name;
         $path =~ s{ \A [.]/ }{}xms;
-        if ($skip{$path} or $files_skip{$file} or $file =~ m{ [.] lo \z }xms) {
+        if ($skip{$path} || $files_skip{$file} || $file =~ m{ [.] lo \z }xms) {
             $File::Find::prune = 1;
             return;
         }

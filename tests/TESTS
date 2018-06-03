@@ -4,6 +4,7 @@ client/prompt
 client/rekey
 docs/pod
 docs/pod-spelling
+docs/spdx-license-t
 perl/minimum-version
 perl/module-version
 perl/strict

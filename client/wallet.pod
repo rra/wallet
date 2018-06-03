@@ -2,6 +2,7 @@
 -hv srvtab arg keytabs metadata keytab ACL PTS kinit klist remctl PKINIT
 acl timestamp autocreate backend-specific setacl enctypes enctype ktadd
 KDC appdefaults remctld Allbery uuencode getacl backend ACL's DES
+SPDX-License-Identifier FSFAP
 
 =head1 NAME
 
@@ -487,13 +488,15 @@ Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2007, 2008, 2010, 2011, 2012, 2013 The Board of Trustees of the
-Leland Stanford Junior University
+Copyright 2007-2008, 2010-2013 The Board of Trustees of the Leland
+Stanford Junior University
 
 Copying and distribution of this file, with or without modification, are
 permitted in any medium without royalty provided the copyright notice and
 this notice are preserved.  This file is offered as-is, without any
 warranty.
+
+SPDX-License-Identifier: FSFAP
 
 =head1 SEE ALSO
 
