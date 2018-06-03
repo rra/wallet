@@ -28,7 +28,7 @@
     "support": {
         "email": "eagle@eyrie.org",
         "github": "rra/wallet",
-        "listname": "kerberos@mit.edu",
+        "listname": "kerberos",
         "listurl": "https://mailman.mit.edu/mailman/listinfo/kerberos",
         "web": "https://www.eyrie.org/~eagle/software/wallet/",
     },

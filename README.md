@@ -305,9 +305,9 @@ The [wallet web page](https://www.eyrie.org/~eagle/software/wallet/) will
 always have the current version of this package, the current
 documentation, and pointers to any additional resources.
 
-New wallet releases are announced on the kerberos@mit.edu mailing list.
-To subscribe or see the list archives, go to the [kerberos@mit.edu
-management page](https://mailman.mit.edu/mailman/listinfo/kerberos).
+New wallet releases are announced on the kerberos mailing list.  To
+subscribe or see the list archives, go to the [kerberos list information
+page](https://mailman.mit.edu/mailman/listinfo/kerberos).
 
 For bug tracking, use the [issue tracker on
 GitHub](https://github.com/rra/wallet/issues).  However, please be aware
