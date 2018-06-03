@@ -4,6 +4,7 @@ client/prompt
 client/rekey
 docs/pod
 docs/pod-spelling
+docs/spdx-license-t
 perl/minimum-version
 perl/module-version
 perl/strict
@@ -14,6 +15,7 @@ portable/snprintf
 server/admin
 server/backend
 server/keytab
+style/obsolete-strings
 util/messages
 util/messages-krb5
 util/xmalloc

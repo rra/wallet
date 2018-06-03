@@ -1,10 +1,10 @@
 # Wallet schema for object flags.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2012, 2013
+# Copyright 2012-2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 package Wallet::Schema::Result::Flag;
 
@@ -13,7 +13,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 =head1 NAME
 

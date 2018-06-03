@@ -1,0 +1,24 @@
+                              wallet Thanks
+
+To Roland Schemers for the original idea that kicked off this project and
+for the original implementation of the leland_srvtab system, which was its
+primary inspiration.
+
+To Anton Ushakov for his prior work on Kerberos v5 synchronization and his
+enhancements to kasetkey to read a key from an existing srvtab.
+
+To Jeffrey Hutzelman for his review of the original wallet design and
+multiple useful discussions about what actions and configurations the
+wallet would need to support to be useful outside of Stanford.
+
+To Huaqing Zheng, Paul Pavelko, David Hoffman, and Paul Keser for their
+reviews of the wallet system design and comments on design decisions and
+security models.
+
+To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
+many of the wallet server-side reports, the initial wallet-rekey
+implementation, and lots of work on object and ACL types including nested
+ACLs.
+
+To Bill MacAllister for Wallet::Kadmin::AD and the implementation of
+keytab object types backed by Active Directory.

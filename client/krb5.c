@@ -6,10 +6,10 @@
  * client.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2007, 2008, 2010
+ * Copyright 2007-2008, 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *
- * See LICENSE for licensing terms.
+ * SPDX-License-Identifier: MIT
  */
 
 #include <config.h>

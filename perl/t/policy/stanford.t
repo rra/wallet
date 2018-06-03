@@ -7,10 +7,10 @@
 # behavior at Stanford.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2013, 2014
+# Copyright 2013-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 use 5.008;
 use strict;

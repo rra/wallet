@@ -170,7 +170,7 @@ DOCS=<<__END_OF_DOCS__
 
 =for stopwords
 Allbery DES Heimdal hostname keytab keytabs ktutil rekey rekeyable
-rekeying wallet-rekey wallet-rekey-periodic
+rekeying wallet-rekey wallet-rekey-periodic SPDX-License-Identifier MIT
 
 =head1 NAME
 
@@ -232,7 +232,7 @@ Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2013, 2014 The Board of Trustees of the Leland Stanford Junior
+Copyright 2013-2014 The Board of Trustees of the Leland Stanford Junior
 University
 
 Permission is hereby granted, free of charge, to any person obtaining a
@@ -253,6 +253,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
+SPDX-License-Identifier: MIT
+
 =head1 SEE ALSO
 
 ktutil(8), wallet(1), wallet-rekey(1)
@@ -260,3 +262,7 @@ ktutil(8), wallet(1), wallet-rekey(1)
 =cut
 
 __END_OF_DOCS__
+
+# Local Variables:
+# copyright-at-end-flag: t
+# End:

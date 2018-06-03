@@ -2,10 +2,10 @@
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2009, 2010, 2014
+# Copyright 2009-2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -19,7 +19,7 @@ use warnings;
 
 use Wallet::Config;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Utility functions for child classes
@@ -232,7 +232,7 @@ as binary data.  On failure, returns undef and sets the object error.
 kadmin(8), Wallet::Config(3), Wallet::Object::Keytab(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 

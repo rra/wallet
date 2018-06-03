@@ -4,7 +4,7 @@
 # Copyright 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 package Wallet::Schema::Result::Duo;
 
@@ -13,7 +13,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 =for stopwords
 keytab enctype

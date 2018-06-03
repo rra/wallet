@@ -30,6 +30,8 @@ Client:
  * Incorporate the wallet-rekey-periodic script (currently in contrib)
    into the package and teach it how to ignore foreign credentials.
 
+ * Pass realm into krb5_appdefault_* functions.
+
 Server Interface:
 
  * Provide a way to get history for deleted objects and ACLs.

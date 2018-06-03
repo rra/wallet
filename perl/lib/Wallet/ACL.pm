@@ -2,10 +2,10 @@
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2013, 2014, 2015
+# Copyright 2007-2008, 2010, 2013-2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -20,7 +20,7 @@ use warnings;
 use DateTime;
 use Wallet::Object::Base;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Constructors
@@ -732,7 +732,7 @@ caller should call error() to get the error message.
 Wallet::ACL::Base(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

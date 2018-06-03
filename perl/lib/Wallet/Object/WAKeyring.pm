@@ -2,10 +2,10 @@
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2012, 2013, 2014
+# Copyright 2012-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -24,7 +24,7 @@ use Wallet::Object::Base;
 use WebAuth 3.06 qw(WA_KEY_AES WA_AES_128);
 
 our @ISA     = qw(Wallet::Object::Base);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # File naming
@@ -358,7 +358,7 @@ underscores, and dashes replaced by "%" and the hex code of the character.
 Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8), WebAuth(3)
 
 This module is part of the wallet system. The current version is available
-from <http://www.eyrie.org/~eagle/software/wallet/>.
+from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

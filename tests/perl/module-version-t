@@ -9,17 +9,19 @@
 #
 # When given the --update option, instead fixes all of the Perl modules found
 # to have the correct version.
+#
+# SPDX-License-Identifier: MIT
 
 use 5.006;
 use strict;
 use warnings;
 
-# SOURCE may not be set if we're running this script manually to update
+# C_TAP_SOURCE may not be set if we're running this script manually to update
 # version numbers.  If it isn't, assume we're being run from the top of the
 # tree.
 BEGIN {
-    if ($ENV{SOURCE}) {
-        unshift(@INC, "$ENV{SOURCE}/tap/perl");
+    if ($ENV{C_TAP_SOURCE}) {
+        unshift(@INC, "$ENV{C_TAP_SOURCE}/tap/perl");
     } else {
         unshift(@INC, 'tests/tap/perl');
     }
@@ -178,6 +180,10 @@ SOFTWARE.
 =head1 SEE ALSO
 
 This module is maintained in the rra-c-util package.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/rra-c-util/>.
+available from L<https://www.eyrie.org/~eagle/software/rra-c-util/>.
 
 =cut
+
+# Local Variables:
+# copyright-at-end-flag: t
+# End:

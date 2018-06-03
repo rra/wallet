@@ -1,30 +1,32 @@
-#!/usr/bin/perl
+#!@PERL@
+# -*- perl -*-
 #
 # Password prompting tests for the wallet client.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2018 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 use strict;
 use warnings;
 
 use Test::More tests => 5;
 
-use lib "$ENV{SOURCE}/../perl/lib";
+use lib "$ENV{C_TAP_SOURCE}/../perl/lib";
 use Wallet::Admin;
 
-use lib "$ENV{SOURCE}/../perl/t/lib";
+use lib "$ENV{C_TAP_SOURCE}/../perl/t/lib";
 use Util;
 
 # cd to the correct directory.
-chdir "$ENV{SOURCE}" or die "Cannot chdir to $ENV{SOURCE}: $!\n";
+chdir "$ENV{C_TAP_SOURCE}" or die "Cannot chdir to $ENV{C_TAP_SOURCE}: $!\n";
 
 SKIP: {
     skip 'no password configuration', 5
-        unless -f "$ENV{BUILD}/config/password";
+        unless -f "$ENV{C_TAP_BUILD}/config/password";
     my $remctld = '@REMCTLD@';
     skip 'remctld not found', 5 unless $remctld;
     eval { require Expect };
@@ -37,21 +39,21 @@ SKIP: {
 
     # Spawn remctld and set up with a different ticket cache.
     unlink ('krb5cc_test', 'test-pid');
-    my $principal = contents ("$ENV{BUILD}/config/principal");
-    remctld_spawn ($remctld, $principal, "$ENV{BUILD}/config/keytab",
-                   "$ENV{SOURCE}/data/basic.conf");
+    my $principal = contents ("$ENV{C_TAP_BUILD}/config/principal");
+    remctld_spawn ($remctld, $principal, "$ENV{C_TAP_BUILD}/config/keytab",
+                   "$ENV{C_TAP_SOURCE}/data/basic.conf");
     $ENV{KRB5CCNAME} = 'krb5cc_test';
 
     # Read in the principal and password.
-    open (PASS, '<', "$ENV{BUILD}/config/password")
-        or die "Cannot open $ENV{BUILD}/config/password: $!\n";
+    open (PASS, '<', "$ENV{C_TAP_BUILD}/config/password")
+        or die "Cannot open $ENV{C_TAP_BUILD}/config/password: $!\n";
     my $user = <PASS>;
     my $password = <PASS>;
     close PASS;
     chomp ($user, $password);
 
     # Spawn wallet and check an invalid password.
-    my $wallet = Expect->spawn ("$ENV{BUILD}/../client/wallet", '-k',
+    my $wallet = Expect->spawn ("$ENV{C_TAP_BUILD}/../client/wallet", '-k',
                                 $principal, '-p', 14373, '-s', 'localhost',
                                 '-c', 'fake-wallet', '-u', $user, 'get',
                                 'keytab', 'service/fake-output');
@@ -62,7 +64,7 @@ SKIP: {
     $wallet->soft_close;
 
     # Now check a valid password.
-    $wallet = Expect->spawn ("$ENV{BUILD}/../client/wallet", '-k',
+    $wallet = Expect->spawn ("$ENV{C_TAP_BUILD}/../client/wallet", '-k',
                              $principal, '-p', 14373, '-s', 'localhost',
                              '-c', 'fake-wallet', '-u', $user, 'get',
                              'keytab', 'service/fake-output');

@@ -5,7 +5,7 @@
 # Copyright 2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -23,7 +23,7 @@ use Wallet::Config;
 use Wallet::Object::Base;
 
 our @ISA     = qw(Wallet::Object::Base);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # File naming
@@ -284,7 +284,7 @@ impose a length limitation on the file object name.
 remctld(8), Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 
