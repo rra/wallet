@@ -7,7 +7,7 @@
 # Copyright 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 use 5.006;
 use strict;
@@ -47,6 +47,10 @@ my $build = Module::Build->new(
         'Net::LDAP'                => 0,
         'Net::Remctl'              => 0,
         WebAuth                    => 0,
+    },
+    test_requires => {
+        'Crypt::GeneratePassword'  => 0,
+        'DateTime::Format::SQLite' => 0,
     },
 );
 

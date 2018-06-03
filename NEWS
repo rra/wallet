@@ -1,5 +1,57 @@
                        User-Visible wallet Changes
 
+wallet 1.4 (2018-06-03)
+
+    Substantial improvements to Active Directory support: Add a
+    contrib/ad-keytab script that assists with initial setup and examining
+    the Active Directory objects, rename some configuration variables to
+    reflect that they are relative distinguished names, add a
+    configuration variable for the base DN, make sure userPrincipalName is
+    created for all keytabs and use it to search, allow creation of a
+    service principal, and truncate and make unique long names in AD if
+    necessary.  This support should still be considered experimental.
+
+    When getting configuration values from krb5.conf, pass the default
+    local realm into the Kerberos appdefault functions.  This will produce
+    more correct results with krb5.conf files that specify wallet
+    configuration for multiple realms.
+
+    Remove stray references to strlcpy and strlcat that broke builds on
+    platforms where those functions are part of libc.  Thanks to Karl
+    Kornel for the report.
+
+    Detect the path to Perl during configure, allowing an override by
+    setting the PERL environment or configure variable, and use that path
+    for all Perl scripts.  This allows wallet to use a version of Perl at
+    a non-standard path.  Patches from Karl Kornel.
+
+    Rename the script to bootstrap from a Git checkout to bootstrap,
+    matching the emerging consensus in the Autoconf world.
+
+    Add SPDX-License-Identifier headers to all substantial source files.
+
+    Update to rra-c-util 7.2:
+
+    * Improve configure output for krb5-config testing.
+    * Define UINT32_MAX for systems that don't have it.
+    * Add SPDX-License-Identifier headers to all substantial source files.
+    * Fix new warnings from GCC 7 and Clang warnings.
+    * Require Test::Strict 0.25 or later to run those tests.
+    * Fix off-by-one error in return-value checks for snprintf.
+    * Use Autoconf to probe for supported warning flags.
+    * Fix running module-version-t -u with current versions of Perl.
+    * Use C_TAP_SOURCE and C_TAP_BUILD instead of SOURCE and BUILD.
+
+    Update to C TAP Harness 4.3:
+
+    * Add support for valgrind and libtool in test lists.
+    * Report test failures as left and right, not wanted and expected.
+    * Fix string comparisons with NULL pointers and the string "(null)".
+    * Add SPDX-License-Identifier headers to all substantial source files.
+    * Avoid zero-length realloc allocations in breallocarray.
+    * Fix new warnings from GCC 7 and Clang warnings.
+    * Use C_TAP_SOURCE and C_TAP_BUILD instead of SOURCE and BUILD.
+
 wallet 1.3 (2016-01-17)
 
     This release adds initial, experimental support for using Active

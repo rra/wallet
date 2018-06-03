@@ -2,10 +2,9 @@
 #
 # Tests for the external wallet ACL verifier.
 #
-# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 use strict;
 use warnings;

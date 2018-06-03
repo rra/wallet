@@ -5,7 +5,7 @@
 # Copyright 2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -20,7 +20,7 @@ use warnings;
 use Wallet::ACL::Base;
 
 our @ISA     = qw(Wallet::ACL::Base);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Interface
@@ -177,7 +177,7 @@ will generally come from the nested child ACL.
 Wallet::ACL(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

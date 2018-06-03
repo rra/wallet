@@ -2,10 +2,10 @@
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2012, 2013, 2014
+# Copyright 2012-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 package Wallet::Schema;
 
@@ -351,7 +351,7 @@ configuration.
 wallet-backend(8), Wallet::Config(3)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

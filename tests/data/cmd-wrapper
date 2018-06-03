@@ -3,6 +3,7 @@
 # Wrapper around the standard wallet-backend script that sets the Perl INC
 # path and the WALLET_CONFIG environment variable appropriately.
 
-WALLET_CONFIG="$SOURCE/data/wallet.conf"
+WALLET_CONFIG="$C_TAP_SOURCE/data/wallet.conf"
 export WALLET_CONFIG
-exec perl -I"$SOURCE/../perl/lib" "$SOURCE/../server/wallet-backend" -q "$@"
+exec perl -I"$C_TAP_SOURCE/../perl/lib" \
+    "$C_TAP_SOURCE/../server/wallet-backend" -q "$@"

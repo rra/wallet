@@ -2,10 +2,10 @@
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2008, 2009, 2010, 2011, 2012, 2013, 2014
+# Copyright 2008-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -20,7 +20,7 @@ use warnings;
 use Wallet::ACL;
 use Wallet::Schema;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 # The last non-DBIx::Class version of Wallet::Schema.  If a database has no
 # DBIx::Class versioning, we artificially install this version number before
@@ -375,7 +375,7 @@ much as possible.  Returns true on success and false on failure.
 wallet-admin(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

@@ -2,10 +2,11 @@
  * The client program for the wallet system.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2006, 2007, 2008, 2010, 2014
+ * Copyright 2018 Russ Allbery <eagle@eyrie.org>
+ * Copyright 2006-2008, 2010, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
- * See LICENSE for licensing terms.
+ * SPDX-License-Identifier: MIT
  */
 
 #include <config.h>
@@ -44,7 +45,7 @@ Options:\n\
 /*
  * Display the usage message for wallet.
  */
-static void
+static void __attribute__((__noreturn__))
 usage(int status)
 {
     fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT,
@@ -75,6 +76,7 @@ main(int argc, char *argv[])
     message_program_name = "wallet";
 
     /* Initialize default configuration. */
+    memset(&options, 0, sizeof(options));
     retval = krb5_init_context(&ctx);
     if (retval != 0)
         die_krb5(ctx, retval, "cannot initialize Kerberos");
@@ -93,13 +95,12 @@ main(int argc, char *argv[])
             break;
         case 'h':
             usage(0);
-            break;
         case 'p':
             errno = 0;
             tmp = strtol(optarg, &end, 10);
             if (tmp <= 0 || tmp > 65535 || *end != '\0')
                 die("invalid port number %s", optarg);
-            options.port = tmp;
+            options.port = (unsigned short) tmp;
             break;
         case 'S':
             srvtab = optarg;
@@ -113,10 +114,8 @@ main(int argc, char *argv[])
         case 'v':
             printf("%s\n", PACKAGE_STRING);
             exit(0);
-            break;
         default:
             usage(1);
-            break;
         }
     }
     argc -= optind;

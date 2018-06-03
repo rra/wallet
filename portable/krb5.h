@@ -17,17 +17,19 @@
  * krb5_free_unparsed_name() for both APIs since it's the most specific call.
  *
  * The canonical version of this file is maintained in the rra-c-util package,
- * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
+ * which can be found at <https://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2015, 2017 Russ Allbery <eagle@eyrie.org>
+ * Copyright 2010-2014
+ *     The Board of Trustees of the Leland Stanford Junior University
  *
- * The authors hereby relinquish any claim to any copyright that they may have
- * in this work, whether granted under contract or by operation of law or
- * international treaty, and hereby commit to the public, at large, that they
- * shall not, at any time in the future, seek to enforce any copyright in this
- * work against any person or entity, or prevent any person or entity from
- * copying, publishing, distributing or creating derivative works of this
- * work.
+ * Copying and distribution of this file, with or without modification, are
+ * permitted in any medium without royalty provided the copyright notice and
+ * this notice are preserved.  This file is offered as-is, without any
+ * warranty.
+ *
+ * SPDX-License-Identifier: FSFAP
  */
 
 #ifndef PORTABLE_KRB5_H
@@ -55,6 +57,27 @@ BEGIN_DECLS
 
 /* Default to a hidden visibility for all portability functions. */
 #pragma GCC visibility push(hidden)
+
+/*
+ * AIX included Kerberos includes the profile library but not the
+ * krb5_appdefault functions, so we provide replacements that we have to
+ * prototype.
+ */
+#ifndef HAVE_KRB5_APPDEFAULT_STRING
+void krb5_appdefault_boolean(krb5_context, const char *, const krb5_data *,
+                             const char *, int, int *);
+void krb5_appdefault_string(krb5_context, const char *, const krb5_data *,
+                            const char *, const char *, char **);
+#endif
+
+/*
+ * MIT-specific.  The Heimdal documentation says to use free(), but that
+ * doesn't actually make sense since the memory is allocated inside the
+ * Kerberos library.  Use krb5_xfree instead.
+ */
+#ifndef HAVE_KRB5_FREE_DEFAULT_REALM
+# define krb5_free_default_realm(c, r) krb5_xfree(r)
+#endif
 
 /*
  * krb5_{get,free}_error_message are the preferred APIs for both current MIT

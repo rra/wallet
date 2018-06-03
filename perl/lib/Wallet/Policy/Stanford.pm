@@ -2,10 +2,10 @@
 #
 # Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2013, 2014, 2015
+# Copyright 2013-2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -26,7 +26,7 @@ our (@EXPORT_OK, $VERSION);
 # against circular module loading (not that we load any modules, but
 # consistency is good).
 BEGIN {
-    $VERSION   = '1.03';
+    $VERSION   = '1.04';
     @EXPORT_OK = qw(default_owner verify_name is_for_host);
 }
 
@@ -538,11 +538,11 @@ configuration file from this module or wrapped to apply additional rules.
 
 Wallet::Config(3)
 
-The L<Stanford policy|http://www.eyrie.org/~eagle/software/wallet/naming.html>
+The L<Stanford policy|https://www.eyrie.org/~eagle/software/wallet/naming.html>
 implemented by this module.
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

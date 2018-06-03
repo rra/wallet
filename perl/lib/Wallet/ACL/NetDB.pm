@@ -5,7 +5,7 @@
 # Copyright 2007, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -21,7 +21,7 @@ use Wallet::ACL::Base;
 use Wallet::Config;
 
 our @ISA     = qw(Wallet::ACL::Base);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # Interface
@@ -252,10 +252,10 @@ wallet-backend(8)
 
 NetDB is a free software system for managing DNS, DHCP, and related
 machine information for large organizations.  For more information on
-NetDB, see L<http://www.stanford.edu/group/networking/netdb/>.
+NetDB, see L<https://web.stanford.edu/group/networking/netdb/>.
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHOR
 

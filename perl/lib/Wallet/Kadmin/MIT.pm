@@ -3,10 +3,10 @@
 # Written by Russ Allbery <eagle@eyrie.org>
 # Pulled into a module by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2009, 2010, 2014
+# Copyright 2007-2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 ##############################################################################
 # Modules and declarations
@@ -23,7 +23,7 @@ use Wallet::Config;
 use Wallet::Kadmin;
 
 our @ISA     = qw(Wallet::Kadmin);
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 ##############################################################################
 # kadmin Interaction
@@ -312,7 +312,7 @@ kadmin(8), Wallet::Config(3), Wallet::Kadmin(3),
 Wallet::Object::Keytab(3), wallet-backend(8)
 
 This module is part of the wallet system.  The current version is
-available from L<http://www.eyrie.org/~eagle/software/wallet/>.
+available from L<https://www.eyrie.org/~eagle/software/wallet/>.
 
 =head1 AUTHORS
 

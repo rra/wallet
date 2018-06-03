@@ -3,10 +3,10 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2007, 2008, 2010, 2011, 2012, 2013, 2014
+# Copyright 2007-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 use strict;
 use warnings;

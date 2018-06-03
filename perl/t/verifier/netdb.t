@@ -7,10 +7,11 @@
 # environments.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2018 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 use strict;
 use warnings;
@@ -20,11 +21,16 @@ use Test::More tests => 5;
 use Wallet::ACL::NetDB;
 
 use lib 't/lib';
+use Test::RRA qw(skip_unless_author);
 use Util;
+
+# This test requires a specific environment setup, so only run it for package
+# maintainers.
+skip_unless_author('LDAP verifier tests');
 
 my $netdb = 'netdb-node-roles-rc.stanford.edu';
 my $host  = 'windlord.stanford.edu';
-my $user  = 'rra@stanford.edu';
+my $user  = 'jonrober@stanford.edu';
 
 # Determine the local principal.
 my $klist = `klist 2>&1` || '';

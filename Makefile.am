@@ -1,11 +1,11 @@
 # Automake makefile for wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2016 Russ Allbery <eagle@eyrie.org>
-# Copyright 2006, 2007, 2008, 2010, 2013, 2014
+# Copyright 2016, 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2006-2008, 2010, 2013-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# SPDX-License-Identifier: MIT
 
 # These variables exist only for the use of the Debian packaging and similar
 # situations and aren't normally set.  We want to honor them if they're set
@@ -100,20 +100,24 @@ PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	    \
 	perl/t/policy perl/t/style perl/t/util perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	    \
-	client/wallet-rekey.pod config/allow-extract config/keytab	    \
-	config/keytab.acl config/wallet config/wallet-report.acl	    \
-	docs/design contrib/README contrib/commerzbank/wallet-history	    \
+EXTRA_DIST = .gitignore .travis.yml LICENSE README.md bootstrap		    \
+	client/wallet.pod client/wallet-rekey.pod config/allow-extract	    \
+	config/keytab config/keytab.acl config/wallet			    \
+	config/wallet-report.acl docs/design contrib/README		    \
+	contrib/ad-keytab contrib/commerzbank/wallet-history		    \
 	contrib/convert-srvtab-db contrib/used-principals		    \
 	contrib/wallet-contacts contrib/wallet-rekey-periodic		    \
 	contrib/wallet-rekey-periodic.8 contrib/wallet-summary		    \
 	contrib/wallet-summary.8 contrib/wallet-unknown-hosts		    \
 	contrib/wallet-unknown-hosts.8 docs/design-acl docs/design-api	    \
-	docs/netdb-role-api docs/notes docs/objects-and-schemes docs/setup  \
-	docs/stanford-naming examples/stanford.conf tests/HOWTO tests/TESTS \
+	docs/metadata docs/netdb-role-api docs/notes			    \
+	docs/objects-and-schemes docs/setup docs/stanford-naming	    \
+	examples/stanford.conf server/keytab-backend.in			    \
+	server/wallet-admin.in server/wallet-backend.in			    \
+	server/wallet-report.in tests/README tests/TESTS		    \
 	tests/config/README tests/data/allow-extract tests/data/basic.conf  \
-	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/fake-data	    \
-	tests/data/fake-kadmin tests/data/fake-keytab			    \
+	tests/data/cmd-fake tests/data/cmd-wrapper tests/data/cppcheck.supp \
+	tests/data/fake-data tests/data/fake-kadmin tests/data/fake-keytab  \
 	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		    \
 	tests/data/fake-keytab-merge tests/data/fake-keytab-old		    \
 	tests/data/fake-keytab-partial					    \
@@ -121,20 +125,21 @@ EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	    \
 	tests/data/fake-keytab-unknown tests/data/fake-srvtab		    \
 	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf    \
 	tests/docs/pod-spelling-t tests/docs/pod-t			    \
-	tests/perl/minimum-version-t tests/perl/module-version-t	    \
-	tests/perl/strict-t tests/server/admin-t tests/server/backend-t	    \
-	tests/server/keytab-t tests/server/report-t tests/tap/kerberos.sh   \
-	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			    \
-	tests/tap/perl/Test/RRA/Automake.pm				    \
+	tests/docs/spdx-license-t tests/perl/minimum-version-t		    \
+	tests/perl/module-version-t tests/perl/strict-t			    \
+	tests/server/admin-t tests/server/backend-t tests/server/keytab-t   \
+	tests/server/report-t tests/style/obsolete-strings-t		    \
+	tests/tap/kerberos.sh tests/tap/libtap.sh			    \
+	tests/tap/perl/Test/RRA.pm tests/tap/perl/Test/RRA/Automake.pm	    \
 	tests/tap/perl/Test/RRA/Config.pm				    \
 	tests/tap/perl/Test/RRA/ModuleVersion.pm tests/tap/remctl.sh	    \
 	tests/util/xmalloc-t $(PERL_FILES)
 
 # Supporting convenience libraries used by other targets.
 noinst_LIBRARIES = portable/libportable.a util/libutil.a
-portable_libportable_a_SOURCES = portable/dummy.c portable/krb5-extra.c	\
-	portable/krb5.h portable/macros.h portable/stdbool.h		\
-	portable/system.h portable/uio.h
+portable_libportable_a_SOURCES = portable/dummy.c portable/krb5.h	\
+	portable/macros.h portable/stdbool.h portable/system.h		\
+	portable/uio.h
 portable_libportable_a_CPPFLAGS = $(KRB5_CPPFLAGS)
 portable_libportable_a_LIBADD = $(LIBOBJS)
 util_libutil_a_SOURCES = util/macros.h util/messages-krb5.c		    \
@@ -150,7 +155,7 @@ client_libwallet_a_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
 
 # The client and server programs.
 bin_PROGRAMS = client/wallet client/wallet-rekey
-dist_sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
+sbin_SCRIPTS = server/keytab-backend server/wallet-admin \
 	server/wallet-backend server/wallet-report
 client_wallet_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
 client_wallet_LDFLAGS = $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS)
@@ -180,42 +185,38 @@ dist_pkgdata_DATA = perl/sql/Wallet-Schema-0.07-0.08-MySQL.sql	\
 	perl/sql/Wallet-Schema-0.09-PostgreSQL.sql		\
 	perl/sql/Wallet-Schema-0.09-SQLite.sql
 
-# A set of flags for warnings.  Add -O because gcc won't find some warnings
-# without optimization turned on.  Desirable warnings that can't be turned
-# on due to other problems:
-#
-#     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
-#
-# Last checked against gcc 4.8.2 (2014-04-12).  -D_FORTIFY_SOURCE=2 enables
-# warn_unused_result attribute markings on glibc functions on Linux, which
-# catches a few more issues.
-if WARNINGS_GCC
-    WARNINGS = -g -O -fstrict-overflow -fstrict-aliasing -D_FORTIFY_SOURCE=2 \
-        -Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self -Wswitch-enum    \
-        -Wstrict-overflow=5 -Wmissing-format-attribute -Wfloat-equal         \
-        -Wdeclaration-after-statement -Wshadow -Wpointer-arith               \
-        -Wbad-function-cast -Wcast-align -Wwrite-strings -Wjump-misses-init  \
-        -Wlogical-op -Wstrict-prototypes -Wold-style-definition              \
-        -Wmissing-prototypes -Wnormalized=nfc -Wpacked -Wredundant-decls     \
-        -Wnested-externs -Winline -Wvla -Werror
-endif
-if WARNINGS_CLANG
-    WARNINGS = -Weverything -Wno-padded
-endif
-
+# Separate target for a human to request building everything with as many
+# compiler warnings enabled as possible.
 warnings:
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)' KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)'
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)' \
+	$(MAKE) V=0 CFLAGS='$(WARNINGS_CFLAGS) $(AM_CFLAGS)' \
+	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)'
+	$(MAKE) V=0 CFLAGS='$(WARNINGS_CFLAGS) $(AM_CFLAGS)' \
 	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)' $(check_PROGRAMS)
 
 # Remove some additional files.
-CLEANFILES = perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm \
-	perl/t/lib/Test/RRA/Config.pm
+CLEANFILES = perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm	\
+	perl/t/lib/Test/RRA/Config.pm server/keytab-backend		\
+	server/wallet-admin server/wallet-backend server/wallet-report
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 build-aux/compile		     \
 	build-aux/depcomp build-aux/install-sh build-aux/missing	     \
 	client/wallet.1 config.h.in config.h.in~ configure		     \
 	contrib/wallet-report.8 server/keytab-backend.8			     \
 	server/wallet-admin.8 server/wallet-backend.8 server/wallet-report.8
+
+# For each of the Perl scripts, we need to fill in the path to the Perl
+# binary that was located during configuration.
+server/keytab-backend: $(srcdir)/server/keytab-backend.in Makefile
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/keytab-backend.in >$@
+	chmod a+x $@
+server/wallet-admin: $(srcdir)/server/wallet-admin.in Makefile
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/wallet-admin.in >$@
+	chmod a+x $@
+server/wallet-backend: $(srcdir)/server/wallet-backend.in Makefile
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/wallet-backend.in >$@
+	chmod a+x $@
+server/wallet-report: $(srcdir)/server/wallet-report.in Makefile
+	sed 's|\@PERL\@|$(PERL)|' <$(srcdir)/server/wallet-report.in >$@
+	chmod a+x $@
 
 # Take appropriate actions in the Perl directory as well.  We don't want to
 # always build the Perl directory in all-local, since otherwise Automake does
@@ -236,7 +237,7 @@ perl/blib/lib/Wallet/Config.pm: $(srcdir)/perl/lib/Wallet/Config.pm
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA.pm perl/t/lib/Test/
 	$(INSTALL_DATA) $(srcdir)/tests/tap/perl/Test/RRA/Config.pm \
 	    perl/t/lib/Test/RRA/
-	cd perl && perl Build.PL $(WALLET_PERL_FLAGS)
+	cd perl && $(PERL) Build.PL $(WALLET_PERL_FLAGS)
 	cd perl && ./Build
 
 # This is a really ugly hack to only honor prefix when running make install
@@ -254,7 +255,6 @@ install-data-local:
 	esac ;								\
 	cd perl && ./Build install $$flags --destdir '$(DESTDIR)'
 
-# ExtUtils::MakeMaker really likes moving the Makefile aside.
 clean-local:
 	set -e; if [ -f "perl/Build" ] ; then		\
 	    cd perl && ./Build realclean ;		\
@@ -275,8 +275,8 @@ check_PROGRAMS = tests/runtests tests/portable/asprintf-t	\
 	tests/portable/mkstemp-t tests/portable/setenv-t	\
 	tests/portable/snprintf-t tests/util/messages-krb5-t	\
 	tests/util/messages-t tests/util/xmalloc
-tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
-	-DBUILD='"$(abs_top_builddir)/tests"'
+tests_runtests_CPPFLAGS = -DC_TAP_SOURCE='"$(abs_top_srcdir)/tests"' \
+	-DC_TAP_BUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
 tests_tap_libtap_a_CPPFLAGS = -I$(abs_top_srcdir)/tests $(KRB5_CPPFLAGS)
 tests_tap_libtap_a_SOURCES = tests/tap/basic.c tests/tap/basic.h	\
@@ -309,6 +309,12 @@ check-local: $(check_PROGRAMS)
 	cd tests && ./runtests -l $(abs_top_srcdir)/tests/TESTS
 	@echo ''
 	cd perl && ./Build test
+
+# Used by maintainers to check the source code with cppcheck.
+check-cppcheck:
+	cd $(abs_top_srcdir) && cppcheck -q --error-exitcode=2	\
+	    --suppressions-list=tests/data/cppcheck.supp	\
+	    --enable=warning,performance,portability,style .
 
 # Alas, we have to disable this check because there's no way to do an
 # uninstall from Perl.

@@ -1,13 +1,11 @@
-                            wallet release 1.3
+                                wallet 1.4
                      (secure data management system)
+               Maintained by Russ Allbery <eagle@eyrie.org>
 
-                Written by Russ Allbery <eagle@eyrie.org>
-
-  Copyright 2014, 2016 Russ Allbery <eagle@eyrie.org>.  Copyright 2006,
-  2007, 2008, 2009, 2010, 2012, 2013, 2014 The Board of Trustees of the
-  Leland Stanford Junior University.  This software is distributed under a
-  BSD-style license.  Please see the section LICENSE below for more
-  information.
+  Copyright 2014, 2016, 2018 Russ Allbery <eagle@eyrie.org>.  Copyright
+  2006-2010, 2012-2014 The Board of Trustees of the Leland Stanford Junior
+  University.  This software is distributed under a BSD-style license.
+  Please see the section LICENSE below for more information.
 
 BLURB
 
@@ -43,38 +41,37 @@ DESCRIPTION
   infrastructure.  Supported ACL types include Kerberos principal names,
   regexes matching Kerberos principal names, and LDAP attribute checks.
 
-  Currently, the object types supported are simple files, Kerberos
-  keytabs, WebAuth keyrings, and Duo integrations.  By default, whenever a
-  Kerberos keytab object is retrieved from the wallet, the key is changed
-  in the Kerberos KDC and the wallet returns a keytab for the new key.
-  However, a keytab object can also be configured to preserve the existing
-  keys when retrieved.  Included in the wallet distribution is a script
-  that can be run via remctl on an MIT Kerberos KDC to extract the
-  existing key for a principal, and the wallet system will use that
+  Currently, the object types supported are simple files, passwords,
+  Kerberos keytabs, WebAuth keyrings, and Duo integrations.  By default,
+  whenever a Kerberos keytab object is retrieved from the wallet, the key
+  is changed in the Kerberos KDC and the wallet returns a keytab for the
+  new key.  However, a keytab object can also be configured to preserve
+  the existing keys when retrieved.  Included in the wallet distribution
+  is a script that can be run via remctl on an MIT Kerberos KDC to extract
+  the existing key for a principal, and the wallet system will use that
   interface to retrieve the current key if the unchanging flag is set on a
   Kerberos keytab object for MIT Kerberos.  (Heimdal doesn't require any
   special support.)
 
 REQUIREMENTS
 
-  The wallet client is written in C and builds against the C remctl
-  libraries.  You will have to install the remctl client libraries in
-  order to build it.  remctl can be obtained from:
+  The wallet client requires the C remctl [1] client library and a
+  Kerberos library.  It will build with either MIT Kerberos or Heimdal.
 
-      http://www.eyrie.org/~eagle/software/remctl/
+  [1] https://www.eyrie.org/~eagle/software/remctl/
 
-  The wallet client will build with either MIT Kerberos or Heimdal.
+  The wallet server is written in Perl and requires Perl 5.8.0 or later
+  plus the following Perl modules:
 
-  The wallet server is written in Perl and requires Perl 5.6.0 or later
-  plus Module::Build to build.  It uses DBIx::Class and DBI to talk to a
-  database, and therefore the DBIx::Class and DBI modules (and their
-  dependencies) and a DBD module for the database it will use must be
-  installed.  The Date::Parse (part of the TimeDate distribution) and
-  DateTime modules are required for date handling, and the SQL::Translator
-  Perl module is also required for schema deployment and database
-  upgrades.  You will also need the DateTime::Format::* module
-  corresponding to your DBD module (such as DateTime::Format::SQLite or
-  DateTime::Format::PG).
+  * Date::Parse (part of the TimeDate distribution)
+  * DBI
+  * DBIx::Class
+  * Module::Build
+  * SQL::Translator
+
+  You will also need a DBD Perl module for the database backend that you
+  intend to use, and the DateTime::Format::* module corresponding to that
+  DBD module (such as DateTime::Format::SQLite or DateTime::Format::PG).
 
   Currently, the server has only been tested against SQLite 3, MySQL 5,
   and PostgreSQL, and prebuilt SQL files (for database upgrades) are only
@@ -87,20 +84,12 @@ REQUIREMENTS
   translates the actions in that protocol into calls to the Wallet::Server
   Perl object.
 
-  The file object support in the wallet server requires the Digest::MD5
-  Perl module, which comes with recent versions of Perl and is available
-  on CPAN for older versions.
-
-  The keytab support in the wallet server supports either Heimdal or MIT
-  Kerberos KDCs and has exeprimental support for Active Directory.  The
+  The keytab support in the wallet server supports Heimdal and MIT
+  Kerberos KDCs and has experimental support for Active Directory.  The
   Heimdal support requires the Heimdal::Kadm5 Perl module.  The MIT
   Kerberos support requires the MIT Kerberos kadmin client program be
   installed.  The Active Directory support requires the Net::LDAP,
   Authen::SASL, and IPC::Run Perl modules and the msktutil client program.
-  In all cases, wallet also requires that the wallet server have a keytab
-  for a principal with appropriate access to create, modify, and delete
-  principals from the KDC (as configured in kadm5.acl on an MIT Kerberos
-  KDC).
 
   To support the unchanging flag on keytab objects with an MIT Kerberos
   KDC, the Net::Remctl Perl module (shipped with remctl) must be installed
@@ -118,29 +107,154 @@ REQUIREMENTS
   The password object support in the wallet server requires the
   Crypt::GeneratePassword Perl module.
 
-  To support the LDAP attribute ACL verifier, the Authen::SASL and
-  Net::LDAP Perl modules must be installed on the server.  This verifier
-  only works with LDAP servers that support GSS-API binds.
+  The LDAP attribute ACL verifier requires the Authen::SASL and Net::LDAP
+  Perl modules.  This verifier only works with LDAP servers that support
+  GSS-API binds.
 
-  To support the NetDB ACL verifier (only of interest at sites using NetDB
-  to manage DNS), the Net::Remctl Perl module must be installed on the
-  server.
+  The NetDB ACL verifier (only of interest at sites using NetDB to manage
+  DNS) requires the Net::Remctl Perl module.
 
-  To run the full test suite, all of the above software requirements must
-  be met.  The full test suite also requires that remctld be installed and
-  available on the user's path or in /usr/local/sbin or /usr/sbin, that
-  sqlite3 be installed and available on the user's path, that test cases
-  can run services on and connect to port 14373 on 127.0.0.1, and that
-  kinit and either kvno or kgetcred (which come with Kerberos) be
-  installed and available on the user's path.  The full test suite also
-  requires a local keytab and some additional configuration.
+  To bootstrap from a Git checkout, or if you change the Automake files
+  and need to regenerate Makefile.in, you will need Automake 1.11 or
+  later.  For bootstrap or if you change configure.ac or any of the m4
+  files it includes and need to regenerate configure or config.h.in, you
+  will need Autoconf 2.64 or later.  Perl is also required to generate
+  manual pages from a fresh Git checkout.
+
+BUILDING AND INSTALLATION
+
+  You can build and install wallet with the standard commands:
+
+      ./configure
+      make
+      make install
+
+  If you are building from a Git clone, first run ./bootstrap in the
+  source directory to generate the build files.  make install will
+  probably have to be done as root.  Building outside of the source
+  directory is also supported, if you wish, by creating an empty directory
+  and then running configure with the correct relative path.
+
+  If you are upgrading the wallet server from an earlier installed
+  version, run wallet-admin upgrade after installation to upgrade the
+  database schema.  See the wallet-admin manual page for more information.
+
+  You can pass the --with-wallet-server and --with-wallet-port options to
+  configure to compile in a default wallet server and port.  If no port is
+  set, the remctl default port is used.  If no server is set, the server
+  must be specified either in krb5.conf configuration or on the wallet
+  command line or the client will exit with an error.
+
+  By default, wallet uses whatever Perl executable exists in the current
+  PATH.  That Perl's path is what the server scripts will use, and that
+  Perl's configuration will be used to determine where the server Perl
+  modules will be installed.
+
+  To specify a particular Perl executable to use, either set the PERL
+  environment variable or pass it to configure like:
+
+      ./configure PERL=/path/to/my/perl
+
+  By default, wallet installs itself under /usr/local except for the
+  server Perl modules, which are installed into whatever default site
+  module path is used by your Perl installation.  To change the
+  installation location of the files other than the Perl modules, pass the
+  --prefix=DIR argument to configure.
+
+  If remctl was installed in a path not normally searched by your
+  compiler, you must specify its installation prefix to configure with the
+  --with-remctl=DIR option, or alternately set the path to the include
+  files and libraries separately with --with-remctl-include=DIR and
+  --with-remctl-lib=DIR.
+
+  Normally, configure will use krb5-config to determine the flags to use
+  to compile with your Kerberos libraries.  To specify a particular
+  krb5-config script to use, either set the PATH_KRB5_CONFIG environment
+  variable or pass it to configure like:
+
+      ./configure PATH_KRB5_CONFIG=/path/to/krb5-config
+
+  If krb5-config isn't found, configure will look for the standard
+  Kerberos libraries in locations already searched by your compiler.  If
+  the the krb5-config script first in your path is not the one
+  corresponding to the Kerberos libraries you want to use, or if your
+  Kerberos libraries and includes aren't in a location searched by default
+  by your compiler, you need to specify a different Kerberos installation
+  root via --with-krb5=PATH.  For example:
+
+      ./configure --with-krb5=/usr/pubsw
+
+  You can also individually set the paths to the include directory and the
+  library directory with --with-krb5-include and --with-krb5-lib.  You may
+  need to do this if Autoconf can't figure out whether to use lib, lib32,
+  or lib64 on your platform.
+
+  To not use krb5-config and force library probing even if there is a
+  krb5-config script on your path, set PATH_KRB5_CONFIG to a nonexistent
+  path:
+
+      ./configure PATH_KRB5_CONFIG=/nonexistent
+
+  krb5-config is not used and library probing is always done if either
+  --with-krb5-include or --with-krb5-lib are given.
+
+  Pass --enable-silent-rules to configure for a quieter build (similar to
+  the Linux kernel).  Use make warnings instead of make to build with full
+  compiler warnings (requires either GCC or Clang and may require a
+  relatively current version of the compiler).
+
+  You can pass the --enable-reduced-depends flag to configure to try to
+  minimize the shared library dependencies encoded in the binaries.  This
+  omits from the link line all the libraries included solely because other
+  libraries depend on them and instead links the programs only against
+  libraries whose APIs are called directly.  This will only work with
+  shared libraries and will only work on platforms where shared libraries
+  properly encode their own dependencies (this includes most modern
+  platforms such as all Linux).  It is intended primarily for building
+  packages for Linux distributions to avoid encoding unnecessary shared
+  library dependencies that make shared library migrations more difficult.
+  If none of the above made any sense to you, don't bother with this flag.
+
+TESTING
+
+  The wallet comes with a comprehensive test suite, but it requires some
+  configuration in order to test anything other than low-level utility
+  functions.  To enable the full test suite, follow the instructions in:
+
+  * tests/config/README
+  * perl/t/data/README
+
+  Now, you can run the test suite with:
+
+      make check
+
+  If a test fails, you can run a single test with verbose output via:
+
+      tests/runtests -o <name-of-test>
+
+  Do this instead of running the test program directly since it will
+  ensure that necessary environment variables are set up.
+
+  The test suite requires remctld be installed and available in the user's
+  path or in /usr/local/sbin or /usr/sbin; and that sqlite3, kinit, and
+  either kvno or kgetcred be installed and available on the user's path.
+  The test suite will also need to be able to bind to 127.0.0.1 on ports
+  11119 and 14373 to test client/server network interactions.
+
+  The test suite uses a SQLite database for server-side and end-to-end
+  testing and therefore requires the DBD::SQLite and
+  DateTime::Format::SQLite Perl modules.
+
+  All of the requirements listed above will be required to run the full
+  test suite of server functionality, but tests will be selectively
+  skipped if their requirements aren't found.
 
   The following additional Perl modules will be used if present:
 
-      Test::MinimumVersion
-      Test::Pod
-      Test::Spelling
-      Test::Strict
+  * Test::MinimumVersion
+  * Test::Pod
+  * Test::Spelling
+  * Test::Strict
 
   All are available on CPAN.  Those tests will be skipped if the modules
   are not available.
@@ -152,135 +266,7 @@ REQUIREMENTS
   many problems, set the environment variable AUTHOR_TESTING to a true
   value.
 
-  To bootstrap from a Git checkout, or if you change the Automake files
-  and need to regenerate Makefile.in, you will need Automake 1.11 or
-  later.  For bootstrap or if you change configure.ac or any of the m4
-  files it includes and need to regenerate configure or config.h.in, you
-  will need Autoconf 2.64 or later.
-
-BUILD AND INSTALLATION
-
-  You can build and install wallet with the standard commands:
-
-      ./configure
-      make
-      make install
-
-  If you are upgrading the wallet server from an earlier installed
-  version, run wallet-admin upgrade after installation to upgrade the
-  database schema.  See the wallet-admin manual page for more information.
-
-  Pass --enable-silent-rules to configure for a quieter build (similar to
-  the Linux kernel).  Use make warnings instead of make to build with full
-  GCC compiler warnings (requires a relatively current version of GCC).
-
-  The last step will probably have to be done as root.  Currently, this
-  always installs both the client and the server.
-
-  You can pass the --with-wallet-server and --with-wallet-port options to
-  configure to compile in a default wallet server and port.  If no port is
-  set, the remctl default port is used.  If no server is set, the server
-  must be specified either in krb5.conf configuration or on the wallet
-  command line or the client will exit with an error.
-
-  By default, wallet installs itself under /usr/local except for the
-  server Perl modules, which are installed into whatever default site
-  module path is used by your Perl installation.  To change the
-  installation location of the files other than the Perl modules, pass the
-  --prefix=DIR argument to configure.  To change the Perl module
-  installation location, you will need to run perl on Makefile.PL in the
-  perl subdirectory of the build tree with appropriate options and rebuild
-  the module after running make and before running make install.
-
-  If remctl was installed in a path not normally searched by your
-  compiler, you must specify its installation prefix to configure with the
-  --with-remctl=DIR option, or alternately set the path to the include
-  files and libraries separately with --with-remctl-include=DIR and
-  --with-remctl-lib=DIR.
-
-  Normally, configure will use krb5-config to determine the flags to use
-  to compile with your Kerberos libraries.  If krb5-config isn't found, it
-  will look for the standard Kerberos libraries in locations already
-  searched by your compiler.  If the the krb5-config script first in your
-  path is not the one corresponding to the Kerberos libraries you want to
-  use or if your Kerberos libraries and includes aren't in a location
-  searched by default by your compiler, you need to specify
-  --with-krb5=PATH and --with-gssapi=PATH:
-
-      ./configure --with-krb5=/usr/pubsw --with-gssapi=/usr/pubsw
-
-  You can also individually set the paths to the include directory and the
-  library directory with --with-krb5-include, --with-krb5-lib,
-  --with-gssapi-include, and --with-gssapi-lib.  You may need to do this
-  if Autoconf can't figure out whether to use lib, lib32, or lib64 on your
-  platform.  Note that these settings aren't used if a krb5-config script
-  is found.
-
-  To specify a particular krb5-config script to use, either set the
-  KRB5_CONFIG environment variable or pass it to configure like:
-
-      ./configure KRB5_CONFIG=/path/to/krb5-config
-
-  To not use krb5-config and force library probing even if there is a
-  krb5-config script on your path, set KRB5_CONFIG to a nonexistent path:
-
-      ./configure KRB5_CONFIG=/nonexistent
-
-  You can build wallet in a different directory from the source if you
-  wish.  To do this, create a new empty directory, cd to that directory,
-  and then give the path to configure when running configure.  Everything
-  else should work as above.
-
-  You can pass the --enable-reduced-depends flag to configure to try to
-  minimize the shared library dependencies encoded in the binaries.  This
-  omits from the link line all the libraries included solely because the
-  Kerberos libraries depend on them and instead links the programs only
-  against libraries whose APIs are called directly.  This will only work
-  with shared Kerberos libraries and will only work on platforms where
-  shared libraries properly encode their own dependencies (such as Linux).
-  It is intended primarily for building packages for Linux distributions
-  to avoid encoding unnecessary shared library dependencies that make
-  shared library migrations more difficult.  If none of the above made any
-  sense to you, don't bother with this flag.
-
-TESTING
-
-  The wallet system comes with an extensive test suite which you can run
-  with:
-
-      make check
-
-  In order to test the client in a meaningful way and test the keytab
-  support in the server, however, you will need to do some preparatory
-  work before running the test suite.  Review the files:
-
-      tests/config/README
-      perl/t/data/README
-
-  and follow the instructions in those files to enable the full test
-  suite.
-
-  The test suite also requires some additional software be installed that
-  isn't otherwise used by the wallet.  See REQUIREMENTS above for the full
-  list of requirements for the test suite.  The test driver attempts to
-  selectively skip those tests for which the necessary configuration is
-  not available, but this has not yet been fully tested in all of its
-  possible permutations.
-
-  If a test fails, you can run a single test with verbose output via:
-
-      tests/runtests -o <name-of-test>
-
-  Do this instead of running the test program directly since it will
-  ensure that necessary environment variables are set up.
-
 CONFIGURATION
-
-  For the basic setup and configuration of the wallet server, see the file
-  docs/setup in the source distribution.  You will need to set up a
-  database on the server (unless you're using SQLite), initialize the
-  database, install remctld and the wallet Perl modules, and set up
-  remctld to run the wallet-backend program.
 
   Before setting up the wallet server, review the Wallet::Config
   documentation (with man Wallet::Config or perldoc Wallet::Config).
@@ -288,6 +274,12 @@ CONFIGURATION
   may also need to create a Kerberos keytab for the keytab object backend
   and give it appropriate ACLs, and set up keytab-backend and its remctld
   configuration on your KDC if you want unchanging flag support.
+
+  For the basic setup and configuration of the wallet server, see the file
+  docs/setup in the source distribution.  You will need to set up a
+  database on the server (unless you're using SQLite), initialize the
+  database, install remctld and the wallet Perl modules, and set up
+  remctld to run the wallet-backend program.
 
   The wallet client supports reading configuration settings from the
   system krb5.conf file.  For more information, see the CONFIGURATION
@@ -297,66 +289,50 @@ SUPPORT
 
   The wallet web page at:
 
-      http://www.eyrie.org/~eagle/software/wallet/
+      https://www.eyrie.org/~eagle/software/wallet/
 
   will always have the current version of this package, the current
   documentation, and pointers to any additional resources.
 
-  New releases of the wallet are announced on the kerberos@mit.edu mailing
-  list and discussion of the wallet (particularly the keytab components)
-  are welcome there.
+  New wallet releases are announced on the kerberos mailing list.  To
+  subscribe or see the list archives, go to:
 
-  I welcome bug reports and patches for this package at eagle@eyrie.org.
+      https://mailman.mit.edu/mailman/listinfo/kerberos
+
+  For bug tracking, use the issue tracker on GitHub:
+
+      https://github.com/rra/wallet/issues
+
   However, please be aware that I tend to be extremely busy and work
-  projects often take priority.  I'll save your mail and get to it as soon
-  as I can, but it may take me a couple of months.
+  projects often take priority.  I'll save your report and get to it as
+  soon as I can, but it may take me a couple of months.
 
 SOURCE REPOSITORY
 
-  The wallet is maintained using Git.  You can access the current source
-  by cloning the repository at:
+  wallet is maintained using Git.  You can access the current source on
+  GitHub at:
 
-      git://git.eyrie.org/kerberos/wallet.git
+      https://github.com/rra/wallet
 
-  or view the repository on the web at:
+  or by cloning the repository at:
 
-      http://git.eyrie.org/?p=kerberos/wallet.git
+      https://git.eyrie.org/git/kerberos/wallet.git
 
-  When contributing modifications, patches (possibly generated by
-  git-format-patch) are preferred to Git pull requests.
+  or view the repository via the web at:
 
-THANKS
+      https://git.eyrie.org/?p=kerberos/wallet.git
 
-  To Roland Schemers for the original idea that kicked off this project
-  and for the original implementation of the leland_srvtab system, which
-  was its primary inspiration.
-
-  To Anton Ushakov for his prior work on Kerberos v5 synchronization and
-  his enhancements to kasetkey to read a key from an existing srvtab.
-
-  To Jeffrey Hutzelman for his review of the original wallet design and
-  multiple useful discussions about what actions and configurations the
-  wallet would need to support to be useful outside of Stanford.
-
-  To Huaqing Zheng, Paul Pavelko, David Hoffman, and Paul Keser for their
-  reviews of the wallet system design and comments on design decisions and
-  security models.
-
-  To Jon Robertson for the refactoring of Wallet::Kadmin, Heimdal support,
-  many of the wallet server-side reports, the initial wallet-rekey
-  implementation, and lots of work on object and ACL types including
-  nested ACLs.
-
-  To Bill MacAllister for Wallet::Kadmin::AD and the implementation of
-  keytab object types backed by Active Directory.
+  The eyrie.org repository is the canonical one, maintained by the author,
+  but using GitHub is probably more convenient for most purposes.  Pull
+  requests are gratefully reviewed and normally accepted.
 
 LICENSE
 
-  The wallet distribution as a whole is covered by the following copyright
+  The wallet package as a whole is covered by the following copyright
   statement and license:
 
-    Copyright 2014, 2016 Russ Allbery <eagle@eyrie.org>
-    Copyright 2006, 2007, 2008, 2009, 2010, 2012, 2013, 2014
+    Copyright 2014, 2016, 2018 Russ Allbery <eagle@eyrie.org>
+    Copyright 2006-2010, 2012-2014
         The Board of Trustees of the Leland Stanford Junior University
 
     Permission is hereby granted, free of charge, to any person obtaining
@@ -378,12 +354,16 @@ LICENSE
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-  All individual files without an explicit exception below are released
-  under this license.  Some files may have additional copyright holders as
-  noted in those files.  There is detailed information about the licensing
-  of each file in the LICENSE file in this distribution.
-
   Some files in this distribution are individually released under
   different licenses, all of which are compatible with the above general
   package license but which may require preservation of additional
-  notices.  All required notices are preserved in the LICENSE file.
+  notices.  All required notices, and detailed information about the
+  licensing of each file, are recorded in the LICENSE file.
+
+  Files covered by a license with an assigned SPDX License Identifier
+  include SPDX-License-Identifier tags to enable automated processing of
+  license information.  See https://spdx.org/licenses/ for more
+  information.
+
+  For any copyright range specified by files in this package as YYYY-ZZZZ,
+  the range specifies every single year in that closed interval.
