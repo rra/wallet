@@ -100,36 +100,36 @@ PERL_DIRECTORIES = perl perl/lib perl/lib/Wallet perl/lib/Wallet/ACL	    \
 	perl/t/policy perl/t/style perl/t/util perl/t/verifier
 
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = .gitignore .travis.yml LICENSE autogen client/wallet.pod	   \
-	client/wallet-rekey.pod config/allow-extract config/keytab	   \
-	config/keytab.acl config/wallet config/wallet-report.acl	   \
-	docs/design contrib/README contrib/commerzbank/wallet-history	   \
-	contrib/convert-srvtab-db contrib/used-principals		   \
-	contrib/wallet-contacts contrib/wallet-rekey-periodic		   \
-	contrib/wallet-rekey-periodic.8 contrib/wallet-summary		   \
-	contrib/wallet-summary.8 contrib/wallet-unknown-hosts		   \
-	contrib/wallet-unknown-hosts.8 docs/design-acl docs/design-api	   \
-	docs/netdb-role-api docs/notes docs/objects-and-schemes docs/setup \
-	docs/stanford-naming examples/stanford.conf			   \
-	server/keytab-backend.in server/wallet-admin.in			   \
-	server/wallet-backend.in server/wallet-report.in tests/HOWTO	   \
-	tests/TESTS tests/config/README tests/data/allow-extract	   \
-	tests/data/basic.conf tests/data/cmd-fake tests/data/cmd-wrapper   \
-	tests/data/fake-data tests/data/fake-kadmin tests/data/fake-keytab \
-	tests/data/fake-keytab-2 tests/data/fake-keytab-foreign		   \
-	tests/data/fake-keytab-merge tests/data/fake-keytab-old		   \
-	tests/data/fake-keytab-partial					   \
-	tests/data/fake-keytab-partial-result tests/data/fake-keytab-rekey \
-	tests/data/fake-keytab-unknown tests/data/fake-srvtab		   \
-	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf   \
-	tests/docs/pod-spelling-t tests/docs/pod-t			   \
-	tests/perl/minimum-version-t tests/perl/module-version-t	   \
-	tests/perl/strict-t tests/server/admin-t tests/server/backend-t	   \
-	tests/server/keytab-t tests/server/report-t tests/tap/kerberos.sh  \
-	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			   \
-	tests/tap/perl/Test/RRA/Automake.pm				   \
-	tests/tap/perl/Test/RRA/Config.pm				   \
-	tests/tap/perl/Test/RRA/ModuleVersion.pm tests/tap/remctl.sh	   \
+EXTRA_DIST = .gitignore .travis.yml LICENSE README.md autogen		    \
+	client/wallet.pod client/wallet-rekey.pod config/allow-extract	    \
+	config/keytab config/keytab.acl config/wallet			    \
+	config/wallet-report.acl docs/design contrib/README		    \
+	contrib/commerzbank/wallet-history contrib/convert-srvtab-db	    \
+	contrib/used-principals contrib/wallet-contacts			    \
+	contrib/wallet-rekey-periodic contrib/wallet-rekey-periodic.8	    \
+	contrib/wallet-summary contrib/wallet-summary.8			    \
+	contrib/wallet-unknown-hosts contrib/wallet-unknown-hosts.8	    \
+	docs/design-acl docs/design-api docs/netdb-role-api docs/notes	    \
+	docs/objects-and-schemes docs/setup docs/stanford-naming	    \
+	examples/stanford.conf server/keytab-backend.in			    \
+	server/wallet-admin.in server/wallet-backend.in			    \
+	server/wallet-report.in tests/HOWTO tests/TESTS tests/config/README \
+	tests/data/allow-extract tests/data/basic.conf tests/data/cmd-fake  \
+	tests/data/cmd-wrapper tests/data/fake-data tests/data/fake-kadmin  \
+	tests/data/fake-keytab tests/data/fake-keytab-2			    \
+	tests/data/fake-keytab-foreign tests/data/fake-keytab-merge	    \
+	tests/data/fake-keytab-old tests/data/fake-keytab-partial	    \
+	tests/data/fake-keytab-partial-result tests/data/fake-keytab-rekey  \
+	tests/data/fake-keytab-unknown tests/data/fake-srvtab		    \
+	tests/data/full.conf tests/data/perl.conf tests/data/wallet.conf    \
+	tests/docs/pod-spelling-t tests/docs/pod-t			    \
+	tests/perl/minimum-version-t tests/perl/module-version-t	    \
+	tests/perl/strict-t tests/server/admin-t tests/server/backend-t	    \
+	tests/server/keytab-t tests/server/report-t tests/tap/kerberos.sh   \
+	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			    \
+	tests/tap/perl/Test/RRA/Automake.pm				    \
+	tests/tap/perl/Test/RRA/Config.pm				    \
+	tests/tap/perl/Test/RRA/ModuleVersion.pm tests/tap/remctl.sh	    \
 	tests/util/xmalloc-t $(PERL_FILES)
 
 # Supporting convenience libraries used by other targets.
