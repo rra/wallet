@@ -6,6 +6,7 @@ wallet (1.4-1) UNRELEASED; urgency=medium
       for principal naming and directory attributes.  Review the upstream
       documentation if you are using the experimental Active Directory
       support.
+    - Install new contrib/ad-keytab script as /usr/bin/ad-keytab.
     - Retrieve krb5.conf settings using the correct default realm.
   * Add upstream-vcs-tag pattern to debian/gbp.conf.
 
