@@ -11,6 +11,10 @@ wallet (1.4-1) UNRELEASED; urgency=medium
   * Update debhelper compatibility level to V11.
     - Remove explicit autoreconf sequence configuration.
     - Remove now-unnecessary --parallel flags.
+  * Update standards version to 4.1.4.
+    - Use https URLs for Vcs-* fields in debian/control.
+    - Use https URL for debian/copyright Format field.
+    - Change Priority: extra to optional since extra has been retired.
   * Add upstream-vcs-tag pattern to debian/gbp.conf.
   * Refresh upstream signing key.
 

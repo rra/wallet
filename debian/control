@@ -1,6 +1,6 @@
 Source: wallet
 Section: net
-Priority: extra
+Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
 Bugs: mailto:rra@debian.org
 Build-Depends:
@@ -31,10 +31,10 @@ Build-Depends:
  libwebauth-perl,
  perl,
  sqlite3,
-Standards-Version: 3.9.6
-Homepage: http://www.eyrie.org/~eagle/software/wallet/
-Vcs-Git: git://git.eyrie.org/kerberos/wallet.git -b debian/master
-Vcs-Browser: http://git.eyrie.org/?p=kerberos/wallet.git
+Standards-Version: 4.1.4
+Homepage: https://www.eyrie.org/~eagle/software/wallet/
+Vcs-Git: https://git.eyrie.org/git/kerberos/wallet.git -b debian/master
+Vcs-Browser: https://git.eyrie.org/?p=kerberos/wallet.git
 
 Package: keytab-backend
 Architecture: all
