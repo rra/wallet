@@ -12,6 +12,7 @@ wallet (1.4-1) UNRELEASED; urgency=medium
     - Remove explicit autoreconf sequence configuration.
     - Remove now-unnecessary --parallel flags.
   * Add upstream-vcs-tag pattern to debian/gbp.conf.
+  * Refresh upstream signing key.
 
  -- Russ Allbery <rra@debian.org>  Sun, 03 Jun 2018 16:57:41 -0700
 
