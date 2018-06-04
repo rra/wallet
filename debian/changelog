@@ -1,5 +1,12 @@
-wallet (1.3-2) UNRELEASED; urgency=medium
+wallet (1.4-1) UNRELEASED; urgency=medium
 
+  * New upstream release.
+    - Substantial improvements to the Active Directory support.  This
+      includes several changes to configuration options and new behavior
+      for principal naming and directory attributes.  Review the upstream
+      documentation if you are using the experimental Active Directory
+      support.
+    - Retrieve krb5.conf settings using the correct default realm.
   * Add upstream-vcs-tag pattern to debian/gbp.conf.
 
  -- Russ Allbery <rra@debian.org>  Sun, 03 Jun 2018 16:57:41 -0700
