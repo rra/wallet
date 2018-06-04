@@ -11,10 +11,10 @@ export WALLET_PERL_FLAGS := --installdirs vendor --create_packlist 0
 export AUTOMATED_TESTING = 1
 
 %:
-	dh $@ --parallel --with autoreconf
+	dh $@
 
 override_dh_auto_configure:
-	dh_auto_configure --parallel -- --enable-reduced-depends
+	dh_auto_configure -- --enable-reduced-depends
 
 # Install the remctl configuration as part of the build.
 override_dh_auto_install:

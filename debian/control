@@ -4,8 +4,7 @@ Priority: extra
 Maintainer: Russ Allbery <rra@debian.org>
 Bugs: mailto:rra@debian.org
 Build-Depends:
- debhelper (>= 9),
- dh-autoreconf,
+ debhelper (>= 11),
  libauthen-sasl-perl,
  libcrypt-generatepassword-perl,
  libdatetime-format-sqlite-perl,

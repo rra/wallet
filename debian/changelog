@@ -8,6 +8,9 @@ wallet (1.4-1) UNRELEASED; urgency=medium
       support.
     - Install new contrib/ad-keytab script as /usr/bin/ad-keytab.
     - Retrieve krb5.conf settings using the correct default realm.
+  * Update debhelper compatibility level to V11.
+    - Remove explicit autoreconf sequence configuration.
+    - Remove now-unnecessary --parallel flags.
   * Add upstream-vcs-tag pattern to debian/gbp.conf.
 
  -- Russ Allbery <rra@debian.org>  Sun, 03 Jun 2018 16:57:41 -0700
