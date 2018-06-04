@@ -16,6 +16,7 @@ wallet (1.4-1) UNRELEASED; urgency=medium
     - Use https URL for debian/copyright Format field.
     - Change Priority: extra to optional since extra has been retired.
   * Set Rules-Requires-Root: no.
+  * Bump watch file version to 4 and use an https URL.
   * Add upstream-vcs-tag pattern to debian/gbp.conf.
   * Refresh upstream signing key.
 
