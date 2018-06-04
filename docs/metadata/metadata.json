@@ -47,6 +47,7 @@
     },
     "quote": {
         "author": "John M. Ford",
+        "broken": true,
         "work": "Growing Up Weightless",
     },
     "distribution": {
