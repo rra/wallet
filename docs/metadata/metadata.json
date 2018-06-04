@@ -114,8 +114,16 @@
                 "name": "design-api",
                 "title": "Server module API design",
             },
+            {
+                "name": "notes",
+                "title": "Implementation notes",
+            },
         ],
         "contrib": [
+            {
+                "name": "ad-keytab",
+                "title": "ad-keytab",
+            },
             {
                 "name": "used-principals",
                 "title": "used-principals",
@@ -225,6 +233,10 @@
             {
                 "name": "api/object-password",
                 "title": "Wallet::Object::Password",
+            },
+            {
+                "name": "api/object-wakeyring",
+                "title": "Wallet::Object::WAKeyring",
             },
             {
                 "name": "api/policy-stanford",
