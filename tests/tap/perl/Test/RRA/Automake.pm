@@ -451,7 +451,7 @@ Russ Allbery <eagle@eyrie.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2014, 2015, 2018 Russ Allbery <eagle@eyrie.org>
+Copyright 2014-2015, 2018 Russ Allbery <eagle@eyrie.org>
 
 Copyright 2013 The Board of Trustees of the Leland Stanford Junior University
 
