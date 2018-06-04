@@ -542,7 +542,7 @@ NONINFRINGEMENT sublicense SPDX-License-Identifier MIT
 
 =head1 NAME
 
-ad-keytab
+ad-keytab - Manage and display keytabs for Active Directory principals
 
 =head1 SYNOPSIS
 
