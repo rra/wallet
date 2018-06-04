@@ -41,10 +41,12 @@ supports the `-norandkey` option to `ktadd`.  This option is included in
 MIT Kerberos 1.7 and later.
 
 The WebAuth keyring object support in the wallet server requires the
-WebAuth Perl module from WebAuth 4.4.0 or later.
+WebAuth Perl module from
+[WebAuth 4.4.0 or later](https://www.eyrie.org/~eagle/software/webauth/).
 
 The Duo integration object support in the wallet server requires the
-Net::Duo, JSON, and Perl6::Slurp Perl modules.
+[Net::Duo](https://www.eyrie.org/~eagle/software/net-duo/), JSON, and
+Perl6::Slurp Perl modules.
 
 The password object support in the wallet server requires the
 Crypt::GeneratePassword Perl module.
