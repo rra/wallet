@@ -575,14 +575,14 @@ EXTRA_DIST = .gitignore .travis.yml LICENSE README.md bootstrap		    \
 	client/wallet.pod client/wallet-rekey.pod config/allow-extract	    \
 	config/keytab config/keytab.acl config/wallet			    \
 	config/wallet-report.acl docs/design contrib/README		    \
-	contrib/ad-keytab contrib/commerzbank/wallet-history		    \
-	contrib/convert-srvtab-db contrib/used-principals		    \
-	contrib/wallet-contacts contrib/wallet-rekey-periodic		    \
-	contrib/wallet-rekey-periodic.8 contrib/wallet-summary		    \
-	contrib/wallet-summary.8 contrib/wallet-unknown-hosts		    \
-	contrib/wallet-unknown-hosts.8 docs/design-acl docs/design-api	    \
-	docs/metadata docs/netdb-role-api docs/notes			    \
-	docs/objects-and-schemes docs/setup docs/stanford-naming	    \
+	contrib/ad-keytab contrib/ad-keytab.8				    \
+	contrib/commerzbank/wallet-history contrib/convert-srvtab-db	    \
+	contrib/used-principals contrib/wallet-contacts			    \
+	contrib/wallet-rekey-periodic contrib/wallet-rekey-periodic.8	    \
+	contrib/wallet-summary contrib/wallet-summary.8			    \
+	contrib/wallet-unknown-hosts contrib/wallet-unknown-hosts.8	    \
+	docs/design-acl docs/design-api docs/metadata docs/netdb-role-api   \
+	docs/notes docs/objects-and-schemes docs/setup docs/stanford-naming \
 	examples/stanford.conf server/keytab-backend.in			    \
 	server/wallet-admin.in server/wallet-backend.in			    \
 	server/wallet-report.in tests/README tests/TESTS		    \
