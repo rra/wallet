@@ -1,5 +1,6 @@
 config/wallet                   etc/remctl/conf.d
 contrib/ad-keytab               usr/bin
+contrib/ad-keytab.8             usr/share/man/man8
 debian/tmp/etc/remctl/acl/wallet-report
 debian/tmp/usr/sbin/wallet-admin
 debian/tmp/usr/sbin/wallet-backend
