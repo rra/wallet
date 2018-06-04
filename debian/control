@@ -31,6 +31,7 @@ Build-Depends:
  libwebauth-perl,
  perl,
  sqlite3,
+Rules-Requires-Root: no
 Standards-Version: 4.1.4
 Homepage: https://www.eyrie.org/~eagle/software/wallet/
 Vcs-Git: https://git.eyrie.org/git/kerberos/wallet.git -b debian/master
