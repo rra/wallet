@@ -10,6 +10,9 @@ export WALLET_PERL_FLAGS := --installdirs vendor --create_packlist 0
 # Enable some additional Perl tests.
 export AUTOMATED_TESTING = 1
 
+# Tell C TAP Harness to report the verbose output from all tests.
+export C_TAP_VERBOSE = 1
+
 %:
 	dh $@
 
