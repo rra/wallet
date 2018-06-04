@@ -104,4 +104,14 @@ AC_DEFUN([RRA_LIB_PERL],
  rra_perl_core_libs=`echo "$rra_perl_core_libs" | sed 's/  *$//'`
  PERL_CPPFLAGS="$rra_perl_core_flags"
  PERL_LIBS="$rra_perl_core_libs"
- AC_MSG_RESULT([$PERL_LIBS])])
+ AC_MSG_RESULT([$PERL_LIBS])
+ rra_perl_save_CPPFLAGS="$CPPFLAGS"
+ rra_perl_save_LIBS="$LIBS"
+ CPPFLAGS="$PERL_CPPFLAGS $CPPFLAGS"
+ LIBS="$PERL_LIBS $LIBS"
+ AC_CHECK_HEADER([EXTERN.h], [],
+    [AC_MSG_FAILURE([unable to compile with EXTERN.h])])
+ AC_CHECK_FUNC([perl_alloc], [],
+    [AC_MSG_FAILURE([unable to link with Perl library])])
+ CPPFLAGS="$rra_perl_save_CPPFLAGS"
+ LIBS="$rra_perl_save_LIBS"])
