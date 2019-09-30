@@ -1,3 +1,18 @@
+wallet (1.4-3) unstable; urgency=medium
+
+  * Allow the specification of valid characters to be used when
+    generating passwords.
+  * Add the command checksum to return the checksum of file objects.
+  * Patches to allow the use of quilt.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 30 Sep 2019 18:39:21 +0000
+
+wallet (1.4-2) unstable; urgency=medium
+
+  * Dropbox only release
+
+ -- Bill MacAllister <whm@dropbox.com>  Sun, 06 Jan 2019 19:49:07 +0000
+
 wallet (1.4-1) unstable; urgency=medium
 
   * New upstream release.
