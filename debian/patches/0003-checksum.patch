@@ -1,8 +1,6 @@
-diff --git a/perl/lib/Wallet/Config.pm b/perl/lib/Wallet/Config.pm
-index 60f0e10..9efa2cb 100644
 --- a/perl/lib/Wallet/Config.pm
 +++ b/perl/lib/Wallet/Config.pm
-@@ -1029,6 +1029,25 @@ Obvious improvements could be made, such as checking that the part after
+@@ -1038,6 +1038,25 @@ Obvious improvements could be made, such
  the slash for a C<host/> ACL looked like a host name and the part after a
  slash for a C<user/> ACL look like a user name.
  
@@ -28,8 +26,6 @@ index 60f0e10..9efa2cb 100644
  =head1 ENVIRONMENT
  
  =over 4
-diff --git a/perl/lib/Wallet/Object/File.pm b/perl/lib/Wallet/Object/File.pm
-index bef8981..4fc424f 100644
 --- a/perl/lib/Wallet/Object/File.pm
 +++ b/perl/lib/Wallet/Object/File.pm
 @@ -19,6 +19,7 @@ use warnings;
@@ -67,7 +63,7 @@ index bef8981..4fc424f 100644
  # Store the file on the wallet server.
  sub store {
      my ($self, $data, $user, $host, $time) = @_;
-@@ -242,6 +263,13 @@ HOSTNAME, and DATETIME are stored as history information.  PRINCIPAL
+@@ -242,6 +263,13 @@ HOSTNAME, and DATETIME are stored as his
  should be the user who is downloading the keytab.  If DATETIME isn't
  given, the current time is used.
  
@@ -81,8 +77,6 @@ index bef8981..4fc424f 100644
  =item store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
  
  Store DATA as the current contents of the file object.  Any existing data
-diff --git a/server/wallet-backend.in b/server/wallet-backend.in
-index 8e38460..5e6889c 100644
 --- a/server/wallet-backend.in
 +++ b/server/wallet-backend.in
 @@ -196,6 +196,14 @@ sub command {
@@ -100,3 +94,31 @@ index 8e38460..5e6889c 100644
      } elsif ($command eq 'comment') {
          check_args (2, 3, [3], @args);
          if (@args > 2) {
+--- a/perl/lib/Wallet/Server.pm
++++ b/perl/lib/Wallet/Server.pm
+@@ -499,6 +499,25 @@ sub check {
+     return 1;
+ }
+ 
++# Returns the checksum for a file or password object.
++sub checksum {
++    my ($self, $type, $name) = @_;
++    if ($type ne 'file' && $type ne 'password') {
++        $self->error ("Invalid type ${type}");
++        return;
++    }
++    my $object = $self->retrieve ($type, $name);
++    if (!defined $object) {
++	return;
++    }
++    if (!$self->acl_verify ($object, 'get')) {
++	return;
++    }
++    my $result = $object->checksum($self->{user}, $self->{host});
++    $self->error ($object->error) unless defined $result;
++    return $result;
++}
++
+ # Retrieve the information associated with an object, or returns undef and
+ # sets the internal error if the retrieval fails or if the user isn't
+ # authorized.  If the object doesn't exist, attempts dynamic creation of the
