@@ -1,3 +1,9 @@
+wallet (1.4-4) unstable; urgency=medium
+
+  * Add support for encrypting file objects.
+
+ -- Bill MacAllister <whm@dropbox.com>  Wed, 08 Jan 2020 19:26:09 +0000
+
 wallet (1.4-3) unstable; urgency=medium
 
   * Allow the specification of valid characters to be used when
