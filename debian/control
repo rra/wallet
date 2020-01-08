@@ -6,6 +6,8 @@ Bugs: mailto:rra@debian.org
 Build-Depends:
  debhelper (>= 11),
  libauthen-sasl-perl,
+ libcrypt-blowfish-perl,
+ libcrypt-cbc-perl,
  libcrypt-generatepassword-perl,
  libdatetime-format-sqlite-perl,
  libdatetime-perl,
@@ -94,6 +96,8 @@ Recommends:
  remctl-server (>= 2.14),
 Suggests:
  libauthen-sasl-perl,
+ libcrypt-blowfish-perl,
+ libcrypt-cbc-perl,
  libcrypt-generatepassword-perl,
  libipc-run-perl,
  libjson-perl,
