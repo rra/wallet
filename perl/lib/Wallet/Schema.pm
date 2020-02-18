@@ -20,7 +20,7 @@ use base 'DBIx::Class::Schema';
 # Unlike all of the other wallet modules, this module's version is tied to the
 # version of the schema in the database.  It should only be changed on schema
 # changes, at least until better handling of upgrades is available.
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 __PACKAGE__->load_namespaces;
 __PACKAGE__->load_components (qw/Schema::Versioned/);
@@ -50,6 +50,7 @@ sub connect {
     my $user = $Wallet::Config::DB_USER;
     my $pass = $Wallet::Config::DB_PASSWORD;
     my %attrs = (PrintError => 0, RaiseError => 1);
+
     my $schema = eval { $class->SUPER::connect ($dsn, $user, $pass, \%attrs) };
     if ($@) {
         die "cannot connect to database: $@\n";

@@ -42,6 +42,12 @@ __PACKAGE__->table("acls");
   is_nullable: 0
   size: 255
 
+=head2 ac_comment
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 255
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -49,6 +55,8 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "ac_name",
   { data_type => "varchar", is_nullable => 0, size => 255 },
+  "ac_comment",
+  { data_type => "varchar", is_nullable => 1, size => 255 },
 );
 __PACKAGE__->set_primary_key("ac_id");
 __PACKAGE__->add_unique_constraint("ac_name", ["ac_name"]);

@@ -24,7 +24,7 @@ use Util;
 
 # We test database setup in init.t, so just do the basic setup here.
 db_setup;
-my $admin = eval { Wallet::Admin->new };
+my $admin = setup_initialize();
 is ($@, '', 'Wallet::Admin creation did not die');
 ok ($admin->isa ('Wallet::Admin'), ' and returned the right class');
 is ($admin->initialize ('admin@EXAMPLE.COM'), 1,
@@ -70,18 +70,20 @@ SKIP: {
     my @path = (split (':', $ENV{PATH}));
     my ($sqlite) = grep { -x $_ } map { "$_/sqlite3" } @path;
     skip 'sqlite3 not found', 7 unless $sqlite;
-
     # Delete all tables and then redump them straight from the SQL file to
     # avoid getting the version table.
-    unlink 'wallet-db';
+    db_setup_sqlite();
+
     my $status = system ('sqlite3', 'wallet-db',
                          '.read sql/Wallet-Schema-0.07-SQLite.sql');
-    is ($status, 0, 'Reinstalling database from non-versioned SQL succeds');
+    is ($status, 0, 'Reinstalling database from non-versioned SQL succeeds');
+
 
     # Upgrade to 0.08.
     $Wallet::Schema::VERSION = '0.08';
-    $admin = eval { Wallet::Admin->new };
+    $admin = setup_initialize();
     my $retval = $admin->upgrade;
+
     is ($retval, 1, ' and performing an upgrade to 0.08 succeeds');
     my $sql = "select version from dbix_class_schema_versions order by"
       . " version DESC";

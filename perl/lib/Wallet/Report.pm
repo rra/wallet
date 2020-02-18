@@ -504,7 +504,8 @@ sub acls_unused {
 }
 
 # Obtain a textual representation of the membership of an ACL, returning undef
-# on error and setting the internal error.
+# on error and setting the internal error. Make sure the membership is sorted
+# so that comparisons are possible.
 sub acl_membership {
     my ($self, $id) = @_;
     my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
@@ -512,7 +513,9 @@ sub acl_membership {
         $self->error ($@);
         return;
     }
-    my @members = map { "$_->[0] $_->[1]" } $acl->list;
+    my @entries = $acl->list;
+    my @entries_sorted = sort { $$a[0] cmp $$b[0] or $$a[1] cmp $$b[1] } @entries;
+    my @members = map { "$_->[0] $_->[1]" } @entries_sorted;
     if (!@members && $acl->error) {
         $self->error ($acl->error);
         return;

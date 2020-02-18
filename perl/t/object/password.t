@@ -33,7 +33,7 @@ $| = 1;
 # Use Wallet::Admin to set up the database.
 system ('rm -rf test-files') == 0 or die "cannot remove test-files\n";
 db_setup;
-my $admin = eval { Wallet::Admin->new };
+my $admin = setup_initialize();
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
 my $schema = $admin->schema;

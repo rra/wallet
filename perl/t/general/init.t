@@ -21,12 +21,11 @@ use Util;
 
 # Use Wallet::Admin to set up the database.
 db_setup;
-my $admin = eval { Wallet::Admin->new };
+my $admin = setup_initialize();
 is ($@, '', 'Wallet::Admin creation did not die');
 ok ($admin->isa ('Wallet::Admin'), ' and returned the right class');
-is ($admin->initialize ('admin@EXAMPLE.COM'), 1,
+is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     ' and initialization succeeds');
-
 # Check whether the database entries that should be created were.
 my $acl = eval { Wallet::ACL->new ('ADMIN', $admin->schema) };
 is ($@, '', 'Retrieving ADMIN ACL successful');

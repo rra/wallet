@@ -22,12 +22,13 @@ use Util;
 
 # Use Wallet::Admin to set up the database.
 db_setup;
-my $admin = eval { Wallet::Admin->new };
+my $admin = setup_initialize();
 is ($@, '', 'Wallet::Admin creation did not die');
 is ($admin->reinitialize ('admin@EXAMPLE.COM'), 1,
     'Database initialization succeeded');
 $admin->register_object ('base', 'Wallet::Object::Base');
 $admin->register_verifier ('base', 'Wallet::ACL::Base');
+
 
 # We have an empty database, so we should see no objects and one ACL.
 my $report = eval { Wallet::Report->new };
@@ -40,6 +41,7 @@ my @acls = $report->acls;
 is (scalar (@acls), 1, 'One ACL in the database');
 is ($acls[0][0], 1, ' and that is ACL ID 1');
 is ($acls[0][1], 'ADMIN', ' with the right name');
+
 
 # Check to see that we have all types that we expect.
 my @types = $report->types;
@@ -350,7 +352,6 @@ is (scalar (@acls), 1, 'There is one set of duplicate ACLs');
 is (scalar (@{ $acls[0] }), 2, ' with two members');
 is ($acls[0][0], 'fourth', ' and the first member is correct');
 is ($acls[0][1], 'third', ' and the second member is correct');
-
 # Add another line to the third ACL.  Now we match second.
 is ($server->acl_add ('third', 'base', 'foo'), 1,
     'Adding another line to the third ACL works');

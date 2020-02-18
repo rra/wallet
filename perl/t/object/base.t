@@ -30,7 +30,7 @@ my $princ = 'service/test@EXAMPLE.COM';
 
 # Use Wallet::Admin to set up the database.
 db_setup;
-my $admin = eval { Wallet::Admin->new };
+my $admin = setup_initialize();
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
 my $schema = $admin->schema;

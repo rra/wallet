@@ -24,6 +24,8 @@ use Wallet::ACL;
 
 our $VERSION = '1.04';
 
+my $TZ = DateTime::TimeZone->new( name => 'local' );
+
 ##############################################################################
 # Constructors
 ##############################################################################
@@ -60,7 +62,7 @@ sub create {
     die "invalid object name\n" unless $name;
     my $guard = $schema->txn_scope_guard;
     eval {
-        my $date = DateTime->from_epoch (epoch => $time);
+        my $date = DateTime->from_epoch (epoch => $time, time_zone => $TZ);
         my %record = (ob_type         => $type,
                       ob_name         => $name,
                       ob_created_by   => $user,
@@ -134,7 +136,7 @@ sub log_action {
     # assume that AutoCommit is turned off.
     my $guard = $self->{schema}->txn_scope_guard;
     eval {
-        my $date = DateTime->from_epoch (epoch => $time);
+        my $date = DateTime->from_epoch (epoch => $time, time_zone => $TZ);
         my %record = (oh_type   => $self->{type},
                       oh_name   => $self->{name},
                       oh_action => $action,
@@ -188,7 +190,7 @@ sub log_set {
         die "invalid history field $field";
     }
 
-    my $date = DateTime->from_epoch (epoch => $time);
+    my $date = DateTime->from_epoch (epoch => $time, time_zone => $TZ);
     my %record = (oh_type       => $self->{type},
                   oh_name       => $self->{name},
                   oh_action     => 'set',
@@ -353,7 +355,7 @@ sub expires {
             $self->error ("malformed expiration time $expires");
             return;
         }
-        my $date = DateTime->from_epoch (epoch => $seconds);
+        my $date = DateTime->from_epoch (epoch => $seconds, time_zone => $TZ);
         return $self->_set_internal ('expires', $date, $user, $host, $time);
     } elsif (defined $expires) {
         return $self->_set_internal ('expires', undef, $user, $host, $time);
@@ -743,7 +745,7 @@ sub destroy {
         $self->{schema}->resultset('Object')->search (\%search)->delete;
 
         # And create a new history object for the destroy action.
-        my $date = DateTime->from_epoch (epoch => $time);
+        my $date = DateTime->from_epoch (epoch => $time, time_zone => $TZ);
         my %record = (oh_type => $type,
                       oh_name => $name,
                       oh_action => 'destroy',
