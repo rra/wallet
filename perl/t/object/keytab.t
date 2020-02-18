@@ -160,7 +160,7 @@ sub enctypes {
 # Use Wallet::Admin to set up the database.
 unlink ('krb5cc_temp', 'krb5cc_test', 'test-acl', 'test-pid');
 db_setup;
-my $admin = eval { Wallet::Admin->new };
+my $admin = setup_initialize();
 is ($@, '', 'Database connection succeeded');
 is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
 my $schema = $admin->schema;

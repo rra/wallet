@@ -154,6 +154,20 @@ sub command {
         } elsif ($action eq 'create') {
             check_args (1, 1, [], @args);
             $server->acl_create (@args) or failure ($server->error, @_);
+        } elsif ($action eq 'comment') {
+            check_args (1, 2, [2], @args);
+            if (@args > 1) {
+                $server->acl_comment (@args) or failure ($server->error, @_);
+            } else {
+                my $output = $server->acl_comment (@args);
+                if (defined $output) {
+                    print $output, "\n";
+                } elsif (not $server->error) {
+                    print "No comment set\n";
+                } else {
+                    failure ($server->error, @_);
+                }
+            }
         } elsif ($action eq 'destroy') {
             check_args (1, 1, [], @args);
             $server->acl_destroy (@args) or failure ($server->error, @_);
@@ -427,6 +441,15 @@ either the name of an ACL or its numeric identifier.
 Check whether an ACL with the ID <id> already exists.  If it does, prints
 C<yes>; if not, prints C<no>.
 
+=item acl comment <id> [<comment>]
+
+If <comment> is not given, displays the current comment for the ACL
+identified by <id> and <name>, or C<No comment set> if none is set.
+
+If <comment> is given, sets the comment on the ACL identified by
+<id> to <comment>.  If <comment> is the empty string, clears
+the comment.
+
 =item acl create <name>
 
 Create a new, empty ACL with name <name>.  When setting an ACL on an
@@ -444,7 +467,7 @@ be destroyed.
 =item acl history <id>
 
 Display the history of the ACL <id>.  Each change to the ACL (not
-including changes to the name of the ACL) will be represented by two
+including changes to the name or comment of the ACL) will be represented by two
 lines.  The first line will have a timestamp of the change followed by a
 description of the change, and the second line will give the user who made
 the change and the host from which the change was made.
@@ -479,7 +502,7 @@ the C<ADMIN> ACL.
 
 =item acl show <id>
 
-Display the name, numeric ID, and entries of the ACL <id>.
+Display the name, numeric ID, comment, and entries of the ACL <id>.
 
 =item autocreate <type> <name>
 

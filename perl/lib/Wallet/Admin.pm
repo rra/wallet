@@ -85,6 +85,13 @@ sub DESTROY {
 sub initialize {
     my ($self, $user) = @_;
 
+    # Suppress warnings that actually are just informational messages.
+    local $SIG{__WARN__} = sub {
+        my ($warn) = @_;
+        return if $warn =~ m{NOTICE:  table "\S+" does not exist, skipping};
+        warn $warn;
+    };
+
     # Deploy the database schema from DDL files, if they exist.  If not then
     # we automatically get the database from the Schema modules.
     $self->{schema}->deploy ({}, $Wallet::Config::DB_DDL_DIRECTORY);
@@ -154,6 +161,14 @@ sub default_data {
 # false on failure.
 sub reinitialize {
     my ($self, $user) = @_;
+
+    # Suppress warnings that actually are just informational messages.
+    local $SIG{__WARN__} = sub {
+        my ($warn) = @_;
+        return if $warn =~ m{NOTICE:  table "\S+" does not exist, skipping};
+        warn $warn;
+    };
+
     return unless $self->destroy;
     return $self->initialize ($user);
 }
@@ -165,9 +180,9 @@ sub destroy {
 
     # Get an actual DBI handle and use it to delete all tables.
     my $dbh = $self->dbh;
-    my @tables = qw/acl_entries object_history objects acls acl_history
+    my @tables = qw/acl_entries duo object_history objects acls acl_history
       acl_schemes enctypes flags keytab_enctypes keytab_sync sync_targets
-      duo types dbix_class_schema_versions/;
+      types dbix_class_schema_versions/;
     for my $table (@tables) {
         my $sql = "DROP TABLE IF EXISTS $table";
         $dbh->do ($sql);
@@ -212,6 +227,7 @@ sub upgrade {
     # Perform the actual upgrade.
     if ($self->{schema}->get_db_version) {
         $self->{schema}->upgrade_directory ($Wallet::Config::DB_DDL_DIRECTORY);
+        #use Data::Dumper; warn Dumper $self->{schema};
         eval { $self->{schema}->upgrade; };
     }
     if ($@) {

@@ -22,6 +22,8 @@ use Wallet::Object::Base;
 
 our $VERSION = '1.04';
 
+my $TZ = DateTime::TimeZone->new( name => 'local' );
+
 ##############################################################################
 # Constructors
 ##############################################################################
@@ -50,6 +52,7 @@ sub new {
         schema  => $schema,
         id      => $data->ac_id,
         name    => $data->ac_name,
+        comment => $data->ac_comment,
     };
     bless ($self, $class);
     return $self;
@@ -75,7 +78,7 @@ sub create {
         die "unable to retrieve new ACL ID" unless defined $id;
 
         # Add to the history table.
-        my $date = DateTime->from_epoch (epoch => $time);
+        my $date = DateTime->from_epoch (epoch => $time, time_zone => $TZ);
         %record = (ah_acl    => $id,
                    ah_name   => $name,
                    ah_action => 'create',
@@ -126,6 +129,12 @@ sub name {
     return $self->{name};
 }
 
+# Returns the comment of the ACL.
+sub comment {
+    my ($self)= @_;
+    return $self->{comment};
+}
+
 # Given an ACL scheme, return the mapping to a class by querying the
 # database, or undef if no mapping exists.  Also load the relevant module.
 sub scheme_mapping {
@@ -161,7 +170,7 @@ sub log_acl {
     unless ($action =~ /^(add|remove|rename)\z/) {
         die "invalid history action $action";
     }
-    my $date = DateTime->from_epoch (epoch => $time);
+    my $date = DateTime->from_epoch (epoch => $time, time_zone => $TZ);
     my %record = (ah_acl        => $self->{id},
                   ah_name       => $self->{name},
                   ah_action     => $action,
@@ -294,7 +303,7 @@ sub destroy {
         $entry->delete if defined $entry;
 
         # Create new history line for the deletion.
-        my $date = DateTime->from_epoch (epoch => $time);
+        my $date = DateTime->from_epoch (epoch => $time, time_zone => $TZ);
         my %record = (ah_acl    => $self->{id},
                       ah_name   => $self->{name},
                       ah_action => 'destroy',
@@ -355,6 +364,49 @@ sub add {
     return 1;
 }
 
+# Get the comment of an ACL.
+sub get_comment {
+    my ($self) = @_;
+    return $self->comment();
+}
+
+# Set the comment of an ACL.
+sub set_comment {
+    my ($self, $comment) = @_;
+
+    if (defined($comment)) {
+        if ($comment eq q{}) {
+            $comment = undef;
+        } else {
+            if (length($comment) > 255) {
+                $self->error ('comment cannot be longer than 255 characters');
+                return;
+            }
+        }
+        eval {
+            my $guard = $self->{schema}->txn_scope_guard;
+            my %search = (ac_id => $self->{id});
+            my $acl = $self->{schema}->resultset('Acl')->find (\%search);
+            $acl->ac_comment($comment);
+            $acl->update;
+            $guard->commit;
+
+            # Re-read (comment field may have been truncated)
+            $acl = $self->{schema}->resultset('Acl')->find (\%search);
+            $self->{comment} = $acl->ac_comment;
+        };
+        if ($@) {
+            $self->error ("cannot update comment for ACL $self->{name}: $@");
+            return;
+        }
+    } else {
+        $self->error ("missing comment in set_comment for ACL $self->{name}");
+        return;
+    }
+
+    return 1;
+}
+
 # Remove an ACL entry to this ACL.  Returns true on success and false on
 # failure.  Detect the case where no such row exists before doing the delete
 # so that we can provide a good error message.
@@ -396,6 +448,7 @@ sub list {
     eval {
         my $guard = $self->{schema}->txn_scope_guard;
         my %search = (ae_id => $self->{id});
+        my %options = (order_by => { -asc => [qw/ah_on ah_id/] });
         my @entry_recs = $self->{schema}->resultset('AclEntry')
             ->search (\%search);
         for my $entry (@entry_recs) {
@@ -426,8 +479,18 @@ sub show {
     my $output = "Members of ACL $name (id: $id) are:\n";
     for my $entry (sort { $$a[0] cmp $$b[0] or $$a[1] cmp $$b[1] } @entries) {
         my ($scheme, $identifier) = @$entry;
-        $output .= "  $scheme $identifier\n";
+        if ($identifier) {
+            $output .= "  $scheme $identifier\n";
+        } else {
+            $output .= "  $scheme\n";
+        }
     }
+
+    my $comment = $self->comment;
+    if ($comment) {
+        $output .= "comment: $comment\n";
+    }
+
     return $output;
 }
 
@@ -438,7 +501,7 @@ sub history {
     eval {
         my $guard = $self->{schema}->txn_scope_guard;
         my %search  = (ah_acl => $self->{id});
-        my %options = (order_by => 'ah_on');
+        my %options = (order_by => { -asc => [qw/ah_on ah_id/] });
         my @data = $self->{schema}->resultset('AclHistory')
             ->search (\%search, \%options);
         for my $data (@data) {
@@ -446,8 +509,12 @@ sub history {
             $date->set_time_zone ('local');
             $output .= sprintf ("%s %s  ", $date->ymd, $date->hms);
             if ($data->ah_action eq 'add' || $data->ah_action eq 'remove') {
-                $output .= sprintf ("%s %s %s", $data->ah_action,
-                                    $data->ah_scheme, $data->ah_identifier);
+                if ($data->ah_identifier) {
+                    $output .= sprintf ("%s %s %s", $data->ah_action,
+                                        $data->ah_scheme, $data->ah_identifier);
+                } else {
+                    $output .= sprintf ("%s %s", $data->ah_action, $data->ah_scheme);
+                }
             } elsif ($data->ah_action eq 'rename') {
                 $output .= 'rename from ' . $data->ah_name;
             } else {

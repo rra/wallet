@@ -31,9 +31,9 @@ my @trace = ($admin, $host, time);
 
 # Use Wallet::Admin to set up the database.
 db_setup;
-my $setup = eval { Wallet::Admin->new };
+my $setup = setup_initialize();
 is ($@, '', 'Database connection succeeded');
-is ($setup->reinitialize ($setup), 1, 'Database initialization succeeded');
+is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
 my $schema = $setup->schema;
 
 # Create a few ACLs for later testing.

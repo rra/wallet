@@ -31,7 +31,7 @@ my @trace = ($admin, $host);
 
 # Use Wallet::Admin to set up the database.
 db_setup;
-my $setup = eval { Wallet::Admin->new };
+my $setup = setup_initialize();
 is ($@, '', 'Database initialization did not die');
 is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
 
@@ -44,6 +44,14 @@ ok (defined ($schema), ' and returns a defined schema object');
 
 # Allow creation of base objects for testing purposes.
 $setup->register_object ('base', 'Wallet::Object::Base');
+
+# ### ## ### ## ### ## ### ## ### ## ### ## ### ## ### ## ### #
+sub get_acl_id {
+    my ($acl_name) = @_;
+    my $acl_temp = Wallet::ACL->new ($acl_name, $schema);
+    return $acl_temp->id;
+}
+# ### ## ### ## ### ## ### ## ### ## ### ## ### ## ### ## ### #
 
 # We're currently running as the administrator, so everything should succeed.
 # Set up a bunch of data for us to test with, starting with some ACLs.  Test
@@ -114,8 +122,10 @@ is ($server->acl_add ('user2', 'krb5', $user2), 1, 'Add another entry');
 is ($server->acl_add ('both', 'krb5', $user1), 1, ' and another');
 is ($server->acl_add ('both', 'krb5', $user2), 1,
     ' and another to the same ACL');
+my $acl_both_id = get_acl_id('both');
+my $acl_user2_id = get_acl_id('user2');
 is ($server->acl_show ('both'),
-    "Members of ACL both (id: 4) are:\n  krb5 $user1\n  krb5 $user2\n",
+    "Members of ACL both (id: $acl_both_id) are:\n  krb5 $user1\n  krb5 $user2\n",
     ' and show returns the correct result');
 $history = <<"EOO";
 DATE  create
@@ -140,8 +150,9 @@ is ($server->acl_remove ('empty', 'krb5', $user2), undef,
 is ($server->error,
     "cannot remove krb5:$user2 from empty: entry not found in ACL",
     ' and returns the right error');
+my $acl_empty_id = get_acl_id('empty');
 is ($server->acl_show ('empty'),
-    "Members of ACL empty (id: 6) are:\n  krb5 $user1\n",
+    "Members of ACL empty (id: $acl_empty_id) are:\n  krb5 $user1\n",
     ' and show returns the correct status');
 is ($server->acl_remove ('empty', 'krb5', $user1), 1,
     ' but removing a good one works');
@@ -150,7 +161,7 @@ is ($server->acl_remove ('empty', 'krb5', $user1), undef,
 is ($server->error,
     "cannot remove krb5:$user1 from empty: entry not found in ACL",
     ' and returns the right error');
-is ($server->acl_show ('empty'), "Members of ACL empty (id: 6) are:\n",
+is ($server->acl_show ('empty'), "Members of ACL empty (id: $acl_empty_id) are:\n",
     ' and show returns the correct status');
 
 # Make sure we can't cripple the ADMIN ACL.
@@ -437,11 +448,11 @@ DATE  unset acl_store (was ADMIN (1))
     by $admin from $host
 DATE  set owner to ADMIN (1)
     by $admin from $host
-DATE  set acl_get to empty (6)
+DATE  set acl_get to empty ($acl_empty_id)
     by $admin from $host
-DATE  set acl_store to empty (6)
+DATE  set acl_store to empty ($acl_empty_id)
     by $admin from $host
-DATE  unset acl_store (was empty (6))
+DATE  unset acl_store (was empty ($acl_empty_id))
     by $admin from $host
 DATE  unset owner (was ADMIN (1))
     by $admin from $host
@@ -630,25 +641,25 @@ $expected = <<"EOO";
    Created from: $host
      Created on: 0
 
-Members of ACL both (id: 4) are:
+Members of ACL both (id: $acl_both_id) are:
   krb5 $user1
   krb5 $user2
 
 Members of ACL user1 (id: 2) are:
   krb5 $user1
 
-Members of ACL user2 (id: 3) are:
+Members of ACL user2 (id: $acl_user2_id) are:
   krb5 $user2
 EOO
 is ($show, $expected, ' and show an object we jointly own');
 $history = <<"EOO";
 DATE  create
     by $admin from $host
-DATE  set owner to both (4)
+DATE  set owner to both ($acl_both_id)
     by $admin from $host
 DATE  set acl_show to user1 (2)
     by $admin from $host
-DATE  set acl_destroy to user2 (3)
+DATE  set acl_destroy to user2 ($acl_user2_id)
     by $admin from $host
 DATE  set acl_flags to user1 (2)
     by $admin from $host
@@ -708,14 +719,14 @@ $expected = <<"EOO";
    Created from: $host
      Created on: 0
 
-Members of ACL user2 (id: 3) are:
+Members of ACL user2 (id: $acl_user2_id) are:
   krb5 $user2
 EOO
 is ($show, $expected, ' and show an object we own');
 $history = <<"EOO";
 DATE  create
     by $admin from $host
-DATE  set owner to user2 (3)
+DATE  set owner to user2 ($acl_user2_id)
     by $admin from $host
 EOO
 $seen = $server->history ('base', 'service/user2');
@@ -856,6 +867,7 @@ is ($server->autocreate ('base', 'service/foo'), undef,
 is ($server->error, "$user2 not authorized to create base:service/foo",
     ' with the right error');
 $show = $server->show ('base', 'service/default');
+my $acl_default_id = get_acl_id('default');
 if (defined $show) {
     $show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
     $expected = <<"EOO";
@@ -866,7 +878,7 @@ if (defined $show) {
    Created from: $host
      Created on: 0
 
-Members of ACL default (id: 7) are:
+Members of ACL default (id: $acl_default_id) are:
   krb5 $user1
   krb5 $user2
 EOO
@@ -892,7 +904,7 @@ $expected = <<"EOO";
    Created from: $host
      Created on: 0
 
-Members of ACL user2 (id: 3) are:
+Members of ACL user2 (id: $acl_user2_id) are:
   krb5 $user2
 EOO
 is ($show, $expected, ' and the created object and ACL are correct');
@@ -915,6 +927,7 @@ is ($server->autocreate ('base', 'service/default-admin'), 1,
     'Autocreation works for admin');
 $show = $server->show ('base', 'service/default-admin');
 $show =~ s/(Created on:) [\d-]+ [\d:]+$/$1 0/m;
+my $acl_autoadmin_id = get_acl_id('auto-admin');
 $expected = <<"EOO";
            Type: base
            Name: service/default-admin
@@ -923,7 +936,7 @@ $expected = <<"EOO";
    Created from: $host
      Created on: 0
 
-Members of ACL auto-admin (id: 8) are:
+Members of ACL auto-admin (id: $acl_autoadmin_id) are:
   krb5 $admin
 EOO
 is ($show, $expected, ' and the created object and ACL are correct');
@@ -1027,6 +1040,7 @@ END {
     unlink 'wallet-db';
 }
 
+local $ENV{DBIC_NO_VERSION_CHECK} = 1;
 # Now test handling of some configuration errors.
 undef $Wallet::Config::DB_DRIVER;
 $server = eval { Wallet::Server->new ($user2, $host) };
@@ -1041,3 +1055,4 @@ $Wallet::Config::DB_INFO = 't';
 $server = eval { Wallet::Server->new ($user2, $host) };
 like ($@, qr/unable to open database file/,
       ' or if the database connection fails');
+

@@ -23,7 +23,7 @@ $VERSION = '0.03';
 use Exporter ();
 @ISA    = qw(Exporter);
 @EXPORT = qw(contents db_setup getcreds keytab_valid remctld_spawn
-             remctld_stop);
+             remctld_stop setup_initialize db_setup_sqlite);
 
 ##############################################################################
 # General utility functions
@@ -49,28 +49,45 @@ sub contents {
 sub db_setup {
     $Wallet::Config::DB_DDL_DIRECTORY = 'sql/';
     if (-f 't/data/test.database') {
-        open (DB, '<', 't/data/test.database')
-            or die "cannot open t/data/test.database: $!";
-        my $driver = <DB>;
-        my $info = <DB>;
-        my $user = <DB>;
-        my $password = <DB>;
-        chomp ($driver, $info);
-        chomp $user if $user;
-        chomp $password if $password;
-        $Wallet::Config::DB_DRIVER = $driver;
-        $Wallet::Config::DB_INFO = $info;
-        $Wallet::Config::DB_USER = $user if $user;
-        $Wallet::Config::DB_PASSWORD = $password if $password;
+        db_setup_from_test_database();
     } else {
-
-        # If we have a new SQLite db by default, disable version checking.
-        $ENV{DBIC_NO_VERSION_CHECK} = 1;
-
-        $Wallet::Config::DB_DRIVER = 'SQLite';
-        $Wallet::Config::DB_INFO = 'wallet-db';
-        unlink 'wallet-db';
+        db_setup_sqlite();
     }
+}
+
+sub db_setup_from_test_database {
+    open (DB, '<', 't/data/test.database')
+        or die "cannot open t/data/test.database: $!";
+    my $driver = <DB>;
+    my $info = <DB>;
+    my $user = <DB>;
+    my $password = <DB>;
+    chomp ($driver, $info);
+    chomp $user if $user;
+    chomp $password if $password;
+    $Wallet::Config::DB_DRIVER = $driver;
+    $Wallet::Config::DB_INFO = $info;
+    $Wallet::Config::DB_USER = $user if $user;
+    $Wallet::Config::DB_PASSWORD = $password if $password;
+}
+
+sub db_setup_sqlite {
+    # If we have a new SQLite db by default, disable version checking.
+    $ENV{DBIC_NO_VERSION_CHECK} = 1;
+
+    $Wallet::Config::DB_DRIVER = 'SQLite';
+    $Wallet::Config::DB_INFO = 'wallet-db';
+    unlink 'wallet-db';
+}
+
+
+sub setup_initialize {
+    my $admin;
+    eval {
+        local $ENV{DBIC_NO_VERSION_CHECK} = 1;
+        $admin = Wallet::Admin->new;
+    };
+    return $admin ;
 }
 
 ##############################################################################

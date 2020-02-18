@@ -633,6 +633,32 @@ sub acl_check {
     return 1;
 }
 
+# Retrieves or sets the comment of an ACL. We don't record comment changes
+# to the ACL history table.
+sub acl_comment {
+    my ($self, $id, $comment) = @_;
+    unless ($self->{admin}->check ($self->{user})) {
+        $self->acl_error ($id, 'comment');
+        return;
+    }
+    my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
+    if ($@) {
+        $self->error ($@);
+        return;
+    }
+
+    my $result;
+    if (defined $comment) {
+        $result = $acl->set_comment ($comment);
+    } else {
+        return $acl->get_comment();
+    }
+    if (not defined ($result) and $acl->error) {
+        $self->error ($acl->error);
+    }
+    return $result;
+}
+
 # Create a new empty ACL in the database.  Returns true on success and undef
 # on failure, setting the internal error.
 sub acl_create {

@@ -12,10 +12,11 @@ use strict;
 use warnings;
 
 use POSIX qw(strftime);
-use Test::More tests => 115;
+use Test::More tests => 122;
 
 use Wallet::ACL;
 use Wallet::Admin;
+use Wallet::Config;
 use Wallet::Object::Base;
 
 use lib 't/lib';
@@ -27,13 +28,20 @@ my $user1 = 'alice@EXAMPLE.COM';
 my $user2 = 'bob@EXAMPLE.COM';
 my $host = 'localhost';
 my @trace = ($admin, $host, time);
+my $TZ = DateTime::TimeZone->new( name => 'local' );
 
-# Use Wallet::Admin to set up the database.
+# Use Wallet::Admin to set up the database. This setup destroys the
+# database, so we turn off version checking during the initial setup since
+# we are ging to be destroying the tables anyway. This avoids some
+# unpleasant unversioned schema errors.
+# DBIx::Class::Schema::Versioned::_on_connect(): Your DB is currently unversioned.
 db_setup;
-my $setup = eval { Wallet::Admin->new };
+my $setup = setup_initialize();
 is ($@, '', 'Database connection succeeded');
-is ($setup->reinitialize ($setup), 1, 'Database initialization succeeded');
+is ($setup->reinitialize ($admin), 1, 'Database initialization succeeded');
 my $schema = $setup->schema;
+
+# #### ## #### ## #### ## #### ## #### ## #### ## #### ## #### #
 
 # Test create and new.
 my $acl = eval { Wallet::ACL->create ('test', $schema, @trace) };
@@ -134,7 +142,7 @@ is ($entries[1][0], 'krb5', ' and the right scheme for 2');
 is ($entries[1][1], $user2, ' and the right identifier for 2');
 $expected = <<"EOE";
 Members of ACL test (id: 2) are:
-  krb5 
+  krb5
   krb5 $user2
 EOE
 is ($acl->show, $expected, ' and show returns correctly');
@@ -165,7 +173,7 @@ is ($acl->show, "Members of ACL test (id: 2) are:\n", ' and show concurs');
 is ($acl->check ($user2), 0, ' and the second user check fails');
 is (scalar ($acl->check_errors), '', ' with no error message');
 
-# Test rename.
+# Test nesting.
 my $acl_nest = eval { Wallet::ACL->create ('test-nesting', $schema, @trace) };
 ok (defined ($acl_nest), 'ACL creation for setting up nested');
 if ($acl_nest->add ('nested', 'test', @trace)) {
@@ -173,6 +181,8 @@ if ($acl_nest->add ('nested', 'test', @trace)) {
 } else {
     is ($acl_nest->error, '', ' and adding the nesting');
 }
+
+# Test rename. Rename
 if ($acl->rename ('example', @trace)) {
     ok (1, 'Renaming the ACL');
 } else {
@@ -201,7 +211,7 @@ like ($acl->error, qr/^cannot rename ACL example to ADMIN: /,
 is ($entries[0][1], 'example', ' and the name in a nested ACL updated');
 
 # Test history.
-my $date = strftime ('%Y-%m-%d %H:%M:%S', localtime $trace[2]);
+my $date = DateTime->from_epoch(epoch => $trace[2], time_zone => $TZ)->strftime('%Y-%m-%d %H:%M:%S');
 my $history = <<"EOO";
 $date  create
     by $admin from $host
@@ -211,11 +221,11 @@ $date  add krb5 $user2
     by $admin from $host
 $date  remove krb5 $user1
     by $admin from $host
-$date  add krb5 
+$date  add krb5
     by $admin from $host
 $date  remove krb5 $user2
     by $admin from $host
-$date  remove krb5 
+$date  remove krb5
     by $admin from $host
 $date  rename from test
     by $admin from $host
@@ -248,7 +258,10 @@ $acl = eval { Wallet::ACL->create ('example', $schema, @trace) };
 ok (defined ($acl), ' and creating another with the same name works');
 is ($@, '', ' with no exceptions');
 is ($acl->name, 'example', ' and the right name');
-like ($acl->id, qr{\A[34]\z}, ' and an ID of 3 or 4');
+# Keep in mind that when testing against MySQL failed inserts use up auto-incremented
+# primary keys. Thus, the id for this acl in MySQL will be larger than in
+# SQLite. Thuse we allow this id to be wither 4 or 5.
+like ($acl->id, qr{\A[45]\z}, ' and an ID of 4 or 5');
 
 # Test replace. by creating three acls, then assigning two objects to the
 # first, one to the second, and another to the third.  Then replace the first
@@ -307,6 +320,37 @@ is ($obj_new->owner, 'example-new',
     ' and object already with new acl is correct');
 is ($obj_unrelated->owner, 'example-other',
     ' and unrelated object ownership is correct');
+
+# Test ACL comments.
+my $comment;
+$acl = eval { Wallet::ACL->create ('test-comment', $schema, @trace) };
+ok (defined ($acl), 'ACL creation for setting up comment');
+if (!defined($acl->comment)) {
+    ok (1, ' new ACL has no comment defined');
+} else {
+    is ($acl->error, undef, ' new ACL has no comment defined');
+}
+$comment = 'this is an ACL comment';
+if ($acl->set_comment($comment)) {
+    ok (1, ' added ACL comment');
+} else {
+    is ($acl->error, 1, ' added ACL comment');
+}
+ok (($acl->comment() eq $comment), ' store ACL comment correctly');
+$comment = q{};
+if ($acl->set_comment($comment)) {
+    ok (1, ' added ACL comment');
+} else {
+    is ($acl->error, 1, ' added ACL comment');
+}
+ok (!defined($acl->comment()), ' stored empty ACL comment correctly');
+
+# Test a long comment; should raise an exception.
+$comment = '0' x 259 ;
+eval { ($acl->set_comment($comment)) } ;
+is ($acl->error, 'comment cannot be longer than 255 characters');
+
+$acl->destroy (@trace);
 
 # Clean up.
 $setup->destroy;
