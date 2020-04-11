@@ -54,6 +54,14 @@ wallet 1.4 (2018-06-03)
 
 wallet 1.3 (2016-01-17)
 
+    All Duo object implementations have been merged into a single Perl
+    module.  Duo objects should continue to behave as before, but the
+    database must be updated to map the object names to the correct Perl
+    modules.  Run perl/sql/wallet-1.3-update-duo.sql on your database to
+    fix the Duo object type registrations if you were using Duo.  Many
+    more Duo object types are now supported and can be manually registered
+    with wallet-admin register object.
+
     This release adds initial, experimental support for using Active
     Directory as the KDC for keytab creation.  The interface to Active
     Directory uses a combination of direct LDAP queries and the msktutil
