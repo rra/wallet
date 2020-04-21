@@ -5,3 +5,4 @@
 0005-checksum-doc.patch
 0006-file-crypt.patch
 0007-class-error.patch
+0008-invalid-ldap-url.patch
