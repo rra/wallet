@@ -7,3 +7,4 @@
 0007-class-error.patch
 0008-invalid-ldap-url.patch
 0009-require-perl-gssapi.patch
+0010-empty-store.patch
