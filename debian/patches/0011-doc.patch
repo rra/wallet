@@ -1,0 +1,168 @@
+Minor changes to the documentation
+
+Wallet client man page
+* Add the checksum command
+* Add acl add examples
+
+Update documentation for Object encryption in Config.pm
+--- a/client/wallet.pod
++++ b/client/wallet.pod
+@@ -181,7 +181,13 @@ For more information on attributes, see
+ =item acl add <id> <scheme> <identifier>
+ 
+ Add an entry with <scheme> and <identifier> to the ACL <id>.  <id> may be
+-either the name of an ACL or its numeric identifier.
++either the name of an ACL or its numeric identifier.  Three schemes are
++supported: krb5, netdb, and ldap-attr.  The netdb and ldap-attr must
++be configured before they can be used.  Examples:
++
++    wallet acl add config/db krb5 mac@CA-ZEPHYR.ORG
++    wallet acl add config/db netdb host/keddie.ca-zephyr.org
++    wallet acl add config/db ldap-attr czPrivilegeGroup=admin
+ 
+ =item acl check <id>
+ 
+@@ -257,6 +263,10 @@ already exist.
+ Check whether an object of type <type> and name <name> already exists.  If
+ it does, prints C<yes>; if not, prints C<no>.
+ 
++=item checksum
++
++Returns the checksum for file objects.
++
+ =item comment <type> <name> [<comment>]
+ 
+ If <comment> is not given, displays the current comment for the object
+@@ -390,7 +400,7 @@ will attempt to automatically create it
+ 
+ Prints to standard output the data associated with the object identified
+ by <type> and <name>, or stores it in a file if the B<-f> option was
+-given.  This will generate new data in the object, and only works for 
++given.  This will generate new data in the object, and only works for
+ objects that support generating new data automatically, such as keytabs or
+ passwords.  Types that do not support generating new data will fail and
+ direct you to use get instead.
+--- a/perl/lib/Wallet/Config.pm
++++ b/perl/lib/Wallet/Config.pm
+@@ -723,6 +723,9 @@ specify the LDAP server and additional c
+ information required for the wallet to check for the existence of
+ attributes.
+ 
++The format for specifying an LDAP ACL is "acl-attr "<simple filter>"
++where a simple filter is of the form "attribute=value".
++
+ =over 4
+ 
+ =item LDAP_HOST
+@@ -765,35 +768,6 @@ with this ACL type.  This variable must
+ 
+ =cut
+ 
+-our $LDAP_SECRET;
+-
+-=item LDAP_SECRET
+-
+-Specifies an LDAP URL that is used to retrieve the secret to use when
+-encrypting and decrypting file objects.  The url must not include the
+-hostname.  LDAP_HOST will be used as the hostname to bind to. The
+-Kerberos ticket cache specified in LDAP_CACHE is used when connecting
+-to the LDAP server.  GSS-API authentication is always used; there is
+-currently no support for any other type of bind.  The ticket cache
+-must be for a principal with access to retrieve the secret.  This
+-variable and LDAP_CACHE must be set to use file object encryption.
+-
+-=cut
+-
+-our $LDAP_SECRET_PREFIX;
+-
+-=item LDAP_SECRET_PREFIX
+-
+-Specifies the prefix to be used when generating storing an encrypted
+-file object.  The prefix is used to determine whether or not a file
+-object has been stored encrypted.  This allows the gradual transition
+-from unencrypted file objects to encrypted file objects.  When file
+-object encryption is enable any "get" of an unencyrpted file object
+-will result in the replacement of the unencrypted object with an
+-encrypted object.
+-
+-=cut
+-
+ our $LDAP_CACHE;
+ 
+ =back
+@@ -825,13 +799,48 @@ Note that this example only removes the
+ Any principal from some other realm will be left fully qualified, and then
+ presumably will not be found in the directory.
+ 
+-=head2 File Object Encryption
++=head1 FILE OBJECT ENCRYPTION
++
++=over 4
++
++=item LDAP_SECRET
++
++Specifies an LDAP URL that is used to retrieve the secret to use when
++encrypting and decrypting file objects.  The url must not include the
++hostname.  LDAP_HOST will be used as the hostname to bind to. The
++Kerberos ticket cache specified in LDAP_CACHE is used when connecting
++to the LDAP server.  GSS-API authentication is always used; there is
++currently no support for any other type of bind.  The ticket cache
++must be for a principal with access to retrieve the secret.  This
++variable and LDAP_CACHE must be set to use file object encryption.
++
++=cut
++
++our $LDAP_SECRET;
++
++=item LDAP_SECRET_PREFIX
+ 
+-The default encryption method use is based on the twofish cypher.  If
++Specifies the prefix to be used when generating storing an encrypted
++file object.  The prefix is used to determine whether or not a file
++object has been stored encrypted.  This allows the gradual transition
++from unencrypted file objects to encrypted file objects.  When file
++object encryption is enable any "get" of an unencyrpted file object
++will result in the replacement of the unencrypted object with an
++encrypted object.
++
++=cut
++
++our $LDAP_SECRET_PREFIX;
++
++=item file_crypt;
++
++This functionality has not been implmented yet.
++
++The default encryption method is based on the twofish cypher.  If
+ another encryption method is desired then the perl function file_crypt
+-should be defined.  The function must accept three parameters: the
+-action to preform, the encryption secret, and the string to encrypt or
+-decrypt.  For example:
++should be defined in the configuration file.  The function must accept
++three parameters: the action to preform, the encryption secret, and
++the string to encrypt or decrypt.  For example:
+ 
+     sub file_crypt {
+         use Crypt::RC4;
+@@ -846,6 +855,21 @@ decrypt.  For example:
+         return $return_string;
+     }
+ 
++=item file_crypt_secret
++
++This functionality has not been implmented yet.
++
++The default method use is based on the twofish cypher.  If another
++method of retrieving a secret is desired then the perl function
++file_crypt_secret should be defined.  The function accepts no
++parameters and returns the secret to be used.  For example:
++
++    sub file_crypt_secret {
++        return "thisIsABadIdea";
++    }
++
++=back
++
+ =head1 NETDB ACL CONFIGURATION
+ 
+ These configuration variables are only needed if you intend to use the
