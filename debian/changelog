@@ -1,4 +1,4 @@
-wallet (1.4-4) UNRELEASED; urgency=medium
+wallet (1.4-4) unstable; urgency=medium
 
   * Add support for encrypting file objects.
   * Update object class error reporting to make it more obvious when
