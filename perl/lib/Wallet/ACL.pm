@@ -1,7 +1,7 @@
 # Wallet::ACL -- Implementation of ACLs in the wallet system
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2016, 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007-2008, 2010, 2013-2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -438,7 +438,7 @@ sub history {
     eval {
         my $guard = $self->{schema}->txn_scope_guard;
         my %search  = (ah_acl => $self->{id});
-        my %options = (order_by => 'ah_on');
+        my %options = (order_by => { -asc => [qw/ah_on ah_id/] });
         my @data = $self->{schema}->resultset('AclHistory')
             ->search (\%search, \%options);
         for my $data (@data) {
