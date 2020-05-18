@@ -14,8 +14,8 @@
 
 set -eux
 
-# Install the KDC.
-apt-get install krb5-admin-server krb5-kdc
+# Install the KDC and user programs.
+apt-get install krb5-admin-server krb5-kdc krb5-user
 
 # Install its configuration files.
 cp ci/files/mit/kadm5.acl /etc/krb5kdc/kadm5.acl

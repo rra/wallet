@@ -1,0 +1,85 @@
+#!/bin/sh
+#
+# Build a Kerberos test realm for Heimdal.
+#
+# This script automates the process of setting up a Kerberos test realm from
+# scratch suitable for testing pam-krb5.  It is primarily intended to be run
+# from inside CI in a VM or container from the top of the wallet source tree,
+# and must be run as root.  It expects to be operating on the Debian Heimdal
+# package.
+#
+# Copyright 2014, 2020 Russ Allbery <eagle@eyrie.org>
+#
+# SPDX-License-Identifier: MIT
+
+set -eux
+
+# Install the KDC and user programs.
+apt-get install heimdal-clients heimdal-kdc
+
+# Install its configuration files.
+cp ci/files/heimdal/heimdal-kdc /etc/default/heimdal-kdc
+cp ci/files/heimdal/kadmind.acl /etc/heimdal-kdc/kadmind.acl
+cp ci/files/heimdal/kdc.conf /etc/heimdal-kdc/kdc.conf
+cp ci/files/heimdal/krb5.conf /etc/krb5.conf
+
+# Some versions of heimdal-kdc require this.
+ln -s /etc/heimdal-kdc/kadmind.acl /var/lib/heimdal-kdc/kadmind.acl
+
+# Add domain-realm mappings for the local host, since otherwise Heimdal and
+# MIT Kerberos may attempt to discover the realm of the local domain, and the
+# DNS server for GitHub Actions has a habit of just not responding and causing
+# the test to hang.
+cat <<EOF >>/etc/krb5.conf
+[domain_realm]
+    $(hostname -f) = HEIMDAL.TEST
+EOF
+cat <<EOF >>/etc/heimdal-kdc/kdc.conf
+[domain_realm]
+    $(hostname -f) = HEIMDAL.TEST
+EOF
+
+# Create the basic KDC.
+kstash --random-key
+kadmin -l init --realm-max-ticket-life='1 day 1 hour' \
+    --realm-max-renewable-life='1 week' HEIMDAL.TEST
+
+# Set default principal policies.
+kadmin -l modify --attributes=requires-pre-auth,disallow-svr \
+    default@HEIMDAL.TEST
+
+# Create and store the keytab.
+kadmin -l add -r --use-defaults --attributes=requires-pre-auth \
+    test/wallet@HEIMDAL.TEST
+kadmin -l ext_keytab -k tests/config/keytab test/wallet@HEIMDAL.TEST
+echo 'test/wallet@HEIMDAL.TEST' >tests/config/principal
+
+# Create a user principal with a known password.
+password="iceedKaicVevjunwiwyd"
+kadmin -l add --use-defaults --password="$password" testuser@HEIMDAL.TEST
+echo 'testuser@HEIMDAL.TEST' >tests/config/password
+echo "$password" >>tests/config/password
+
+# Copy some of those files to the Perl test suite.
+cp tests/config/keytab perl/t/data/test.keytab
+cp tests/config/principal perl/t/data/test.principal
+echo 'HEIMDAL.TEST' >perl/t/data/test.realm
+echo 'Heimdal' >perl/t/data/test.krbtype
+
+# Fix permissions on all the newly-created files.
+chmod 644 tests/config/* perl/t/data/test.*
+
+# Restart the Heimdal KDC and services.
+systemctl stop heimdal-kdc
+systemctl start heimdal-kdc
+
+# Ensure that the KDC is running.
+for n in $(seq 1 5); do
+    if echo "$password" \
+            | kinit --password-file=STDIN testuser@HEIMDAL.TEST; then
+        break
+    fi
+    sleep 1
+done
+klist
+kdestroy
