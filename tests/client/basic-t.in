@@ -53,7 +53,7 @@ elif [ -z '@REMCTLD@' ] ; then
     rm krb5.conf
     skip_all 'No remctld found'
 else
-    plan 36
+    plan 37
 fi
 remctld_start '@REMCTLD@' "$C_TAP_SOURCE/data/basic.conf"
 wallet="$C_TAP_BUILD/../client/wallet"
@@ -103,8 +103,8 @@ rm -f keytab
 # Test srvtab support.
 output=`"$wallet" -f keytab -S srvtab get keytab service/fake-srvtab 2>&1`
 if [ x"$output" = x"wallet: Not built with Kerberos v4 support" ]; then
-    rm -f keytab srvtab
     skip_block 8 'Not built with Kerberos v4 support'
+    rm -f keytab srvtab
 else
     rm -f keytab srvtab
     ok_program 'get srvtab' 0 '' \
@@ -127,6 +127,8 @@ else
 fi
 
 # Test keytab merging.
+ok_program 'get keytab' 0 '' \
+    "$wallet" -f keytab get keytab service/fake-srvtab
 ok_program 'keytab merging' 0 '' \
     "$wallet" -f keytab get keytab service/fake-keytab
 ktutil_list keytab klist-seen
