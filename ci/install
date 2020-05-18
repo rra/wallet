@@ -30,7 +30,8 @@ apt-get install aspell cpanminus cppcheck heimdal-multidev              \
         libnet-duo-perl libnet-ldap-perl libnet-remctl-perl             \
         libperl6-slurp-perl libremctl-dev libsql-translator-perl        \
         libtest-pod-perl libtest-spelling-perl libtest-strict-perl      \
-        libtimedate-perl libwebauth-perl perl sqlite3 valgrind
+        libtimedate-perl libwebauth-perl perl remctl-server sqlite3     \
+        valgrind
 
 # Dependencies for Perl tests.
 cpanm Perl::Tidy
