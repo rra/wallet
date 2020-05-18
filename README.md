@@ -1,7 +1,7 @@
 # wallet 1.4
 
 [![Build
-status](https://travis-ci.org/rra/wallet.svg?branch=master)](https://travis-ci.org/rra/wallet)
+status](https://github.com/rra/wallet/workflows/build/badge.svg)](https://github.com/rra/wallet/actions)
 
 Copyright 2014, 2016, 2018 Russ Allbery <eagle@eyrie.org>.  Copyright
 2006-2010, 2012-2014 The Board of Trustees of the Leland Stanford Junior
@@ -99,10 +99,12 @@ supports the `-norandkey` option to `ktadd`.  This option is included in
 MIT Kerberos 1.7 and later.
 
 The WebAuth keyring object support in the wallet server requires the
-WebAuth Perl module from WebAuth 4.4.0 or later.
+WebAuth Perl module from [WebAuth 4.4.0 or
+later](https://www.eyrie.org/~eagle/software/webauth/).
 
 The Duo integration object support in the wallet server requires the
-Net::Duo, JSON, and Perl6::Slurp Perl modules.
+[Net::Duo](https://www.eyrie.org/~eagle/software/net-duo/), JSON, and
+Perl6::Slurp Perl modules.
 
 The password object support in the wallet server requires the
 Crypt::GeneratePassword Perl module.

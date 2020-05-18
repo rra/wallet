@@ -38,7 +38,9 @@
         "browse": "https://git.eyrie.org/?p=kerberos/wallet.git",
         "github": "rra/wallet",
         "openhub": "https://www.openhub.net/p/wallet",
-        "travis": "rra/wallet",
+        "status": {
+            "workflow": "build",
+        },
     },
     "readme": {
         "sections": [

@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# Install packages for integration tests.
+#
+# This script is normally run via sudo in a test container or VM, such as via
+# GitHub Actions.
+#
+# Perl::Tidy, Perl::Critic, and Test::Perl::Critic are installed separately to
+# get the latest version, since they sometimes change formatting and style
+# rules compared to the version in Ubuntu.  Test::MinimumVersion has to be
+# included since it installs Perl::Critic.
+#
+# Allow the installation of Perl::Critic and Test::Perl::Critic to fail, since
+# sometimes the versions on CPAN won't install.  (We'll just skip the test if
+# it won't install.)
+#
+# Copyright 2015-2020 Russ Allbery <eagle@eyrie.org>
+#
+# SPDX-License-Identifier: MIT
+
+set -eux
+
+# Install packages.
+apt-get update -qq
+apt-get install aspell cpanminus cppcheck heimdal-multidev              \
+        libauthen-sasl-perl libcrypt-generatepassword-perl              \
+        libdatetime-perl libdatetime-format-sqlite-perl                 \
+        libdbd-sqlite3-perl libdbi-perl libdbix-class-perl              \
+        libheimdal-kadm5-perl libjson-perl libkrb5-dev libnet-dns-perl  \
+        libnet-ldap-perl libnet-remctl-perl libperl6-slurp-perl         \
+        libremctl-dev libsql-translator-perl libtest-pod-perl           \
+        libtest-spelling-perl libtest-strict-perl libtimedate-perl      \
+        libwebauth-perl perl sqlite3 valgrind
+
+# Dependencies for Perl tests.
+cpanm Perl::Tidy
+cpanm Perl::Critic         || true
+cpanm Test::MinimumVersion || true
+cpanm Test::Perl::Critic   || true
