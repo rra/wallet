@@ -47,8 +47,8 @@ kinit(krb5_context ctx, const char *principal)
     krb5_get_init_creds_opt_set_default_flags(ctx, "wallet", princ->realm,
                                               opts);
     memset(&creds, 0, sizeof(creds));
-    status = krb5_get_init_creds_password(ctx, &creds, princ, NULL,
-                 krb5_prompter_posix, NULL, 0, NULL, opts);
+    status = krb5_get_init_creds_password(
+        ctx, &creds, princ, NULL, krb5_prompter_posix, NULL, 0, NULL, opts);
     if (status != 0)
         die_krb5(ctx, status, "authentication failed");
 

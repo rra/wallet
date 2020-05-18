@@ -18,9 +18,9 @@
 #include <util/messages.h>
 
 #ifndef KRB5_KRB4_COMPAT
-# define ANAME_SZ 40
-# define INST_SZ  40
-# define REALM_SZ 40
+#    define ANAME_SZ 40
+#    define INST_SZ  40
+#    define REALM_SZ 40
 #endif
 
 /*
@@ -51,7 +51,7 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     krb5_error_code ret;
     size_t length;
     char aname[ANAME_SZ + 1] = "";
-    char inst[INST_SZ + 1]   = "";
+    char inst[INST_SZ + 1] = "";
     char realm[REALM_SZ + 1] = "";
     char data[ANAME_SZ + 1 + INST_SZ + 1 + REALM_SZ + 1 + 1 + 8];
 

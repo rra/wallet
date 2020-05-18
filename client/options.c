@@ -124,7 +124,7 @@ default_options(krb5_context ctx, struct options *options)
 
     /* Having no local realm may be intentional, so don't report an error. */
     krb5_get_default_realm(ctx, &realm);
-        
+
     /* Load the options. */
     default_string(ctx, realm, "wallet_type", "wallet", &options->type);
     default_string(ctx, realm, "wallet_server", WALLET_SERVER,

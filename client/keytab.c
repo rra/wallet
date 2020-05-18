@@ -248,8 +248,7 @@ rekey_keytab(struct remctl *r, krb5_context ctx, const char *type,
         } else {
             merge_keytab(ctx, tempfile, file);
             if (unlink(tempfile) < 0)
-                syswarn("unlink of temporary keytab file %s failed",
-                        tempfile);
+                syswarn("unlink of temporary keytab file %s failed", tempfile);
         }
     }
 

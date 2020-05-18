@@ -12,8 +12,8 @@
 #ifndef CLIENT_INTERNAL_H
 #define CLIENT_INTERNAL_H 1
 
-#include <portable/macros.h>
 #include <portable/krb5.h>
+#include <portable/macros.h>
 
 #include <sys/types.h>
 
@@ -22,10 +22,10 @@
  * people don't want to use krb5.conf for some reason.
  */
 #ifndef WALLET_SERVER
-# define WALLET_SERVER NULL
+#    define WALLET_SERVER NULL
 #endif
 #ifndef WALLET_PORT
-# define WALLET_PORT 0
+#    define WALLET_PORT 0
 #endif
 
 /* Forward declarations to avoid unnecessary includes. */

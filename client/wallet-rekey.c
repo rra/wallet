@@ -3,7 +3,7 @@
  *
  * Written by Russ Allbery <eagle@eyrie.org>
  *        and Jon Robertson <jonrober@stanford.edu>
- * Copyright 2018 Russ Allbery <eagle@eyrie.org>
+ * Copyright 2018, 2020 Russ Allbery <eagle@eyrie.org>
  * Copyright 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -14,12 +14,12 @@
 #include <portable/krb5.h>
 #include <portable/system.h>
 
-#include <remctl.h>
 #include <errno.h>
+#include <remctl.h>
 
 #include <client/internal.h>
-#include <util/messages.h>
 #include <util/messages-krb5.h>
+#include <util/messages.h>
 
 /*
  * Usage message.  Use as a format and pass the port number and default server
@@ -41,7 +41,7 @@ Options:\n\
 /*
  * Display the usage message for wallet-rekey.
  */
-static void __attribute__((__noreturn__))
+__attribute__((__noreturn__)) static void
 usage(int status)
 {
     fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT,

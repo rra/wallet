@@ -46,7 +46,7 @@ Options:\n\
 /*
  * Display the usage message for wallet.
  */
-static void __attribute__((__noreturn__))
+__attribute__((__noreturn__)) static void
 usage(int status)
 {
     fprintf((status == 0) ? stdout : stderr, usage_message, WALLET_PORT,

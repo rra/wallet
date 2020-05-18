@@ -1,7 +1,7 @@
 # Automake makefile for wallet.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2016, 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2016, 2018, 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2006-2008, 2010, 2013-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -320,3 +320,9 @@ check-cppcheck:
 # uninstall from Perl.
 distuninstallcheck:
 	@:
+
+# Used by maintainers to reformat all source code using clang-format and
+# excluding some files.
+reformat:
+	find . -name '*.[ch]' \! -name snprintf.c \! -name krb5-profile.c \
+	     -print | xargs clang-format-10 -style=file -i
