@@ -3,6 +3,7 @@
 # Tests for the wallet server API.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -1026,6 +1027,9 @@ $setup->destroy;
 END {
     unlink 'wallet-db';
 }
+
+# Suppress complaints from an unversioned database from DBIx::Class.
+local $ENV{DBIC_NO_VERSION_CHECK} = 1;
 
 # Now test handling of some configuration errors.
 undef $Wallet::Config::DB_DRIVER;
