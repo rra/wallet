@@ -1,7 +1,7 @@
 # Wallet::Report -- Wallet system reporting interface
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2016, 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008-2010, 2013-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -504,7 +504,8 @@ sub acls_unused {
 }
 
 # Obtain a textual representation of the membership of an ACL, returning undef
-# on error and setting the internal error.
+# on error and setting the internal error.  Make sure the membership is sorted
+# so that comparisons are possible.
 sub acl_membership {
     my ($self, $id) = @_;
     my $acl = eval { Wallet::ACL->new ($id, $self->{schema}) };
@@ -512,7 +513,9 @@ sub acl_membership {
         $self->error ($@);
         return;
     }
-    my @members = map { "$_->[0] $_->[1]" } $acl->list;
+    my @entries = $acl->list;
+    @entries = sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] } $acl->list;
+    my @members = map { "$_->[0] $_->[1]" } @entries;
     if (!@members && $acl->error) {
         $self->error ($acl->error);
         return;
