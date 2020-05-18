@@ -1,6 +1,7 @@
 # Utility class for wallet tests.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007-2008, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -18,7 +19,7 @@ use Wallet::Config;
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 use Exporter ();
 @ISA    = qw(Exporter);
@@ -123,12 +124,12 @@ sub remctld_spawn {
     unlink 'test-pid';
     my @command = ($path, '-m', '-p', 14373, '-s', $principal, '-P',
                    'test-pid', '-f', $config, '-S', '-F', '-k', $keytab);
-    print "Starting remctld: @command\n";
+    print "# Starting remctld: @command\n";
     my $pid = fork;
     if (not defined $pid) {
         die "cannot fork: $!\n";
     } elsif ($pid == 0) {
-        open (STDERR, '>&STDOUT') or die "cannot redirect stderr: $!\n";
+        open (STDOUT, '>&STDERR') or die "cannot redirect stdout: $!\n";
         exec (@command) or die "cannot exec $path: $!\n";
     } else {
         my $tries = 0;
