@@ -1,7 +1,7 @@
 dnl Autoconf configuration for wallet.
 dnl
 dnl Written by Russ Allbery <eagle@eyrie.org>
-dnl Copyright 2014, 2016, 2018 Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2014, 2016, 2018, 2020 Russ Allbery <eagle@eyrie.org>
 dnl Copyright 2006-2008, 2010, 2013-2014
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
@@ -58,10 +58,12 @@ RRA_LIB_REMCTL
 RRA_LIB_KRB5
 RRA_LIB_KRB5_SWITCH
 AC_CHECK_TYPES([krb5_realm], [], [], [RRA_INCLUDES_KRB5])
-AC_CHECK_FUNCS([krb5_free_default_realm \
+AC_CHECK_FUNCS([krb5_524_conv_principal \
+    krb5_free_default_realm \
     krb5_get_init_creds_opt_alloc \
     krb5_get_init_creds_opt_set_default_flags \
-    krb5_principal_get_realm])
+    krb5_principal_get_realm \
+    krb5_xfree])
 AC_CHECK_FUNCS([krb5_get_init_creds_opt_free],
     [RRA_FUNC_KRB5_GET_INIT_CREDS_OPT_FREE_ARGS])
 AC_CHECK_DECLS([krb5_kt_free_entry], [], [], [RRA_INCLUDES_KRB5])

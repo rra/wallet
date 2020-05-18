@@ -3,7 +3,7 @@
 # Test suite for the wallet command-line client.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2018, 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2006-2008, 2010
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -101,16 +101,30 @@ ok '...and keytab is correct' cmp keytab data/fake-keytab
 rm -f keytab
 
 # Test srvtab support.
-ok_program 'get srvtab' 0 '' \
-    "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
-ok '...and keytab is correct' cmp keytab data/fake-keytab
-rm -f keytab
-ok_program 'get srvtab again' 0 '' \
-    "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
-ok '...and keytab is correct' cmp keytab data/fake-keytab
-ok '...and srvtab is correct' cmp srvtab data/fake-srvtab
-ok '...and srvtab backup is correct' cmp srvtab.bak data/fake-srvtab
-rm -f srvtab srvtab.bak
+output=`"$wallet" -f keytab -S srvtab get keytab service/fake-srvtab 2>&1`
+if [ x"$output" = x"wallet: Not built with Kerberos v4 support" ]; then
+    rm -f keytab srvtab
+    skip_block 8 'Not built with Kerberos v4 support'
+else
+    rm -f keytab srvtab
+    ok_program 'get srvtab' 0 '' \
+        "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
+    ok '...and keytab is correct' cmp keytab data/fake-keytab
+    rm -f keytab
+    ok_program 'get srvtab again' 0 '' \
+        "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
+    ok '...and keytab is correct' cmp keytab data/fake-keytab
+    ok '...and srvtab is correct' cmp srvtab data/fake-srvtab
+    ok '...and srvtab backup is correct' cmp srvtab.bak data/fake-srvtab
+    rm -f srvtab srvtab.bak
+
+    # Test srvtab download into a merged keytab with an older version.
+    cp data/fake-keytab-old keytab
+    ok_program 'keytab merging with srvtab creation' 0 '' \
+        "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
+    ok '...and the srvtab is correct' cmp srvtab data/fake-srvtab
+    rm -f keytab srvtab
+fi
 
 # Test keytab merging.
 ok_program 'keytab merging' 0 '' \
@@ -119,13 +133,6 @@ ktutil_list keytab klist-seen
 ktutil_list data/fake-keytab-merge klist-good
 ok '...and the merged keytab is correct' cmp klist-seen klist-good
 rm -f keytab klist-good klist-seen
-
-# Test srvtab download into a merged keytab with an older version.
-cp data/fake-keytab-old keytab
-ok_program 'keytab merging with srvtab creation' 0 '' \
-    "$wallet" -f keytab -S srvtab get keytab service/fake-srvtab
-ok '...and the srvtab is correct' cmp srvtab data/fake-srvtab
-rm -f keytab srvtab
 
 # Test store from standard input.
 echo "This is a test of store" > input

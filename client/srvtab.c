@@ -2,6 +2,7 @@
  * Implementation of srvtab handling for the wallet client.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2020 Russ Allbery <eagle@eyrie.org>
  * Copyright 2007, 2008, 2010
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -65,10 +66,14 @@ write_srvtab(krb5_context ctx, const char *srvtab, const char *principal,
     krb5_kt_close(ctx, kt);
 
     /* Convert the principal to a Kerberos v4 principal. */
+#ifdef HAVE_KRB5_524_CONV_PRINCIPAL
     ret = krb5_524_conv_principal(ctx, princ, aname, inst, realm);
     if (ret != 0)
         die_krb5(ctx, ret, "error converting principal %s to Kerberos v4",
                  principal);
+#else
+    die("Not built with Kerberos v4 support");
+#endif
 
     /* Assemble the srvtab data. */
     length = 0;
