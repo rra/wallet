@@ -2,6 +2,9 @@
 
 wallet 1.5 (unreleased)
 
+    Fix the table drop order for wallet-admin destroy to avoid violating
+    foreign key constraints.  Patch from macrotex.
+
     Update to rra-c-util 8.2:
 
     * Implement explicit_bzero with memset if it is not available.
