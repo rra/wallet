@@ -23,6 +23,15 @@
 # define REALM_SZ 40
 #endif
 
+/*
+ * Disable the warning about a missing noreturn attribute, which may be
+ * triggered if the version of the Kerberos libraries doesn't contain
+ * krb5_524_conv_principal.
+ */
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 2) || defined(__clang__)
+#    pragma GCC diagnostic ignored "-Wmissing-noreturn"
+#endif
+
 
 /*
  * Given the Kerberos context, srvtab file name, a Kerberos principal (as a

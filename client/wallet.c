@@ -2,7 +2,7 @@
  * The client program for the wallet system.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2018 Russ Allbery <eagle@eyrie.org>
+ * Copyright 2018, 2020 Russ Allbery <eagle@eyrie.org>
  * Copyright 2006-2008, 2010, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -14,6 +14,7 @@
 #include <portable/system.h>
 #include <portable/uio.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <remctl.h>
 
@@ -181,6 +182,7 @@ main(int argc, char *argv[])
                 count++;
         }
         command = xcalloc(count, sizeof(struct iovec));
+        assert(options.type != NULL);
         command[0].iov_base = (char *) options.type;
         command[0].iov_len = strlen(options.type);
         for (i = 0; i < argc; i++) {
