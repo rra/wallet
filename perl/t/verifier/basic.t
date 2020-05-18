@@ -3,6 +3,7 @@
 # Tests for the basic wallet ACL verifiers.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2007-2008, 2010, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -76,7 +77,7 @@ SKIP: {
     # Now spawn our remctld server and get a ticket cache.
     unlink ('krb5cc_test', 'test-acl', 'test-pid');
     remctld_spawn ($remctld, $principal, 't/data/test.keytab',
-                   't/data/netdb.conf');
+                   't/data/netdb.conf', 1);
     $ENV{KRB5CCNAME} = 'krb5cc_test';
     getcreds ('t/data/test.keytab', $principal);
 

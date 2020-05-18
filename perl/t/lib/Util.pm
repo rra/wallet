@@ -120,7 +120,7 @@ sub keytab_valid {
 # the keytab it uses for authentication, and the configuration file it should
 # load.
 sub remctld_spawn {
-    my ($path, $principal, $keytab, $config) = @_;
+    my ($path, $principal, $keytab, $config, $silent) = @_;
     unlink 'test-pid';
     my @command = ($path, '-m', '-p', 14373, '-s', $principal, '-P',
                    'test-pid', '-f', $config, '-S', '-F', '-k', $keytab);
@@ -129,7 +129,14 @@ sub remctld_spawn {
     if (not defined $pid) {
         die "cannot fork: $!\n";
     } elsif ($pid == 0) {
-        open (STDOUT, '>&STDERR') or die "cannot redirect stdout: $!\n";
+        if ($silent) {
+            open (STDOUT, '>', '/dev/null')
+              or die "cannot redirect stdout: $!\n";
+            open (STDERR, '>', '/dev/null')
+              or die "cannot redirect stdout: $!\n";
+        } else {
+            open (STDOUT, '>&STDERR') or die "cannot redirect stdout: $!\n";
+        }
         exec (@command) or die "cannot exec $path: $!\n";
     } else {
         my $tries = 0;
