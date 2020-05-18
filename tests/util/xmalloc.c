@@ -4,7 +4,7 @@
  * The canonical version of this file is maintained in the rra-c-util package,
  * which can be found at <https://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
- * Copyright 2000-2001, 2006, 2017 Russ Allbery <eagle@eyrie.org>
+ * Copyright 2000-2001, 2006, 2017, 2020 Russ Allbery <eagle@eyrie.org>
  * Copyright 2008, 2012-2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -34,10 +34,11 @@
 #include <config.h>
 #include <portable/system.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
+#    include <sys/time.h>
 #endif
 #include <time.h>
 
@@ -94,6 +95,7 @@ test_realloc(size_t size)
     char *buffer;
     size_t i;
 
+    assert(size > 10);
     buffer = xmalloc(10);
     if (buffer == NULL)
         return 0;
@@ -101,8 +103,7 @@ test_realloc(size_t size)
     buffer = xrealloc(buffer, size);
     if (buffer == NULL)
         return 0;
-    if (size > 0)
-        memset(buffer + 10, 2, size - 10);
+    memset(buffer + 10, 2, size - 10);
     for (i = 0; i < 10; i++)
         if (buffer[i] != 1)
             return 0;
@@ -383,6 +384,7 @@ main(int argc, char *argv[])
 #endif
     }
 
+    /* clang-format off */
     switch (code) {
     case 'c': exit(test_calloc(size) ? willfail : 1);
     case 'm': exit(test_malloc(size) ? willfail : 1);
@@ -394,5 +396,7 @@ main(int argc, char *argv[])
     case 'v': exit(test_vasprintf(size) ? willfail : 1);
     default:  die("Unknown mode %c", argv[1][0]);
     }
+    /* clang-format on */
+
     exit(1);
 }

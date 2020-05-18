@@ -23,7 +23,7 @@ use Wallet::Config;
 use Wallet::Object::Base;
 
 our @ISA     = qw(Wallet::Object::Base);
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # File naming

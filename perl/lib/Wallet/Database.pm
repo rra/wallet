@@ -26,7 +26,7 @@ use Wallet::Config;
 use Wallet::Schema;
 
 our @ISA     = qw(Wallet::Schema);
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # Core overrides

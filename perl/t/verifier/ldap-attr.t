@@ -6,7 +6,7 @@
 # access to the LDAP server and will be skipped in all other environments.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2018, 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2012-2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -15,11 +15,12 @@
 use strict;
 use warnings;
 
-use Test::More;
-
 use lib 't/lib';
+
 use Test::RRA qw(skip_unless_author);
 use Util;
+
+use Test::More;
 
 # This test requires a specific environment setup, so only run it for package
 # maintainers.

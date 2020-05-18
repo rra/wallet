@@ -14,7 +14,7 @@ dnl
 dnl The canonical version of this file is maintained in the rra-c-util
 dnl package, available at <https://www.eyrie.org/~eagle/software/rra-c-util/>.
 dnl
-dnl Copyright 2016-2018 Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2016-2020 Russ Allbery <eagle@eyrie.org>
 dnl Copyright 2006, 2009, 2016
 dnl     by Internet Systems Consortium, Inc. ("ISC")
 dnl
@@ -36,7 +36,7 @@ dnl Used to build the result cache name.
 AC_DEFUN([_RRA_PROG_CC_FLAG_CACHE],
 [translit([rra_cv_compiler_c_$1], [-=+], [___])])
 
-dnl Check whether a given flag is supported by the complier.
+dnl Check whether a given flag is supported by the compiler.
 AC_DEFUN([RRA_PROG_CC_FLAG],
 [AC_REQUIRE([AC_PROG_CC])
  AC_MSG_CHECKING([if $CC supports $1])
@@ -61,7 +61,7 @@ dnl
 dnl   -Wsign-conversion  Too many fiddly changes for the benefit
 dnl   -Wstack-protector  Too many false positives from small buffers
 dnl
-dnl Last checked against gcc 7.2.0 (2017-12-28).  -D_FORTIFY_SOURCE=2 enables
+dnl Last checked against gcc 9.2.1 (2019-09-01).  -D_FORTIFY_SOURCE=2 enables
 dnl warn_unused_result attribute markings on glibc functions on Linux, which
 dnl catches a few more issues.  Add -O2 because gcc won't find some warnings
 dnl without optimization turned on.

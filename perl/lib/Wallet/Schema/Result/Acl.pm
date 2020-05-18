@@ -13,7 +13,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 =for stopwords
 ACL

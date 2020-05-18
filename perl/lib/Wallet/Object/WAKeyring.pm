@@ -24,7 +24,7 @@ use Wallet::Object::Base;
 use WebAuth 3.06 qw(WA_KEY_AES WA_AES_128);
 
 our @ISA     = qw(Wallet::Object::Base);
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # File naming

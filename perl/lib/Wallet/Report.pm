@@ -20,7 +20,7 @@ use warnings;
 use Wallet::ACL;
 use Wallet::Schema;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # Constructor, destructor, and accessors

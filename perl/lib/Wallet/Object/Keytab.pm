@@ -22,7 +22,7 @@ use Wallet::Kadmin;
 use Wallet::Object::Base;
 
 our @ISA     = qw(Wallet::Object::Base);
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # Shared methods

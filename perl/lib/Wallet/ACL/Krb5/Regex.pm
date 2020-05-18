@@ -20,7 +20,7 @@ use warnings;
 use Wallet::ACL::Krb5;
 
 our @ISA     = qw(Wallet::ACL::Krb5);
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # Interface

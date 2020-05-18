@@ -22,7 +22,7 @@ use Date::Parse qw(str2time);
 use Text::Wrap qw(wrap);
 use Wallet::ACL;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # Constructors

@@ -7,7 +7,7 @@
 # environments.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2018 Russ Allbery <eagle@eyrie.org>
+# Copyright 2018, 2020 Russ Allbery <eagle@eyrie.org>
 # Copyright 2008, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -16,13 +16,14 @@
 use strict;
 use warnings;
 
+use lib 't/lib';
+
+use Test::RRA qw(skip_unless_author);
+use Util;
+
 use Test::More;
 
 use Wallet::ACL::NetDB;
-
-use lib 't/lib';
-use Test::RRA qw(skip_unless_author);
-use Util;
 
 # This test requires a specific environment setup, so only run it for package
 # maintainers.

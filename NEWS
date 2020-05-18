@@ -1,5 +1,21 @@
                        User-Visible wallet Changes
 
+wallet 1.5 (unreleased)
+
+    Update to rra-c-util 8.2:
+
+    * Implement explicit_bzero with memset if it is not available.
+    * Reformat all C source using clang-format 10.
+    * Work around Test::Strict not skipping .git directories.
+    * Fix warnings with perltidy 20190601 and Perl::Critic 1.134.
+    * Fix warnings with Clang 10, GCC 10, and the Clang static analyzer.
+
+    Update to C TAP Harness 4.7:
+
+    * Fix warnings with GCC 10.
+    * Reformat all C source using clang-format 10.
+    * Fixed malloc error checking in bstrndup.
+
 wallet 1.4 (2018-06-03)
 
     Substantial improvements to Active Directory support: Add a

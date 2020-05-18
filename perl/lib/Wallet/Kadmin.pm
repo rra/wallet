@@ -19,7 +19,7 @@ use warnings;
 
 use Wallet::Config;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 ##############################################################################
 # Utility functions for child classes

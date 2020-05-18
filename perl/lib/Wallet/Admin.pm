@@ -20,7 +20,7 @@ use warnings;
 use Wallet::ACL;
 use Wallet::Schema;
 
-our $VERSION = '1.04';
+our $VERSION = '1.05';
 
 # The last non-DBIx::Class version of Wallet::Schema.  If a database has no
 # DBIx::Class versioning, we artificially install this version number before
