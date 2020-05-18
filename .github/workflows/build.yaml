@@ -26,6 +26,7 @@ jobs:
       matrix:
         compiler:
           - "gcc"
+          - "clang"
         kerberos:
           - "mit"
           - "heimdal"
