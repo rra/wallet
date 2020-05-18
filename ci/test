@@ -27,3 +27,9 @@ make warnings
 
 # Run the tests.
 make check
+
+# Run some additional checks for one of the builds.  Arbitrarily pick the GCC
+# MIT build.
+if [ "$COMPILER" = 'gcc' ] && [ "$KERBEROS" = 'mit' ]; then
+    make check-cppcheck
+fi
