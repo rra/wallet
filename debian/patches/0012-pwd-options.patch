@@ -91,7 +91,7 @@
 +            $pass = $self->_pwd_random();
 +        }
 +        elsif ($Wallet::Config::PWD_TYPE
-+               =~ /^XKCD(\-APPLIED|\-DEFAULT{0,1})/xms)
++               =~ /^XKCD(\-APPLIED|\-DEFAULT){0,1}/xms)
 +        {
 +            $pass = $self->_pwd_xkcd($1);
 +        }
