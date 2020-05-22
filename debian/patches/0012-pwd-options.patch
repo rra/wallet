@@ -6,10 +6,10 @@
  
 +=item PWD_TYPE
 +
-+Specifies the algorithm to use when generating a password.  The default is
-+to select a random set of printable ASCII characters.  The pool of characters
-+can be restricted by specifying PWD_CHARACTERS.  This form of password
-+generation can be explicitly requested by specifying RANDOM.
++Specifies the algorithm to use when generating a password.  The
++default is RANDOM which specified that random set of printable ASCII
++characters will be used to create a password.  The pool of characters
++can be restricted by specifying PWD_CHARACTERS.
 +
 +The PWD_TYPE can be used to specify the generation of passwords using
 +the XKCD inspired perl module Crypt::HSXKPasswd. Three values are
@@ -23,7 +23,7 @@
 +
 +=cut
 +
-+our $PWD_TYPE;
++our $PWD_TYPE = 'RANDOM';
 +
  =item PWD_FILE_BUCKET
  
@@ -78,7 +78,7 @@
  ##############################################################################
  # Shared methods
  ##############################################################################
-@@ -75,20 +107,34 @@ sub retrieve {
+@@ -75,20 +107,37 @@ sub retrieve {
                    ob_name => $self->{name});
      my $object = $schema->resultset('Object')->find (\%search);
      if (!$object->ob_stored_on || $operation eq 'update') {
@@ -86,17 +86,10 @@
 -            $self->error ("cannot store initial settings for $id: $!\n");
 -            return;
 +        my $pass;
-+        if (not $Wallet::Config::PWD_TYPE
-+            || $Wallet::Config::PWD_TYPE eq 'RANDOM')
++        if ($Wallet::Config::PWD_TYPE eq 'RANDOM')
 +        {
 +            $pass = $self->_pwd_random();
-         }
--        my $pass = chars ($Wallet::Config::PWD_LENGTH_MIN,
--                          $Wallet::Config::PWD_LENGTH_MAX);
--        if ($Wallet::Config::PWD_CHARACTERS) {
--            my @pw_chars = ();
--            for (my $i=0; $i<length($Wallet::Config::PWD_CHARACTERS); $i++) {
--                push @pw_chars, substr($Wallet::Config::PWD_CHARACTERS, $i, 1);
++        }
 +        elsif ($Wallet::Config::PWD_TYPE
 +               =~ /^XKCD(\-APPLIED|\-DEFAULT{0,1})/xms)
 +        {
@@ -109,14 +102,24 @@
 +            } else {
 +                $self->error ("function generate_password() not found\n");
 +                return;
++            }
+         }
+-        my $pass = chars ($Wallet::Config::PWD_LENGTH_MIN,
+-                          $Wallet::Config::PWD_LENGTH_MAX);
+-        if ($Wallet::Config::PWD_CHARACTERS) {
+-            my @pw_chars = ();
+-            for (my $i=0; $i<length($Wallet::Config::PWD_CHARACTERS); $i++) {
+-                push @pw_chars, substr($Wallet::Config::PWD_CHARACTERS, $i, 1);
++        else
++        {
++            if (defined($Wallet::Config::PWD_TYPE)) {
++                $self->error ("Unknown PWD_TYPE ($Wallet::Config::PWD_TYPE)\n");
++            } else {
++                $self->error ("PWD_TYPE not set\n");
              }
 -            $pass = chars ($Wallet::Config::PWD_LENGTH_MIN,
 -                           $Wallet::Config::PWD_LENGTH_MAX,
 -                           \@pw_chars);
-+        }
-+        else
-+        {
-+            $self->error ("Unknown PWD_TYPE ($Wallet::Config::PWD_TYPE )\n");
 +            return;
 +        }
 +        unless (open (FILE, '>', $path)) {
