@@ -1,9 +1,11 @@
-wallet (1.4-5) unstable; urgency=medium
+wallet (1.4-5) UNRELEASED; urgency=medium
 
   * Add password generation options supporting generation of password
     using selected Crypt::HSXKPasswd presets or a custom routine.
+  * Add encryption of password objects.
+  * Add support for custom encryption methods.
 
- -- Bill MacAllister <whm@dropbox.com>  Tue, 19 May 2020 00:55:32 +0000
+ -- Bill MacAllister <whm@dropbox.com>  Sat, 23 May 2020 01:15:25 +0000
 
 wallet (1.4-4) unstable; urgency=medium
 
