@@ -1,0 +1,83 @@
+--- a/perl/lib/Wallet/Config.pm
++++ b/perl/lib/Wallet/Config.pm
+@@ -853,42 +853,6 @@ encrypted object.
+ 
+ our $LDAP_SECRET_PREFIX;
+ 
+-=item file_crypt;
+-
+-This functionality has not been implmented yet.
+-
+-The default encryption method is based on the twofish cypher.  If
+-another encryption method is desired then the perl function file_crypt
+-should be defined in the configuration file.  The function must accept
+-three parameters: the action to preform, the encryption secret, and
+-the string to encrypt or decrypt.  For example:
+-
+-    sub file_crypt {
+-        use Crypt::RC4;
+-        my ($action, $secret, $string) = @_;
+-
+-        my $return_string;
+-        if ($action eq 'encrypt') {
+-            $return_string = RC4($secret, $string);
+-        } elsif ($action eq 'decrypt') {
+-            $return_string = RC4($secret, $string);
+-        }
+-        return $return_string;
+-    }
+-
+-=item file_crypt_secret
+-
+-This functionality has not been implmented yet.
+-
+-The default method use is based on the twofish cypher.  If another
+-method of retrieving a secret is desired then the perl function
+-file_crypt_secret should be defined.  The function accepts no
+-parameters and returns the secret to be used.  For example:
+-
+-    sub file_crypt_secret {
+-        return "thisIsABadIdea";
+-    }
+-
+ =back
+ 
+ =head1 NETDB ACL CONFIGURATION
+@@ -1154,6 +1118,37 @@ as a base64 string.
+         return $cs;
+     }
+ 
++=head1 ENCRYPTION METHODS
++
++The default encryption method is based on the twofish cypher.  If
++another encryption method is desired then the perl function file_crypt
++should be defined in the configuration file.  The function must accept
++three parameters: the action to preform, the encryption secret, and
++the string to encrypt or decrypt.  For example:
++
++    sub file_crypt {
++        use Crypt::RC4;
++        my ($action, $secret, $string) = @_;
++
++        my $return_string;
++        if ($action eq 'encrypt') {
++            $return_string = RC4($secret, $string);
++        } elsif ($action eq 'decrypt') {
++            $return_string = RC4($secret, $string);
++        }
++        return $return_string;
++    }
++
++The default method for retrieving the secret used to encryption
++operations is retrieved from an LDAP server.  If another method of
++retrieving a secret is desired then the perl function
++file_crypt_secret should be defined.  The function accepts no
++parameters and returns the secret to be used.  For example:
++
++    sub file_crypt_secret {
++        return "thisIsABadIdea";
++    }
++
+ =head1 ENVIRONMENT
+ 
+ =over 4
