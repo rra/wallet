@@ -1,6 +1,46 @@
 --- a/perl/lib/Wallet/Config.pm
 +++ b/perl/lib/Wallet/Config.pm
-@@ -853,42 +853,6 @@ encrypted object.
+@@ -791,39 +791,6 @@ with this ACL type.  This variable must
+ 
+ our $LDAP_CACHE;
+ 
+-=back
+-
+-=head2 LDAP Principal Mapping
+-
+-Depending on the structure of the LDAP directory being queried,
+-there may not be any attribute in the directory whose value exactly
+-matches the Kerberos principal.  The attribute designated by
+-LDAP_FILTER_ATTR may instead hold a transformation of the principal name
+-(such as the principal with the local realm stripped off, or rewritten
+-into an LDAP DN form).  If this is the case, define a Perl function named
+-ldap_map_principal.  This function will be called whenever an LDAP
+-attribute ACL is being verified.  It will take one argument, the
+-principal, and is expected to return the value to search for in the LDAP
+-directory server.
+-
+-For example, if the principal name without the local realm is stored in
+-the C<uid> attribute in the directory, set LDAP_FILTER_ATTR to C<uid> and
+-then define ldap_map_attribute as follows:
+-
+-    sub ldap_map_principal {
+-        my ($principal) = @_;
+-        $principal =~ s/\@EXAMPLE\.COM$//;
+-        return $principal;
+-    }
+-
+-Note that this example only removes the local realm (here, EXAMPLE.COM).
+-Any principal from some other realm will be left fully qualified, and then
+-presumably will not be found in the directory.
+-
+-=head1 FILE OBJECT ENCRYPTION
+-
+-=over 4
+-
+ =item LDAP_SECRET
+ 
+ Specifies an LDAP URL that is used to retrieve the secret to use when
+@@ -853,43 +820,34 @@ encrypted object.
  
  our $LDAP_SECRET_PREFIX;
  
@@ -26,24 +66,47 @@
 -        }
 -        return $return_string;
 -    }
--
++=back
+ 
 -=item file_crypt_secret
--
++=head2 LDAP Principal Mapping
+ 
 -This functionality has not been implmented yet.
--
++Depending on the structure of the LDAP directory being queried,
++there may not be any attribute in the directory whose value exactly
++matches the Kerberos principal.  The attribute designated by
++LDAP_FILTER_ATTR may instead hold a transformation of the principal name
++(such as the principal with the local realm stripped off, or rewritten
++into an LDAP DN form).  If this is the case, define a Perl function named
++ldap_map_principal.  This function will be called whenever an LDAP
++attribute ACL is being verified.  It will take one argument, the
++principal, and is expected to return the value to search for in the LDAP
++directory server.
+ 
 -The default method use is based on the twofish cypher.  If another
 -method of retrieving a secret is desired then the perl function
 -file_crypt_secret should be defined.  The function accepts no
 -parameters and returns the secret to be used.  For example:
--
++For example, if the principal name without the local realm is stored in
++the C<uid> attribute in the directory, set LDAP_FILTER_ATTR to C<uid> and
++then define ldap_map_attribute as follows:
+ 
 -    sub file_crypt_secret {
 -        return "thisIsABadIdea";
--    }
--
- =back
++    sub ldap_map_principal {
++        my ($principal) = @_;
++        $principal =~ s/\@EXAMPLE\.COM$//;
++        return $principal;
+     }
+ 
+-=back
++Note that this example only removes the local realm (here, EXAMPLE.COM).
++Any principal from some other realm will be left fully qualified, and then
++presumably will not be found in the directory.
  
  =head1 NETDB ACL CONFIGURATION
-@@ -1154,6 +1118,37 @@ as a base64 string.
+ 
+@@ -1154,6 +1112,41 @@ as a base64 string.
          return $cs;
      }
  
@@ -56,14 +119,18 @@
 +the string to encrypt or decrypt.  For example:
 +
 +    sub file_crypt {
-+        use Crypt::RC4;
 +        my ($action, $secret, $string) = @_;
++
++        my $cipher = Crypt::CBC->new(-key    => $secret,
++                                     -cipher => 'Blowfish');
 +
 +        my $return_string;
 +        if ($action eq 'encrypt') {
-+            $return_string = RC4($secret, $string);
++            $return_string = $cipher->encrypt($string);
 +        } elsif ($action eq 'decrypt') {
-+            $return_string = RC4($secret, $string);
++            $return_string = $cipher->decrypt($string);
++        } else {
++            print("Unknown encryption action ($action)\n");
 +        }
 +        return $return_string;
 +    }
@@ -81,3 +148,63 @@
  =head1 ENVIRONMENT
  
  =over 4
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -114,6 +114,11 @@ sub rename {
+ sub _get_crypt_key {
+     my ($self) = @_;
+ 
++    if (defined (&Wallet::Config::file_crypt_secret)) {
++        my $return_val = Wallet::Config::file_crypt_secret();
++        return $return_val;
++    }
++
+     # ldap:///basedn?attr?scope?filter
+     my $url = $Wallet::Config::LDAP_SECRET;
+     $url =~ s{^ldap:///}{}xmsi;
+@@ -173,14 +178,13 @@ sub _get_crypt_key {
+ }
+ 
+ sub _file_crypt {
+-    my ($self, $action, $string) = @_;
++    my ($self, $action, $key, $string) = @_;
+ 
+     require Crypt::CBC;
+     require MIME::Base64;
+ 
+     my $return_string;
+     my $pre = $Wallet::Config::LDAP_SECRET_PREFIX;
+-    my $key = $self->_get_crypt_key();
+ 
+     my $cipher = Crypt::CBC->new(
+         -key        => $key,
+@@ -210,7 +214,13 @@ sub _file_crypt {
+ 
+ sub file_decrypt {
+     my ($self, $data, $user, $host, $time) = @_;
+-    my $undata = $self->_file_crypt('decrypt', $data);
++    my $key = $self->_get_crypt_key();
++    my $undata;
++    if (defined (&Wallet::Config::file_crypt)) {
++        $undata = Wallet::Config::file_crypt('decrypt', $key, $data);
++    } else {
++        $undata = $self->_file_crypt('decrypt', $key, $data);
++    }
+     if ($undata eq $data) {
+         $self->store($data, $user, $host, $time);
+     }
+@@ -219,7 +229,13 @@ sub file_decrypt {
+ 
+ sub file_encrypt {
+     my ($self, $data) = @_;
+-    my $endata = $self->_file_crypt('encrypt', $data);
++    my $key = $self->_get_crypt_key();
++    my $endata;
++    if (defined (&Wallet::Config::file_crypt)) {
++        $endata = Wallet::Config::file_crypt('encrypt', $key, $data);
++    } else {
++        $endata = $self->_file_crypt('encrypt', $key, $data);
++    }
+     return $endata;
+ }
+ 
