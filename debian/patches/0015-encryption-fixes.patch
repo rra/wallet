@@ -1,0 +1,221 @@
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -123,13 +123,39 @@ sub _get_crypt_key {
+     my $url = $Wallet::Config::LDAP_SECRET;
+     $url =~ s{^ldap:///}{}xmsi;
+     if ($url eq $Wallet::Config::LDAP_SECRET) {
+-        die("ERROR: Invalid LDAP URL $url");
++        my $msg = "\n"
++        $msg .= "INFO: LDAP_SECRET contains a hostname\n";
++        $msg .= "ERROR: Invalid LDAP_SECRET URL $url\n";
++        die $msg;
+     }
+     my @parts = split /\?/, $url;
+     my $base   = $parts[0];
++    if (!$base) {
++        $msg .= "INFO: LDAP_SECRET does not contain a base dn\n";
++        $msg .= "ERROR: Invalid LDAP_SECRET URL $url\n";
++        die $msg;
++    }
+     my $attr   = $parts[1];
++    if (!$attr) {
++        $msg .= "INFO: LDAP_SECRET does not contain an attribute\n";
++        $msg .= "ERROR: Invalid LDAP_SECRET URL $url\n";
++        die $msg;
++    }
+     my $scope  = $parts[2];
++    if (!$scope) {
++        $scope = 'subtree';
++    }
+     my $filter = $parts[3];
++    if (!$filter) {
++        $filter = 'objectClass=*';
++    }
++
++    # Search details just in case they have to be displayed
++    my $msg = "\n";
++    $msg .= "INFO: base = $base\n";
++    $msg .= "INFO: filter = $filter\n";
++    $msg .= "INFO: scope = $scope\n";
++    $msg .= "INFO: attribute = $attr\n";
+ 
+     # Search for the secret in the LDAP directory
+     my $ldap_obj = Wallet::ACL::LDAP::Attribute->new;
+@@ -145,17 +171,23 @@ sub _get_crypt_key {
+         if ($search->count == 1) {
+             $entry = $search->pop_entry;
+         } elsif ($search->count > 1) {
+-            die 'ERROR: ' . $search->count . " LDAP entries found for $filter";
++            $msg .= 'ERROR: ' . $search->count . ' LDAP entries found for '
++              . "$filter\n";
++            die $msg;
+         } else {
+-            die "ERROR: No entry found for $url";
++            my $msg = $search_details;
++            $msg .= "ERROR: No entry found for $url\n";
++            die $msg;
+         }
+     };
+     if ($@) {
+-        die "INFO: LDAP search failed using $url\n"
+-          . "ERROR: $@";
++        $msg .= "ERROR: LDAP search failed using $url\n";
++        $msg .=  "ERROR: $@" . "\n";
++        die $msg;
+     }
+     if (!$entry) {
+-        die "ERROR: No entry returned for LDAP search using $url";
++        $msg .= "ERROR: No entry returned for LDAP search using $url";
++        die $msg;
+     }
+ 
+     my $return_val;
+@@ -168,11 +200,15 @@ sub _get_crypt_key {
+         }
+     }
+     if (!$return_val) {
+-        die "ERROR: Attribute not found $url";
++        $msg .= $search_details;
++        $msg .= "ERROR: Attribute not found $url\n";
++        die $msg;
+     }
+     if ($cnt > 0) {
+         my $obj_cnt = $cnt + 1;
+-        die "ERROR: LDAP search return too many values ($obj_cnt) for $url";
++        $msg .= $search_details;
++        $msg .= "ERROR: LDAP returned too many values ($obj_cnt) for $url";
++        die $msg;
+     }
+     return $return_val;
+ }
+@@ -184,7 +220,7 @@ sub _file_crypt {
+     require MIME::Base64;
+ 
+     my $return_string;
+-    my $pre = $Wallet::Config::LDAP_SECRET_PREFIX;
++    my $pre = $Wallet::Config::ENCRYPTION_PREFIX;
+ 
+     my $cipher = Crypt::CBC->new(
+         -key        => $key,
+@@ -219,6 +255,12 @@ sub file_decrypt {
+     if (defined (&Wallet::Config::file_crypt)) {
+         $undata = Wallet::Config::file_crypt('decrypt', $key, $data);
+     } else {
++        if (!$Wallet::Config::LDAP_SECRET) {
++            my $msg = "\n";
++            $msg .= "ERROR: ENCYPTION_PREFIX specified and LDAP_SECRET is "
++              . "missing\n";
++            die $msg;
++        }
+         $undata = $self->_file_crypt('decrypt', $key, $data);
+     }
+     if ($undata eq $data) {
+@@ -234,6 +276,12 @@ sub file_encrypt {
+     if (defined (&Wallet::Config::file_crypt)) {
+         $endata = Wallet::Config::file_crypt('encrypt', $key, $data);
+     } else {
++        if (!$Wallet::Config::LDAP_SECRET) {
++            my $msg = "\n";
++            $msg .= "ERROR: ENCYPTION_PREFIX specified and LDAP_SECRET is "
++              . "missing\n";
++            die $msg;
++        }
+         $endata = $self->_file_crypt('encrypt', $key, $data);
+     }
+     return $endata;
+@@ -276,7 +324,7 @@ sub get {
+         $self->error ("cannot get $id: $!");
+         return;
+     }
+-    if ($Wallet::Config::LDAP_SECRET) {
++    if ($Wallet::Config::ENCRYPTION_PREFIX) {
+         $data = $self->file_decrypt($data, $user, $host, $time);
+     }
+     $self->log_action ('get', $user, $host, $time);
+@@ -296,7 +344,7 @@ sub checksum {
+     my $this_checksum;
+     my $this_data;
+     my $this_endata = read_file($path);
+-    if ($Wallet::Config::LDAP_SECRET) {
++    if ($Wallet::Config::ENCRYPTION_PREFIX) {
+         $this_data = $self->file_decrypt($this_endata, $user, $host, $time)
+     } else {
+         $this_data = $this_endata;
+@@ -326,7 +374,7 @@ sub store {
+             return;
+         }
+     }
+-    if ($Wallet::Config::LDAP_SECRET) {
++    if ($Wallet::Config::ENCRYPTION_PREFIX) {
+         $data = $self->file_encrypt($data);
+     }
+ 
+--- a/perl/lib/Wallet/Config.pm
++++ b/perl/lib/Wallet/Config.pm
+@@ -795,31 +795,19 @@ our $LDAP_CACHE;
+ 
+ Specifies an LDAP URL that is used to retrieve the secret to use when
+ encrypting and decrypting file objects.  The url must not include the
+-hostname.  LDAP_HOST will be used as the hostname to bind to. The
+-Kerberos ticket cache specified in LDAP_CACHE is used when connecting
+-to the LDAP server.  GSS-API authentication is always used; there is
+-currently no support for any other type of bind.  The ticket cache
+-must be for a principal with access to retrieve the secret.  This
+-variable and LDAP_CACHE must be set to use file object encryption.
++hostname.  LDAP_HOST will be used as the hostname for the server to
++bind to. The Kerberos ticket cache specified in LDAP_CACHE is used
++when connecting to the LDAP server.  GSS-API authentication is always
++used; there is currently no support for any other type of bind.  The
++ticket cache must be for a principal with access to retrieve the
++secret.  The variables LDAP_HOST, LDAP_CACHE, LDAP_SECRET, and
++ENCRYPTION_PREFIX must be set to use the default encryption
++processing.
+ 
+ =cut
+ 
+ our $LDAP_SECRET;
+ 
+-=item LDAP_SECRET_PREFIX
+-
+-Specifies the prefix to be used when generating storing an encrypted
+-file object.  The prefix is used to determine whether or not a file
+-object has been stored encrypted.  This allows the gradual transition
+-from unencrypted file objects to encrypted file objects.  When file
+-object encryption is enable any "get" of an unencyrpted file object
+-will result in the replacement of the unencrypted object with an
+-encrypted object.
+-
+-=cut
+-
+-our $LDAP_SECRET_PREFIX;
+-
+ =back
+ 
+ =head2 LDAP Principal Mapping
+@@ -1112,7 +1100,25 @@ as a base64 string.
+         return $cs;
+     }
+ 
+-=head1 ENCRYPTION METHODS
++=head1 ENCRYPTION CONFIGURATION AND METHODS
++
++=over4
++=item ENCRYPTION_PREFIX
++
++Specifies the prefix to be used when generating storing an encrypted
++file object.  The prefix is used to determine whether or not a file
++object has been stored encrypted.  This allows the gradual transition
++from unencrypted file objects to encrypted file objects.  When file
++object encryption is enable any "get" of an unencyrpted file object
++will result in the replacement of the unencrypted object with an
++encrypted object.  This variable must be set to use file and password
++encyrption.
++
++=cut
++
++our $ENCRYPTION_PREFIX;
++
++=back
+ 
+ The default encryption method is based on the twofish cypher.  If
+ another encryption method is desired then the perl function file_crypt

@@ -1,3 +1,14 @@
+wallet (1.4-6) unstable; urgency=medium
+
+  * Rename the configuratiion variable LDAP_SECRET_PREFIX to
+    ENCRYPTION_PREFIX.
+  * Improve error messaging when attempting to retrieve the encryption
+    secret from LDAP.
+  * Trap the case when ENCRYPTION_PREFIX is specified and the required
+    LDAP variables are not.
+
+ -- Bill MacAllister <whm@dropbox.com>  Wed, 10 Jun 2020 23:16:34 +0000
+
 wallet (1.4-5) unstable; urgency=medium
 
   * Add password generation options supporting generation of password
