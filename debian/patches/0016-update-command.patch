@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/client/checkfile.c
-@@ -0,0 +1,136 @@
+@@ -0,0 +1,137 @@
 +/*
 + * Test file object checksum against a file on the system
 + *
@@ -108,12 +108,13 @@
 +    const char *command[5];
 +    char *file_data = NULL;
 +    char *file_checksum = NULL;
++    size_t count, length;
 +    char *wallet_checksum = NULL;
 +    size_t wallet_length = 0;
 +    int status;
 +
 +    /* Check to see if the file exists.  It not return mismatch status */
-+    file_data = checkfile_read_file(file, 1);
++    file_data = checkfile_read_file(file, &length);
 +    if (file_data == NULL)
 +    return 1;
 +
@@ -133,7 +134,7 @@
 +    if ((wallet_length == 0) || (wallet_checksum == NULL))
 +    return 1;
 +
-+    file_checksum = str2md5(file_data, strlen(file_data));
++    file_checksum = checkfile_str2md5(file_data, strlen(file_data));
 +
 +    return strcmp(file_checksum, wallet_checksum);
 +}
@@ -172,3 +173,33 @@
  
  Returns the checksum for file objects.
  
+--- a/client/internal.h
++++ b/client/internal.h
+@@ -97,6 +97,15 @@ int get_file(struct remctl *, const char
+              const char *name, const char *file);
+ 
+ /*
++ * Given a remctl object, the command prefix, object type, and object name,
++ * and a file calculate the checksum of the file, get the checksum of
++ * the wallet object, and compare them.  Returns 0 if the checksums
++ * match and an exit status on if the don't match.
++ */
++int checkfile(struct remctl *r, const char *prefix, const char *type,
++              const char *name, const char *file);
++
++/*
+  * Given a remctl object, the Kerberos context, the type for the wallet
+  * interface, the name of a keytab object, and a file name, call the correct
+  * wallet commands to download a keytab and write it to that file.  If srvtab
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -150,7 +150,8 @@ util_libutil_a_CPPFLAGS = $(KRB5_CPPFLAG
+ # The private library used by both wallet and wallet-rekey.
+ noinst_LIBRARIES += client/libwallet.a
+ client_libwallet_a_SOURCES = client/file.c client/internal.h client/keytab.c \
+-	client/krb5.c client/options.c client/remctl.c client/srvtab.c
++	client/krb5.c client/options.c client/remctl.c client/srvtab.c \
++	client/checkfile.c
+ client_libwallet_a_CPPFLAGS = $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)
+ 
+ # The client and server programs.
