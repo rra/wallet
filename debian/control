@@ -27,6 +27,7 @@ Build-Depends:
  libnet-remctl-perl,
  libperl6-slurp-perl,
  libremctl-dev,
+ libssl-dev,
  libsql-translator-perl,
  libtest-minimumversion-perl,
  libtest-pod-perl,
