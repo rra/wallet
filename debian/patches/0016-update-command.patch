@@ -140,7 +140,28 @@
 +}
 --- a/client/wallet.c
 +++ b/client/wallet.c
-@@ -172,6 +172,14 @@ main(int argc, char *argv[])
+@@ -124,9 +124,18 @@ main(int argc, char *argv[])
+         usage(1);
+ 
+     /* -f is only supported for get and store and -S with get keytab. */
+-    if (file != NULL)
+-        if (strcmp(argv[0], "get") != 0 && strcmp(argv[0], "store") != 0)
++    if (file != NULL) {
++        if (strcmp(argv[0], "get") != 0 &&
++            strcmp(argv[0], "store") != 0 &&
++            strcmp(argv[0], "checkfile") != 0)
++        {
+             die("-f only supported for get and store");
++        }
++    } else {
++        if (strcmp(argv[0], "checkfile") == 0)
++            die("-f is required by checkfile");
++    }
++
+     if (srvtab != NULL) {
+         if (strcmp(argv[0], "get") != 0 || strcmp(argv[1], "keytab") != 0)
+             die("-S only supported for get keytab");
+@@ -172,6 +181,14 @@ main(int argc, char *argv[])
          if (argc > 2)
              die("too many arguments");
          status = rekey_keytab(r, ctx, options.type, argv[1]);
