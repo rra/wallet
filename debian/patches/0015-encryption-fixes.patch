@@ -1,11 +1,16 @@
 --- a/perl/lib/Wallet/Object/File.pm
 +++ b/perl/lib/Wallet/Object/File.pm
-@@ -123,13 +123,39 @@ sub _get_crypt_key {
+@@ -119,17 +119,44 @@ sub _get_crypt_key {
+         return $return_val;
+     }
+ 
++    my $msg = "\n";
++
+     # ldap:///basedn?attr?scope?filter
      my $url = $Wallet::Config::LDAP_SECRET;
      $url =~ s{^ldap:///}{}xmsi;
      if ($url eq $Wallet::Config::LDAP_SECRET) {
 -        die("ERROR: Invalid LDAP URL $url");
-+        my $msg = "\n"
 +        $msg .= "INFO: LDAP_SECRET contains a hostname\n";
 +        $msg .= "ERROR: Invalid LDAP_SECRET URL $url\n";
 +        die $msg;
@@ -33,15 +38,15 @@
 +    }
 +
 +    # Search details just in case they have to be displayed
-+    my $msg = "\n";
-+    $msg .= "INFO: base = $base\n";
-+    $msg .= "INFO: filter = $filter\n";
-+    $msg .= "INFO: scope = $scope\n";
-+    $msg .= "INFO: attribute = $attr\n";
++    my $search_details = "\n";
++    $search_details .= "INFO: base = $base\n";
++    $search_details .= "INFO: filter = $filter\n";
++    $search_details .= "INFO: scope = $scope\n";
++    $search_details .= "INFO: attribute = $attr\n";
  
      # Search for the secret in the LDAP directory
      my $ldap_obj = Wallet::ACL::LDAP::Attribute->new;
-@@ -145,17 +171,23 @@ sub _get_crypt_key {
+@@ -145,17 +172,23 @@ sub _get_crypt_key {
          if ($search->count == 1) {
              $entry = $search->pop_entry;
          } elsif ($search->count > 1) {
@@ -51,8 +56,8 @@
 +            die $msg;
          } else {
 -            die "ERROR: No entry found for $url";
-+            my $msg = $search_details;
-+            $msg .= "ERROR: No entry found for $url\n";
++            my $msg .= $search_details;
++            $msg    .= "ERROR: No entry found for $url\n";
 +            die $msg;
          }
      };
@@ -70,7 +75,7 @@
      }
  
      my $return_val;
-@@ -168,11 +200,15 @@ sub _get_crypt_key {
+@@ -168,11 +201,15 @@ sub _get_crypt_key {
          }
      }
      if (!$return_val) {
@@ -88,7 +93,7 @@
      }
      return $return_val;
  }
-@@ -184,7 +220,7 @@ sub _file_crypt {
+@@ -184,7 +221,7 @@ sub _file_crypt {
      require MIME::Base64;
  
      my $return_string;
@@ -97,7 +102,7 @@
  
      my $cipher = Crypt::CBC->new(
          -key        => $key,
-@@ -219,6 +255,12 @@ sub file_decrypt {
+@@ -219,6 +256,12 @@ sub file_decrypt {
      if (defined (&Wallet::Config::file_crypt)) {
          $undata = Wallet::Config::file_crypt('decrypt', $key, $data);
      } else {
@@ -110,7 +115,7 @@
          $undata = $self->_file_crypt('decrypt', $key, $data);
      }
      if ($undata eq $data) {
-@@ -234,6 +276,12 @@ sub file_encrypt {
+@@ -234,6 +277,12 @@ sub file_encrypt {
      if (defined (&Wallet::Config::file_crypt)) {
          $endata = Wallet::Config::file_crypt('encrypt', $key, $data);
      } else {
@@ -123,7 +128,7 @@
          $endata = $self->_file_crypt('encrypt', $key, $data);
      }
      return $endata;
-@@ -276,7 +324,7 @@ sub get {
+@@ -276,7 +325,7 @@ sub get {
          $self->error ("cannot get $id: $!");
          return;
      }
@@ -132,7 +137,7 @@
          $data = $self->file_decrypt($data, $user, $host, $time);
      }
      $self->log_action ('get', $user, $host, $time);
-@@ -296,7 +344,7 @@ sub checksum {
+@@ -296,7 +345,7 @@ sub checksum {
      my $this_checksum;
      my $this_data;
      my $this_endata = read_file($path);
@@ -141,7 +146,7 @@
          $this_data = $self->file_decrypt($this_endata, $user, $host, $time)
      } else {
          $this_data = $this_endata;
-@@ -326,7 +374,7 @@ sub store {
+@@ -326,7 +375,7 @@ sub store {
              return;
          }
      }
@@ -192,14 +197,15 @@
  =back
  
  =head2 LDAP Principal Mapping
-@@ -1112,7 +1100,25 @@ as a base64 string.
+@@ -1112,7 +1100,26 @@ as a base64 string.
          return $cs;
      }
  
 -=head1 ENCRYPTION METHODS
 +=head1 ENCRYPTION CONFIGURATION AND METHODS
 +
-+=over4
++=over 4
++
 +=item ENCRYPTION_PREFIX
 +
 +Specifies the prefix to be used when generating storing an encrypted
