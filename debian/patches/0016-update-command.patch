@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/client/checkfile.c
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,141 @@
 +/*
 + * Test file object checksum against a file on the system
 + *
@@ -36,19 +36,19 @@
 +    MD5_Init(&c);
 +
 +    while (length > 0) {
-+    if (length > 512) {
-+        MD5_Update(&c, str, 512);
-+    } else {
-+        MD5_Update(&c, str, length);
-+    }
-+    length -= 512;
-+    str += 512;
++        if (length > 512) {
++            MD5_Update(&c, str, 512);
++        } else {
++            MD5_Update(&c, str, length);
++        }
++        length -= 512;
++        str += 512;
 +    }
 +
 +    MD5_Final(digest, &c);
 +
 +    for (n = 0; n < 16; ++n) {
-+    snprintf(&(out[n*2]), 16*2, "%02x", (unsigned int)digest[n]);
++        snprintf(&(out[n*2]), 16*2, "%02x", (unsigned int)digest[n]);
 +    }
 +
 +    return out;
@@ -70,28 +70,28 @@
 +
 +    fd = open(name, O_RDONLY);
 +    if (fd < 0)
-+    return NULL;
++        return NULL;
 +    if (fstat(fd, &st) < 0)
-+      return NULL;
++        return NULL;
 +    size = st.st_size;
 +    contents = xmalloc(size);
 +
 +    offset = 0;
 +    do {
-+    if (offset >= size - 1) {
-+        size += BUFSIZ;
-+        contents = xrealloc(contents, size);
-+    }
-+    do {
-+        status = read(fd, contents + offset, size - offset - 1);
-+    } while (status == -1 && errno == EINTR);
-+    if (status < 0)
-+        sysdie("cannot read from file");
-+    offset += status;
++        if (offset >= size - 1) {
++            size += BUFSIZ;
++            contents = xrealloc(contents, size);
++        }
++        do {
++            status = read(fd, contents + offset, size - offset - 1);
++        } while (status == -1 && errno == EINTR);
++        if (status < 0)
++            sysdie("cannot read from file");
++        offset += status;
 +    } while (status > 0);
 +    close(fd);
 +    if (length != NULL)
-+    *length = offset;
++        *length = offset;
 +    return contents;
 +}
 +
@@ -115,8 +115,9 @@
 +
 +    /* Check to see if the file exists.  It not return mismatch status */
 +    file_data = checkfile_read_file(file, &length);
-+    if (file_data == NULL)
-+    return 1;
++    if (file_data == NULL) {
++        return 1;
++    }
 +
 +    command[0] = prefix;
 +    command[1] = "checksum";
@@ -124,19 +125,22 @@
 +    command[3] = name;
 +    command[4] = NULL;
 +    status = run_command(r, command, &wallet_checksum, &wallet_length);
-+    if (status != 0)
-+    return status;
++    if (status != 0) {
++        return status;
++    }
 +
 +    /* If the wallet object is empty or NULL return mismatch and let the
 +     * subsequent call to file handle the error condition of an empty
 +     * file object.
 +     */
-+    if ((wallet_length == 0) || (wallet_checksum == NULL))
-+    return 1;
++    if ((wallet_length == 0) || (wallet_checksum == NULL)) {
++        return 1;
++    }
 +
-+    file_checksum = checkfile_str2md5(file_data, strlen(file_data));
++    file_checksum = checkfile_str2md5(file_data, length);
++    status = strncmp(file_checksum, wallet_checksum, wallet_length);
 +
-+    return strcmp(file_checksum, wallet_checksum);
++    return status;
 +}
 --- a/client/wallet.c
 +++ b/client/wallet.c
@@ -171,7 +175,7 @@
 +        if (strcmp(argv[1], "keytab") == 0)
 +            die("checkfile command is not valid for keytabs");
 +        status = checkfile(r, options.type, argv[1], argv[2], file);
-+        if (status > 0)
++        if (status != 0)
 +            status = get_file(r, options.type, argv[1], argv[2], file);
      } else {
          count = argc + 1;
