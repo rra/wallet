@@ -1,3 +1,11 @@
+wallet (1.4-7) unstable; urgency=medium
+
+  * Add the checkfile command to the wallet client.  checkfile uses
+    md5 checksums to determine if a file/password object has changed
+    and performs a get only if the object has changed.
+
+ -- Bill MacAllister <whm@dropbox.com>  Thu, 16 Jul 2020 16:55:34 +0000
+
 wallet (1.4-6) unstable; urgency=medium
 
   * Rename the configuratiion variable LDAP_SECRET_PREFIX to
