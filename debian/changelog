@@ -1,3 +1,16 @@
+wallet (1.4-8) unstable; urgency=medium
+
+  * Updates to checkfile support.
+    - The POD was updated with the original checkfile changes, but a
+      new man page was not generated.  This change updates the man page
+      for the client.
+    - When issuing a checkfile command against an password object that
+      exists but has not been stored yet a warning message was being
+      generated.  This warning is confusing since the command succeeds
+      since the password is generated and downloaded.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 14 Dec 2020 19:39:40 +0000
+
 wallet (1.4-7) unstable; urgency=medium
 
   * Add the checkfile command to the wallet client.  checkfile uses
