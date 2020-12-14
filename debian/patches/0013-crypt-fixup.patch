@@ -1,0 +1,117 @@
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -175,8 +175,8 @@ sub _get_crypt_key {
+ sub _file_crypt {
+     my ($self, $action, $string) = @_;
+ 
+-    use Crypt::CBC;
+-    use MIME::Base64;
++    require Crypt::CBC;
++    require MIME::Base64;
+ 
+     my $return_string;
+     my $pre = $Wallet::Config::LDAP_SECRET_PREFIX;
+@@ -189,12 +189,14 @@ sub _file_crypt {
+         -add_header => 1
+     );
+     if ($action eq 'encrypt') {
+-        $return_string = $pre . encode_base64($cipher->encrypt($string));
++        $return_string
++          = $pre . MIME::Base64::encode_base64($cipher->encrypt($string));
+     } elsif ($action eq 'decrypt') {
+         my $pre_regex = $pre;
+         $pre_regex =~ s/(\W)/\\$1/g;
+         if ($string =~ s/^$pre_regex//xms) {
+-            $return_string = $cipher->decrypt(decode_base64($string));
++            $return_string
++              = $cipher->decrypt(MIME::Base64::decode_base64($string));
+         } else {
+             $return_string = $string;
+         }
+@@ -206,7 +208,7 @@ sub _file_crypt {
+     return $return_string;
+ }
+ 
+-sub _file_decrypt {
++sub file_decrypt {
+     my ($self, $data, $user, $host, $time) = @_;
+     my $undata = $self->_file_crypt('decrypt', $data);
+     if ($undata eq $data) {
+@@ -215,7 +217,7 @@ sub _file_decrypt {
+     return $undata;
+ }
+ 
+-sub _file_encrypt {
++sub file_encrypt {
+     my ($self, $data) = @_;
+     my $endata = $self->_file_crypt('encrypt', $data);
+     return $endata;
+@@ -259,7 +261,7 @@ sub get {
+         return;
+     }
+     if ($Wallet::Config::LDAP_SECRET) {
+-        $data = $self->_file_decrypt($data, $user, $host, $time);
++        $data = $self->file_decrypt($data, $user, $host, $time);
+     }
+     $self->log_action ('get', $user, $host, $time);
+     return $data;
+@@ -279,7 +281,7 @@ sub checksum {
+     my $this_data;
+     my $this_endata = read_file($path);
+     if ($Wallet::Config::LDAP_SECRET) {
+-        $this_data = $self->_file_decrypt($this_endata, $user, $host, $time)
++        $this_data = $self->file_decrypt($this_endata, $user, $host, $time)
+     } else {
+         $this_data = $this_endata;
+     }
+@@ -309,7 +311,7 @@ sub store {
+         }
+     }
+     if ($Wallet::Config::LDAP_SECRET) {
+-        $data = $self->_file_encrypt($data);
++        $data = $self->file_encrypt($data);
+     }
+ 
+     my $path = $self->file_path;
+--- a/perl/lib/Wallet/Object/Password.pm
++++ b/perl/lib/Wallet/Object/Password.pm
+@@ -122,16 +122,16 @@ sub retrieve {
+             if (defined(&Wallet::Config::generate_password)) {
+                 $pass = Wallet::Config::generate_password();
+             } else {
+-                $self->error ("function generate_password() not found\n");
++                $self->error("function generate_password() not found\n");
+                 return;
+             }
+         }
+         else
+         {
+             if (defined($Wallet::Config::PWD_TYPE)) {
+-                $self->error ("Unknown PWD_TYPE ($Wallet::Config::PWD_TYPE)\n");
++                $self->error("Unknown PWD_TYPE ($Wallet::Config::PWD_TYPE)\n");
+             } else {
+-                $self->error ("PWD_TYPE not set\n");
++                $self->error("PWD_TYPE not set\n");
+             }
+             return;
+         }
+@@ -139,6 +139,9 @@ sub retrieve {
+             $self->error ("cannot open $path $!\n");
+             return;
+         }
++        if ($Wallet::Config::LDAP_SECRET) {
++            $pass = Wallet::Object::File->file_encrypt($pass);
++        }
+         print FILE $pass;
+         $self->log_action ('store', $user, $host, $time);
+         unless (close FILE) {
+@@ -158,6 +161,9 @@ sub retrieve {
+         return;
+     }
+     $self->log_action ($operation, $user, $host, $time);
++    if ($Wallet::Config::LDAP_SECRET) {
++        $data = Wallet::Object::File->file_decrypt($data);
++    }
+     return $data;
+ }
+ 

@@ -1,0 +1,110 @@
+Armor encrypt store, syntax fixes
+
+* Encypt the data before attempting any of the actual storage of
+  file objects.
+* Die immediately on any errors retrieving the encryption secret.
+* Correct reference to LDAP_SECRET.
+* Correct arguments passed to _file_decrypt.
+
+diff --git a/perl/lib/Wallet/Object/File.pm b/perl/lib/Wallet/Object/File.pm
+index e676759..d49eef8 100644
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -145,23 +145,29 @@ sub _get_crypt_key {
+             die "ERROR: No entry found for $url";
+         }
+     };
+-    if ($@ || !$entry) {
+-        die "ERROR: LDAP search failed for $url";
++    if ($@) {
++        die "INFO: LDAP search failed using $url\n"
++          . "ERROR: $@";
++    }
++    if (!$entry) {
++        die "ERROR: No entry returned for LDAP search using $url";
+     }
+ 
+     my $return_val;
+     my $cnt = 0;
+     foreach my $return_attr ($entry->attributes) {
+-        if (lc($return_attr) eq lc($attr)) {
+-            $return_val = $entry->get_value($return_val);
++        if ($return_attr =~ /^$attr$/xmsi) {
++            $return_val = $entry->get_value($attr);
++            last;
+             $cnt++;
+         }
+     }
+     if (!$return_val) {
+-        die "ERROR: LDAP search failed for $url";
++        die "ERROR: Attribute not found $url";
+     }
+-    if ($cnt !=1) {
+-        die "ERROR: LDAP search return too many values ($url)";
++    if ($cnt > 0) {
++        my $obj_cnt = $cnt + 1;
++        die "ERROR: LDAP search return too many values ($obj_cnt) for $url";
+     }
+     return $return_val;
+ }
+@@ -185,7 +191,9 @@ sub _file_crypt {
+     if ($action eq 'encrypt') {
+         $return_string = $pre . encode_base64($cipher->encrypt($string));
+     } elsif ($action eq 'decrypt') {
+-        if ($string =~ s/^$pre//xms) {
++        my $pre_regex = $pre;
++        $pre_regex =~ s/(\W)/\\$1/g;
++        if ($string =~ s/^$pre_regex//xms) {
+             $return_string = $cipher->decrypt(decode_base64($string));
+         } else {
+             $return_string = $string;
+@@ -193,8 +201,7 @@ sub _file_crypt {
+     } else {
+         my $msg = "ERROR: invalid action ($action)\n ";
+         $msg .= "INFO: action must be 'encrypt' or 'decrypt'\n";
+-        $self->error($msg);
+-        return;
++        die $msg;
+     }
+     return $return_string;
+ }
+@@ -203,7 +210,7 @@ sub _file_decrypt {
+     my ($self, $data, $user, $host, $time) = @_;
+     my $undata = $self->_file_crypt('decrypt', $data);
+     if ($undata eq $data) {
+-        $self->store($data, $user, $host, $time) = @_;
++        $self->store($data, $user, $host, $time);
+     }
+     return $undata;
+ }
+@@ -251,8 +258,8 @@ sub get {
+         $self->error ("cannot get $id: $!");
+         return;
+     }
+-    if ($Wallet::LDAP::SECRET) {
+-        $data = self->_file_decrypt($user, $host, $time, $data);
++    if ($Wallet::Config::LDAP_SECRET) {
++        $data = $self->_file_decrypt($data, $user, $host, $time);
+     }
+     $self->log_action ('get', $user, $host, $time);
+     return $data;
+@@ -301,15 +308,16 @@ sub store {
+             return;
+         }
+     }
++    if ($Wallet::Config::LDAP_SECRET) {
++        $data = $self->_file_encrypt($data);
++    }
++
+     my $path = $self->file_path;
+     return unless $path;
+     unless (open (FILE, '>', $path)) {
+         $self->error ("cannot store $id: $!");
+         return;
+     }
+-    if ($Wallet::Config::LDAP_SECRET) {
+-        $data = $self->_file_encrypt($data);
+-    }
+     unless (print FILE ($data) and close FILE) {
+         $self->error ("cannot store $id: $!");
+         close FILE;

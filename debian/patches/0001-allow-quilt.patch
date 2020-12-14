@@ -1,0 +1,25 @@
+diff --git a/tests/docs/spdx-license-t b/tests/docs/spdx-license-t
+index 91072bf..a55b054 100755
+--- a/tests/docs/spdx-license-t
++++ b/tests/docs/spdx-license-t
+@@ -72,6 +72,7 @@ my @IGNORE_PATHS = (
+     qr{ \A php/ltmain [.] sh \z }xms,          # Created by phpize
+     qr{ \A php/run-tests [.] php \z }xms,      # Created by phpize
+     qr{ [.] l?a \z }xms,                       # Created by libtool
++    qr{ [.] pc/ }xms,                          # Created by quilt
+ );
+ ## use critic
+ 
+diff --git a/tests/tap/perl/Test/RRA/Automake.pm b/tests/tap/perl/Test/RRA/Automake.pm
+index 69fff6a..1a785ff 100644
+--- a/tests/tap/perl/Test/RRA/Automake.pm
++++ b/tests/tap/perl/Test/RRA/Automake.pm
+@@ -74,7 +74,7 @@ BEGIN {
+ # Directories to skip globally when looking for all files, or for directories
+ # that could contain Perl files.
+ my @GLOBAL_SKIP = qw(
+-  .git _build autom4te.cache build-aux perl/_build perl/blib
++  .git _build autom4te.cache build-aux perl/_build perl/blib debian .pc
+ );
+ 
+ # Additional paths to skip when building a list of all files in the

@@ -1,0 +1,239 @@
+--- a/perl/lib/Wallet/Config.pm
++++ b/perl/lib/Wallet/Config.pm
+@@ -765,11 +765,42 @@ with this ACL type.  This variable must
+ 
+ =cut
+ 
++our $LDAP_SECRET;
++
++=item LDAP_SECRET
++
++Specifies an LDAP URL that is used to retrieve the secret to use when
++encrypting and decrypting file objects.  The url must not include the
++hostname.  LDAP_HOST will be used as the hostname to bind to. The
++Kerberos ticket cache specified in LDAP_CACHE is used when connecting
++to the LDAP server.  GSS-API authentication is always used; there is
++currently no support for any other type of bind.  The ticket cache
++must be for a principal with access to retrieve the secret.  This
++variable and LDAP_CACHE must be set to use file object encryption.
++
++=cut
++
++our $LDAP_SECRET_PREFIX;
++
++=item LDAP_SECRET_PREFIX
++
++Specifies the prefix to be used when generating storing an encrypted
++file object.  The prefix is used to determine whether or not a file
++object has been stored encrypted.  This allows the gradual transition
++from unencrypted file objects to encrypted file objects.  When file
++object encryption is enable any "get" of an unencyrpted file object
++will result in the replacement of the unencrypted object with an
++encrypted object.
++
++=cut
++
+ our $LDAP_CACHE;
+ 
+ =back
+ 
+-Finally, depending on the structure of the LDAP directory being queried,
++=head2 LDAP Principal Mapping
++
++Depending on the structure of the LDAP directory being queried,
+ there may not be any attribute in the directory whose value exactly
+ matches the Kerberos principal.  The attribute designated by
+ LDAP_FILTER_ATTR may instead hold a transformation of the principal name
+@@ -794,6 +825,27 @@ Note that this example only removes the
+ Any principal from some other realm will be left fully qualified, and then
+ presumably will not be found in the directory.
+ 
++=head2 File Object Encryption
++
++The default encryption method use is based on the twofish cypher.  If
++another encryption method is desired then the perl function file_crypt
++should be defined.  The function must accept three parameters: the
++action to preform, the encryption secret, and the string to encrypt or
++decrypt.  For example:
++
++    sub file_crypt {
++        use Crypt::RC4;
++        my ($action, $secret, $string) = @_;
++
++        my $return_string;
++        if ($action eq 'encrypt') {
++            $return_string = RC4($secret, $string);
++        } elsif ($action eq 'decrypt') {
++            $return_string = RC4($secret, $string);
++        }
++        return $return_string;
++    }
++
+ =head1 NETDB ACL CONFIGURATION
+ 
+ These configuration variables are only needed if you intend to use the
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -20,6 +20,7 @@ use warnings;
+ use Digest::MD5 qw(md5_hex);
+ use File::Copy qw(move);
+ use File::Slurp;
++use Wallet::ACL::LDAP::Attribute;
+ use Wallet::Config;
+ use Wallet::Object::Base;
+ 
+@@ -107,6 +108,114 @@ sub rename {
+ }
+ 
+ ##############################################################################
++# Encyption and decryption
++##############################################################################
++
++sub _get_crypt_key {
++    my ($self) = @_;
++
++    # ldap:///basedn?attr?scope?filter
++    my $url = $Wallet::Config::LDAP_SECRET;
++    $url =~ s{^ldap:///}{}xmsi;
++    if ($url eq $Wallet::Config::LDAP_SECRET) {
++        self->error("ERROR: Invalid LDAP URL $url");
++        exit 1;
++    }
++    my @parts = split /\?/, $url;
++    my $base   = $parts[0];
++    my $attr   = $parts[1];
++    my $scope  = $parts[2];
++    my $filter = $parts[3];
++
++    # Search for the secret in the LDAP directory
++    my $ldap_obj = Wallet::ACL::LDAP::Attribute->new;
++    my $ldap = $ldap_obj->{ldap};
++    my $entry;
++    eval {
++        my @options = (base   => $base,
++                       filter => $filter,
++                       scope  => $scope,
++                       attrs  => [ $attr ]
++        );
++        my $search = $ldap->search (@options);
++        if ($search->count == 1) {
++            $entry = $search->pop_entry;
++        } elsif ($search->count > 1) {
++            die 'ERROR: ' . $search->count . " LDAP entries found for $filter";
++        } else {
++            die "ERROR: No entry found for $url";
++        }
++    };
++    if ($@ || !$entry) {
++        die "ERROR: LDAP search failed for $url";
++    }
++
++    my $return_val;
++    my $cnt = 0;
++    foreach my $return_attr ($entry->attributes) {
++        if (lc($return_attr) eq lc($attr)) {
++            $return_val = $entry->get_value($return_val);
++            $cnt++;
++        }
++    }
++    if (!$return_val) {
++        die "ERROR: LDAP search failed for $url";
++    }
++    if ($cnt !=1) {
++        die "ERROR: LDAP search return too many values ($url)";
++    }
++    return $return_val;
++}
++
++sub _file_crypt {
++    my ($self, $action, $string) = @_;
++
++    use Crypt::CBC;
++    use MIME::Base64;
++
++    my $return_string;
++    my $pre = $Wallet::Config::LDAP_SECRET_PREFIX;
++    my $key = $self->_get_crypt_key();
++
++    my $cipher = Crypt::CBC->new(
++        -key        => $key,
++        -cipher     => 'Twofish',
++        -padding    => 'space',
++        -add_header => 1
++    );
++    if ($action eq 'encrypt') {
++        $return_string = $pre . encode_base64($cipher->encrypt($string));
++    } elsif ($action eq 'decrypt') {
++        if ($string =~ s/^$pre//xms) {
++            $return_string = $cipher->decrypt(decode_base64($string));
++        } else {
++            $return_string = $string;
++        }
++    } else {
++        my $msg = "ERROR: invalid action ($action)\n ";
++        $msg .= "INFO: action must be 'encrypt' or 'decrypt'\n";
++        $self->error($msg);
++        return;
++    }
++    return $return_string;
++}
++
++sub _file_decrypt {
++    my ($self, $data, $user, $host, $time) = @_;
++    my $undata = $self->_file_crypt('decrypt', $data);
++    if ($undata eq $data) {
++        $self->store($data, $user, $host, $time) = @_;
++    }
++    return $undata;
++}
++
++sub _file_encrypt {
++    my ($self, $data) = @_;
++    my $endata = $self->_file_crypt('encrypt', $data);
++    return $endata;
++}
++
++##############################################################################
+ # Core methods
+ ##############################################################################
+ 
+@@ -143,6 +253,9 @@ sub get {
+         $self->error ("cannot get $id: $!");
+         return;
+     }
++    if ($Wallet::LDAP::SECRET) {
++        $data = self->_file_decrypt($user, $host, $time, $data);
++    }
+     $self->log_action ('get', $user, $host, $time);
+     return $data;
+ }
+@@ -158,10 +271,17 @@ sub checksum {
+     }
+     my $path = $self->file_path;
+     my $this_checksum;
++    my $this_data;
++    my $this_endata = read_file($path);
++    if ($Wallet::Config::LDAP_SECRET) {
++        $this_data = $self->_file_decrypt($this_endata, $user, $host, $time)
++    } else {
++        $this_data = $this_endata;
++    }
+     if (defined (&Wallet::Config::file_checksum)) {
+-        $this_checksum = Wallet::Config::file_checksum($path);
++        $this_checksum = Wallet::Config::file_checksum($this_data);
+     } else {
+-        $this_checksum = md5_hex(read_file($path));
++        $this_checksum = md5_hex($this_data);
+     }
+     $self->log_action ('checksum', $user, $host, $time);
+     return $this_checksum;
+@@ -189,6 +309,9 @@ sub store {
+         $self->error ("cannot store $id: $!");
+         return;
+     }
++    if ($Wallet::Config::LDAP_SECRET) {
++        $data = $self->_file_encrypt($data);
++    }
+     unless (print FILE ($data) and close FILE) {
+         $self->error ("cannot store $id: $!");
+         close FILE;

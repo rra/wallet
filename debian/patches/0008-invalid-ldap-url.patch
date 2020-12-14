@@ -1,0 +1,17 @@
+Make sure that an invalid url error generates output as well as
+stopping processing.
+
+diff --git a/perl/lib/Wallet/Object/File.pm b/perl/lib/Wallet/Object/File.pm
+index e892589..e676759 100644
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -118,8 +118,7 @@ sub _get_crypt_key {
+     my $url = $Wallet::Config::LDAP_SECRET;
+     $url =~ s{^ldap:///}{}xmsi;
+     if ($url eq $Wallet::Config::LDAP_SECRET) {
+-        self->error("ERROR: Invalid LDAP URL $url");
+-        exit 1;
++        die("ERROR: Invalid LDAP URL $url");
+     }
+     my @parts = split /\?/, $url;
+     my $base   = $parts[0];

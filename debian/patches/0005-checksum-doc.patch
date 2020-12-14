@@ -1,0 +1,17 @@
+--- a/server/wallet-backend.in
++++ b/server/wallet-backend.in
+@@ -500,6 +500,14 @@
+ Check whether an object of type <type> and name <name> already exists.  If
+ it does, prints C<yes>; if not, prints C<no>.
+ 
++=item checksum file|password <name>
++
++Return the checksum for a file or password object.  By default a file
++objects checksum some will be calculated using the perl function
++md5_hex of the Digest::MD5 module.  This behavior can be overriden in
++the wallet configuration file.  See perldoc Wallet::Config for
++complete details.
++
+ =item comment <type> <name> [<comment>]
+ 
+ If <comment> is not given, displays the current comment for the object
