@@ -1,3 +1,10 @@
+wallet (1.4-9) unstable; urgency=medium
+
+  * Correct the default value used for the maximum of a "computer
+    name" used when creating AD keytabs.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 16 Aug 2021 18:17:30 +0000
+
 wallet (1.4-8) unstable; urgency=medium
 
   * Updates to checkfile support.
