@@ -1,7 +1,7 @@
 dnl Autoconf configuration for wallet.
 dnl
 dnl Written by Russ Allbery <eagle@eyrie.org>
-dnl Copyright 2014, 2016, 2018, 2020 Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2014, 2016, 2018, 2020-2021 Russ Allbery <eagle@eyrie.org>
 dnl Copyright 2006-2008, 2010, 2013-2014
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
@@ -39,12 +39,12 @@ AC_PROG_MKDIR_P
 dnl Allow modification of the default wallet port, and setting a default
 dnl wallet server when none is defined in krb5.conf.
 AC_ARG_WITH([wallet-server],
-    [AC_HELP_STRING([--with-wallet-server=HOST], [Default wallet server])],
+    [AS_HELP_STRING([--with-wallet-server=HOST], [Default wallet server])],
     [AS_IF([test x"$withval" != xno && test x"$withval" != xyes],
         [AC_DEFINE_UNQUOTED([WALLET_SERVER], ["$withval"],
             [Define to the default server host name.])])])
 AC_ARG_WITH([wallet-port],
-    [AC_HELP_STRING([--with-wallet-port=PORT],
+    [AS_HELP_STRING([--with-wallet-port=PORT],
         [Default wallet server port])],
     [AS_IF([test x"$withval" != xno && test x"$withval" != xyes],
         [AC_DEFINE_UNQUOTED([WALLET_PORT], [$withval],
@@ -97,7 +97,7 @@ AS_IF([test x"$REMCTLD" != x],
         [Define to the full path to remctld to run remctl tests.])])
 
 dnl Output section.
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([tests/client/basic-t], [chmod +x tests/client/basic-t])
 AC_CONFIG_FILES([tests/client/full-t], [chmod +x tests/client/full-t])
