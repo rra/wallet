@@ -1,7 +1,7 @@
 # Wallet::Policy::Stanford -- Stanford's wallet naming and ownership policy
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+# Copyright 2016, 2021 Russ Allbery <eagle@eyrie.org>
 # Copyright 2013-2015
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -260,15 +260,19 @@ sub default_owner {
     }
 
     # We have no open if this is not a file object.
-    return if $type ne 'file';
+    return if ($type ne 'file' && $type ne 'password');
 
     # Parse the name of the file object only far enough to get type and group
     # (if there is a group).
     my ($file_type, $group) = split('/', $name);
 
-    # Host-based file objects should be caught by the above.  We certainly
-    # can't do anything about them here.
-    return if $FILE_TYPE{$file_type}{host};
+    # Host-based file and password objects should be caught by the above.  We
+    # certainly can't do anything about them here.
+    if ($type eq 'file') {
+        return if $FILE_TYPE{$file_type}{host};
+    } elsif ($type eq 'password') {
+        return if $PASSWORD_TYPE{$file_type}{host};
+    }
 
     # If we have a mapping for this group, retrieve the ACL contents.  We
     # would like to just return the ACL name, but wallet currently requires we
