@@ -1,3 +1,10 @@
+wallet (1.4-10) unstable; urgency=medium
+
+  * Correct problem with transition of unencrypted file and password
+    objects to encrypted objected.
+
+ -- Bill MacAllister <whm@dropbox.com>  Sun, 12 Jun 2022 18:28:16 +0000
+
 wallet (1.4-9) unstable; urgency=medium
 
   * Correct the default value used for the maximum of a "computer
