@@ -33,7 +33,6 @@ Build-Depends:
  libtest-pod-perl,
  libtest-strict-perl,
  libtimedate-perl,
- libwebauth-perl,
  perl,
  sqlite3,
 Rules-Requires-Root: no
@@ -108,7 +107,6 @@ Suggests:
  libnet-ldap-perl,
  libnet-remctl-perl,
  libperl6-slurp-perl,
- libwebauth-perl (>= 4.4.0),
 Description: Kerberos-authenticated secure data management server
  The wallet is a system for managing secure data, authorization rules to
  retrieve or change that data, and audit rules for documenting actions
