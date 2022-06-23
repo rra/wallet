@@ -1,3 +1,10 @@
+wallet (1.4-12) unstable; urgency=medium
+
+  * Correct double encryption problem when transitioning to encrypted
+    password storage.
+
+ -- Bill MacAllister <whm@dropbox.com>  Thu, 23 Jun 2022 06:33:15 +0000
+
 wallet (1.4-11) unstable; urgency=medium
 
   * Remove support for WebAuth keyrings.
