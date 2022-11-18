@@ -1,3 +1,11 @@
+wallet (1.4-13) unstable; urgency=medium
+
+  * Expand the allow ldap-attr ACL specification to include a full
+    ldap filter.  At the same time remove the compare search and
+    perform the access test in a single LDAP search.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Fri, 18 Nov 2022 08:05:41 +0000
+
 wallet (1.4-12) unstable; urgency=medium
 
   * Correct double encryption problem when transitioning to encrypted
