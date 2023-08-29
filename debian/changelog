@@ -1,3 +1,13 @@
+wallet (1.4-14) unstable; urgency=medium
+
+  * Disable depreciation warning for opensslv1. This is an emergency
+    patch to support the opensslv1 warning for the default encryption
+    message.  This warning is affecting production systems negatively.
+    To resolve this problem a method will be implemented that allows
+    the transition to any encryption method supported by Crypt::CBC.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 28 Aug 2023 23:35:39 -0700
+
 wallet (1.4-13) unstable; urgency=medium
 
   * Expand the allow ldap-attr ACL specification to include a full

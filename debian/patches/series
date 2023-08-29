@@ -21,3 +21,4 @@
 0021-spx-test.patch
 0022-password-double-encryption.patch
 0023-ldap-attr-filter.patch
+0024-crypt-suppress-warning.patch
