@@ -1,0 +1,30 @@
+Patch to make errors invoking a class more descriptive.  The errors
+only happen when there is a reference to a module that does not exist
+or has not been installed.
+
+diff --git a/perl/lib/Wallet/Server.pm b/perl/lib/Wallet/Server.pm
+index b0c955c..f4f9f81 100644
+--- a/perl/lib/Wallet/Server.pm
++++ b/perl/lib/Wallet/Server.pm
+@@ -103,7 +103,7 @@ sub type_mapping {
+     if (defined $class) {
+         eval "require $class";
+         if ($@) {
+-            $self->error ($@);
++            print ($self->error ($@));
+             return;
+         }
+     }
+@@ -508,10 +508,10 @@ sub checksum {
+     }
+     my $object = $self->retrieve ($type, $name);
+     if (!defined $object) {
+-	return;
++    return;
+     }
+     if (!$self->acl_verify ($object, 'get')) {
+-	return;
++    return;
+     }
+     my $result = $object->checksum($self->{user}, $self->{host});
+     $self->error ($object->error) unless defined $result;

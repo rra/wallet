@@ -1,0 +1,183 @@
+Index: wallet/perl/lib/Wallet/ACL/LDAP/Attribute.pm
+===================================================================
+--- wallet.orig/perl/lib/Wallet/ACL/LDAP/Attribute.pm	2022-11-18 08:01:14.615451075 +0000
++++ wallet/perl/lib/Wallet/ACL/LDAP/Attribute.pm	2022-11-18 08:03:02.096649951 +0000
+@@ -62,10 +62,9 @@
+     return $self;
+ }
+ 
+-# Check whether a given principal has the required LDAP attribute.  We first
+-# map the principal to a DN by doing a search for that principal (and bailing
+-# if we get more than one entry).  Then, we do a compare to see if that DN has
+-# the desired attribute and value.
++# Check whether a given principal has access to the wallet object
++# using an LDAP search using a filter consisting of the principal
++# and the ldap-attr filter.
+ #
+ # If the ldap_map_principal sub is defined in Wallet::Config, call it on the
+ # principal first to map it to the value for which we'll search.
+@@ -75,18 +74,29 @@
+ sub check {
+     my ($self, $principal, $acl) = @_;
+     undef $self->{error};
+-    unless ($principal) {
++    if (!$principal) {
+         $self->error ('no principal specified');
+         return;
+     }
+-    my ($attr, $value);
+-    if ($acl) {
+-        ($attr, $value) = split ('=', $acl, 2);
++
++    if (!$acl) {
++        $self->error ('no ACL specified');
++        return;
++    }
++    if ($acl !~ /=/xms) {
++        $self->error ('Malformed LDAP filter, no equal sign present');
++        return;
+     }
+-    unless (defined ($attr) and defined ($value)) {
+-        $self->error ('malformed ldap-attr ACL');
++    my $lcnt = $acl =~ tr/\(//;
++    my $rcnt = $acl =~ tr/\)//;
++    if ($lcnt != $rcnt) {
++        $self->error ('Malformed LDAP filter, parenthesis mismatch');
+         return;
+     }
++    my $attr_filter = $acl;
++    if ($attr_filter !~ /^\(/xms) {
++        $attr_filter = "($attr_filter)";
++    }
+     my $ldap = $self->{ldap};
+ 
+     # Map the principal name to an attribute value for our search if we're
+@@ -99,38 +109,29 @@
+         }
+     }
+ 
+-    # Now, map the user to a DN by doing a search.
+-    my $entry;
++    # Now search for one, and only one, matching entry
++    my $found;
++    my $fattr = $Wallet::Config::LDAP_FILTER_ATTR || 'krb5PrincipalName';
++    my $filter = "(&($fattr=$principal)$attr_filter)";
++    my $base = $Wallet::Config::LDAP_BASE;
++    my @options = (base => $base, filter => $filter, attrs => [ 'dn' ]);
+     eval {
+-        my $fattr = $Wallet::Config::LDAP_FILTER_ATTR || 'krb5PrincipalName';
+-        my $filter = "($fattr=$principal)";
+-        my $base = $Wallet::Config::LDAP_BASE;
+-        my @options = (base => $base, filter => $filter, attrs => [ 'dn' ]);
+         my $search = $ldap->search (@options);
+         if ($search->count == 1) {
+-            $entry = $search->pop_entry;
++            $found = 1;
+         } elsif ($search->count > 1) {
+             die $search->count . " LDAP entries found for $principal";
+         }
+     };
+     if ($@) {
+-        $self->error ("cannot search for $principal in LDAP: $@");
++        $self->error ("search for $attr_filter failed in LDAP: $@");
+         return;
+     }
+-    return 0 unless $entry;
+-
+-    # We have a user entry.  We can now check whether that user has the
+-    # desired attribute and value.
+-    my $result;
+-    eval {
+-        my $mesg = $ldap->compare ($entry, attr => $attr, value => $value);
+-        $result = $mesg->code;
+-    };
+-    if ($@) {
+-        $self->error ("cannot check LDAP attribute $attr for $principal: $@");
+-        return;
++    if ($found) {
++        return 1;
+     }
+-    return ($result == LDAP_COMPARE_TRUE) ? 1 : 0;
++
++    return;
+ }
+ 
+ 1;
+@@ -160,12 +161,13 @@
+ 
+ =head1 DESCRIPTION
+ 
+-Wallet::ACL::LDAP::Attribute checks whether the LDAP record for the entry
+-corresponding to a principal contains an attribute with a particular
+-value.  It is used to verify ACL lines of type C<ldap-attr>.  The value of
+-such an ACL is an attribute followed by an equal sign and a value, and the
+-ACL grants access to a given principal if and only if the LDAP entry for
+-that principal has that attribute set to that value.
++Wallet::ACL::LDAP::Attribute checks whether the LDAP record for the
++entry corresponding to a principal contains an attribute with a
++particular value.  It is used to verify ACL lines of type
++C<ldap-attr>.  The value of such an ACL is a valid LDAP filter, and
++the ACL grants access to a given principal if and only if an LDAP
++search using a filter constructed of the principal filter AND 
++the ACL filter returns a single entry.
+ 
+ To use this object, several configuration parameters must be set.  See
+ L<Wallet::Config> for details on those configuration parameters and
+@@ -183,10 +185,9 @@
+ =item check(PRINCIPAL, ACL)
+ 
+ Returns true if PRINCIPAL is granted access according to ACL, false if
+-not, and undef on an error (see L<"DIAGNOSTICS"> below).  ACL must be an
+-attribute name and a value, separated by an equal sign (with no
+-whitespace).  PRINCIPAL will be granted access if its LDAP entry contains
+-that attribute with that value.
++not, and undef on an error (see L<"DIAGNOSTICS"> below).  ACL must be
++a valid LDAP filter.  The filter formed using the PRINCIPAL and the
++ACL filter must return a single entry for access to be granted.
+ 
+ =item error()
+ 
+@@ -216,31 +217,29 @@
+ 
+ =over 4
+ 
+-=item cannot check LDAP attribute %s for %s: %s
++=item search for %s failed in LDAP: %s
+ 
+-The LDAP compare to check for the required attribute failed.  The
+-attribute may have been misspelled, or there may be LDAP directory
+-permission issues.  This error indicates that PRINCIPAL's entry was
+-located in LDAP, but the check failed during the compare to verify the
+-attribute value.
++The search for an ldap entry failed because of a configuration error
++in Wallet or the LDAP server.  For example the Wallet configuration
++includes an invalid root DN.
+ 
+-=item cannot search for %s in LDAP: %s
++=item malformed ldap-attr LDAP filter, no equal sign present
+ 
+-Searching for PRINCIPAL (possibly after ldap_map_principal() mapping)
+-failed.  This is often due to LDAP directory permissions issues.  This
+-indicates a failure during the mapping of PRINCIPAL to an LDAP DN.
++The ACL filter stored as ldap-attr is not a valid LDAP filter.
+ 
+-=item malformed ldap-attr ACL
++=item malformed ldap-attr LDAP filter, parenthesis mismatch
+ 
+-The ACL parameter to check() was malformed.  Usually this means that
+-either the attribute or the value were empty or the required C<=> sign
+-separating them was missing.
++The ACL filter stored as ldap-attr is not a valid LDAP filter.
+ 
+ =item mapping principal to LDAP failed: %s
+ 
+ There was an ldap_map_principal() function defined in the wallet
+ configuration, but calling it for the PRINCIPAL argument failed.
+ 
++=item no ACL specified
++
++The ACL parameter to check() was undefined or the empty string.
++
+ =item no principal specified
+ 
+ The PRINCIPAL parameter to check() was undefined or the empty string.

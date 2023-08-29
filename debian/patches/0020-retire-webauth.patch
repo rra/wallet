@@ -1,0 +1,1359 @@
+Index: wallet/perl/lib/Wallet/Object/WAKeyring.pm
+===================================================================
+--- wallet.orig/perl/lib/Wallet/Object/WAKeyring.pm	2022-06-18 01:53:50.800081794 +0000
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,367 +0,0 @@
+-# Wallet::Object::WAKeyring -- WebAuth keyring object implementation
+-#
+-# Written by Russ Allbery <eagle@eyrie.org>
+-# Copyright 2016 Russ Allbery <eagle@eyrie.org>
+-# Copyright 2012-2014
+-#     The Board of Trustees of the Leland Stanford Junior University
+-#
+-# SPDX-License-Identifier: MIT
+-
+-##############################################################################
+-# Modules and declarations
+-##############################################################################
+-
+-package Wallet::Object::WAKeyring;
+-
+-use 5.008;
+-use strict;
+-use warnings;
+-
+-use Digest::MD5 qw(md5_hex);
+-use Fcntl qw(LOCK_EX);
+-use Wallet::Config;
+-use Wallet::Object::Base;
+-use WebAuth 3.06 qw(WA_KEY_AES WA_AES_128);
+-
+-our @ISA     = qw(Wallet::Object::Base);
+-our $VERSION = '1.04';
+-
+-##############################################################################
+-# File naming
+-##############################################################################
+-
+-# Returns the path into which that keyring object will be stored or undef on
+-# error.  On error, sets the internal error.
+-sub file_path {
+-    my ($self) = @_;
+-    my $name = $self->{name};
+-    unless ($Wallet::Config::WAKEYRING_BUCKET) {
+-        $self->error ('WebAuth keyring support not configured');
+-        return;
+-    }
+-    unless ($name) {
+-        $self->error ('WebAuth keyring objects may not have empty names');
+-        return;
+-    }
+-    my $hash = substr (md5_hex ($name), 0, 2);
+-    $name =~ s/([^\w-])/sprintf ('%%%02X', ord ($1))/ge;
+-    my $parent = "$Wallet::Config::WAKEYRING_BUCKET/$hash";
+-    unless (-d $parent || mkdir ($parent, 0700)) {
+-        $self->error ("cannot create keyring bucket $hash: $!");
+-        return;
+-    }
+-    return "$Wallet::Config::WAKEYRING_BUCKET/$hash/$name";
+-}
+-
+-##############################################################################
+-# Core methods
+-##############################################################################
+-
+-# Override destroy to delete the file as well.
+-sub destroy {
+-    my ($self, $user, $host, $time) = @_;
+-    my $id = $self->{type} . ':' . $self->{name};
+-    my $path = $self->file_path;
+-    if (defined ($path) && -f $path && !unlink ($path)) {
+-        $self->error ("cannot delete $id: $!");
+-        return;
+-    }
+-    return $self->SUPER::destroy ($user, $host, $time);
+-}
+-
+-# Update the keyring if needed, and then return the contents of the current
+-# keyring.
+-sub get {
+-    my ($self, $user, $host, $time) = @_;
+-    $time ||= time;
+-    my $id = $self->{type} . ':' . $self->{name};
+-    if ($self->flag_check ('locked')) {
+-        $self->error ("cannot get $id: object is locked");
+-        return;
+-    }
+-    my $path = $self->file_path;
+-    return unless defined $path;
+-
+-    # Create a WebAuth context and ensure we can load the relevant modules.
+-    my $wa = eval { WebAuth->new };
+-    if ($@) {
+-        $self->error ("cannot initialize WebAuth: $@");
+-        return;
+-    }
+-
+-    # Check if the keyring already exists.  If not, create a new one with a
+-    # single key that's immediately valid and two more that will become valid
+-    # in the future.
+-    #
+-    # If the keyring does already exist, get a lock on the file.  At the end
+-    # of this process, we'll do an atomic update and then drop our lock.
+-    #
+-    # FIXME: There are probably better ways to do this.  There are some race
+-    # conditions here, particularly with new keyrings.
+-    unless (open (FILE, '+<', $path)) {
+-        my $data;
+-        eval {
+-            my $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
+-            my $ring = $wa->keyring_new ($key);
+-            $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
+-            my $valid = time + $Wallet::Config::WAKEYRING_REKEY_INTERVAL;
+-            $ring->add (time, $valid, $key);
+-            $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
+-            $valid += $Wallet::Config::WAKEYRING_REKEY_INTERVAL;
+-            $ring->add (time, $valid, $key);
+-            $data = $ring->encode;
+-            $ring->write ($path);
+-        };
+-        if ($@) {
+-            $self->error ("cannot create new keyring");
+-            return;
+-        };
+-        $self->log_action ('get', $user, $host, $time);
+-        return $data;
+-    }
+-    unless (flock (FILE, LOCK_EX)) {
+-        $self->error ("cannot get lock on keyring: $!");
+-        return;
+-    }
+-
+-    # Read the keyring.
+-    my $ring = eval { WebAuth::Keyring->read ($wa, $path) };
+-    if ($@) {
+-        $self->error ("cannot read keyring: $@");
+-        return;
+-    }
+-
+-    # If the most recent key has a valid-after older than now +
+-    # WAKEYRING_REKEY_INTERVAL, we generate a new key with a valid_after of
+-    # now + 2 * WAKEYRING_REKEY_INTERVAL.
+-    my ($count, $newest) = (0, 0);
+-    for my $entry ($ring->entries) {
+-        $count++;
+-        if ($entry->valid_after > $newest) {
+-            $newest = $entry->valid_after;
+-        }
+-    }
+-    eval {
+-        if ($newest <= time + $Wallet::Config::WAKEYRING_REKEY_INTERVAL) {
+-            my $valid = time + 2 * $Wallet::Config::WAKEYRING_REKEY_INTERVAL;
+-            my $key = $wa->key_create (WA_KEY_AES, WA_AES_128);
+-            $ring->add (time, $valid, $key);
+-        }
+-    };
+-    if ($@) {
+-        $self->error ("cannot add new key: $@");
+-        return;
+-    }
+-
+-    # If there are any keys older than the purge interval, remove them, but
+-    # only do so if we have more than three keys (the one that's currently
+-    # active, the one that's going to come active in the rekey interval, and
+-    # the one that's going to come active after that.
+-    #
+-    # FIXME: Be sure that we don't remove the last currently-valid key.
+-    my $cutoff = time - $Wallet::Config::WAKEYRING_PURGE_INTERVAL;
+-    my $i = 0;
+-    my @purge;
+-    if ($count > 3) {
+-        for my $entry ($ring->entries) {
+-            if ($entry->creation < $cutoff) {
+-                push (@purge, $i);
+-            }
+-            $i++;
+-        }
+-    }
+-    if (@purge && $count - @purge >= 3) {
+-        eval {
+-            for my $key (reverse @purge) {
+-                $ring->remove ($key);
+-            }
+-        };
+-        if ($@) {
+-            $self->error ("cannot remove old keys: $@");
+-            return;
+-        }
+-    }
+-
+-    # Encode the key.
+-    my $data = eval { $ring->encode };
+-    if ($@) {
+-        $self->error ("cannot encode keyring: $@");
+-        return;
+-    }
+-
+-    # Write the new keyring to the path.
+-    eval { $ring->write ($path) };
+-    if ($@) {
+-        $self->error ("cannot store new keyring: $@");
+-        return;
+-    }
+-    close FILE;
+-    $self->log_action ('get', $user, $host, $time);
+-    return $data;
+-}
+-
+-# Store the file on the wallet server.
+-#
+-# FIXME: Check the provided keyring for validity.
+-sub store {
+-    my ($self, $data, $user, $host, $time) = @_;
+-    $time ||= time;
+-    my $id = $self->{type} . ':' . $self->{name};
+-    if ($self->flag_check ('locked')) {
+-        $self->error ("cannot store $id: object is locked");
+-        return;
+-    }
+-    if ($Wallet::Config::FILE_MAX_SIZE) {
+-        my $max = $Wallet::Config::FILE_MAX_SIZE;
+-        if (length ($data) > $max) {
+-            $self->error ("data exceeds maximum of $max bytes");
+-            return;
+-        }
+-    }
+-    my $path = $self->file_path;
+-    return unless $path;
+-    unless (open (FILE, '>', $path)) {
+-        $self->error ("cannot store $id: $!");
+-        return;
+-    }
+-    unless (print FILE ($data) and close FILE) {
+-        $self->error ("cannot store $id: $!");
+-        close FILE;
+-        return;
+-    }
+-    $self->log_action ('store', $user, $host, $time);
+-    return 1;
+-}
+-
+-1;
+-__END__
+-
+-##############################################################################
+-# Documentation
+-##############################################################################
+-
+-=for stopwords
+-WebAuth keyring keyrings API HOSTNAME DATETIME keytab AES rekey Allbery
+-
+-=head1 NAME
+-
+-Wallet::Object::WAKeyring - WebAuth keyring object implementation for wallet
+-
+-=head1 SYNOPSIS
+-
+-    my ($user, $host, $time);
+-    my @name = qw(wa-keyring www.stanford.edu);
+-    my @trace = ($user, $host, $time);
+-    my $object = Wallet::Object::WAKeyring->create (@name, $schema, $trace);
+-    my $keyring = $object->get (@trace);
+-    unless ($object->store ($keyring)) {
+-        die $object->error, "\n";
+-    }
+-    $object->destroy (@trace);
+-
+-=head1 DESCRIPTION
+-
+-Wallet::Object::WAKeyring is a representation of a WebAuth keyring in the
+-wallet.  It implements the wallet object API and provides the necessary
+-glue to store a keyring on the wallet server, retrieve it, update the
+-keyring with new keys automatically as needed, purge old keys
+-automatically, and delete the keyring when the object is deleted.
+-
+-WebAuth keyrings hold one or more keys.  Each key has a creation time and
+-a validity time.  The key cannot be used until its validity time has been
+-reached.  This permits safe key rotation: a new key is added with a
+-validity time in the future, and then the keyring is updated everywhere it
+-needs to be before that validity time is reached.  This wallet object
+-automatically handles key rotation by adding keys with validity dates in
+-the future and removing keys with creation dates substantially in the
+-past.
+-
+-To use this object, various configuration options specifying where to
+-store the keyrings and how to handle key rotation must be set.  See
+-Wallet::Config for details on these configuration parameters and
+-information about how to set wallet configuration.
+-
+-=head1 METHODS
+-
+-This object mostly inherits from Wallet::Object::Base.  See the
+-documentation for that class for all generic methods.  Below are only
+-those methods that are overridden or behave specially for this
+-implementation.
+-
+-=over 4
+-
+-=item destroy(PRINCIPAL, HOSTNAME [, DATETIME])
+-
+-Destroys a WebAuth keyring object by removing it from the database and
+-deleting the corresponding file on the wallet server.  Returns true on
+-success and false on failure.  The caller should call error() to get the
+-error message after a failure.  PRINCIPAL, HOSTNAME, and DATETIME are
+-stored as history information.  PRINCIPAL should be the user who is
+-destroying the object.  If DATETIME isn't given, the current time is used.
+-
+-=item get(PRINCIPAL, HOSTNAME [, DATETIME])
+-
+-Either creates a new WebAuth keyring (if this object has not bee stored or
+-retrieved before) or does any necessary periodic maintenance on the
+-keyring and then returns its data.  The caller should call error() to get
+-the error message if get() returns undef.  PRINCIPAL, HOSTNAME, and
+-DATETIME are stored as history information.  PRINCIPAL should be the user
+-who is downloading the keytab.  If DATETIME isn't given, the current time
+-is used.
+-
+-If this object has never been stored or retrieved before, a new keyring
+-will be created with three 128-bit AES keys: one that is immediately
+-valid, one that will become valid after the rekey interval, and one that
+-will become valid after twice the rekey interval.
+-
+-If keyring data for this object already exists, the creation and validity
+-dates for each key in the keyring will be examined.  If the key with the
+-validity date the farthest into the future has a date that's less than or
+-equal to the current time plus the rekey interval, a new 128-bit AES key
+-will be added to the keyring with a validity time of twice the rekey
+-interval in the future.  Finally, all keys with a creation date older than
+-the configured purge interval will be removed provided that the keyring
+-has at least three keys
+-
+-=item store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
+-
+-Store DATA as the current contents of the WebAuth keyring object.  Note
+-that this is not checked for validity, just assumed to be a valid keyring.
+-Any existing data will be overwritten.  Returns true on success and false
+-on failure.  The caller should call error() to get the error message after
+-a failure.  PRINCIPAL, HOSTNAME, and DATETIME are stored as history
+-information.  PRINCIPAL should be the user who is destroying the object.
+-If DATETIME isn't given, the current time is used.
+-
+-If FILE_MAX_SIZE is set in the wallet configuration, a store() of DATA
+-larger than that configuration setting will be rejected.
+-
+-=back
+-
+-=head1 FILES
+-
+-=over 4
+-
+-=item WAKEYRING_BUCKET/<hash>/<file>
+-
+-WebAuth keyrings are stored on the wallet server under the directory
+-WAKEYRING_BUCKET as set in the wallet configuration.  <hash> is the first
+-two characters of the hex-encoded MD5 hash of the wallet file object name,
+-used to not put too many files in the same directory.  <file> is the name
+-of the file object with all characters other than alphanumerics,
+-underscores, and dashes replaced by "%" and the hex code of the character.
+-
+-=back
+-
+-=head1 SEE ALSO
+-
+-Wallet::Config(3), Wallet::Object::Base(3), wallet-backend(8), WebAuth(3)
+-
+-This module is part of the wallet system. The current version is available
+-from L<https://www.eyrie.org/~eagle/software/wallet/>.
+-
+-=head1 AUTHOR
+-
+-Russ Allbery <eagle@eyrie.org>
+-
+-=cut
+Index: wallet/NEWS
+===================================================================
+--- wallet.orig/NEWS	2022-06-18 01:53:50.800081794 +0000
++++ wallet/NEWS	2022-06-18 01:53:50.780080738 +0000
+@@ -1,5 +1,13 @@
+                        User-Visible wallet Changes
+ 
++wallet 1.4-10 (2022-06-17)
++
++    The support for WebAuth keyrings has been removed since it is not
++    supported by Debian.
++
++    There is a critical fix for transition from unencrypted password
++    and file objects to encrypted.
++
+ wallet 1.4-3 (2019-09-30)
+ 
+     Two new features have been added to wallet with this release.
+Index: wallet/README
+===================================================================
+--- wallet.orig/README	2022-06-18 01:53:50.800081794 +0000
++++ wallet/README	2022-06-18 01:53:50.780080738 +0000
+@@ -42,16 +42,16 @@
+   regexes matching Kerberos principal names, and LDAP attribute checks.
+ 
+   Currently, the object types supported are simple files, passwords,
+-  Kerberos keytabs, WebAuth keyrings, and Duo integrations.  By default,
+-  whenever a Kerberos keytab object is retrieved from the wallet, the key
+-  is changed in the Kerberos KDC and the wallet returns a keytab for the
+-  new key.  However, a keytab object can also be configured to preserve
+-  the existing keys when retrieved.  Included in the wallet distribution
+-  is a script that can be run via remctl on an MIT Kerberos KDC to extract
+-  the existing key for a principal, and the wallet system will use that
+-  interface to retrieve the current key if the unchanging flag is set on a
+-  Kerberos keytab object for MIT Kerberos.  (Heimdal doesn't require any
+-  special support.)
++  Kerberos keytabs, and Duo integrations.  By default, whenever a
++  Kerberos keytab object is retrieved from the wallet, the key is
++  changed in the Kerberos KDC and the wallet returns a keytab for the
++  new key.  However, a keytab object can also be configured to
++  preserve the existing keys when retrieved.  Included in the wallet
++  distribution is a script that can be run via remctl on an MIT
++  Kerberos KDC to extract the existing key for a principal, and the
++  wallet system will use that interface to retrieve the current key if
++  the unchanging flag is set on a Kerberos keytab object for MIT
++  Kerberos.  (Heimdal doesn't require any special support.)
+ 
+ REQUIREMENTS
+ 
+@@ -98,9 +98,6 @@
+   binary that supports the -norandkey option to ktadd.  This option is
+   included in MIT Kerberos 1.7 and later.
+ 
+-  The WebAuth keyring object support in the wallet server requires the
+-  WebAuth Perl module from WebAuth 4.4.0 or later.
+-
+   The Duo integration object support in the wallet server requires the
+   Net::Duo, JSON, and Perl6::Slurp Perl modules.
+ 
+Index: wallet/README.md
+===================================================================
+--- wallet.orig/README.md	2022-06-18 01:53:50.800081794 +0000
++++ wallet/README.md	2022-06-18 01:53:50.780080738 +0000
+@@ -43,16 +43,16 @@
+ regexes matching Kerberos principal names, and LDAP attribute checks.
+ 
+ Currently, the object types supported are simple files, passwords,
+-Kerberos keytabs, WebAuth keyrings, and Duo integrations.  By default,
+-whenever a Kerberos keytab object is retrieved from the wallet, the key is
+-changed in the Kerberos KDC and the wallet returns a keytab for the new
+-key.  However, a keytab object can also be configured to preserve the
+-existing keys when retrieved.  Included in the wallet distribution is a
+-script that can be run via remctl on an MIT Kerberos KDC to extract the
+-existing key for a principal, and the wallet system will use that
+-interface to retrieve the current key if the unchanging flag is set on a
+-Kerberos keytab object for MIT Kerberos.  (Heimdal doesn't require any
+-special support.)
++Kerberos keytabs, and Duo integrations.  By default, whenever a
++Kerberos keytab object is retrieved from the wallet, the key is
++changed in the Kerberos KDC and the wallet returns a keytab for the
++new key.  However, a keytab object can also be configured to preserve
++the existing keys when retrieved.  Included in the wallet distribution
++is a script that can be run via remctl on an MIT Kerberos KDC to
++extract the existing key for a principal, and the wallet system will
++use that interface to retrieve the current key if the unchanging flag
++is set on a Kerberos keytab object for MIT Kerberos.  (Heimdal doesn't
++require any special support.)
+ 
+ ## Requirements
+ 
+@@ -98,9 +98,6 @@
+ supports the `-norandkey` option to `ktadd`.  This option is included in
+ MIT Kerberos 1.7 and later.
+ 
+-The WebAuth keyring object support in the wallet server requires the
+-WebAuth Perl module from WebAuth 4.4.0 or later.
+-
+ The Duo integration object support in the wallet server requires the
+ Net::Duo, JSON, and Perl6::Slurp Perl modules.
+ 
+Index: wallet/contrib/wallet-rekey-periodic
+===================================================================
+--- wallet.orig/contrib/wallet-rekey-periodic	2022-06-18 01:53:50.800081794 +0000
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,268 +0,0 @@
+-#!/bin/sh
+-#
+-# Rekey all principals on a system at a random but constrained interval.
+-#
+-# This script is a wrapper around wallet-rekey that adds some additional
+-# functionality: rekeying of all keytabs at known locations on the system,
+-# skipping keytabs that are marked unchanging, rekeying any keytabs with DES
+-# keys immediately but otherwise only rekeying once a month based on a random
+-# interval based on the hostname, and cleaning up old keys.
+-#
+-# It's primarily meant to be run daily from cron, but can also be run manually
+-# from the command line to rekey specific keytab files.
+-#
+-# This script assumes Linux, and the test for Heimdal assumes that the
+-# Kerberos clients are installed in /usr/bin.  At sites other than Stanford,
+-# change the principal setting near the top of the script to use your local
+-# realm.
+-
+-set -e
+-
+-# Red Hat puts its Kerberos binaries in an odd place.  Make sure that we
+-# prefer the system binaries everwhere.
+-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/kerberos/bin; export PATH
+-
+-# The rekeying interval.  Rekeying will be done, on average, every this number
+-# of days.
+-INTERVAL=30
+-
+-# Under normal circumstances, we don't want to rekey every host at the same
+-# time.  We therefore run this script daily, but we only do the rekeying if
+-# it's our day to do so.
+-#
+-# For the decision whether we should go on this day, we want to do something
+-# relatively random, but zero-intervention and with no state.  We therefore
+-# hash the hostname with MD5 and mod it with $INTERVAL, which gives us a
+-# number between 0 and $INTERVAL - 1.  Then, take the mod of the day of the
+-# year.  If the result matches the number we got, we rekey.
+-#
+-# We do the check later, since we always want to rekey if we see DES keys.
+-hostnum=$(hostname | md5sum | awk '{print $1}')
+-DAY=$(awk "END { print 0x$hostnum % $INTERVAL }" </dev/null)
+-
+-# Get the principal with which we're going to run all of our commands.  We
+-# can't just blindly use the first key in /etc/krb5.keytab, since Heimdal
+-# sometimes reorders the principals in unuseful ways and the host/* key isn't
+-# first.
+-hostname=$(hostname --fqdn)
+-principal="host/${hostname}@stanford.edu"
+-
+-# Do the actual check to see if this is our day to go.
+-is_active_day () {
+-    if expr \( $(date +%j) % "$INTERVAL" \) = "$DAY" >/dev/null ; then
+-        return 0
+-    else
+-        return 1
+-    fi
+-}
+-
+-# Returns whether the installed Kerberos implementation on the local system is
+-# Heimdal.
+-is_heimdal () {
+-    if [ -x '/usr/bin/kgetcred' ] ; then
+-        return 0
+-    else
+-        return 1
+-    fi
+-}
+-
+-# Print the list of principals in a keytab.
+-principals () {
+-    if is_heimdal ; then
+-        ktutil -k "$1" list | awk '{
+-            if (FNR > 3) {
+-                princ = $3
+-                sub(/@.*/, "", princ)
+-                print princ
+-            }
+-        }' | sort -u
+-    else
+-        klist -k "$1" | awk '{
+-            if (FNR > 3) {
+-                princ = $2
+-                sub(/@.*/, "", princ)
+-                print princ
+-            }
+-        }' | sort -u
+-    fi
+-}
+-
+-# Run a command under k5start using the host/* principal for the current
+-# hostname as the authentication credentials.
+-run_k5start () {
+-    k5start -qf /etc/krb5.keytab "$principal" -- "$@"
+-}
+-
+-# Check all of the principals in a keytab and see if any of them are
+-# unchanging.  If any are, we skip rekeying this keytab, since otherwise we're
+-# going to accumulate multiple copies of the same key and the cleanup
+-# functions won't remove the excess keys.
+-is_unchanging () {
+-    princs=$(principals "$1")
+-    for princ in $princs ; do
+-        if run_k5start wallet show keytab "$princ" 2>&1 \
+-                | grep -q 'Flags: unchanging' ; then
+-            return 0
+-        fi
+-    done
+-    return 1
+-}
+-
+-# Check whether any of the principals in this keytab have DES keys.  This is a
+-# bit complicated, since we don't want to trigger this if there are DES keys
+-# but ones with old kvnos.
+-#
+-# We get a list of all the unique kvnos in the file, and then a list of all
+-# the unique kvnos of DES keys in the file.  If those lists match, we consider
+-# this a DES keytab; if not, there's at least one kvno with non-DES keys, so
+-# we consider this a non-DES keytab.
+-is_des () {
+-    if is_heimdal ; then
+-        all=$(ktutil -k "$1" list | sed '1,3d' | awk '{print $1}' | sort -nu)
+-        des=$(ktutil -k "$1" list | grep des-cbc-crc | awk '{print $1}' \
+-                | sort -nu)
+-    else
+-        all=$(klist -k "$1" | sed '1,3d' | awk '{print $1}' | sort -nu)
+-        des=$(klist -ke "$1" | egrep '\(DES cbc|des-cbc-crc' \
+-                | awk '{print $1}' | sort -nu)
+-    fi
+-    if [ "$all" = "$des" ] ; then
+-        return 0
+-    else
+-        return 1
+-    fi
+-}
+-
+-# Rekey the given keytab file if it exists, this is either the active day or
+-# the keytab contains DES keys, and it isn't unchanging.  On Heimdal, we'll
+-# also purge old keys.  We can't do this on MIT because the kadmin routine
+-# that purges old keys requires admin authentication.
+-rekey () {
+-    if [ -f "$1" ] ; then
+-        if is_des "$1" || is_active_day ; then
+-            if ! is_unchanging "$1" ; then
+-                if is_heimdal ; then
+-                    ktutil -k "$1" purge
+-                fi
+-                run_k5start wallet-rekey "$1"
+-            fi
+-        fi
+-    fi
+-}
+-
+-# The default action is to rekey the host keytab, the WebAuth keytab, and any
+-# keytabs found in /etc/keytabs/*.  But if we're given keytabs on the command
+-# line, we'll rekey those instead.  (This won't generally be used since we're
+-# installed as a cron job.)
+-if [ -z "$1" ] ; then
+-    for file in /etc/webauth/keytab /etc/keytabs/* /etc/krb5.keytab ; do
+-        rekey "$file"
+-    done
+-else
+-    for file in "$@" ; do
+-        rekey "$file"
+-    done
+-fi
+-
+-# Documentation.  Use a hack to hide this from the shell.  Because of the
+-# above exit line, this should never be executed.
+-DOCS=<<__END_OF_DOCS__
+-
+-=for stopwords
+-Allbery DES Heimdal hostname keytab keytabs ktutil rekey rekeyable
+-rekeying wallet-rekey wallet-rekey-periodic SPDX-License-Identifier MIT
+-
+-=head1 NAME
+-
+-wallet-rekey-periodic - Periodically rekey all system keytabs
+-
+-=head1 SYNOPSIS
+-
+-B<wallet-rekey-periodic> [I<keytab> ...]
+-
+-=head1 DESCRIPTION
+-
+-B<wallet-rekey-periodic> is a wrapper around wallet-rekey that adds some
+-additional functionality: rekeying of all keytabs at known locations on
+-the system, skipping keytabs that are marked unchanging, rekeying any
+-keytabs with DES keys immediately but otherwise only rekeying once a month
+-based on a random interval based on the hostname, and cleaning up old
+-keys.
+-
+-It's primarily meant to be run daily from cron, but can also be run
+-manually from the command line to rekey specific keytab files.
+-
+-B<wallet-rekey-periodic> will, for each keytab, find a list of all
+-principals in that keytab and see if any of them still have DES keys.  If
+-so, it will always attempt to rekey that keytab.  If not, it will only do
+-so, for a given system, once every 30 days (based on a hash of the
+-hostname).  It will also always skip keytabs that contain any principals
+-that wallet says are unchanging, since otherwise the current wallet-rekey
+-implementation will duplicate the existing keys.
+-
+-On Heimdal systems, this command will remove keys older than a week before
+-rekeying the keytab.  This relies on B<ktutil> functionality that's
+-available only in Heimdal, so MIT Kerberos keytabs will slowly grow unless
+-they're manually pruned.  This will be fixed in a later release of
+-B<wallet-rekey>.
+-
+-If no keytabs are given on the command line, B<wallet-rekey-periodic> will
+-rekey a set of system keytabs described below under L</FILES>.  Otherwise,
+-it will rekey the keytabs given.
+-
+-=head1 FILES
+-
+-=over 4
+-
+-=item F</etc/keytabs/*>
+-
+-=item F</etc/krb5.keytab>
+-
+-=item F</etc/webauth/keytab>
+-
+-The default list of locations checked for rekeyable keytabs.  If run with
+-no command-line arguments, B<wallet-rekey-periodic> will try to rekey
+-every principal in each keytab found at any of these paths.
+-
+-=back
+-
+-=head1 AUTHOR
+-
+-Russ Allbery <eagle@eyrie.org>
+-
+-=head1 COPYRIGHT AND LICENSE
+-
+-Copyright 2013-2014 The Board of Trustees of the Leland Stanford Junior
+-University
+-
+-Permission is hereby granted, free of charge, to any person obtaining a
+-copy of this software and associated documentation files (the "Software"),
+-to deal in the Software without restriction, including without limitation
+-the rights to use, copy, modify, merge, publish, distribute, sublicense,
+-and/or sell copies of the Software, and to permit persons to whom the
+-Software is furnished to do so, subject to the following conditions:
+-
+-The above copyright notice and this permission notice shall be included in
+-all copies or substantial portions of the Software.
+-
+-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-DEALINGS IN THE SOFTWARE.
+-
+-SPDX-License-Identifier: MIT
+-
+-=head1 SEE ALSO
+-
+-ktutil(8), wallet(1), wallet-rekey(1)
+-
+-=cut
+-
+-__END_OF_DOCS__
+-
+-# Local Variables:
+-# copyright-at-end-flag: t
+-# End:
+Index: wallet/perl/lib/Wallet/Config.pm
+===================================================================
+--- wallet.orig/perl/lib/Wallet/Config.pm	2022-06-18 01:53:50.800081794 +0000
++++ wallet/perl/lib/Wallet/Config.pm	2022-06-18 01:53:50.784080949 +0000
+@@ -26,7 +26,7 @@
+ DBI DSN SQLite subdirectories KEYTAB keytab kadmind KDC add-ons kadmin DNS
+ SRV kadmin keytabs remctl backend lowercased NETDB ACL NetDB unscoped
+ usernames rekey hostnames Allbery wallet-backend keytab-backend Heimdal
+-rekeys WebAuth WEBAUTH keyring LDAP DN GSS-API integrations msktutil CN DIT
++rekeys LDAP DN GSS-API integrations msktutil CN DIT
+ 
+ =head1 SYNOPSIS
+ 
+@@ -645,67 +645,6 @@
+ 
+ =back
+ 
+-=head1 WEBAUTH KEYRING OBJECT CONFIGURATION
+-
+-These configuration variables only need to be set if you intend to use the
+-C<wakeyring> object type (the Wallet::Object::WAKeyring class).
+-
+-=over 4
+-
+-=item WAKEYRING_BUCKET
+-
+-The directory into which to store WebAuth keyring objects.  WebAuth
+-keyring objects will be stored in subdirectories of this directory.  See
+-L<Wallet::Object::WAKeyring> for the full details of the naming scheme.
+-This directory must be writable by the wallet server and the wallet server
+-must be able to create subdirectories of it.
+-
+-WAKEYRING_BUCKET must be set to use WebAuth keyring objects.
+-
+-=cut
+-
+-our $WAKEYRING_BUCKET;
+-
+-=item WAKEYRING_REKEY_INTERVAL
+-
+-The interval, in seconds, at which new keys are generated in a keyring.
+-The object implementation will try to arrange for there to be keys added
+-to the keyring separated by this interval.
+-
+-It's useful to provide some interval to install the keyring everywhere
+-that it's used before the key becomes inactive.  Every keyring will
+-therefore normally have at least three keys: one that's currently active,
+-one that becomes valid in the future but less than
+-WAKEYRING_REKEY_INTERVAL from now, and one that becomes valid between one
+-and two of those intervals into the future.  This means that one has twice
+-this interval to distribute the keyring everywhere it is used.
+-
+-Internally, this is implemented by adding a new key that becomes valid in
+-twice this interval from the current time if the newest key becomes valid
+-at or less than this interval in the future.
+-
+-The default value is 60 * 60 * 24 (one day).
+-
+-=cut
+-
+-our $WAKEYRING_REKEY_INTERVAL = 60 * 60 * 24;
+-
+-=item WAKEYRING_PURGE_INTERVAL
+-
+-The interval, in seconds, from the key creation date after which keys are
+-removed from the keyring.  This is used to clean up old keys and finish
+-key rotation.  Keys won't be removed unless there are more than three keys
+-in the keyring to try to keep a misconfiguration from removing all valid
+-keys.
+-
+-The default value is 60 * 60 * 24 * 90 (90 days).
+-
+-=cut
+-
+-our $WAKEYRING_PURGE_INTERVAL = 60 * 60 * 24 * 90;
+-
+-=back
+-
+ =head1 EXTERNAL ACL CONFIGURATION
+ 
+ This configuration variable is only needed if you intend to use the
+@@ -940,7 +879,7 @@
+     sub default_owner {
+         my ($type, $name) = @_;
+         my %allowed = map { $_ => 1 }
+-            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
++            qw(HTTP cifs host imap ldap nfs pop sieve smtp);
+         my $realm = 'example.com';
+         return unless $type eq 'keytab';
+         return unless $name =~ m%/%;
+@@ -997,7 +936,7 @@
+     sub verify_name {
+         my ($type, $name, $user) = @_;
+         my %host_based = map { $_ => 1 }
+-            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
++            qw(HTTP cifs host imap ldap nfs pop sieve smtp);
+         return unless $type eq 'keytab';
+         return unless $name =~ m%/%;
+         my ($service, $instance) = split ('/', $name, 2);
+@@ -1029,7 +968,7 @@
+     sub is_for_host {
+         my ($type, $name, $hostname) = @_;
+         my %host_based = map { $_ => 1 }
+-            qw(HTTP cifs host imap ldap nfs pop sieve smtp webauth);
++            qw(HTTP cifs host imap ldap nfs pop sieve smtp);
+         return 0 unless $type eq 'keytab';
+         return 0 unless $name =~ m%/%;
+         my ($service, $instance) = split ('/', $name, 2);
+Index: wallet/perl/t/object/wa-keyring.t
+===================================================================
+--- wallet.orig/perl/t/object/wa-keyring.t	2022-06-18 01:53:50.800081794 +0000
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,183 +0,0 @@
+-#!/usr/bin/perl
+-#
+-# Tests for the WebAuth keyring object implementation.
+-#
+-# Written by Russ Allbery <eagle@eyrie.org>
+-# Copyright 2013-2014
+-#     The Board of Trustees of the Leland Stanford Junior University
+-#
+-# SPDX-License-Identifier: MIT
+-
+-use strict;
+-use warnings;
+-
+-use Test::More;
+-
+-BEGIN {
+-    eval 'use WebAuth 3.06 qw(WA_KEY_AES WA_AES_128)';
+-    plan skip_all => 'WebAuth 3.06 required for testing wa-keyring'
+-      if $@;
+-}
+-
+-use WebAuth::Key 1.01 ();
+-use WebAuth::Keyring 1.02 ();
+-
+-BEGIN {
+-    plan tests => 68;
+-    use_ok('Wallet::Admin');
+-    use_ok('Wallet::Config');
+-    use_ok('Wallet::Object::WAKeyring');
+-}
+-
+-use lib 't/lib';
+-use Util;
+-
+-# Some global defaults to use.
+-my $user = 'admin@EXAMPLE.COM';
+-my $host = 'localhost';
+-my @trace = ($user, $host, time);
+-
+-# Flush all output immediately.
+-$| = 1;
+-
+-# Use Wallet::Admin to set up the database.
+-system ('rm -rf test-keyrings') == 0 or die "cannot remove test-keyrings\n";
+-db_setup;
+-my $admin = eval { Wallet::Admin->new };
+-is ($@, '', 'Database connection succeeded');
+-is ($admin->reinitialize ($user), 1, 'Database initialization succeeded');
+-my $schema = $admin->schema;
+-
+-# Create a WebAuth context to use.
+-my $wa = WebAuth->new;
+-
+-# Test error handling in the absence of configuration.
+-my $object = eval {
+-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
+-  };
+-ok (defined ($object), 'Creating a basic WebAuth keyring object succeeds');
+-ok ($object->isa ('Wallet::Object::WAKeyring'), ' and is the right class');
+-is ($object->get (@trace), undef, ' and get fails');
+-is ($object->error, 'WebAuth keyring support not configured',
+-    ' with the right error');
+-is ($object->store (@trace), undef, ' and store fails');
+-is ($object->error, 'WebAuth keyring support not configured',
+-    ' with the right error');
+-is ($object->destroy (@trace), 1, ' but destroy succeeds');
+-
+-# Set up our configuration.
+-mkdir 'test-keyrings' or die "cannot create test-keyrings: $!\n";
+-$Wallet::Config::WAKEYRING_BUCKET = 'test-keyrings';
+-
+-# Okay, now we can test.  First, the basic object without store.
+-$object = eval {
+-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
+-  };
+-ok (defined ($object), 'Creating a basic WebAuth keyring object succeeds');
+-ok ($object->isa ('Wallet::Object::WAKeyring'), ' and is the right class');
+-my $data = $object->get (@trace);
+-ok ($data, ' and get succeeds');
+-my $keyring = WebAuth::Keyring->decode ($wa, $data);
+-ok ($keyring->isa ('WebAuth::Keyring'), ' and resulting keyring decodes');
+-my @entries = $keyring->entries;
+-is (scalar (@entries), 3, ' and has three entries');
+-is ($entries[0]->creation, 0, 'First has good creation');
+-is ($entries[0]->key->type, WA_KEY_AES, ' and key type');
+-is ($entries[0]->key->length, WA_AES_128, ' and key length');
+-is ($entries[0]->valid_after, 0, ' and validity');
+-ok ((time - $entries[1]->creation) < 2, 'Second has good creation');
+-is ($entries[1]->key->type, WA_KEY_AES, ' and key type');
+-is ($entries[1]->key->length, WA_AES_128, ' and key length');
+-ok (($entries[1]->valid_after - time) <= 60 * 60 * 24,
+-    ' and validity (upper)');
+-ok (($entries[1]->valid_after - time) > 60 * 60 * 24 - 2,
+-    ' and validity (lower)');
+-ok ((time - $entries[2]->creation) < 2, 'Third has good creation');
+-is ($entries[2]->key->type, WA_KEY_AES, ' and key type');
+-is ($entries[2]->key->length, WA_AES_128, ' and key length');
+-ok (($entries[2]->valid_after - time) <= 2 * 60 * 60 * 24,
+-    ' and validity (upper)');
+-ok (($entries[2]->valid_after - time) > 2 * 60 * 60 * 24 - 2,
+-    ' and validity (lower)');
+-my $data2 = $object->get (@trace);
+-is ($data2, $data, 'Getting the object again returns the same data');
+-is ($object->error, undef, ' with no error');
+-is ($object->destroy (@trace), 1, 'Destroying the object succeeds');
+-
+-# Now store something and be sure that we get something reasonable.
+-$object = eval {
+-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
+-  };
+-ok (defined ($object), 'Recreating the object succeeds');
+-my $key = WebAuth::Key->new ($wa, WA_KEY_AES, WA_AES_128);
+-$keyring = WebAuth::Keyring->new ($wa, $key);
+-$data = $keyring->encode;
+-is ($object->store ($data, @trace), 1, ' and storing data in it succeeds');
+-ok (-d 'test-keyrings/09', ' and the hash bucket was created');
+-ok (-f 'test-keyrings/09/test', ' and the file exists');
+-is (contents ('test-keyrings/09/test'), $data, ' with the right contents');
+-$data = $object->get (@trace);
+-$keyring = WebAuth::Keyring->decode ($wa, $data);
+-ok ($keyring->isa ('WebAuth::Keyring'), ' and get returns a valid keyring');
+-@entries = $keyring->entries;
+-is (scalar (@entries), 2, ' and has three entries');
+-is ($entries[0]->creation, 0, 'First has good creation');
+-is ($entries[0]->key->type, WA_KEY_AES, ' and key type');
+-is ($entries[0]->key->length, WA_AES_128, ' and key length');
+-is ($entries[0]->valid_after, 0, ' and validity');
+-is ($entries[0]->key->data, $key->data, ' and matches the original key');
+-ok ((time - $entries[1]->creation) < 2, 'Second has good creation');
+-is ($entries[1]->key->type, WA_KEY_AES, ' and key type');
+-is ($entries[1]->key->length, WA_AES_128, ' and key length');
+-ok (($entries[1]->valid_after - time) <= 2 * 60 * 60 * 24,
+-    ' and validity (upper)');
+-ok (($entries[1]->valid_after - time) > 2 * 60 * 60 * 24 - 2,
+-    ' and validity (lower)');
+-
+-# Test pruning.  Add another old key and a couple of more current keys to the
+-# current keyring.
+-$key = WebAuth::Key->new ($wa, WA_KEY_AES, WA_AES_128);
+-$keyring->add (0, 0, $key);
+-$key = WebAuth::Key->new ($wa, WA_KEY_AES, WA_AES_128);
+-$keyring->add (time - 24 * 60 * 60, time - 24 * 60 * 60, $key);
+-$key = WebAuth::Key->new ($wa, WA_KEY_AES, WA_AES_128);
+-$keyring->add (time, time, $key);
+-$data = $keyring->encode;
+-is ($object->store ($data, @trace), 1, 'Storing modified keyring succeeds');
+-$data = $object->get (@trace);
+-$keyring = WebAuth::Keyring->decode ($wa, $data);
+-ok ($keyring->isa ('WebAuth::Keyring'), ' and get returns a valid keyring');
+-@entries = $keyring->entries;
+-is (scalar (@entries), 3, ' and has three entries');
+-ok ((time - $entries[0]->creation) < 2, 'First has good creation');
+-ok (($entries[0]->valid_after - time) <= 2 * 60 * 60 * 24,
+-    ' and validity (upper)');
+-ok (($entries[0]->valid_after - time) > 2 * 60 * 60 * 24 - 2,
+-    ' and validity (lower)');
+-ok ((time - $entries[1]->creation) < 24 * 60 * 60 + 2,
+-    'Second has good creation');
+-ok ((time - $entries[1]->valid_after) <= 60 * 60 * 24 + 2,
+-    ' and validity');
+-ok ((time - $entries[2]->creation) < 2, 'Third has good creation');
+-ok ((time - $entries[2]->valid_after) < 2, ' and validity');
+-is ($object->destroy (@trace), 1, 'Destroying the object succeeds');
+-
+-# Test error handling in the file store.
+-system ('rm -r test-keyrings') == 0 or die "cannot remove test-keyrings\n";
+-$object = eval {
+-    Wallet::Object::WAKeyring->create ('wa-keyring', 'test', $schema, @trace)
+-  };
+-ok (defined ($object), 'Recreating the object succeeds');
+-is ($object->get (@trace), undef, ' but retrieving it fails');
+-like ($object->error, qr/^cannot create keyring bucket 09: /,
+-      ' with the right error');
+-is ($object->store ("foo\n", @trace), undef, ' and store fails');
+-like ($object->error, qr/^cannot create keyring bucket 09: /,
+-      ' with the right error');
+-is ($object->destroy (@trace), 1, ' but destroying the object succeeds');
+-
+-# Clean up.
+-$admin->destroy;
+-END {
+-    unlink ('wallet-db');
+-}
+Index: wallet/contrib/wallet-rekey-periodic.8
+===================================================================
+--- wallet.orig/contrib/wallet-rekey-periodic.8	2022-06-18 01:53:50.800081794 +0000
++++ /dev/null	1970-01-01 00:00:00.000000000 +0000
+@@ -1,213 +0,0 @@
+-.\" Automatically generated by Pod::Man 4.09 (Pod::Simple 3.35)
+-.\"
+-.\" Standard preamble:
+-.\" ========================================================================
+-.de Sp \" Vertical space (when we can't use .PP)
+-.if t .sp .5v
+-.if n .sp
+-..
+-.de Vb \" Begin verbatim text
+-.ft CW
+-.nf
+-.ne \\$1
+-..
+-.de Ve \" End verbatim text
+-.ft R
+-.fi
+-..
+-.\" Set up some character translations and predefined strings.  \*(-- will
+-.\" give an unbreakable dash, \*(PI will give pi, \*(L" will give a left
+-.\" double quote, and \*(R" will give a right double quote.  \*(C+ will
+-.\" give a nicer C++.  Capital omega is used to do unbreakable dashes and
+-.\" therefore won't be available.  \*(C` and \*(C' expand to `' in nroff,
+-.\" nothing in troff, for use with C<>.
+-.tr \(*W-
+-.ds C+ C\v'-.1v'\h'-1p'\s-2+\h'-1p'+\s0\v'.1v'\h'-1p'
+-.ie n \{\
+-.    ds -- \(*W-
+-.    ds PI pi
+-.    if (\n(.H=4u)&(1m=24u) .ds -- \(*W\h'-12u'\(*W\h'-12u'-\" diablo 10 pitch
+-.    if (\n(.H=4u)&(1m=20u) .ds -- \(*W\h'-12u'\(*W\h'-8u'-\"  diablo 12 pitch
+-.    ds L" ""
+-.    ds R" ""
+-.    ds C` ""
+-.    ds C' ""
+-'br\}
+-.el\{\
+-.    ds -- \|\(em\|
+-.    ds PI \(*p
+-.    ds L" ``
+-.    ds R" ''
+-.    ds C`
+-.    ds C'
+-'br\}
+-.\"
+-.\" Escape single quotes in literal strings from groff's Unicode transform.
+-.ie \n(.g .ds Aq \(aq
+-.el       .ds Aq '
+-.\"
+-.\" If the F register is >0, we'll generate index entries on stderr for
+-.\" titles (.TH), headers (.SH), subsections (.SS), items (.Ip), and index
+-.\" entries marked with X<> in POD.  Of course, you'll have to process the
+-.\" output yourself in some meaningful fashion.
+-.\"
+-.\" Avoid warning from groff about undefined register 'F'.
+-.de IX
+-..
+-.if !\nF .nr F 0
+-.if \nF>0 \{\
+-.    de IX
+-.    tm Index:\\$1\t\\n%\t"\\$2"
+-..
+-.    if !\nF==2 \{\
+-.        nr % 0
+-.        nr F 2
+-.    \}
+-.\}
+-.\"
+-.\" Accent mark definitions (@(#)ms.acc 1.5 88/02/08 SMI; from UCB 4.2).
+-.\" Fear.  Run.  Save yourself.  No user-serviceable parts.
+-.    \" fudge factors for nroff and troff
+-.if n \{\
+-.    ds #H 0
+-.    ds #V .8m
+-.    ds #F .3m
+-.    ds #[ \f1
+-.    ds #] \fP
+-.\}
+-.if t \{\
+-.    ds #H ((1u-(\\\\n(.fu%2u))*.13m)
+-.    ds #V .6m
+-.    ds #F 0
+-.    ds #[ \&
+-.    ds #] \&
+-.\}
+-.    \" simple accents for nroff and troff
+-.if n \{\
+-.    ds ' \&
+-.    ds ` \&
+-.    ds ^ \&
+-.    ds , \&
+-.    ds ~ ~
+-.    ds /
+-.\}
+-.if t \{\
+-.    ds ' \\k:\h'-(\\n(.wu*8/10-\*(#H)'\'\h"|\\n:u"
+-.    ds ` \\k:\h'-(\\n(.wu*8/10-\*(#H)'\`\h'|\\n:u'
+-.    ds ^ \\k:\h'-(\\n(.wu*10/11-\*(#H)'^\h'|\\n:u'
+-.    ds , \\k:\h'-(\\n(.wu*8/10)',\h'|\\n:u'
+-.    ds ~ \\k:\h'-(\\n(.wu-\*(#H-.1m)'~\h'|\\n:u'
+-.    ds / \\k:\h'-(\\n(.wu*8/10-\*(#H)'\z\(sl\h'|\\n:u'
+-.\}
+-.    \" troff and (daisy-wheel) nroff accents
+-.ds : \\k:\h'-(\\n(.wu*8/10-\*(#H+.1m+\*(#F)'\v'-\*(#V'\z.\h'.2m+\*(#F'.\h'|\\n:u'\v'\*(#V'
+-.ds 8 \h'\*(#H'\(*b\h'-\*(#H'
+-.ds o \\k:\h'-(\\n(.wu+\w'\(de'u-\*(#H)/2u'\v'-.3n'\*(#[\z\(de\v'.3n'\h'|\\n:u'\*(#]
+-.ds d- \h'\*(#H'\(pd\h'-\w'~'u'\v'-.25m'\f2\(hy\fP\v'.25m'\h'-\*(#H'
+-.ds D- D\\k:\h'-\w'D'u'\v'-.11m'\z\(hy\v'.11m'\h'|\\n:u'
+-.ds th \*(#[\v'.3m'\s+1I\s-1\v'-.3m'\h'-(\w'I'u*2/3)'\s-1o\s+1\*(#]
+-.ds Th \*(#[\s+2I\s-2\h'-\w'I'u*3/5'\v'-.3m'o\v'.3m'\*(#]
+-.ds ae a\h'-(\w'a'u*4/10)'e
+-.ds Ae A\h'-(\w'A'u*4/10)'E
+-.    \" corrections for vroff
+-.if v .ds ~ \\k:\h'-(\\n(.wu*9/10-\*(#H)'\s-2\u~\d\s+2\h'|\\n:u'
+-.if v .ds ^ \\k:\h'-(\\n(.wu*10/11-\*(#H)'\v'-.4m'^\v'.4m'\h'|\\n:u'
+-.    \" for low resolution devices (crt and lpr)
+-.if \n(.H>23 .if \n(.V>19 \
+-\{\
+-.    ds : e
+-.    ds 8 ss
+-.    ds o a
+-.    ds d- d\h'-1'\(ga
+-.    ds D- D\h'-1'\(hy
+-.    ds th \o'bp'
+-.    ds Th \o'LP'
+-.    ds ae ae
+-.    ds Ae AE
+-.\}
+-.rm #[ #] #H #V #F C
+-.\" ========================================================================
+-.\"
+-.IX Title "WALLET-REKEY-PERIODIC 8"
+-.TH WALLET-REKEY-PERIODIC 8 "2018-06-04" "1.4" "wallet"
+-.\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+-.\" way too many mistakes in technical documents.
+-.if n .ad l
+-.nh
+-.SH "NAME"
+-wallet\-rekey\-periodic \- Periodically rekey all system keytabs
+-.SH "SYNOPSIS"
+-.IX Header "SYNOPSIS"
+-\&\fBwallet-rekey-periodic\fR [\fIkeytab\fR ...]
+-.SH "DESCRIPTION"
+-.IX Header "DESCRIPTION"
+-\&\fBwallet-rekey-periodic\fR is a wrapper around wallet-rekey that adds some
+-additional functionality: rekeying of all keytabs at known locations on
+-the system, skipping keytabs that are marked unchanging, rekeying any
+-keytabs with \s-1DES\s0 keys immediately but otherwise only rekeying once a month
+-based on a random interval based on the hostname, and cleaning up old
+-keys.
+-.PP
+-It's primarily meant to be run daily from cron, but can also be run
+-manually from the command line to rekey specific keytab files.
+-.PP
+-\&\fBwallet-rekey-periodic\fR will, for each keytab, find a list of all
+-principals in that keytab and see if any of them still have \s-1DES\s0 keys.  If
+-so, it will always attempt to rekey that keytab.  If not, it will only do
+-so, for a given system, once every 30 days (based on a hash of the
+-hostname).  It will also always skip keytabs that contain any principals
+-that wallet says are unchanging, since otherwise the current wallet-rekey
+-implementation will duplicate the existing keys.
+-.PP
+-On Heimdal systems, this command will remove keys older than a week before
+-rekeying the keytab.  This relies on \fBktutil\fR functionality that's
+-available only in Heimdal, so \s-1MIT\s0 Kerberos keytabs will slowly grow unless
+-they're manually pruned.  This will be fixed in a later release of
+-\&\fBwallet-rekey\fR.
+-.PP
+-If no keytabs are given on the command line, \fBwallet-rekey-periodic\fR will
+-rekey a set of system keytabs described below under \*(L"\s-1FILES\*(R"\s0.  Otherwise,
+-it will rekey the keytabs given.
+-.SH "FILES"
+-.IX Header "FILES"
+-.IP "\fI/etc/keytabs/*\fR" 4
+-.IX Item "/etc/keytabs/*"
+-.PD 0
+-.IP "\fI/etc/krb5.keytab\fR" 4
+-.IX Item "/etc/krb5.keytab"
+-.IP "\fI/etc/webauth/keytab\fR" 4
+-.IX Item "/etc/webauth/keytab"
+-.PD
+-The default list of locations checked for rekeyable keytabs.  If run with
+-no command-line arguments, \fBwallet-rekey-periodic\fR will try to rekey
+-every principal in each keytab found at any of these paths.
+-.SH "AUTHOR"
+-.IX Header "AUTHOR"
+-Russ Allbery <eagle@eyrie.org>
+-.SH "COPYRIGHT AND LICENSE"
+-.IX Header "COPYRIGHT AND LICENSE"
+-Copyright 2013\-2014 The Board of Trustees of the Leland Stanford Junior
+-University
+-.PP
+-Permission is hereby granted, free of charge, to any person obtaining a
+-copy of this software and associated documentation files (the \*(L"Software\*(R"),
+-to deal in the Software without restriction, including without limitation
+-the rights to use, copy, modify, merge, publish, distribute, sublicense,
+-and/or sell copies of the Software, and to permit persons to whom the
+-Software is furnished to do so, subject to the following conditions:
+-.PP
+-The above copyright notice and this permission notice shall be included in
+-all copies or substantial portions of the Software.
+-.PP
+-\&\s-1THE SOFTWARE IS PROVIDED \*(L"AS IS\*(R", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\s0  \s-1IN NO EVENT SHALL
+-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-DEALINGS IN THE SOFTWARE.\s0
+-.PP
+-SPDX-License-Identifier: \s-1MIT\s0
+-.SH "SEE ALSO"
+-.IX Header "SEE ALSO"
+-\&\fIktutil\fR\|(8), \fIwallet\fR\|(1), \fIwallet\-rekey\fR\|(1)
+Index: wallet/contrib/wallet-summary
+===================================================================
+--- wallet.orig/contrib/wallet-summary	2022-06-18 01:53:50.800081794 +0000
++++ wallet/contrib/wallet-summary	2022-06-18 01:53:50.784080949 +0000
+@@ -41,7 +41,6 @@
+        [qr(^pop/),        'pop/*',        'Kerberized POP'],
+        [qr(^sieve/),      'sieve/*',      'Sieve mail sorting'],
+        [qr(^smtp/),       'smtp/*',       'SMTP'],
+-       [qr(^webauth/),    'webauth/*',    'WebAuth v3'],
+        [qr(^service/),    'service/*',    'Service principals']);
+ 
+ ##############################################################################
+Index: wallet/contrib/used-principals
+===================================================================
+--- wallet.orig/contrib/used-principals	2022-06-18 01:53:50.800081794 +0000
++++ wallet/contrib/used-principals	2022-06-18 01:53:50.784080949 +0000
+@@ -18,7 +18,7 @@
+ # appended.
+ our %HOST_BASED = map { $_ => 1 }
+     qw(HTTP afpserver cifs ftp host ident imap ldap nfs pop sieve smtp
+-       uniengd webauth);
++       uniengd);
+ 
+ # Parse command-line options.
+ my ($count, $help, $k4, $principals);
+Index: wallet/perl/t/policy/stanford.t
+===================================================================
+--- wallet.orig/perl/t/policy/stanford.t	2022-06-18 01:53:50.800081794 +0000
++++ wallet/perl/t/policy/stanford.t	2022-06-18 01:53:50.784080949 +0000
+@@ -211,15 +211,6 @@
+         ],
+         '...and when netdb ACL already exists'
+     );
+-    is_deeply(
+-        [default_owner('keytab', 'webauth/foo.stanford.edu')],
+-        [
+-            'host/foo.stanford.edu',
+-            ['netdb-root', 'foo.stanford.edu'],
+-            ['krb5', 'host/foo.stanford.edu@stanford.edu']
+-        ],
+-        '...and when netdb-root ACL already exists'
+-    );
+ 
+     # Now with a root instance.
+     local $ENV{REMOTE_USER} = 'admin/root@stanford.edu';
+@@ -241,15 +232,6 @@
+         ],
+         '...and when netdb ACL already exists'
+     );
+-    is_deeply(
+-        [default_owner('keytab', 'webauth/foo.stanford.edu')],
+-        [
+-            'host/foo.stanford.edu',
+-            ['netdb-root', 'foo.stanford.edu'],
+-            ['krb5', 'host/foo.stanford.edu@stanford.edu']
+-        ],
+-        '...and when netdb-root ACL already exists'
+-    );
+ 
+     # Check for a type that isn't host-based.
+     is(
+Index: wallet/perl/Build.PL
+===================================================================
+--- wallet.orig/perl/Build.PL	2022-06-18 01:53:50.800081794 +0000
++++ wallet/perl/Build.PL	2022-06-18 01:53:50.784080949 +0000
+@@ -46,7 +46,6 @@
+         'Net::Duo'                 => 0,
+         'Net::LDAP'                => 0,
+         'Net::Remctl'              => 0,
+-        WebAuth                    => 0,
+     },
+     test_requires => {
+         'Crypt::GeneratePassword'  => 0,
+Index: wallet/docs/metadata/description
+===================================================================
+--- wallet.orig/docs/metadata/description	2022-06-18 01:53:44.683758725 +0000
++++ wallet/docs/metadata/description	2022-06-18 01:54:27.806036564 +0000
+@@ -19,7 +19,7 @@
+ regexes matching Kerberos principal names, and LDAP attribute checks.
+ 
+ Currently, the object types supported are simple files, passwords,
+-Kerberos keytabs, WebAuth keyrings, and Duo integrations.  By default,
++Kerberos keytabs, and Duo integrations.  By default,
+ whenever a Kerberos keytab object is retrieved from the wallet, the key is
+ changed in the Kerberos KDC and the wallet returns a keytab for the new
+ key.  However, a keytab object can also be configured to preserve the
+Index: wallet/docs/metadata/requirements
+===================================================================
+--- wallet.orig/docs/metadata/requirements	2022-06-18 01:20:49.283265080 +0000
++++ wallet/docs/metadata/requirements	2022-06-18 01:56:13.399614445 +0000
+@@ -40,9 +40,6 @@
+ supports the `-norandkey` option to `ktadd`.  This option is included in
+ MIT Kerberos 1.7 and later.
+ 
+-The WebAuth keyring object support in the wallet server requires the
+-WebAuth Perl module from WebAuth 4.4.0 or later.
+-
+ The Duo integration object support in the wallet server requires the
+ Net::Duo, JSON, and Perl6::Slurp Perl modules.
+ 

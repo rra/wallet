@@ -1,3 +1,114 @@
+wallet (1.4-14) unstable; urgency=medium
+
+  * Disable depreciation warning for opensslv1. This is an emergency
+    patch to support the opensslv1 warning for the default encryption
+    message.  This warning is affecting production systems negatively.
+    To resolve this problem a method will be implemented that allows
+    the transition to any encryption method supported by Crypt::CBC.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 28 Aug 2023 23:35:39 -0700
+
+wallet (1.4-13) unstable; urgency=medium
+
+  * Expand the allow ldap-attr ACL specification to include a full
+    ldap filter.  At the same time remove the compare search and
+    perform the access test in a single LDAP search.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Fri, 18 Nov 2022 08:05:41 +0000
+
+wallet (1.4-12) unstable; urgency=medium
+
+  * Correct double encryption problem when transitioning to encrypted
+    password storage.
+
+ -- Bill MacAllister <whm@dropbox.com>  Thu, 23 Jun 2022 06:33:15 +0000
+
+wallet (1.4-11) unstable; urgency=medium
+
+  * Remove support for WebAuth keyrings.
+
+ -- Bill MacAllister <bill@ca-zephyr.org>  Sat, 18 Jun 2022 02:42:15 +0000
+
+wallet (1.4-10) unstable; urgency=medium
+
+  * Correct problem with transition of unencrypted file and password
+    objects to encrypted objected.
+
+ -- Bill MacAllister <whm@dropbox.com>  Sun, 12 Jun 2022 18:28:16 +0000
+
+wallet (1.4-9) unstable; urgency=medium
+
+  * Correct the default value used for the maximum of a "computer
+    name" used when creating AD keytabs.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 16 Aug 2021 18:17:30 +0000
+
+wallet (1.4-8) unstable; urgency=medium
+
+  * Updates to checkfile support.
+    - The POD was updated with the original checkfile changes, but a
+      new man page was not generated.  This change updates the man page
+      for the client.
+    - When issuing a checkfile command against an password object that
+      exists but has not been stored yet a warning message was being
+      generated.  This warning is confusing since the command succeeds
+      since the password is generated and downloaded.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 14 Dec 2020 19:39:40 +0000
+
+wallet (1.4-7) unstable; urgency=medium
+
+  * Add the checkfile command to the wallet client.  checkfile uses
+    md5 checksums to determine if a file/password object has changed
+    and performs a get only if the object has changed.
+
+ -- Bill MacAllister <whm@dropbox.com>  Thu, 16 Jul 2020 16:55:34 +0000
+
+wallet (1.4-6) unstable; urgency=medium
+
+  * Rename the configuratiion variable LDAP_SECRET_PREFIX to
+    ENCRYPTION_PREFIX.
+  * Improve error messaging when attempting to retrieve the encryption
+    secret from LDAP.
+  * Trap the case when ENCRYPTION_PREFIX is specified and the required
+    LDAP variables are not.
+
+ -- Bill MacAllister <whm@dropbox.com>  Wed, 10 Jun 2020 23:16:34 +0000
+
+wallet (1.4-5) unstable; urgency=medium
+
+  * Add password generation options supporting generation of password
+    using selected Crypt::HSXKPasswd presets or a custom routine.
+  * Add encryption of password objects.
+  * Add support for custom encryption methods.
+
+ -- Bill MacAllister <whm@dropbox.com>  Sat, 23 May 2020 01:15:25 +0000
+
+wallet (1.4-4) unstable; urgency=medium
+
+  * Add support for encrypting file objects.
+  * Update object class error reporting to make it more obvious when
+    an object is not defined correctly in the wallet database.
+  * Request the presence of the GSSAPI module is either LDAP ACL
+    support or encrypted object support is enabled.
+
+ -- Bill MacAllister <whm@dropbox.com>  Thu, 23 Apr 2020 22:25:13 +0000
+
+wallet (1.4-3) unstable; urgency=medium
+
+  * Allow the specification of valid characters to be used when
+    generating passwords.
+  * Add the command checksum to return the checksum of file objects.
+  * Patches to allow the use of quilt.
+
+ -- Bill MacAllister <whm@dropbox.com>  Mon, 30 Sep 2019 18:39:21 +0000
+
+wallet (1.4-2) unstable; urgency=medium
+
+  * Dropbox only release
+
+ -- Bill MacAllister <whm@dropbox.com>  Sun, 06 Jan 2019 19:49:07 +0000
+
 wallet (1.4-1) unstable; urgency=medium
 
   * New upstream release.

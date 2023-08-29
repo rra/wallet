@@ -1,0 +1,17 @@
+If the GSSAPI module is not present on the wallet server LDAP searches
+will silently perform anonymous binds to the server.  This change means
+that when GSSAPI is not present the wallet server will fail when LDAP
+lookups are attempted.
+
+diff --git a/perl/lib/Wallet/ACL/LDAP/Attribute.pm b/perl/lib/Wallet/ACL/LDAP/Attribute.pm
+index 65e0208..02948e2 100644
+--- a/perl/lib/Wallet/ACL/LDAP/Attribute.pm
++++ b/perl/lib/Wallet/ACL/LDAP/Attribute.pm
+@@ -18,6 +18,7 @@ use strict;
+ use warnings;
+ 
+ use Authen::SASL;
++use GSSAPI;
+ use Net::LDAP qw(LDAP_COMPARE_TRUE);
+ use Wallet::ACL::Base;
+ use Wallet::Config;

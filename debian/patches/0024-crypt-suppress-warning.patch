@@ -1,0 +1,27 @@
+Description: Disable depreciation warning for opensslv1
+ This is an emergency patch to support the opensslv1 warning for the
+ default encryption message.  This warning is affecting production
+ systems negatively.  To resolve this problem a method will be implemented
+ that allows the transition to any encryption method supported by
+ Crypt::CBC.
+Author: Bill MacAllister <bill@ca-zephyr.org>
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -224,10 +224,11 @@ sub _file_crypt {
+     my $pre = $Wallet::Config::ENCRYPTION_PREFIX;
+ 
+     my $cipher = Crypt::CBC->new(
+-        -key        => $key,
+-        -cipher     => 'Twofish',
+-        -padding    => 'space',
+-        -add_header => 1
++        -key         => $key,
++        -cipher      => 'Twofish',
++        -padding     => 'space',
++        -add_header  => 1,
++        -nodeprecate => 1
+     );
+     if ($action eq 'encrypt') {
+         $return_string

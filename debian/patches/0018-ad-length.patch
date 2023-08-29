@@ -1,0 +1,36 @@
+--- a/contrib/ad-keytab
++++ b/contrib/ad-keytab
+@@ -3,7 +3,7 @@
+ # Create, update, delete, and display keytabs stored in Active Directory.
+ #
+ # Written by Bill MacAllister <whm@dropbox.com>
+-# Copyright 2016 Dropbox, Inc.
++# Copyright 2016-21 Dropbox, Inc.
+ #
+ # SPDX-License-Identifier: MIT
+ 
+@@ -227,7 +227,7 @@ sub kerberos_attrs {
+                     $attr{cn} =~ s/.*?=//xms;
+                 }
+             } else {
+-                if (length($attr{cn})>20) {
++                if (length($attr{cn})>19) {
+                     my $cnt = 0;
+                     my $this_dn;
+                     my $this_prefix = substr($attr{cn}, 0, 18);
+--- a/perl/lib/Wallet/Config.pm
++++ b/perl/lib/Wallet/Config.pm
+@@ -508,11 +508,11 @@ The maximum length of a unique identifie
+ Directory keytab objects.  If the identifier exceeds this length then it will
+ be truncated and an integer will be appended to the end of the identifier.
+ This parameter is here in hopes that at some point in the future Microsoft
+-will remove the limitation.
++will remove the limitation.  The default value is 19.
+ 
+ =cut
+ 
+-our $AD_SERVICE_LENGTH = '20';
++our $AD_SERVICE_LENGTH = '19';
+ 
+ =item AD_SERVICE_LIMIT
+ 

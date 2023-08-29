@@ -1,0 +1,24 @@
+diff --git a/NEWS b/NEWS
+index be636b4..a5f310b 100644
+--- a/NEWS
++++ b/NEWS
+@@ -1,5 +1,19 @@
+                        User-Visible wallet Changes
+ 
++wallet 1.4-3 (2019-09-30)
++
++    Two new features have been added to wallet with this release.
++
++    A valid set of characters to be used when generating a password
++    can be specified.  This allows for a variety of password policies
++    include use of only lower case characters, excluding the use of
++    upper case O, etc.
++
++    The checksum command had been added that returns the checksum of
++    a file object.  This makes it simpler to integrate the use of
++    wallet with configuration management systems such as puppet and
++    chef.
++
+ wallet 1.4 (2018-06-03)
+ 
+     Substantial improvements to Active Directory support: Add a

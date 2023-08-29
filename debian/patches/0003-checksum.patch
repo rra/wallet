@@ -1,0 +1,124 @@
+--- a/perl/lib/Wallet/Config.pm
++++ b/perl/lib/Wallet/Config.pm
+@@ -1038,6 +1038,25 @@ Obvious improvements could be made, such
+ the slash for a C<host/> ACL looked like a host name and the part after a
+ slash for a C<user/> ACL look like a user name.
+ 
++=head1 FILE CHECKSUMS
++
++By default a file objects checksum some will be calculated using the
++perl function md5_hex of the Digest::MD5 module.  This behavior can be
++overriden by defining a perl function in the configuration file named
++file_checksum that returns a checksum for the file.
++
++For example, the following file_checksub function returns the MD5 hash
++as a base64 string.
++
++    sub file_checksum {
++        my ($path) = @_;
++        open(my $fh, '<', $path) or die "ERROR: reading $filename";
++        binmode($fh);
++        my $cs = Digest::MD5->new->addfile($fh)->b64digest, "\n";
++        close $fh;
++        return $cs;
++    }
++
+ =head1 ENVIRONMENT
+ 
+ =over 4
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -19,6 +19,7 @@ use warnings;
+ 
+ use Digest::MD5 qw(md5_hex);
+ use File::Copy qw(move);
++use File::Slurp;
+ use Wallet::Config;
+ use Wallet::Object::Base;
+ 
+@@ -146,6 +147,26 @@ sub get {
+     return $data;
+ }
+ 
++# Return an check sum of a file
++sub checksum {
++    my ($self, $user, $host, $time) = @_;
++    $time ||= time;
++    my $id = $self->{type} . ':' . $self->{name};
++    if ($self->flag_check ('locked')) {
++        $self->error ("cannot get $id: object is locked");
++        return;
++    }
++    my $path = $self->file_path;
++    my $this_checksum;
++    if (defined (&Wallet::Config::file_checksum)) {
++        $this_checksum = Wallet::Config::file_checksum($path);
++    } else {
++        $this_checksum = md5_hex(read_file($path));
++    }
++    $self->log_action ('checksum', $user, $host, $time);
++    return $this_checksum;
++}
++
+ # Store the file on the wallet server.
+ sub store {
+     my ($self, $data, $user, $host, $time) = @_;
+@@ -242,6 +263,13 @@ HOSTNAME, and DATETIME are stored as his
+ should be the user who is downloading the keytab.  If DATETIME isn't
+ given, the current time is used.
+ 
++=item checksum(PRINCIPAL, HOSTNAME [, DATETIME])
++
++Retrieves the checksum for contents of the file object or undef on
++error.  PRINCIPAL, HOSTNAME, and DATETIME are stored as history
++information.  PRINCIPAL should be the user who is downloading the
++keytab.  If DATETIME isn't given, the current time is used.
++
+ =item store(DATA, PRINCIPAL, HOSTNAME [, DATETIME])
+ 
+ Store DATA as the current contents of the file object.  Any existing data
+--- a/server/wallet-backend.in
++++ b/server/wallet-backend.in
+@@ -196,6 +196,14 @@ sub command {
+         } else {
+             print $status ? "yes\n" : "no\n";
+         }
++    } elsif ($command eq 'checksum') {
++        check_args (2, 2, [], @args);
++        my $output = $server->checksum (@args);
++        if (defined $output) {
++            print $output;
++        } else {
++            failure ($server->error, @_);
++        }
+     } elsif ($command eq 'comment') {
+         check_args (2, 3, [3], @args);
+         if (@args > 2) {
+--- a/perl/lib/Wallet/Server.pm
++++ b/perl/lib/Wallet/Server.pm
+@@ -499,6 +499,25 @@ sub check {
+     return 1;
+ }
+ 
++# Returns the checksum for a file or password object.
++sub checksum {
++    my ($self, $type, $name) = @_;
++    if ($type ne 'file' && $type ne 'password') {
++        $self->error ("Invalid type ${type}");
++        return;
++    }
++    my $object = $self->retrieve ($type, $name);
++    if (!defined $object) {
++	return;
++    }
++    if (!$self->acl_verify ($object, 'get')) {
++	return;
++    }
++    my $result = $object->checksum($self->{user}, $self->{host});
++    $self->error ($object->error) unless defined $result;
++    return $result;
++}
++
+ # Retrieve the information associated with an object, or returns undef and
+ # sets the internal error if the retrieval fails or if the user isn't
+ # authorized.  If the object doesn't exist, attempts dynamic creation of the

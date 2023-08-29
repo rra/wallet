@@ -1,0 +1,77 @@
+Update client man page, suppress spurious check file warning
+
+* The POD was updated with the original checkfile changes, but a
+  new man page was not generated.  This change updates the man page
+  for the client.
+
+* When issuing a checkfile command against an password object that
+  exists but has not been stored yet a warning message was being
+  generated.  This warning is confusing since the command succeeds
+  since the password is generated and downloaded.
+--- a/client/wallet.1
++++ b/client/wallet.1
+@@ -129,7 +129,7 @@
+ .\" ========================================================================
+ .\"
+ .IX Title "WALLET 1"
+-.TH WALLET 1 "2018-06-04" "1.4" "wallet"
++.TH WALLET 1 "2020-12-14" "perl v5.26.1" "User Contributed Perl Documentation"
+ .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
+ .\" way too many mistakes in technical documents.
+ .if n .ad l
+@@ -291,7 +291,15 @@ For more information on attributes, see
+ .IP "acl add <id> <scheme> <identifier>" 4
+ .IX Item "acl add <id> <scheme> <identifier>"
+ Add an entry with <scheme> and <identifier> to the \s-1ACL\s0 <id>.  <id> may be
+-either the name of an \s-1ACL\s0 or its numeric identifier.
++either the name of an \s-1ACL\s0 or its numeric identifier.  Three schemes are
++supported: krb5, netdb, and ldap-attr.  The netdb and ldap-attr must
++be configured before they can be used.  Examples:
++.Sp
++.Vb 3
++\&    wallet acl add config/db krb5 mac@CA\-ZEPHYR.ORG
++\&    wallet acl add config/db netdb host/keddie.ca\-zephyr.org
++\&    wallet acl add config/db ldap\-attr czPrivilegeGroup=admin
++.Ve
+ .IP "acl check <id>" 4
+ .IX Item "acl check <id>"
+ Check whether an \s-1ACL\s0 with the \s-1ID\s0 <id> already exists.  If it does, prints
+@@ -356,6 +364,15 @@ already exist.
+ .IX Item "check <type> <name>"
+ Check whether an object of type <type> and name <name> already exists.  If
+ it does, prints \f(CW\*(C`yes\*(C'\fR; if not, prints \f(CW\*(C`no\*(C'\fR.
++.IP "checkfile <type> <name>" 4
++.IX Item "checkfile <type> <name>"
++Preforms a get command only if the wallet object checksum differs from
++the checksum of the file specified.  The \-f switch must be specified.
++This command is not valid for keytabs and the wallet object must have
++been stored.
++.IP "checksum <type> <name>" 4
++.IX Item "checksum <type> <name>"
++Returns the checksum for file objects.
+ .IP "comment <type> <name> [<comment>]" 4
+ .IX Item "comment <type> <name> [<comment>]"
+ If <comment> is not given, displays the current comment for the object
+@@ -474,7 +491,7 @@ will attempt to automatically create it
+ .IX Item "update <type> <name>"
+ Prints to standard output the data associated with the object identified
+ by <type> and <name>, or stores it in a file if the \fB\-f\fR option was
+-given.  This will generate new data in the object, and only works for 
++given.  This will generate new data in the object, and only works for
+ objects that support generating new data automatically, such as keytabs or
+ passwords.  Types that do not support generating new data will fail and
+ direct you to use get instead.
+--- a/perl/lib/Wallet/Object/File.pm
++++ b/perl/lib/Wallet/Object/File.pm
+@@ -344,7 +344,10 @@ sub checksum {
+     my $path = $self->file_path;
+     my $this_checksum;
+     my $this_data;
+-    my $this_endata = read_file($path);
++    my $this_endata;
++    if (-e $path) {
++        $this_endata = read_file($path);
++    }
+     if ($Wallet::Config::ENCRYPTION_PREFIX) {
+         $this_data = $self->file_decrypt($this_endata, $user, $host, $time)
+     } else {
